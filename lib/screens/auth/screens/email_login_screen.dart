@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/auth_flow.dart';
+import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/screens/auth/screens/forgot_password_screen.dart';
-import 'package:gruve_app/screens/home/home_screen.dart';
+
 import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
@@ -161,7 +162,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => const HomeScreen(),
+                                        builder: (_) => HomeScreen(),
                                       ),
                                     );
                                   },

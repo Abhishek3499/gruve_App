@@ -129,15 +129,32 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                 children: [
                   const Spacer(flex: 2),
 
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: AppAssets.syncopateFont,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
+                          fontFamily: AppAssets.syncopateFont,
+                        ),
+                        children: [
+                          TextSpan(text: 'Enter your '),
+                          TextSpan(
+                            text: 'Code ',
+                            style: TextStyle(
+                              color: Color(0xFFB86AD0),
+                              fontFamily: 'syncopate',
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
 
                   const SizedBox(height: 12),

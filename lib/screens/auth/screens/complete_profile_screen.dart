@@ -3,7 +3,10 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
-import 'package:gruve_app/screens/home/home_screen.dart';
+import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:gruve_app/services/image_picker_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});
@@ -13,6 +16,8 @@ class CompleteProfileScreen extends StatefulWidget {
 }
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+  XFile? _selectedImage;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,34 +90,63 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 40),
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF461851),
-                          borderRadius: BorderRadius.circular(60),
-                          border: Border.all(
-                            color: const Color(0xFFAF50C4),
-                            width: 1,
+                      GestureDetector(
+                        onTap: () {
+                          ImagePickerService.showImagePickerBottomSheet(
+                            context,
+                            onImageSelected: (image) {
+                              setState(() {
+                                _selectedImage = image;
+                              });
+                            },
+                          );
+                        },
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF461851),
+                            borderRadius: BorderRadius.circular(60),
+                            border: Border.all(
+                              color: const Color(0xFFAF50C4),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              const BoxShadow(
+                                color: Color(0x40000000),
+                                offset: Offset(0, 4),
+                                blurRadius: 20,
+                              ),
+                              const BoxShadow(
+                                color: Color(0xCC5C1B6D),
+                                offset: Offset(-8, -8),
+                                blurRadius: 20,
+                                spreadRadius: -1,
+                              ),
+                            ],
                           ),
-                          boxShadow: [
-                            const BoxShadow(
-                              color: Color(0x40000000),
-                              offset: Offset(0, 4),
-                              blurRadius: 20,
-                            ),
-                            const BoxShadow(
-                              color: Color(0xCC5C1B6D),
-                              offset: Offset(-8, -8),
-                              blurRadius: 20,
-                              spreadRadius: -1,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white70,
-                          size: 40,
+                          child: _selectedImage != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(60),
+                                  child: Image.file(
+                                    File(_selectedImage!.path),
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white70,
+                                        size: 40,
+                                      );
+                                    },
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white70,
+                                  size: 40,
+                                ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -141,7 +175,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
+                              builder: (_) => HomeScreen(),
                             ),
                           );
                         },
