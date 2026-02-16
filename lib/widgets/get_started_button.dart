@@ -59,7 +59,7 @@ class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
               borderRadius: BorderRadius.circular(100),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withAlpha(64),
                   offset: const Offset(0, 4),
                   blurRadius: 20,
                 ),

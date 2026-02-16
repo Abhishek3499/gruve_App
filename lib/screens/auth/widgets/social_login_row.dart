@@ -24,9 +24,9 @@ class SocialLoginRow extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withAlpha(26),
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withAlpha(51)),
             ),
             child: Image.asset(AppAssets.googleIcon, width: 24, height: 24),
           ),
@@ -38,9 +38,9 @@ class SocialLoginRow extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withAlpha(26),
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withAlpha(51)),
             ),
             child: Image.asset(AppAssets.appleIcon, width: 24, height: 24),
           ),

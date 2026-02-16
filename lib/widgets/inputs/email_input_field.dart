@@ -18,29 +18,19 @@ class EmailInputField extends StatelessWidget {
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF8B3FAE).withOpacity(0.18),
+        color: const Color(0xFF8B3FAE).withAlpha(46),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.18),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withAlpha(46), width: 1),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.person_outline,
-            color: Colors.white70,
-            size: 20,
-          ),
+          const Icon(Icons.person_outline, color: Colors.white70, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: controller,
               keyboardType: keyboardType,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
                 isDense: true,
                 hintText: hintText,

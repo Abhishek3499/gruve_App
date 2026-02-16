@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../controllers/video_feed_controller.dart';
-import 'video_overlay.dart';
 
 class VideoFeed extends StatefulWidget {
   final int selectedIndex;
@@ -21,7 +20,7 @@ class _VideoFeedState extends State<VideoFeed> {
   late VideoFeedController _controller;
   late PageController _pageController;
   late List<VideoPlayerController> _controllers;
-  String _selectedContentTab = 'For You';
+  String selectedContentTab = 'For You';
 
   @override
   void initState() {

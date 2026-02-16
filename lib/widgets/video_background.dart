@@ -31,7 +31,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
 
   Future<void> _initializeSharedController() async {
     if (_sharedController != null || _isInitializing) return;
-    
+
     _isInitializing = true;
     try {
       _sharedController = VideoPlayerController.asset(widget.videoPath);
@@ -60,35 +60,32 @@ class _VideoBackgroundState extends State<VideoBackground> {
 
   @override
   Widget build(BuildContext context) {
-    final double safeOpacity = widget.overlayOpacity.clamp(0.0, 1.0);
-
     return Stack(
       fit: StackFit.expand,
       children: [
+        // VIDEO
         if (_sharedController != null && _sharedController!.value.isInitialized)
-          IgnorePointer(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _sharedController!.value.size.width,
-                height: _sharedController!.value.size.height,
-                child: VideoPlayer(_sharedController!),
-              ),
+          FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _sharedController!.value.size.width,
+              height: _sharedController!.value.size.height,
+              child: VideoPlayer(_sharedController!),
             ),
           )
         else
+          const SizedBox(),
+
+        // OVERLAY (only if opacity > 0)
+        if (widget.overlayOpacity > 0)
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
-              ),
+            color: Colors.black.withAlpha(
+              (widget.overlayOpacity.clamp(0.0, 1.0) * 255).round(),
             ),
           ),
 
-        Container(color: Colors.black.withOpacity(safeOpacity)),
-        widget.child,
+        // CHILD UI (always on top)
+        Positioned.fill(child: widget.child),
       ],
     );
   }

@@ -3,7 +3,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/constants/video_assets.dart';
 
 class VideoFeedController {
-  List<VideoPlayerController> _controllers = [];
+  final List<VideoPlayerController> _controllers = [];
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
 
@@ -59,8 +59,9 @@ class VideoFeedController {
   }
 
   void togglePlayPause() {
-    if (_controllers.isEmpty || _currentIndex.value >= _controllers.length)
+    if (_controllers.isEmpty || _currentIndex.value >= _controllers.length) {
       return;
+    }
 
     final controller = _controllers[_currentIndex.value];
     if (!controller.value.isInitialized) return;

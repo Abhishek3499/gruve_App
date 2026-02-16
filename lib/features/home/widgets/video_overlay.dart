@@ -25,7 +25,7 @@ class VideoOverlay extends StatelessWidget {
               // Content Toggle
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withAlpha(77),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -71,7 +71,9 @@ class VideoOverlay extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: isSelected ? const Color(0xFF280131) : const Color(0xFFFFFFFF),
+            color: isSelected
+                ? const Color(0xFF280131)
+                : const Color(0xFFFFFFFF),
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),

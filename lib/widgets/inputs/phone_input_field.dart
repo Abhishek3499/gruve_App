@@ -37,13 +37,16 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withAlpha(15),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                border: Border.all(color: Colors.white.withAlpha(26), width: 1),
               ),
               child: Row(
                 children: [
-                  Text(widget.country.flagEmoji, style: const TextStyle(fontSize: 18)),
+                  Text(
+                    widget.country.flagEmoji,
+                    style: const TextStyle(fontSize: 18),
+                  ),
                   const SizedBox(width: 8),
                   Icon(
                     Icons.keyboard_arrow_down,
@@ -62,7 +65,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               style: const TextStyle(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
                 isDense: true,
-                hintText: widget.hintText.isEmpty 
+                hintText: widget.hintText.isEmpty
                     ? '${widget.country.phoneCode} (454) 726-0592'
                     : widget.hintText,
                 hintStyle: const TextStyle(color: Colors.white60),
