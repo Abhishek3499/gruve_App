@@ -11,6 +11,11 @@ class AppAssets {
 
   static const user = 'assets/button/user circle.png';
   static const search = 'assets/button/search.png';
+  //
+  static const gifticon = 'assets/home/gift_icon.gif';
+  static const likeicon = 'assets/home/like_icon.png';
+  static const commenticon = 'assets/home/comment_icon.png';
+  static const doticon = 'assets/home/3_dot_icon.png';
 
   // Fonts
   static const String ralewayFont = 'Raleway';

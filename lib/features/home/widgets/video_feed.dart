@@ -69,17 +69,22 @@ class _VideoFeedState extends State<VideoFeed> {
                   onTap: _onVideoTap,
                   child: Container(
                     color: Colors.black,
-                    child: Center(
-                      child: _controllers[index].value.isInitialized
-                          ? AspectRatio(
-                              aspectRatio:
-                                  _controllers[index].value.aspectRatio,
-                              child: VideoPlayer(_controllers[index]),
-                            )
-                          : const CircularProgressIndicator(
+                    child: _controllers[index].value.isInitialized
+                        ? SizedBox.expand(
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: _controllers[index].value.size.width,
+                                height: _controllers[index].value.size.height,
+                                child: VideoPlayer(_controllers[index]),
+                              ),
+                            ),
+                          )
+                        : const Center(
+                            child: CircularProgressIndicator(
                               color: Colors.white,
                             ),
-                    ),
+                          ),
                   ),
                 );
               },
