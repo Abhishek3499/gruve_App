@@ -24,7 +24,7 @@ class RightActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 48,
+      width: 55,
       height: 280,
       decoration: BoxDecoration(
         color: const Color(0x80990099),
@@ -34,7 +34,7 @@ class RightActionBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           /// 🔥 Gift
-          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift),
+          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 40),
 
           /// 🔥 Like
           _ActionIcon(
@@ -58,16 +58,6 @@ class RightActionBar extends StatelessWidget {
           ),
 
           /// 🔥 Indicator Dots
-          const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _IndicatorDot(isActive: true),
-              SizedBox(height: 4),
-              _IndicatorDot(isActive: false),
-              SizedBox(height: 4),
-              _IndicatorDot(isActive: false),
-            ],
-          ),
         ],
       ),
     );
@@ -88,8 +78,14 @@ class _ActionIcon extends StatelessWidget {
   final String iconPath;
   final String? count;
   final VoidCallback? onTap;
+  final double size;
 
-  const _ActionIcon({required this.iconPath, this.count, this.onTap});
+  const _ActionIcon({
+    required this.iconPath,
+    this.count,
+    this.onTap,
+    this.size = 29,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +94,7 @@ class _ActionIcon extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(iconPath, height: 24, width: 24),
+          Image.asset(iconPath, height: size, width: size),
 
           if (count != null) ...[
             const SizedBox(height: 4),

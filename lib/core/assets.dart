@@ -17,6 +17,19 @@ class AppAssets {
   static const commenticon = 'assets/home/comment_icon.png';
   static const doticon = 'assets/home/3_dot_icon.png';
 
+  //search screen
+  static const baner =
+      'assets/search_screen_images/a56c6109dde09633679685e133e3237503e00b7f.png';
+  static const profile = 'assets/search_screen_images/profile.png';
+  static const frame1 = 'assets/search_screen_images/Frame 1171275067 (1).png';
+  static const frame2 = 'assets/search_screen_images/Frame 1171275068 (1).png';
+  static const frame3 = 'assets/search_screen_images/Frame 1171275069 (1).png';
+  //notification screen
+  static const nprofile = 'assets/notification_images/Profiles (1).png';
+  static const newprofile = 'assets/notification_images/Oval.png';
+  static const thisweek = 'assets/notification_images/ovalk.png';
+  static const today = 'assets/notification_images/Rectangle.png';
+
   // Fonts
   static const String ralewayFont = 'Raleway';
   static const String syncopateFont = 'Syncopate';

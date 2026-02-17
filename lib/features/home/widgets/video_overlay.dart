@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'video_user_info.dart';
-import 'video_bottom_info.dart';
+
 import 'right_action_bar.dart';
 
 class VideoOverlay extends StatelessWidget {
@@ -86,7 +86,7 @@ class VideoOverlay extends StatelessWidget {
         // Right side action bar
         Positioned(
           right: 16,
-          bottom: 100,
+          bottom: 150,
           child: RightActionBar(
             likeCount: 125000,
             commentCount: 8200,

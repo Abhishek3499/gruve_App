@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
@@ -5,7 +6,6 @@ class VideoUserInfo extends StatelessWidget {
   final String username;
   final String caption;
   final String musicTitle;
-
   final VoidCallback? onSubscribe;
 
   const VideoUserInfo({
@@ -16,7 +16,6 @@ class VideoUserInfo extends StatelessWidget {
     this.onSubscribe,
   });
 
-  /// 🔥 Username limit logic (Max 15 characters)
   String get displayUsername {
     if (username.length <= 15) {
       return username;
@@ -28,7 +27,7 @@ class VideoUserInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 14, bottom: 07),
+      padding: const EdgeInsets.only(left: 10, right: 14, bottom: 7),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -37,7 +36,6 @@ class VideoUserInfo extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Profile Image
               Container(
                 width: 35,
                 height: 35,
@@ -52,8 +50,7 @@ class VideoUserInfo extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              /// 🔥 Username (Manual Control)
-              Flexible(
+              Expanded(
                 child: Text(
                   displayUsername,
                   maxLines: 1,
@@ -67,6 +64,7 @@ class VideoUserInfo extends StatelessWidget {
               ),
 
               const SizedBox(width: 15),
+
               SizedBox(
                 height: 32,
                 child: OutlinedButton(
@@ -108,6 +106,7 @@ class VideoUserInfo extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.music_note, color: Colors.white, size: 18),
+
               const SizedBox(width: 6),
 
               Expanded(
@@ -120,24 +119,33 @@ class VideoUserInfo extends StatelessWidget {
 
               const SizedBox(width: 10),
 
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withOpacity(0.15),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.person, color: Colors.white, size: 14),
-                    SizedBox(width: 6),
-                    Text(
-                      "2 users",
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+              /// Glass Users Pill
+              ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(26),
+                      color: Colors.white.withOpacity(0.08),
+                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person, color: Colors.white, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "2 users",
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

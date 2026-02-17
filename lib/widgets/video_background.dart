@@ -14,13 +14,16 @@ class VideoBackground extends StatefulWidget {
   });
 
   @override
-  State<VideoBackground> createState() => _VideoBackgroundState();
+  State<VideoBackground> createState() => VideoBackgroundState();
 }
 
-class _VideoBackgroundState extends State<VideoBackground> {
+class VideoBackgroundState extends State<VideoBackground> {
   static VideoPlayerController? _sharedController;
   static bool _isInitializing = false;
   static int _instanceCount = 0;
+
+  // Expose the shared controller for external access
+  static VideoPlayerController? get sharedController => _sharedController;
 
   @override
   void initState() {
