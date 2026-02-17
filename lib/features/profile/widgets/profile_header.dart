@@ -1,75 +1,107 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/assets.dart';
+import 'edit_profile_button.dart';
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          /// 🔥 PREMIUM LEFT AVATAR
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                // Deep purple glow
-                BoxShadow(
-                  color: const Color(0xFF7D63D1).withOpacity(0.9),
-                  blurRadius: 40,
-                  spreadRadius: 5,
-                ),
-                // Soft outer aura
-                BoxShadow(
-                  color: const Color(0xFF7D63D1).withOpacity(0.6),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-                // Depth shadow
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 25,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+    return Column(
+      children: [
+        // Top row with three dots menu
+        Row(
+          children: [
+            const SizedBox(width: 20),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                Scaffold.of(context).openEndDrawer();
+              },
+              child: const Icon(
+                Icons.more_vert,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
-            child: CircleAvatar(
-              radius: 52,
-              backgroundColor: Colors.white,
+            const SizedBox(width: 20),
+          ],
+        ),
+        
+        const SizedBox(height: 20),
+        
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(width: 20),
+            
+            /// Avatar with premium glow and shadow
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  // Strong outer glow
+                  BoxShadow(
+                    color: const Color(0xFF7D63D1).withOpacity(0.8),
+                    blurRadius: 30,
+                    spreadRadius: 3,
+                  ),
+                  // Neon ring effect
+                  BoxShadow(
+                    color: const Color(0xFF7D63D1).withOpacity(0.6),
+                    blurRadius: 15,
+                    spreadRadius: 1,
+                  ),
+                  // Depth shadow
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
               child: CircleAvatar(
-                radius: 48,
+                radius: 50,
                 backgroundImage: AssetImage(AppAssets.profile),
               ),
             ),
-          ),
-
-          const SizedBox(width: 20),
-
-          /// USER INFO
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                "Anastasia Adams",
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+            
+            const Spacer(),
+            
+            /// User info on the right
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const SizedBox(height: 20),
+                const Text(
+                  "Anastasia Adams",
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                "@nastasia__",
-                style: TextStyle(color: AppColors.white70, fontSize: 15),
-              ),
-            ],
-          ),
-        ],
-      ),
+                const SizedBox(height: 4),
+                const Text(
+                  "@nastasia__",
+                  style: TextStyle(
+                    color: AppColors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(width: 20),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Edit Profile Button
+        const EditProfileButton(),
+      ],
     );
   }
 }
