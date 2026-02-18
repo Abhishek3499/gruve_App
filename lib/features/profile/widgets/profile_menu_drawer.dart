@@ -14,32 +14,25 @@ class ProfileMenuDrawer extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.gradientTop,
-              AppColors.gradientBottom,
-            ],
+            colors: [AppColors.gradientTop, AppColors.gradientBottom],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
               const SizedBox(height: 20),
-              
+
               // Header
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: Icon(Icons.close, color: Colors.white, size: 24),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Menu Items
               Expanded(
                 child: ListView(
@@ -48,64 +41,64 @@ class ProfileMenuDrawer extends StatelessWidget {
                     _buildMenuItem(
                       icon: Icons.person,
                       title: "Account",
-                      onTap: () => print("Account Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.insights,
                       title: "Insight",
-                      onTap: () => print("Insight Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.account_balance_wallet,
                       title: "Wallet",
-                      onTap: () => print("Wallet Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.block,
                       title: "Blocked",
-                      onTap: () => print("Blocked Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.privacy_tip,
                       title: "Account Privacy",
-                      onTap: () => print("Account Privacy Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.archive,
                       title: "Archive",
-                      onTap: () => print("Archive Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.bookmark,
                       title: "Saved",
-                      onTap: () => print("Saved Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.language,
                       title: "Language",
-                      onTap: () => print("Language Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.help_center,
                       title: "Help Center",
-                      onTap: () => print("Help Center Clicked"),
+                      onTap: () {},
                     ),
                     _buildMenuItem(
                       icon: Icons.description,
                       title: "Terms & Conditions",
-                      onTap: () => print("Terms & Conditions Clicked"),
+                      onTap: () {},
                     ),
                   ],
                 ),
               ),
-              
+
               // Logout at bottom
               Container(
                 padding: const EdgeInsets.all(20),
                 child: _buildMenuItem(
                   icon: Icons.logout,
                   title: "Log out",
-                  onTap: () => print("Logout Clicked"),
+                  onTap: () {},
                   isLogout: true,
                 ),
               ),

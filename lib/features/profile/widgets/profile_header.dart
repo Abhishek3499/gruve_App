@@ -10,7 +10,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Top row with three dots menu
+        /// Top 3 dots
         Row(
           children: [
             const SizedBox(width: 20),
@@ -19,88 +19,81 @@ class ProfileHeader extends StatelessWidget {
               onTap: () {
                 Scaffold.of(context).openEndDrawer();
               },
-              child: const Icon(
-                Icons.more_vert,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: const Icon(Icons.more_vert, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 20),
           ],
         ),
-        
-        const SizedBox(height: 20),
-        
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(width: 20),
-            
-            /// Avatar with premium glow and shadow
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  // Strong outer glow
-                  BoxShadow(
-                    color: const Color(0xFF7D63D1).withOpacity(0.8),
-                    blurRadius: 30,
-                    spreadRadius: 3,
-                  ),
-                  // Neon ring effect
-                  BoxShadow(
-                    color: const Color(0xFF7D63D1).withOpacity(0.6),
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                  ),
-                  // Depth shadow
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: 50,
-                backgroundImage: AssetImage(AppAssets.profile),
-              ),
-            ),
-            
-            const Spacer(),
-            
-            /// User info on the right
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const SizedBox(height: 20),
-                const Text(
-                  "Anastasia Adams",
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+
+        const SizedBox(height: 40),
+
+        /// Avatar + User Info Row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Avatar
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7D63D1).withOpacity(0.8),
+                      blurRadius: 30,
+                      spreadRadius: 3,
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFF7D63D1).withOpacity(0.6),
+                      blurRadius: 15,
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  "@nastasia__",
-                  style: TextStyle(
-                    color: AppColors.white70,
-                    fontSize: 14,
-                  ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundImage: AssetImage(AppAssets.profile),
                 ),
-              ],
-            ),
-            
-            const SizedBox(width: 20),
-          ],
+              ),
+
+              const SizedBox(width: 25),
+
+              /// Name + Username + Button
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+
+                    const Text(
+                      "Anastasia Adams",
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    const Text(
+                      "__@nastasia__",
+                      style: TextStyle(color: Color(0xFF9544A7), fontSize: 14),
+                    ),
+
+                    const SizedBox(height: 16),
+                    const EditProfileButton(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        
-        const SizedBox(height: 16),
-        
-        // Edit Profile Button
-        const EditProfileButton(),
       ],
     );
   }

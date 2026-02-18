@@ -16,7 +16,7 @@ class ProfileGrid extends StatelessWidget {
     ];
 
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: images.length,
@@ -29,7 +29,28 @@ class ProfileGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(18),
-          child: Image.asset(images[index], fit: BoxFit.cover),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              /// Image
+              Image.asset(images[index], fit: BoxFit.cover),
+
+              /// 🔥 If First Item → Show Draft Overlay
+              if (index == 0)
+                Container(
+                  color: Colors.black.withOpacity(0.45),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "Drafts",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );

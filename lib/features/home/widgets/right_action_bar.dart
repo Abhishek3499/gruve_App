@@ -113,10 +113,10 @@ class _ActionIcon extends StatelessWidget {
   }
 }
 
-class _IndicatorDot extends StatelessWidget {
+class IndicatorDot extends StatelessWidget {
   final bool isActive;
 
-  const _IndicatorDot({required this.isActive});
+  const IndicatorDot({super.key, required this.isActive});
 
   @override
   Widget build(BuildContext context) {
