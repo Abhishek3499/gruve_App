@@ -72,19 +72,28 @@ class CameraControllerService {
         throw Exception('No cameras available');
       }
 
-      _controller = CameraController(
-        _cameras[_currentCameraIndex],
-        ResolutionPreset.high,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
+      for (var camera in _cameras) {
+        try {
+          _controller = CameraController(
+            camera,
+            ResolutionPreset.high,
+            enableAudio: false,
+            imageFormatGroup: ImageFormatGroup.jpeg,
+          );
 
-      await _controller!.setZoomLevel(1.0);
+          await _controller!.initialize();
+          await _controller!.setZoomLevel(1.0);
 
-      _isInitialized = true;
+          _isInitialized = true;
+          CameraLogger.logInitializationSuccess();
+          _initializationStreamController.add(true);
+          return;
+        } catch (e) {
+          CameraLogger.log('Failed to initialize camera: ${camera.name}');
+        }
+      }
 
-      CameraLogger.logInitializationSuccess();
-      _initializationStreamController.add(true);
+      throw Exception('All cameras failed to initialize');
     } catch (e) {
       CameraLogger.logInitializationFailure(e.toString());
       _errorStreamController.add(
