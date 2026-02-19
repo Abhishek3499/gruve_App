@@ -26,4 +26,12 @@ class AppColors {
   // Notification Colors
   static const Color notificationBg = Color(0xFF33123B);
   static const Color notificationTile = Color(0xFF33123B);
+
+  // Edit Profile Colors
+  static const Color primary = Color(0xFF9C27B0);
+  static const Color background = Color(0xFFF5F5F5);
+  static const Color textPrimary = Color(0xFF212121);
+  static const Color textSecondary = Color(0xFF757575);
+  static const Color error = Color(0xFFE53935);
+  static const Color success = Color(0xFF4CAF50);
 }

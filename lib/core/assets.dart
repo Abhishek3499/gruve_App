@@ -8,6 +8,7 @@ class AppAssets {
   static const appleIcon = 'assets/auth/icons/apple 1.png';
   static const notification = 'assets/button/notification (1).png';
   static const homelogo = 'assets/button/home.png';
+  static const editprofile = 'assets/button/edit_profile_button.png';
 
   static const user = 'assets/button/user circle.png';
   static const search = 'assets/button/search.png';

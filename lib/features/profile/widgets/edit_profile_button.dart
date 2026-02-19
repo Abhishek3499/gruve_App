@@ -1,31 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
+import '../screens/edit_profile_screen.dart';
 
 class EditProfileButton extends StatelessWidget {
   const EditProfileButton({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(30),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EditProfileScreen(),
+          ),
+        );
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        height: 40,
+        width: 160,
+        padding: const EdgeInsets.only(left: 16, right: 5), // 👈 important
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
           ),
           borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF9C27B0).withValues(alpha: 0.4),
-              blurRadius: 15,
-              spreadRadius: 1,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            /// 🔥 LEFT TEXT (Now starts properly)
             const Text(
               "Edit Profile",
               style: TextStyle(
@@ -34,21 +38,29 @@ class EditProfileButton extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 12),
+
+            /// 🔥 Right Circle Icon
             Container(
-              padding: const EdgeInsets.all(6),
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: Colors.white,
                 shape: BoxShape.circle,
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF9C27B0).withValues(alpha: 0.6),
+                    color: const Color(0xFF9C27B0).withOpacity(0.4),
                     blurRadius: 8,
-                    spreadRadius: 1,
                   ),
                 ],
               ),
-              child: const Icon(Icons.edit, size: 14, color: Color(0xFF9C27B0)),
+              child: Center(
+                child: Image.asset(
+                  AppAssets.editprofile,
+                  width: 18,
+                  height: 18,
+                  color: const Color(0xFF9C27B0),
+                ),
+              ),
             ),
           ],
         ),
