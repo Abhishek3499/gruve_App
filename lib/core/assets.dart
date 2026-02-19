@@ -11,6 +11,7 @@ class AppAssets {
 
   static const user = 'assets/button/user circle.png';
   static const search = 'assets/button/search.png';
+  static const back = 'assets/button/back_button.png';
   //
   static const gifticon = 'assets/home/gift_icon.gif';
   static const likeicon = 'assets/home/like_icon.png';
@@ -34,4 +35,6 @@ class AppAssets {
   static const String ralewayFont = 'Raleway';
   static const String syncopateFont = 'Syncopate';
   static const String montserratfont = 'montserrat';
+  //user profile
+  static const gifticon2 = 'assets/home/gift_icon2.png';
 }
