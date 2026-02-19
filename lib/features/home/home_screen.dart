@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/camera/screen/camera_screen.dart';
 import 'package:gruve_app/features/notification/screens/notification_screen.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/widgets/video_background.dart';
@@ -7,6 +8,7 @@ import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/features/home/widgets/video_overlay.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
+
 import 'package:video_player/video_player.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,12 +24,29 @@ class _HomeScreenState extends State<HomeScreen> {
   int _previousIndex = 0;
 
   void _onItemTapped(int index) {
+    if (index == 2) {
+      // Pause video before opening camera
+      final controller = _getSharedVideoController();
+      controller?.pause();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CameraScreen()),
+      ).then((_) {
+        // Resume video when coming back
+        if (_currentIndex == 0) {
+          controller?.play();
+        }
+      });
+
+      return;
+    }
+
     setState(() {
       _previousIndex = _currentIndex;
       _currentIndex = index;
     });
 
-    // Video controller management
     _manageVideoController(index);
   }
 

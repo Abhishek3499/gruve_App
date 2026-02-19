@@ -31,9 +31,9 @@ class StatsRow extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.1),
-            Colors.white.withOpacity(0.6),
-            Colors.white.withOpacity(0.1),
+            Colors.white.withValues(alpha: 0.1),
+            Colors.white.withValues(alpha: 0.6),
+            Colors.white.withValues(alpha: 0.1),
           ],
         ),
       ),

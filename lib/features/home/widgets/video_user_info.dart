@@ -152,8 +152,8 @@ class VideoUserInfo extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(26),
-                      color: Colors.white.withOpacity(0.08),
-                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                      color: Colors.white.withValues(alpha: 0.08),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,

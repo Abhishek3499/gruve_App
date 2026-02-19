@@ -39,17 +39,17 @@ class ProfileHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7D63D1).withOpacity(0.8),
+                      color: const Color(0xFF7D63D1).withValues(alpha: 0.8),
                       blurRadius: 30,
                       spreadRadius: 3,
                     ),
                     BoxShadow(
-                      color: const Color(0xFF7D63D1).withOpacity(0.6),
+                      color: const Color(0xFF7D63D1).withValues(alpha: 0.6),
                       blurRadius: 15,
                       spreadRadius: 1,
                     ),
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),

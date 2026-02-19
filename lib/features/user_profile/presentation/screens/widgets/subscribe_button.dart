@@ -27,7 +27,7 @@ class SubscribeButton extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFD42BC2).withOpacity(0.6),
+                  color: const Color(0xFFD42BC2).withValues(alpha: 0.6),
                   blurRadius: 8,
                 ),
               ],

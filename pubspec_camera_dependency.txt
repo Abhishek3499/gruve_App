@@ -1,0 +1,15 @@
+# Add these to your pubspec.yaml dependencies section:
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Camera dependency for TikTok-style functionality
+  camera: ^0.10.5+5
+  
+  # Permission handler for camera permissions
+  permission_handler: ^11.0.1
+  
+  # Your existing dependencies...
+
+# After adding, run: flutter pub get

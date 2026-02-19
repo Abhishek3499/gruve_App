@@ -127,7 +127,7 @@ class ProfileMenuDrawer extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: isLogout
-                  ? Border.all(color: Colors.red.withOpacity(0.3))
+                  ? Border.all(color: Colors.red.withValues(alpha: 0.3))
                   : null,
             ),
             child: Row(

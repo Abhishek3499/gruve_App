@@ -38,7 +38,7 @@ class ProfileGrid extends StatelessWidget {
               /// 🔥 If First Item → Show Draft Overlay
               if (index == 0)
                 Container(
-                  color: Colors.black.withOpacity(0.45),
+                  color: Colors.black.withValues(alpha: 0.45),
                   alignment: Alignment.center,
                   child: const Text(
                     "Drafts",

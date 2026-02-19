@@ -35,8 +35,8 @@ class _UserFilterTabsState extends State<UserFilterTabs> {
               ? null
               : LinearGradient(
                   colors: [
-                    const Color(0xFF7D63D1).withOpacity(0.5),
-                    const Color(0xFF212235).withOpacity(0.6),
+                    const Color(0xFF7D63D1).withValues(alpha: 0.5),
+                    const Color(0xFF212235).withValues(alpha: 0.6),
                   ],
                 ),
 

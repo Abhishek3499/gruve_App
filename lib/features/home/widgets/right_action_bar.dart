@@ -124,7 +124,7 @@ class IndicatorDot extends StatelessWidget {
       width: 6,
       height: 6,
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
+        color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
         shape: BoxShape.circle,
       ),
     );

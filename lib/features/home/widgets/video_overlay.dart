@@ -38,7 +38,7 @@ class VideoOverlay extends StatelessWidget {
                       Container(
                         height: 20,
                         width: 1.5,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                       const SizedBox(width: 12),
                       _buildTab("For you"),
