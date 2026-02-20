@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import '../../Account/screens/account_screen.dart';
 
 class ProfileMenuDrawer extends StatelessWidget {
   const ProfileMenuDrawer({super.key});
@@ -56,7 +57,19 @@ class ProfileMenuDrawer extends StatelessWidget {
                   child: ListView(
                     padding: EdgeInsets.zero,
                     children: [
-                      _menuItem(AppAssets.account, "Account"),
+                      _menuItem(
+                        AppAssets.account, 
+                        "Account",
+                        onTap: () {
+                          Navigator.pop(context); // Close drawer first
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AccountScreen(),
+                            ),
+                          );
+                        },
+                      ),
                       _menuItem(AppAssets.insight, "Insight"),
                       _menuItem(AppAssets.wallet, "Wallet"),
                       _menuItem(AppAssets.blocked, "Blocked"),
@@ -157,33 +170,36 @@ class ProfileMenuDrawer extends StatelessWidget {
     );
   }
 
-  Widget _menuItem(dynamic icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          /// 👇 If IconData → use Icon
-          icon is IconData
-              ? Icon(icon, color: Colors.white, size: 22)
-              /// 👇 If Asset String → use Image.asset
-              : Image.asset(
-                  icon,
-                  width: 22,
-                  height: 22,
-                  color: Colors.white, // remove if multi-color PNG
-                ),
+  Widget _menuItem(dynamic icon, String title, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            /// 👇 If IconData → use Icon
+            icon is IconData
+                ? Icon(icon, color: Colors.white, size: 22)
+                /// 👇 If Asset String → use Image.asset
+                : Image.asset(
+                    icon,
+                    width: 22,
+                    height: 22,
+                    color: Colors.white, // remove if multi-color PNG
+                  ),
 
-          const SizedBox(width: 16),
+            const SizedBox(width: 16),
 
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

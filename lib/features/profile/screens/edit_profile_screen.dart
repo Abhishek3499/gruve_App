@@ -6,9 +6,7 @@ import '../models/profile_model.dart';
 import '../widgets/profile_image_picker.dart';
 import '../widgets/personal_info_card.dart';
 
-/// Edit Profile Screen with Figma design implementation
 class EditProfileScreen extends StatefulWidget {
-  /// Initial profile data to populate fields
   final ProfileModel? initialProfile;
 
   const EditProfileScreen({super.key, this.initialProfile});
@@ -18,10 +16,8 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  // Form key for validation
   final _formKey = GlobalKey<FormState>();
 
-  // Text controllers for form fields
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
@@ -29,7 +25,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _genderController;
   late TextEditingController _bioController;
 
-  // Current profile image path
   String _profileImagePath = AppAssets.profile;
 
   @override
@@ -38,7 +33,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _initializeControllers();
   }
 
-  /// Initializes text controllers with default or provided profile data
   void _initializeControllers() {
     final profile = widget.initialProfile ?? _getDefaultProfile();
 
@@ -51,7 +45,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _profileImagePath = profile.profileImagePath;
   }
 
-  /// Returns default profile model when no initial profile is provided
   ProfileModel _getDefaultProfile() {
     return const ProfileModel(
       username: '__@nastasia__',
@@ -63,30 +56,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
-    _disposeControllers();
-    super.dispose();
-  }
-
-  /// Properly disposes all text controllers
-  void _disposeControllers() {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _usernameController.dispose();
     _genderController.dispose();
     _bioController.dispose();
+    super.dispose();
   }
 
-  /// Handles profile image change
   void _onImageChanged(String newPath) {
     setState(() {
       _profileImagePath = newPath;
     });
   }
 
-  /// Validates and saves profile data
   void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState?.validate() ?? false) {
       final updatedProfile = ProfileModel(
         username: _usernameController.text.trim(),
         bio: _bioController.text.trim(),
@@ -94,40 +80,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         profileImagePath: _profileImagePath,
       );
 
-      _showSuccessMessage();
-      _navigateBackWithResult(updatedProfile);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Profile updated successfully!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          Navigator.of(context).pop(updatedProfile);
+        }
+      });
     }
-  }
-
-  /// Shows success message snackbar
-  void _showSuccessMessage() {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile updated successfully!'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  /// Navigates back with updated profile data
-  void _navigateBackWithResult(ProfileModel profile) {
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        Navigator.of(context).pop(profile);
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF7A2C8F),
+      backgroundColor: const Color(0xFF7A2C8F),
       body: Column(
         children: [
           /// 🔥 TOP GRADIENT AREA
@@ -144,7 +120,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: SafeArea(
               child: Stack(
                 children: [
-                  /// 🔙 Back Button
                   Positioned(
                     left: 16,
                     top: 15,
@@ -168,8 +143,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                   ),
-
-                  /// Title
                   const Positioned(
                     top: 25,
                     left: 0,
@@ -189,42 +162,50 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
 
-          /// 🔥 DARK SECTION WITH AVATAR OVERLAY
+          /// 🔥 DARK SECTION
           Expanded(
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                /// Dark curved background
                 Container(
                   decoration: const BoxDecoration(
                     color: Color(0xFF1B182D),
-
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.elliptical(60, 50),
                       topRight: Radius.elliptical(60, 50),
                     ),
                   ),
-
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(
-                      top: 70,
-                      left: 20,
-                      right: 20,
-                      bottom: 30,
-                    ),
-                    child: PersonalInfoCard(
-                      nameController: _nameController,
-                      phoneController: _phoneController,
-                      emailController: _emailController,
-                      usernameController: _usernameController,
-                      genderController: _genderController,
-                      bioController: _bioController,
-                      onSave: _saveProfile,
-                    ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              top: 70,
+                              left: 20,
+                              right: 20,
+                              bottom: 60,
+                            ),
+                            child: PersonalInfoCard(
+                              nameController: _nameController,
+                              phoneController: _phoneController,
+                              emailController: _emailController,
+                              usernameController: _usernameController,
+                              genderController: _genderController,
+                              bioController: _bioController,
+                              onSave: _saveProfile,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
-                /// Avatar (Perfect Above Curve)
+                /// Avatar
                 Positioned(
                   top: -60,
                   left: 0,
