@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:gruve_app/core/assets.dart';
 
 /// Personal information card with editable profile fields
 class PersonalInfoCard extends StatelessWidget {
@@ -26,38 +26,39 @@ class PersonalInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 335,
+        width: 320,
+
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(25),
           border: Border.all(color: const Color(0xFF9485EA), width: 0.3),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 05),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 05),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
               const SizedBox(height: 24),
 
-              _buildField("Name", nameController.text),
+              _buildField("Name", nameController),
               _divider(),
 
-              _buildField("Phone", phoneController.text),
+              _buildField("Phone", phoneController),
               _divider(),
 
-              _buildField("Email", emailController.text),
+              _buildField("Email", emailController),
               _divider(),
 
-              _buildField("Username", usernameController.text),
+              _buildField("Username", usernameController),
               _divider(),
 
-              _buildField("Gender", genderController.text),
+              _buildField("Gender", genderController),
               _divider(),
 
-              _buildField("Bio", bioController.text, isBio: true),
+              _buildField("Bio", bioController, isBio: true),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               _buildUpdateButton(),
             ],
           ),
@@ -83,16 +84,20 @@ class PersonalInfoCard extends StatelessWidget {
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
-          child: const Icon(Icons.edit_outlined, color: Colors.white, size: 16),
+          child: Image.asset(AppAssets.editpro, width: 22, height: 22),
         ),
       ],
     );
   }
 
-  /// 🔥 Field (No icons inside like screenshot)
-  Widget _buildField(String label, String value, {bool isBio = false}) {
+  /// 🔥 Field (Editable by default)
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool isBio = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
@@ -101,18 +106,25 @@ class PersonalInfoCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
+          TextField(
+            controller: controller,
+            maxLines: isBio ? 3 : 1,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w500,
+            ),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
         ],
@@ -124,7 +136,7 @@ class PersonalInfoCard extends StatelessWidget {
     return Container(
       height: 0.5,
       margin: const EdgeInsets.symmetric(vertical: 6),
-      color: Colors.white.withOpacity(0.2),
+      color: Colors.white.withValues(alpha: 0.2),
     );
   }
 
@@ -139,7 +151,7 @@ class PersonalInfoCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF9C27B0).withOpacity(0.5),
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),

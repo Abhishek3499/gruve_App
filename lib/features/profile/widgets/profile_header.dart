@@ -19,7 +19,7 @@ class ProfileHeader extends StatelessWidget {
               onTap: () {
                 Scaffold.of(context).openEndDrawer();
               },
-              child: const Icon(Icons.more_vert, color: Colors.white, size: 24),
+              child: const Icon(Icons.menu, color: Colors.white, size: 30),
             ),
             const SizedBox(width: 20),
           ],

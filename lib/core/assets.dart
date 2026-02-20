@@ -13,6 +13,7 @@ class AppAssets {
   static const user = 'assets/button/user circle.png';
   static const search = 'assets/button/search.png';
   static const back = 'assets/button/back_button.png';
+  static const editpro = 'assets/button/edit_icon_in_edit_profile.png';
   //
   static const gifticon = 'assets/home/gift_icon.gif';
   static const likeicon = 'assets/home/like_icon.png';
@@ -38,4 +39,14 @@ class AppAssets {
   static const String montserratfont = 'montserrat';
   //user profile
   static const gifticon2 = 'assets/home/gift_icon2.png';
+  // menu drawer
+  static const insight = 'assets/menu_drawer/insight.png';
+  static const wallet = 'assets/menu_drawer/wallet.png';
+  static const blocked = 'assets/menu_drawer/blocked.png';
+  static const account = 'assets/menu_drawer/account.png';
+  static const archive = 'assets/menu_drawer/archive.png';
+  static const language = 'assets/menu_drawer/language.png';
+
+  static const saved = 'assets/menu_drawer/saved.png';
+  static const terms = 'assets/menu_drawer/term&condition.png';
 }

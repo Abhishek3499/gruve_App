@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/assets.dart';
 import '../models/profile_model.dart';
@@ -101,6 +101,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   /// Shows success message snackbar
   void _showSuccessMessage() {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Profile updated successfully!'),
@@ -116,7 +118,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   /// Navigates back with updated profile data
   void _navigateBackWithResult(ProfileModel profile) {
     Future.delayed(const Duration(milliseconds: 500), () {
-      Navigator.of(context).pop(profile);
+      if (mounted) {
+        Navigator.of(context).pop(profile);
+      }
     });
   }
 
@@ -145,12 +149,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     left: 16,
                     top: 15,
                     child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileScreen(),
+                          ),
+                        );
+                      },
                       child: Container(
                         height: 30,
                         width: 30,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: Image.asset(AppAssets.back),
@@ -196,10 +207,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.only(
-                      top: 90,
+                      top: 70,
                       left: 20,
                       right: 20,
-                      bottom: 40,
+                      bottom: 30,
                     ),
                     child: PersonalInfoCard(
                       nameController: _nameController,
