@@ -15,6 +15,12 @@ class AppColors {
   static const Color thisWeekSection = Color(0xFF511263);
   static const Color bottomBlack = Color(0xFF000000);
 
+  // Views Screen Colors
+  static const Color viewsGradientLeft = Color(0xFFFF3AFF);
+  static const Color viewsGradientRight = Color(0xFF72008D);
+  static const Color donutHighlight = Color(0xFFFF3AFF);
+  static const Color donutBackground = Color(0xFF72008D);
+
   // White Shades
   static const Color white = Colors.white;
   static const Color white70 = Color(0xB3FFFFFF);
@@ -34,4 +40,6 @@ class AppColors {
   static const Color textSecondary = Color(0xFF757575);
   static const Color error = Color(0xFFE53935);
   static const Color success = Color(0xFF4CAF50);
+  static const Color green = Colors.green;
+  static const Color transparent = Colors.transparent;
 }

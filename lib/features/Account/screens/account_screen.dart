@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/Account/widgets/account_body.dart';
-import 'package:gruve_app/features/Account/widgets/account_footer.dart';
+
 import 'package:gruve_app/features/Account/widgets/account_header.dart';
 import 'package:gruve_app/features/profile/models/profile_model.dart';
 import '../../../../core/assets.dart';
