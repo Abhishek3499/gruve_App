@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../../../../core/constants/app_colors.dart';
 
-/// Views header widget
-class ViewsHeader extends StatelessWidget {
-  const ViewsHeader({super.key});
+/// Interactions header widget
+class InteractionsHeader extends StatelessWidget {
+  const InteractionsHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +19,7 @@ class ViewsHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
+
               child: Image.asset(
                 AppAssets.back,
                 color: AppColors.white,
@@ -30,7 +31,7 @@ class ViewsHeader extends StatelessWidget {
 
           // Title
           const Text(
-            "Views",
+            "Interactions",
             style: TextStyle(
               color: AppColors.white,
               fontSize: 14,

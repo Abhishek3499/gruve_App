@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:gruve_app/features/views/screens/views_screen.dart';
 import 'package:gruve_app/screens/splash_screen.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();

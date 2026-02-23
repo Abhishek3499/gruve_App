@@ -49,4 +49,5 @@ class AppAssets {
 
   static const saved = 'assets/menu_drawer/saved.png';
   static const terms = 'assets/menu_drawer/term&condition.png';
+  static const activity = 'assets/menu_drawer/activity.png';
 }

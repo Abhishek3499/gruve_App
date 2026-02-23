@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import '../../activity/screens/activity_screen.dart';
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
 
@@ -59,7 +60,7 @@ class ProfileMenuDrawer extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     children: [
                       _menuItem(
-                        AppAssets.account, 
+                        AppAssets.account,
                         "Account",
                         onTap: () {
                           Navigator.pop(context); // Close drawer first
@@ -72,18 +73,20 @@ class ProfileMenuDrawer extends StatelessWidget {
                         },
                       ),
                       _menuItem(
-                        AppAssets.insight, 
+                        AppAssets.insight,
                         "Insight",
                         onTap: () {
                           Navigator.pop(context); // Close drawer first
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ProfessionalDashboardScreen(),
+                              builder: (context) =>
+                                  const ProfessionalDashboardScreen(),
                             ),
                           );
                         },
                       ),
+
                       _menuItem(AppAssets.wallet, "Wallet"),
                       _menuItem(AppAssets.blocked, "Blocked"),
                       _menuItem(Icons.lock, "Account Privacy"),

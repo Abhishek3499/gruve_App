@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/activity/screens/activity_screen.dart';
+import 'package:gruve_app/features/interactions/screens/interactions_screen.dart';
 import 'package:gruve_app/features/views/screens/views_screen.dart';
 
 import '../../../../core/assets.dart';
@@ -92,7 +94,17 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
 
-                          InsightListTile(title: "Interactions", onTap: () {}),
+                          InsightListTile(
+                            title: "Interactions",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => InteractionsScreen(),
+                                ),
+                              );
+                            },
+                          ),
                           const SizedBox(height: 10),
 
                           InsightListTile(
@@ -101,7 +113,17 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
 
-                          InsightListTile(title: "Activity", onTap: () {}),
+                          InsightListTile(
+                            title: "Activity",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ActivityScreen(),
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
