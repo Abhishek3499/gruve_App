@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/term&condition_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/language_screen.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
@@ -114,9 +116,40 @@ class ProfileMenuDrawer extends StatelessWidget {
                       _menuItem(Icons.lock, "Account Privacy"),
                       _menuItem(AppAssets.archive, "Archive"),
                       _menuItem(AppAssets.saved, "Saved"),
-                      _menuItem(AppAssets.language, "Language"),
+                      _menuItem(
+                        AppAssets.language,
+                        "Language",
+                        onTap: () {
+                          debugPrint(
+                            "[ProfileMenuDrawer] Language menu item tapped",
+                          );
+                          Navigator.pop(context); // Close drawer first
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LanguageScreen(),
+                            ),
+                          );
+                        },
+                      ),
                       _menuItem(Icons.help_outline, "Help Center"),
-                      _menuItem(AppAssets.terms, "Terms & Conditions"),
+                      _menuItem(
+                        AppAssets.terms,
+                        "Terms & Conditions",
+                        onTap: () {
+                          debugPrint(
+                            "[ProfileMenuDrawer] Terms & Conditionsmenu item tapped",
+                          );
+                          Navigator.pop(context); // Close drawer first
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const TermAndConditionScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
