@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    debugPrint("[HomeScreen] Screen initialized");
     _setupLifecycleObservers();
   }
 
@@ -142,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen>
       return; // Prevent duplicate actions
     }
 
+    debugPrint("[HomeScreen] Tab changed to index: $index");
     setState(() {
       _previousIndex = _currentIndex;
       _currentIndex = index;
@@ -255,6 +257,7 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     if (_isDisposed) return;
 
+    debugPrint("[HomeScreen] Screen disposed");
     _isDisposed = true;
     _pauseVideo('HomeScreen disposed');
 

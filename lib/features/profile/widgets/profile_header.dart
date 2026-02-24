@@ -17,6 +17,7 @@ class ProfileHeader extends StatelessWidget {
             const Spacer(),
             GestureDetector(
               onTap: () {
+                debugPrint("[ProfileHeader] Menu button tapped");
                 Scaffold.of(context).openEndDrawer();
               },
               child: const Icon(Icons.menu, color: Colors.white, size: 30),

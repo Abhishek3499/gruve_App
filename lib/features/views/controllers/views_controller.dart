@@ -10,6 +10,7 @@ class ViewsController extends ChangeNotifier {
 
   void selectTab(int index) {
     if (index >= 0 && index < _tabs.length && index != _selectedTab) {
+      debugPrint("[ViewsController] Tab changed to: ${_tabs[index]}");
       _selectedTab = index;
       notifyListeners();
     }

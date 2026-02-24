@@ -25,6 +25,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("[InteractionsScreen] Screen initialized");
     _controller = InteractionsController();
   }
 
@@ -114,7 +115,9 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                       ListenableBuilder(
                         listenable: _controller,
                         builder: (context, child) {
-                          return InteractionsContentTabs(controller: _controller);
+                          return InteractionsContentTabs(
+                            controller: _controller,
+                          );
                         },
                       ),
 
@@ -127,17 +130,17 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                           listenable: _controller,
                           builder: (context, child) {
                             return Column(
-                              children: InteractionsModel.data.contentTypes.map((
-                                contentType,
-                              ) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 32),
-                                  child: InteractionsProgressBar(
-                                    label: contentType.label,
-                                    percentage: contentType.percentage,
-                                  ),
-                                );
-                              }).toList(),
+                              children: InteractionsModel.data.contentTypes.map(
+                                (contentType) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 32),
+                                    child: InteractionsProgressBar(
+                                      label: contentType.label,
+                                      percentage: contentType.percentage,
+                                    ),
+                                  );
+                                },
+                              ).toList(),
                             );
                           },
                         ),

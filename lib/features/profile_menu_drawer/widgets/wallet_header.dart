@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/app_colors.dart';
 import 'package:gruve_app/core/assets.dart';
-import '../../../../core/constants/app_colors.dart';
 
-/// Views header widget
-class ViewsHeader extends StatelessWidget {
-  const ViewsHeader({super.key});
-
+class WalletHeader extends StatelessWidget {
+  const WalletHeader({super.key});
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -18,10 +16,8 @@ class ViewsHeader extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: () {
-                debugPrint("[ViewsHeader] Back button tapped");
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
+
               child: Image.asset(
                 AppAssets.back,
                 color: AppColors.white,
@@ -33,7 +29,7 @@ class ViewsHeader extends StatelessWidget {
 
           // Title
           const Text(
-            "Views",
+            "Wallet",
             style: TextStyle(
               color: AppColors.white,
               fontSize: 14,

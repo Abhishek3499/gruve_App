@@ -70,6 +70,7 @@ flutter:
     - assets/search_screen_images/
     - assets/notification_images/
     - assets/menu_drawer/
+    - assets/performance reel/
 
   fonts:
     - family: Raleway

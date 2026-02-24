@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
@@ -63,6 +64,9 @@ class ProfileMenuDrawer extends StatelessWidget {
                         AppAssets.account,
                         "Account",
                         onTap: () {
+                          debugPrint(
+                            "[ProfileMenuDrawer] Account menu item tapped",
+                          );
                           Navigator.pop(context); // Close drawer first
                           Navigator.push(
                             context,
@@ -76,6 +80,9 @@ class ProfileMenuDrawer extends StatelessWidget {
                         AppAssets.insight,
                         "Insight",
                         onTap: () {
+                          debugPrint(
+                            "[ProfileMenuDrawer] Insight menu item tapped",
+                          );
                           Navigator.pop(context); // Close drawer first
                           Navigator.push(
                             context,
@@ -87,7 +94,22 @@ class ProfileMenuDrawer extends StatelessWidget {
                         },
                       ),
 
-                      _menuItem(AppAssets.wallet, "Wallet"),
+                      _menuItem(
+                        AppAssets.wallet,
+                        "Wallet",
+                        onTap: () {
+                          debugPrint(
+                            "[ProfileMenuDrawer] wallet menu item tapped",
+                          );
+                          Navigator.pop(context); // Close drawer first
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => WalletScreen(),
+                            ),
+                          );
+                        },
+                      ),
                       _menuItem(AppAssets.blocked, "Blocked"),
                       _menuItem(Icons.lock, "Account Privacy"),
                       _menuItem(AppAssets.archive, "Archive"),

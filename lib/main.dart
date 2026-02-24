@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 
 import 'package:gruve_app/screens/splash_screen.dart';
 
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
       // 🔥 THIS IS IMPORTANT
       navigatorObservers: [routeObserver],
 
-      home: SplashScreen(),
+      home: ProfileScreen(),
     );
   }
 }

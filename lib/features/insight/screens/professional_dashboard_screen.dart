@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/activity/screens/activity_screen.dart';
 import 'package:gruve_app/features/interactions/screens/interactions_screen.dart';
+import 'package:gruve_app/features/top_performance_Reel/performance_screen.dart';
 import 'package:gruve_app/features/views/screens/views_screen.dart';
 
 import '../../../../core/assets.dart';
@@ -109,7 +110,14 @@ class ProfessionalDashboardScreen extends StatelessWidget {
 
                           InsightListTile(
                             title: "Top Performing Reel",
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PerformanceScreen(),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 10),
 

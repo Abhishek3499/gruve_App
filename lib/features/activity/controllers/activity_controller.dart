@@ -4,7 +4,8 @@ import '../models/activity_model.dart';
 class ActivityController extends ChangeNotifier {
   ActivityModel _activityModel = const ActivityModel(
     totalTime: '9h 12m',
-    description: 'Your activity has been consistent this week. You\'ve maintained a good balance between work and personal time. Keep up the great work!',
+    description:
+        "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.",
     weeklyData: [
       ActivityData(day: 'Sun', hours: 7.5, time: '7h 30m'),
       ActivityData(day: 'Mon', hours: 8.2, time: '8h 12m'),
@@ -20,6 +21,7 @@ class ActivityController extends ChangeNotifier {
   ActivityModel get activityModel => _activityModel;
 
   void updatePeriod(String period) {
+    debugPrint("[ActivityController] Period updated to: $period");
     _activityModel = _activityModel.copyWith(selectedPeriod: period);
     notifyListeners();
   }

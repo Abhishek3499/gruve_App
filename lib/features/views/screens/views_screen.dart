@@ -24,11 +24,13 @@ class _ViewsScreenState extends State<ViewsScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("[ViewsScreen] Screen initialized");
     _controller = ViewsController();
   }
 
   @override
   void dispose() {
+    debugPrint("[ViewsScreen] Screen disposed");
     _controller.dispose();
     super.dispose();
   }

@@ -5,20 +5,12 @@ import 'activity_chart_widget.dart';
 class ActivityInsightsCard extends StatelessWidget {
   final ActivityController controller;
 
-  const ActivityInsightsCard({
-    super.key,
-    required this.controller,
-  });
+  const ActivityInsightsCard({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           Row(
@@ -33,17 +25,17 @@ class ActivityInsightsCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withAlpha(51), // 20% opacity
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   'Weekly',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ],

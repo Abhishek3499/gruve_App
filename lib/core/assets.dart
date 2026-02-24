@@ -50,4 +50,9 @@ class AppAssets {
   static const saved = 'assets/menu_drawer/saved.png';
   static const terms = 'assets/menu_drawer/term&condition.png';
   static const activity = 'assets/menu_drawer/activity.png';
+
+  // performance reel
+  static const iconss = 'assets/performance reel/icons.png';
+  static const performance = 'assets/performance reel/performance.png';
+  static const walletdiamond = 'assets/performance reel/wallet_diamond.png';
 }

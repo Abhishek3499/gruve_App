@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class ActivitySummarySection extends StatelessWidget {
   final String totalTime;
 
-  const ActivitySummarySection({
-    super.key,
-    required this.totalTime,
-  });
+  const ActivitySummarySection({super.key, required this.totalTime});
 
   @override
   Widget build(BuildContext context) {
@@ -16,9 +13,9 @@ class ActivitySummarySection extends StatelessWidget {
         child: Text(
           totalTime,
           style: const TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2C3E50),
+            fontSize: 22,
+            fontWeight: FontWeight.w400,
+            color: Color(0xFFFFFFFF),
           ),
         ),
       ),

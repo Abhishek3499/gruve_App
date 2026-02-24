@@ -19,11 +19,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("[ActivityScreen] Screen initialized");
     _controller = ActivityController();
   }
 
   @override
   void dispose() {
+    debugPrint("[ActivityScreen] Screen disposed");
     _controller.dispose();
     super.dispose();
   }
@@ -31,33 +33,48 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: Column(
-        children: [
-          ActivityHeader(
-            onBackPressed: () => Navigator.of(context).pop(),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF9544A7), Color(0xFF42174C)],
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 30),
-                  ActivitySummarySection(
-                    totalTime: _controller.totalTime,
-                  ),
-                  const SizedBox(height: 20),
-                  ActivityDescriptionSection(
-                    description: _controller.description,
-                  ),
-                  const SizedBox(height: 20),
-                  ActivityInsightsCard(controller: _controller),
-                  const SizedBox(height: 20),
-                  const ActivityFooter(),
-                ],
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              ActivityHeader(
+                onBackPressed: () {
+                  debugPrint("[ActivityScreen] Back button tapped");
+                  Navigator.of(context).pop();
+                },
               ),
-            ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 30),
+                      ActivitySummarySection(
+                        totalTime: _controller.totalTime,
+                      ),
+                      const SizedBox(height: 20),
+                      ActivityDescriptionSection(
+                        description: _controller.description,
+                      ),
+                      const SizedBox(height: 20),
+                      ActivityInsightsCard(controller: _controller),
+                      const SizedBox(height: 20),
+                      const ActivityFooter(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
