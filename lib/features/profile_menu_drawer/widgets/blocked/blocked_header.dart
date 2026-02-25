@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/assets.dart';
+import 'package:gruve_app/core/assets.dart';
 
-class LanguageHeader extends StatelessWidget {
-  const LanguageHeader({super.key});
+class BlockedHeader extends StatelessWidget {
+  const BlockedHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class LanguageHeader extends StatelessWidget {
 
           // Title
           const Text(
-            "Language",
+            "Blocked",
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,

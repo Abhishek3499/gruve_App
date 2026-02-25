@@ -55,4 +55,22 @@ class AppAssets {
   static const iconss = 'assets/performance reel/icons.png';
   static const performance = 'assets/performance reel/performance.png';
   static const walletdiamond = 'assets/performance reel/wallet_diamond.png';
+  //saved
+  static const saved1 = 'assets/saved/saves1.png';
+  static const saved2 = 'assets/saved/saves2.png';
+  static const saved3 = 'assets/saved/saves3.png';
+  static const saved4 = 'assets/saved/saves4.png';
+  static const saved5 = 'assets/saved/saves5.png';
+  //blocked
+  static const blocked1 = 'assets/blocked/blocked1.png';
+  static const blocked2 = 'assets/blocked/blocked2.png';
+  static const blocked3 = 'assets/blocked/blocked3.png';
+  static const blocked4 = 'assets/blocked/blocked4.png';
+  static const blocked5 = 'assets/blocked/blocked5.png';
+  static const blocked6 = 'assets/blocked/blocked6.png';
+  static const blocked7 = 'assets/blocked/blocked7.png';
+  static const blocked8 = 'assets/blocked/blocked8.png';
+  static const blocked9 = 'assets/blocked/blocked9.png';
+  static const blocked10 = 'assets/blocked/blocked10.png';
+  static const blocked11 = 'assets/blocked/blocked11.png';
 }

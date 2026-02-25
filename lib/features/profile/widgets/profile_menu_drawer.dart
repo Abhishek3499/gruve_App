@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/saved_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/term&condition_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/language_screen.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/account_privacy_screen.dart';
+import 'package:gruve_app/features/profile_menu_drawer/widgets/saved/saved_header.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
@@ -66,10 +71,7 @@ class ProfileMenuDrawer extends StatelessWidget {
                         AppAssets.account,
                         "Account",
                         onTap: () {
-                          debugPrint(
-                            "[ProfileMenuDrawer] Account menu item tapped",
-                          );
-                          Navigator.pop(context); // Close drawer first
+                          Navigator.pop(context);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -78,14 +80,12 @@ class ProfileMenuDrawer extends StatelessWidget {
                           );
                         },
                       ),
+
                       _menuItem(
                         AppAssets.insight,
                         "Insight",
                         onTap: () {
-                          debugPrint(
-                            "[ProfileMenuDrawer] Insight menu item tapped",
-                          );
-                          Navigator.pop(context); // Close drawer first
+                          Navigator.pop(context);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -100,10 +100,7 @@ class ProfileMenuDrawer extends StatelessWidget {
                         AppAssets.wallet,
                         "Wallet",
                         onTap: () {
-                          debugPrint(
-                            "[ProfileMenuDrawer] wallet menu item tapped",
-                          );
-                          Navigator.pop(context); // Close drawer first
+                          Navigator.pop(context);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -112,18 +109,57 @@ class ProfileMenuDrawer extends StatelessWidget {
                           );
                         },
                       ),
-                      _menuItem(AppAssets.blocked, "Blocked"),
-                      _menuItem(Icons.lock, "Account Privacy"),
+
+                      _menuItem(
+                        AppAssets.blocked,
+                        "Blocked",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BlockedScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      _menuItem(
+                        Icons.lock,
+                        "Account Privacy",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AccountPrivacyScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
                       _menuItem(AppAssets.archive, "Archive"),
-                      _menuItem(AppAssets.saved, "Saved"),
+
+                      _menuItem(
+                        AppAssets.saved,
+                        "Saved",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SavedScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
                       _menuItem(
                         AppAssets.language,
                         "Language",
                         onTap: () {
-                          debugPrint(
-                            "[ProfileMenuDrawer] Language menu item tapped",
-                          );
-                          Navigator.pop(context); // Close drawer first
+                          Navigator.pop(context);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -132,15 +168,26 @@ class ProfileMenuDrawer extends StatelessWidget {
                           );
                         },
                       ),
-                      _menuItem(Icons.help_outline, "Help Center"),
+
+                      _menuItem(
+                        Icons.help_outline,
+                        "Help Center",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpCenterScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
                       _menuItem(
                         AppAssets.terms,
                         "Terms & Conditions",
                         onTap: () {
-                          debugPrint(
-                            "[ProfileMenuDrawer] Terms & Conditionsmenu item tapped",
-                          );
-                          Navigator.pop(context); // Close drawer first
+                          Navigator.pop(context);
                           Navigator.push(
                             context,
                             MaterialPageRoute(

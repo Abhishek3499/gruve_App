@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../core/assets.dart';
+import 'package:gruve_app/core/app_colors.dart';
+import 'package:gruve_app/core/assets.dart';
 
-class LanguageHeader extends StatelessWidget {
-  const LanguageHeader({super.key});
-
+class SavedHeader extends StatelessWidget {
+  const SavedHeader({super.key});
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -17,16 +17,22 @@ class LanguageHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: Image.asset(AppAssets.back, width: 25, height: 25),
+
+              child: Image.asset(
+                AppAssets.back,
+                color: AppColors.white,
+                width: 25,
+                height: 25,
+              ),
             ),
           ),
 
           // Title
           const Text(
-            "Language",
+            "Saved",
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+              color: AppColors.white,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
               fontFamily: 'syncopate',
             ),

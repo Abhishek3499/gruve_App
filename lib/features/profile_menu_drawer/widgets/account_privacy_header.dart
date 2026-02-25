@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
 
-class LanguageHeader extends StatelessWidget {
-  const LanguageHeader({super.key});
+class AccountPrivacyHeader extends StatelessWidget {
+  const AccountPrivacyHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +17,17 @@ class LanguageHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: Image.asset(AppAssets.back, width: 25, height: 25),
+              child: Image.asset(
+                AppAssets.back,
+                width: 25,
+                height: 25,
+              ),
             ),
           ),
 
           // Title
           const Text(
-            "Language",
+            "Account Privacy",
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,
