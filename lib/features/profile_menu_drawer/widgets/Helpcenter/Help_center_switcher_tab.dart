@@ -23,7 +23,7 @@ class _HelpCenterSwitcherTabState extends State<HelpCenterSwitcherTab> {
         Stack(
           children: [
             /// BASE LINE
-            Container(height: 2, color: Colors.white30),
+            Container(height: 2, color: Colors.white),
 
             /// ACTIVE INDICATOR
             AnimatedAlign(

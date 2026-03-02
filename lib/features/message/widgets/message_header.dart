@@ -8,7 +8,7 @@ class MessageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(top: 40, bottom: 20),
+      padding: const EdgeInsets.only(top: 60, bottom: 20),
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage(AppAssets.messagebg), // 👈 YOUR BG IMAGE
@@ -20,7 +20,7 @@ class MessageHeader extends StatelessWidget {
         children: [
           /// ===== TOP BAR =====
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -62,7 +62,7 @@ class MessageHeader extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 45),
 
           /// ===== AVATAR LIST =====
           const MessageAvatarList(),

@@ -78,7 +78,7 @@ class UnblockWidget extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.purpleAccent.withOpacity(0.6),
+                          color: Colors.purpleAccent.withValues(alpha: 0.6),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),

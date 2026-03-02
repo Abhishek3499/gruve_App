@@ -91,7 +91,7 @@ class BlockedScreen extends StatelessWidget {
                     onUnblock: () {
                       showDialog(
                         context: context,
-                        barrierColor: Colors.black.withOpacity(0.7),
+                        barrierColor: Colors.black.withValues(alpha: 0.7),
                         builder: (context) {
                           return UnblockWidget(
                             name: user.name,

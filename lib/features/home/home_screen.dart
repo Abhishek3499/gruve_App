@@ -144,6 +144,18 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     debugPrint("[HomeScreen] Tab changed to index: $index");
+
+    // Handle Message tab navigation separately
+    if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MessageScreen(),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _previousIndex = _currentIndex;
       _currentIndex = index;
@@ -230,9 +242,8 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
 
-      // Notifications Tab (3)
-      // const NotificationScreen(),
-      MessageScreen(),
+      // Notifications Tab (3) - Handled by Navigator.push for MessageScreen
+      const SizedBox.shrink(),
 
       // Profile Tab (4)
       const ProfileScreen(),

@@ -58,7 +58,7 @@ class BlockedUserTile extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFB44DFF).withOpacity(0.6),
+                    color: const Color(0xFFB44DFF).withValues(alpha: 0.6),
                     blurRadius: 20,
                     spreadRadius: 2,
                     offset: const Offset(0, 8), // 👈 niche se lift

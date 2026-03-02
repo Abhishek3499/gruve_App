@@ -74,6 +74,7 @@ flutter:
     - assets/saved/
     - assets/blocked/
     - assets/message_bg/
+    - assets/contact_us/
 
   fonts:
     - family: Raleway

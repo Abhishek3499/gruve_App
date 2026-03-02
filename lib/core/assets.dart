@@ -75,4 +75,11 @@ class AppAssets {
   static const blocked11 = 'assets/blocked/blocked11.png';
   // message
   static const messagebg = 'assets/message_bg/messagebg.png';
+  // contact us
+  static const contact = 'assets/contact_us/contact.png';
+  static const facebook = 'assets/contact_us/facebook.png';
+  static const instagram = 'assets/contact_us/instagram.png';
+  static const twitter = 'assets/contact_us/twitter.png';
+  static const website = 'assets/contact_us/website.png';
+  static const whatsapp = 'assets/contact_us/whatsapp.png';
 }

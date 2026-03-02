@@ -16,7 +16,7 @@ class PrivacyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(PrivacyConstants.cardBorderRadius),
         boxShadow: [
           BoxShadow(
-            color: PrivacyConstants.shadowColor.withOpacity(0.6),
+            color: PrivacyConstants.shadowColor.withValues(alpha: 0.6),
             blurRadius: 25,
             spreadRadius: 2,
             offset: const Offset(0, 15),
