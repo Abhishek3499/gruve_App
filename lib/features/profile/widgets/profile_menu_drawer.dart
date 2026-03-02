@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/saved_screen.dart';
@@ -138,7 +139,19 @@ class ProfileMenuDrawer extends StatelessWidget {
                         },
                       ),
 
-                      _menuItem(AppAssets.archive, "Archive"),
+                      _menuItem(
+                        AppAssets.archive,
+                        "Archive",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ArchiveScreen(),
+                            ),
+                          );
+                        },
+                      ),
 
                       _menuItem(
                         AppAssets.saved,

@@ -1,0 +1,1 @@
+enum ArchiveTab { archive, favorite }
