@@ -73,6 +73,7 @@ flutter:
     - assets/performance reel/
     - assets/saved/
     - assets/blocked/
+    - assets/message_bg/
 
   fonts:
     - family: Raleway

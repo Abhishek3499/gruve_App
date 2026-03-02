@@ -73,4 +73,6 @@ class AppAssets {
   static const blocked9 = 'assets/blocked/blocked9.png';
   static const blocked10 = 'assets/blocked/blocked10.png';
   static const blocked11 = 'assets/blocked/blocked11.png';
+  // message
+  static const messagebg = 'assets/message_bg/messagebg.png';
 }

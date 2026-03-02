@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/privacy_constants.dart';
-import '../models/privacy_option_model.dart';
+
 import '../widgets/account_privacy_header.dart';
 import '../widgets/privacy_card.dart';
 import '../widgets/privacy_toggle_tile.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/message/screen/message_screen.dart';
 
-import 'package:gruve_app/features/notification/screens/notification_screen.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
@@ -231,7 +231,8 @@ class _HomeScreenState extends State<HomeScreen>
       ),
 
       // Notifications Tab (3)
-      const NotificationScreen(),
+      // const NotificationScreen(),
+      MessageScreen(),
 
       // Profile Tab (4)
       const ProfileScreen(),

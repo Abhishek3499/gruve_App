@@ -16,8 +16,8 @@ class LanguageTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: LanguageConstants.backgroundColor.withOpacity(
-            LanguageConstants.tileOpacity,
+          color: LanguageConstants.backgroundColor.withValues(
+            alpha: LanguageConstants.tileOpacity,
           ),
           borderRadius: BorderRadius.circular(LanguageConstants.tileRadius),
         ),

@@ -26,7 +26,6 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               const HelpCenterHeader(),
               const SizedBox(height: 10),
               const HelpCenterSwitcherTab(),
-              // TODO: Add help center content
             ],
           ),
         ),

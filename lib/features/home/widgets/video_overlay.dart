@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/notification/screens/notification_screen.dart';
 import 'video_user_info.dart';
 
 import 'right_action_bar.dart';
@@ -54,10 +55,21 @@ class VideoOverlay extends StatelessWidget {
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.notifications_none,
-                        color: Color(0xFF280131),
-                        size: 20,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.notifications_none,
+                          color: Color(0xFF280131),
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationScreen(),
+                            ),
+                          );
+                          debugPrint("Notification icon tapped");
+                        },
                       ),
                     ),
                   ),
