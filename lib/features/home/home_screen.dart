@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/screen/message_screen.dart';
-
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
-import 'package:gruve_app/widgets/video_background.dart';
+
 import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/features/home/widgets/video_overlay.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
-
 import 'package:video_player/video_player.dart';
 
-/// Professional HomeScreen with comprehensive video lifecycle management
+/// HomeScreen with clean video lifecycle management
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -54,25 +52,21 @@ class _HomeScreenState extends State<HomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    if (_isDisposed) return; // Prevent actions after disposal
+    if (_isDisposed) return;
 
     switch (state) {
       case AppLifecycleState.paused:
         _handleAppBackgrounded();
         break;
-
       case AppLifecycleState.resumed:
         _handleAppResumed();
         break;
-
       case AppLifecycleState.detached:
         _handleAppDetached();
         break;
-
       case AppLifecycleState.inactive:
         _handleAppInactive();
         break;
-
       case AppLifecycleState.hidden:
         _handleAppHidden();
         break;
@@ -149,9 +143,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (index == 3) {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => const MessageScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const MessageScreen()),
       );
       return;
     }
@@ -167,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _handleTabChange(int newIndex) {
     if (newIndex == 0) {
       // User is going to Home tab
-      if (!_isInBackground && !_isNavigatingAway) {
+      if (!_isInBackground && !_isNavigatingAway && !_isDisposed) {
         _resumeVideo('Tab changed to Home');
       }
     } else if (_previousIndex == 0) {
@@ -178,31 +170,12 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _pauseVideo(String reason) {
     if (_isDisposed) return;
-
-    final controller = _getVideoController();
-    if (controller != null &&
-        controller.value.isInitialized &&
-        controller.value.isPlaying) {
-      controller.pause();
-      debugPrint('Video paused: $reason');
-    }
+    debugPrint('Video pause requested: $reason');
   }
 
   void _resumeVideo(String reason) {
     if (_isDisposed) return;
-
-    final controller = _getVideoController();
-    if (controller != null &&
-        controller.value.isInitialized &&
-        !controller.value.isPlaying) {
-      controller.play();
-      debugPrint('Video resumed: $reason');
-    }
-  }
-
-  VideoPlayerController? _getVideoController() {
-    // Access shared controller from VideoBackground
-    return VideoBackgroundState.sharedController;
+    debugPrint('Video resume requested: $reason');
   }
 
   void _onTabChanged(String tab) {
@@ -218,13 +191,14 @@ class _HomeScreenState extends State<HomeScreen>
       // Home Tab (0)
       Stack(
         children: [
-          // VideoBackground(
-          //   videoPath: AppAssets.splashVideo,
-          //   overlayOpacity: 0.45,
-          //   child: const SizedBox.shrink(),
-          // ),
-          VideoFeed(selectedIndex: _currentIndex, onTabChanged: _onItemTapped),
-          VideoOverlay(selectedTab: _selectedTab, onTabChanged: _onTabChanged),
+          VideoFeed(
+            selectedIndex: _currentIndex, 
+            onTabChanged: _onItemTapped,
+          ),
+          VideoOverlay(
+            selectedTab: _selectedTab, 
+            onTabChanged: _onTabChanged,
+          ),
         ],
       ),
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/profile_menu_drawer/constants/archive_model/archive_dummy_data.dart';
+import 'package:gruve_app/features/profile_menu_drawer/models/archive_model/archive_dummy_data.dart';
 
 class ArchiveGridView extends StatelessWidget {
   const ArchiveGridView({super.key});
@@ -12,13 +12,12 @@ class ArchiveGridView extends StatelessWidget {
         child: GridView.builder(
           itemCount: archiveItems.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
+            crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
           itemBuilder: (context, index) {
             final item = archiveItems[index];
-            debugPrint('Loading image: ${item.image}'); // Debug print
 
             return ClipRRect(
               borderRadius: BorderRadius.circular(20),
@@ -26,14 +25,13 @@ class ArchiveGridView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    item.image, 
+                    item.image,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      debugPrint('Error loading image: $error'); // Debug print
                       return Container(
-                        color: Colors.red,
+                        color: Colors.grey[300],
                         child: const Center(
-                          child: Text('Error', style: TextStyle(color: Colors.white)),
+                          child: Icon(Icons.error, color: Colors.grey),
                         ),
                       );
                     },

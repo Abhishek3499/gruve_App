@@ -82,4 +82,9 @@ class AppAssets {
   static const twitter = 'assets/contact_us/twitter.png';
   static const website = 'assets/contact_us/website.png';
   static const whatsapp = 'assets/contact_us/whatsapp.png';
+  //  subscription
+  static const subscriptionbg = 'assets/subscription/subscription.png';
+  static const outline = 'assets/subscription/outline.png';
+  static const star = 'assets/subscription/star.png';
+  static const gold = 'assets/subscription/gold.png';
 }

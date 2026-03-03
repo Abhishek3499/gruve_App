@@ -29,7 +29,7 @@ class MessageScreen extends StatelessWidget {
                     decoration: const BoxDecoration(
                       color: Color(0xFF1C0B21),
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(50),
+                        top: Radius.circular(40),
                       ),
                     ),
                     child: ListView(

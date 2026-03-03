@@ -17,10 +17,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
   HelpCenterTab selectedTab = HelpCenterTab.faq;
 
   void _onTabChanged(HelpCenterTab tab) {
-    debugPrint('Tab changed to: $tab'); // Debug print
     setState(() {
       selectedTab = tab;
-      debugPrint('Selected tab updated to: $selectedTab'); // Debug print
     });
   }
 
@@ -42,16 +40,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 selectedTab: selectedTab,
                 onTabChanged: _onTabChanged,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               /// CONTENT AREA
               Expanded(
-                child: () {
-                  debugPrint('Displaying tab: $selectedTab'); // Debug print
-                  return selectedTab == HelpCenterTab.faq
-                      ? const FaqTab()
-                      : const ContactUsTab();
-                }(),
+                child: selectedTab == HelpCenterTab.faq
+                    ? const FaqTab()
+                    : const ContactUsTab(),
               ),
             ],
           ),

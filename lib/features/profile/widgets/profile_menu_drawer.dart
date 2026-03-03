@@ -8,6 +8,7 @@ import 'package:gruve_app/features/profile_menu_drawer/screens/term&condition_sc
 import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/language_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/account_privacy_screen.dart';
+import 'package:gruve_app/features/subscription/subscription_screen.dart';
 
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
@@ -205,6 +206,19 @@ class ProfileMenuDrawer extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (context) =>
                                   const TermAndConditionScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _menuItem(
+                        AppAssets.terms,
+                        "Subscription",
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SubscriptionScreen(),
                             ),
                           );
                         },

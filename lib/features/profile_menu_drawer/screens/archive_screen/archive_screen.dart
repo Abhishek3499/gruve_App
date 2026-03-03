@@ -17,6 +17,12 @@ class ArchiveScreen extends StatefulWidget {
 class _ArchiveScreenState extends State<ArchiveScreen> {
   ArchiveTab _selectedTab = ArchiveTab.archive;
 
+  void _onTabChanged(ArchiveTab tab) {
+    setState(() {
+      _selectedTab = tab;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,11 +40,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
 
               ArchiveSwitcherTab(
                 selectedTab: _selectedTab,
-                onTabChanged: (tab) {
-                  setState(() {
-                    _selectedTab = tab;
-                  });
-                },
+                onTabChanged: _onTabChanged,
               ),
 
               const SizedBox(height: 20),

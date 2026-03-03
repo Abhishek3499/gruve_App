@@ -24,7 +24,7 @@ class FaqSearchBar extends StatelessWidget {
       child: TextField(
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 30),
-          hintText: selectedCategory == 'General' ? 'Why I' : '',
+          hintText: selectedCategory == 'General' ? 'Why I' : null,
           hintStyle: const TextStyle(color: Colors.white70, fontSize: 16),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
