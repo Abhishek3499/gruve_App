@@ -1,29 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:gruve_app/core/assets.dart';
 import '../controller/camera_controller_service.dart';
 import '../utils/camera_logger.dart';
 
-/// Dumb UI widget for side toolbar with various camera controls
-/// Only handles UI rendering and user interaction callbacks
 class SideToolbar extends StatelessWidget {
   SideToolbar({super.key});
 
   final CameraControllerService _cameraService = CameraControllerService();
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildFlashButton(),
-        const SizedBox(height: 16),
-        _buildMusicButton(),
-        const SizedBox(height: 16),
-        _buildTimerButton(),
-        const SizedBox(height: 16),
-        _buildEffectsButton(),
-      ],
+    return Container(
+      width: 60,
+      padding: const EdgeInsets.symmetric(vertical: 35),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(40),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildEffectsButton(),
+          const SizedBox(height: 28),
+          _buildTimerButton(),
+          const SizedBox(height: 28),
+          _buildFlashButton(),
+          const SizedBox(height: 28),
+          _buildMusicButton(),
+          const SizedBox(height: 28),
+          _buildemojiButton(),
+        ],
+      ),
     );
   }
 
+  /// FLASH BUTTON (logic same, UI cleaned)
   Widget _buildFlashButton() {
     return StreamBuilder<bool>(
       stream: _cameraService.initializationStream,
@@ -32,11 +44,11 @@ class SideToolbar extends StatelessWidget {
         final isInitialized = snapshot.data ?? false;
 
         if (!isInitialized) {
-          return _buildDisabledButton(Icons.flash_off);
+          return _buildDisabledIcon(Icons.flash_off);
         }
 
         return StreamBuilder<FlashMode>(
-          stream: Stream.value(_cameraService.currentFlashMode),
+          stream: _cameraService.flashModeStream,
           initialData: FlashMode.off,
           builder: (context, flashSnapshot) {
             final flashMode = flashSnapshot.data ?? FlashMode.off;
@@ -47,24 +59,10 @@ class SideToolbar extends StatelessWidget {
                 CameraLogger.logUserAction('Flash button pressed');
                 _cameraService.toggleFlash();
               },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isFlashOn
-                        ? Colors.white.withValues(alpha: 0.6)
-                        : Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  isFlashOn ? Icons.flash_on : Icons.flash_off,
-                  color: Colors.white,
-                  size: 20,
-                ),
+              child: Icon(
+                isFlashOn ? Icons.flash_on : Icons.flash_off,
+                color: Colors.white,
+                size: 28,
               ),
             );
           },
@@ -73,65 +71,70 @@ class SideToolbar extends StatelessWidget {
     );
   }
 
+  /// MUSIC BUTTON
   Widget _buildMusicButton() {
     return GestureDetector(
       onTap: () {
         CameraLogger.logUserAction('Music button pressed');
         _showComingSoon('Music');
       },
-      child: _buildEnabledButton(Icons.music_note),
+      child: Image.asset(
+        AppAssets.tymer,
+        width: 28,
+        height: 28,
+        color: Colors.white,
+      ),
     );
   }
 
+  /// TIMER BUTTON
   Widget _buildTimerButton() {
     return GestureDetector(
       onTap: () {
         CameraLogger.logUserAction('Timer button pressed');
         _showComingSoon('Timer');
       },
-      child: _buildEnabledButton(Icons.timer),
+      child: const Icon(Icons.timer, color: Colors.white, size: 28),
     );
   }
 
+  /// EFFECT BUTTON
   Widget _buildEffectsButton() {
     return GestureDetector(
       onTap: () {
         CameraLogger.logUserAction('Effects button pressed');
         _showComingSoon('Effects');
       },
-      child: _buildEnabledButton(Icons.auto_fix_high),
+      child: Image.asset(
+        AppAssets.music,
+        width: 28,
+        height: 28,
+        color: Colors.white,
+      ),
     );
   }
 
-  Widget _buildEnabledButton(IconData icon) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+  Widget _buildemojiButton() {
+    return GestureDetector(
+      onTap: () {
+        CameraLogger.logUserAction('Music button pressed');
+        _showComingSoon('Music');
+      },
+      child: Image.asset(
+        AppAssets.emoji,
+        width: 28,
+        height: 28,
+        color: Colors.white,
       ),
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 
-  Widget _buildDisabledButton(IconData icon) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
-      ),
-      child: Icon(icon, color: Colors.white.withValues(alpha: 0.4), size: 20),
-    );
+  /// DISABLED ICON
+  Widget _buildDisabledIcon(IconData icon) {
+    return Icon(icon, color: Colors.white.withValues(alpha: 0.4), size: 28);
   }
 
   void _showComingSoon(String feature) {
-    // This would show a toast or snackbar
-    // For now, just log the action
     CameraLogger.logUserAction('$feature feature requested (coming soon)');
   }
 }

@@ -4,8 +4,9 @@ import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 
 import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
-import 'package:gruve_app/features/home/widgets/video_overlay.dart';
+import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
+import 'package:gruve_app/features/camera/camera_handler.dart';
 
 /// HomeScreen with clean video lifecycle management
 class HomeScreen extends StatefulWidget {
@@ -18,11 +19,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with WidgetsBindingObserver, RouteAware {
   int _currentIndex = 0;
-  String _selectedTab = 'For you';
   int _previousIndex = 0;
   bool _isInBackground = false;
   bool _isNavigatingAway = false;
   bool _isDisposed = false;
+  VideoFeedController? _videoController;
 
   // Global route observer for navigation tracking
   static final RouteObserver<PageRoute> _routeObserver =
@@ -136,7 +137,11 @@ class _HomeScreenState extends State<HomeScreen>
       return; // Prevent duplicate actions
     }
 
-    debugPrint("[HomeScreen] Tab changed to index: $index");
+    // Handle camera button (index 2) separately
+    if (index == 2) {
+      CameraHandler.openCamera(context);
+      return;
+    }
 
     // Handle Message tab navigation separately
     if (index == 3) {
@@ -146,6 +151,9 @@ class _HomeScreenState extends State<HomeScreen>
       );
       return;
     }
+
+    // Handle normal tab navigation
+    if (_isDisposed) return;
 
     setState(() {
       _previousIndex = _currentIndex;
@@ -168,46 +176,34 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _pauseVideo(String reason) {
-    if (_isDisposed) return;
+    if (_isDisposed || _videoController == null) return;
     debugPrint('Video pause requested: $reason');
+    _videoController!.pauseCurrentVideo();
   }
 
   void _resumeVideo(String reason) {
-    if (_isDisposed) return;
+    if (_isDisposed || _videoController == null) return;
     debugPrint('Video resume requested: $reason');
-  }
-
-  void _onTabChanged(String tab) {
-    if (_isDisposed) return;
-
-    setState(() {
-      _selectedTab = tab;
-    });
+    _videoController!.playVideo(_videoController!.currentIndex.value);
   }
 
   List<Widget> _getScreens() {
     return [
       // Home Tab (0)
-      Stack(
-        children: [
-          VideoFeed(selectedIndex: _currentIndex, onTabChanged: _onItemTapped),
-          VideoOverlay(selectedTab: _selectedTab, onTabChanged: _onTabChanged),
-        ],
+      VideoFeed(
+        selectedIndex: _currentIndex, 
+        onTabChanged: _onItemTapped,
+        onControllerReady: (controller) {
+          _videoController = controller;
+          debugPrint("[HomeScreen] VideoFeed controller ready");
+        },
       ),
 
       // Search Tab (1)
       const SearchScreen(),
 
-      // Create Tab (2)
-      Container(
-        color: Colors.black,
-        child: const Center(
-          child: Text(
-            'Create',
-            style: TextStyle(color: Colors.white, fontSize: 24),
-          ),
-        ),
-      ),
+      // Create Tab (2) - Removed, now handled by camera
+      const SizedBox.shrink(),
 
       // Notifications Tab (3) - Handled by Navigator.push for MessageScreen
       const SizedBox.shrink(),
@@ -239,6 +235,10 @@ class _HomeScreenState extends State<HomeScreen>
     debugPrint("[HomeScreen] Screen disposed");
     _isDisposed = true;
     _pauseVideo('HomeScreen disposed');
+    
+    // Dispose video controller
+    _videoController?.dispose();
+    _videoController = null;
 
     WidgetsBinding.instance.removeObserver(this);
     _routeObserver.unsubscribe(this);

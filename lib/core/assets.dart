@@ -1,3 +1,5 @@
+import 'dart:async';
+
 class AppAssets {
   // Videos
   static const splashVideo = 'assets/splash_screen_logo/splashmp4.mp4';
@@ -88,4 +90,11 @@ class AppAssets {
   static const star = 'assets/subscription/star.png';
   static const gold = 'assets/subscription/gold.png';
   static const lock = 'assets/subscription/lock.png';
+  // slide bar camera
+  static const music = 'assets/slide_bar/music.png';
+  static const emoji = 'assets/slide_bar/emoji.png';
+  static const tymer = 'assets/slide_bar/timer.png';
+  // camera
+  static const gallery = 'assets/slide_bar/gallery_icon.png';
+  static const idea = 'assets/slide_bar/icon.png';
 }

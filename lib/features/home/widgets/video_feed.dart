@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../controllers/video_feed_controller.dart';
-  import 'video_overlay.dart';
+import 'video_overlay.dart';
+import 'video_top_bar.dart';
 
 class VideoFeed extends StatefulWidget {
   final int selectedIndex;
@@ -74,47 +75,59 @@ class _VideoFeedState extends State<VideoFeed> {
         return AnimatedBuilder(
           animation: _controller.isPlaying,
           builder: (context, _) {
-            return PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              onPageChanged: _onPageChanged,
-              itemCount: _controllers.length,
+            return Stack(
+              children: [
+                // Video PageView (scrollable content)
+                PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  onPageChanged: _onPageChanged,
+                  itemCount: _controllers.length,
 
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: _onVideoTap,
-                  child: Stack(
-                    children: [
-                      // Video background
-                      Container(
-                        color: Colors.black,
-                        child: _controllers[index].value.isInitialized
-                            ? SizedBox.expand(
-                                child: FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: _controllers[index].value.size.width,
-                                    height: _controllers[index].value.size.height,
-                                    child: VideoPlayer(_controllers[index]),
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: _onVideoTap,
+                      child: Stack(
+                        children: [
+                          // Video background
+                          Container(
+                            color: Colors.black,
+                            child: _controllers[index].value.isInitialized
+                                ? SizedBox.expand(
+                                    child: FittedBox(
+                                      fit: BoxFit.cover,
+                                      child: SizedBox(
+                                        width: _controllers[index].value.size.width,
+                                        height: _controllers[index].value.size.height,
+                                        child: VideoPlayer(_controllers[index]),
+                                      ),
+                                    ),
+                                  )
+                                : const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              ),
+                          ),
+                          
+                          // Video overlay UI (user info and right action bar only)
+                          VideoOverlay(
+                            selectedTab: selectedContentTab,
+                            onTabChanged: _onTabChanged,
+                            controller: _controller,
+                          ),
+                        ],
                       ),
-                      
-                      // Video overlay UI
-                      VideoOverlay(
-                        selectedTab: selectedContentTab,
-                        onTabChanged: _onTabChanged,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+
+                // Fixed top bar (Subscribed/For You tabs and Notification icon)
+                VideoTopBar(
+                  selectedTab: selectedContentTab,
+                  onTabChanged: _onTabChanged,
+                ),
+              ],
             );
           },
         );

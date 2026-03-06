@@ -23,6 +23,8 @@ class CameraControllerService {
       StreamController<bool>.broadcast();
   final StreamController<String> _errorStreamController =
       StreamController<String>.broadcast();
+  final StreamController<FlashMode> _flashModeStreamController =
+      StreamController<FlashMode>.broadcast();
 
   Stream<bool> get initializationStream =>
       _initializationStreamController.stream;
@@ -30,6 +32,8 @@ class CameraControllerService {
   Stream<bool> get captureStream => _captureStreamController.stream;
 
   Stream<String> get errorStream => _errorStreamController.stream;
+
+  Stream<FlashMode> get flashModeStream => _flashModeStreamController.stream;
 
   bool get isInitialized => _isInitialized;
   bool get isCapturing => _isCapturing;
@@ -51,6 +55,9 @@ class CameraControllerService {
           ? FlashMode.torch
           : FlashMode.off;
       await _controller!.setFlashMode(nextMode);
+      
+      // Emit flash mode change to stream
+      _flashModeStreamController.add(nextMode);
     } catch (e) {
       _errorStreamController.add('Failed to toggle flash: ${e.toString()}');
     }
@@ -171,5 +178,6 @@ class CameraControllerService {
     _initializationStreamController.close();
     _captureStreamController.close();
     _errorStreamController.close();
+    _flashModeStreamController.close();
   }
 }

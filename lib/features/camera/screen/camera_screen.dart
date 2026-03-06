@@ -50,7 +50,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
           Positioned(top: 50, left: 16, right: 16, child: TopBar()),
 
-          Positioned(right: 16, top: 200, child: SideToolbar()),
+          Positioned(left: 16, top: 200, child: SideToolbar()),
 
           // Positioned(
           //   bottom: 140,
@@ -65,7 +65,12 @@ class _CameraScreenState extends State<CameraScreen> {
             child: Center(child: CaptureButton()),
           ),
 
-          Positioned(bottom: 40, left: 16, right: 16, child: ModeSelector()),
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: Center(child: ModeSelector()),
+          ),
         ],
       ),
     );

@@ -76,6 +76,7 @@ flutter:
     - assets/message_bg/
     - assets/contact_us/
     - assets/subscription/
+    - assets/slide_bar/
 
   fonts:
     - family: Raleway

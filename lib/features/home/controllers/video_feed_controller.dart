@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/constants/video_assets.dart';
+import '../data/video_dummy_data.dart';
 
 class VideoFeedController {
   final List<VideoPlayerController> _controllers = [];
@@ -10,6 +11,18 @@ class VideoFeedController {
   ValueNotifier<int> get currentIndex => _currentIndex;
   ValueNotifier<bool> get isPlaying => _isPlaying;
   List<VideoPlayerController> get controllers => _controllers;
+
+  /// Get current video data from dummy reels list
+  Map<String, String> getCurrentVideoData() {
+    final index = _currentIndex.value % dummyReels.length;
+    return dummyReels[index];
+  }
+
+  /// Get video data for specific index
+  Map<String, String> getVideoData(int index) {
+    final safeIndex = index % dummyReels.length;
+    return dummyReels[safeIndex];
+  }
 
   VideoFeedController() {
     _initializeControllers();

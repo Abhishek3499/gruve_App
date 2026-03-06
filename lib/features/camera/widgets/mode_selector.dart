@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 import '../utils/camera_logger.dart';
 
-/// Dumb UI widget for mode selector (Story/Gruve style toggle)
-/// Only handles UI rendering and user interaction callbacks
+/// Simple text mode selector (Story / Gruve)
 class ModeSelector extends StatefulWidget {
   const ModeSelector({super.key});
 
@@ -12,22 +12,51 @@ class ModeSelector extends StatefulWidget {
 
 class _ModeSelectorState extends State<ModeSelector> {
   static const List<String> _modes = ['Story', 'Gruve'];
+
   int _selectedModeIndex = 0;
+
+  void _onModeSelected(int index) {
+    final mode = _modes[index];
+
+    CameraLogger.logUserAction('Mode selector: $mode selected');
+
+    setState(() {
+      _selectedModeIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
-        children: List.generate(
-          _modes.length,
-          (index) => _buildModeItem(index),
-        ),
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          /// LEFT ICON (Gallery)
+          IconButton(
+            onPressed: () {
+              CameraLogger.logUserAction('Gallery opened');
+            },
+            icon: Image.asset(AppAssets.gallery, width: 32, height: 32),
+          ),
+
+          /// MODES (UNCHANGED LOGIC)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              _modes.length,
+              (index) => _buildModeItem(index),
+            ),
+          ),
+
+          /// RIGHT ICON (Idea / Info)
+          IconButton(
+            onPressed: () {
+              CameraLogger.logUserAction('Idea icon clicked');
+            },
+            icon: Image.asset(AppAssets.idea, width: 32, height: 32),
+          ),
+        ],
       ),
     );
   }
@@ -36,35 +65,19 @@ class _ModeSelectorState extends State<ModeSelector> {
     final isSelected = index == _selectedModeIndex;
     final mode = _modes[index];
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          CameraLogger.logUserAction('Mode selector: $mode selected');
-          setState(() {
-            _selectedModeIndex = index;
-          });
-        },
-        child: AnimatedContainer(
+    return GestureDetector(
+      onTap: () => _onModeSelected(index),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
-          margin: EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.white.withValues(alpha: 0.2)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white54,
+            fontSize: 16,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            letterSpacing: 1,
           ),
-          child: Center(
-            child: Text(
-              mode,
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.6),
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ),
+          child: Text(mode.toUpperCase()),
         ),
       ),
     );
