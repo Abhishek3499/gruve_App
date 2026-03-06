@@ -78,13 +78,13 @@ class _FaqItem extends StatelessWidget {
 }
 
 class _FaqDivider extends StatelessWidget {
-  const _FaqDivider({super.key});
+  const _FaqDivider();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 1,
-      color: Colors.white.withOpacity(0.1),
+      color: Colors.white.withValues(alpha: 0.1),
       margin: const EdgeInsets.symmetric(horizontal: 20),
     );
   }

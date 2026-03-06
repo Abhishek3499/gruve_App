@@ -6,7 +6,6 @@ import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/features/home/widgets/video_overlay.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
-import 'package:video_player/video_player.dart';
 
 /// HomeScreen with clean video lifecycle management
 class HomeScreen extends StatefulWidget {
@@ -191,14 +190,8 @@ class _HomeScreenState extends State<HomeScreen>
       // Home Tab (0)
       Stack(
         children: [
-          VideoFeed(
-            selectedIndex: _currentIndex, 
-            onTabChanged: _onItemTapped,
-          ),
-          VideoOverlay(
-            selectedTab: _selectedTab, 
-            onTabChanged: _onTabChanged,
-          ),
+          VideoFeed(selectedIndex: _currentIndex, onTabChanged: _onItemTapped),
+          VideoOverlay(selectedTab: _selectedTab, onTabChanged: _onTabChanged),
         ],
       ),
 

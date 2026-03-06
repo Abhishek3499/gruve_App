@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_DiamondStatsCard.dart';
+
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_center_cart.dart';
+import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_diamond_stats_card.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_footer.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_header.dart';
 

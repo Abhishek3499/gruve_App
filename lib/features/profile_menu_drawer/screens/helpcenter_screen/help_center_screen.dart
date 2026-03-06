@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/Help_center_header.dart';
-import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/Help_center_switcher_tab.dart';
+import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/help_center_header.dart';
+import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/help_center_switcher_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/faq_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/contact_us_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/models/help_center_tab.dart';

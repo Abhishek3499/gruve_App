@@ -87,4 +87,5 @@ class AppAssets {
   static const outline = 'assets/subscription/outline.png';
   static const star = 'assets/subscription/star.png';
   static const gold = 'assets/subscription/gold.png';
+  static const lock = 'assets/subscription/lock.png';
 }

@@ -17,7 +17,12 @@ class HelpCenterSwitcherTab extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         /// TABS
-        Row(children: [_buildTab("FAQ", HelpCenterTab.faq), _buildTab("Contact us", HelpCenterTab.contact)]),
+        Row(
+          children: [
+            _buildTab("FAQ", HelpCenterTab.faq),
+            _buildTab("Contact us", HelpCenterTab.contact),
+          ],
+        ),
 
         const SizedBox(height: 8),
 

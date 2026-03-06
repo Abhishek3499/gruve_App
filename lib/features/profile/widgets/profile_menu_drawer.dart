@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/profile_menu_drawer/logout/logout_widget.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/saved_screen.dart';
-import 'package:gruve_app/features/profile_menu_drawer/screens/term&condition_screen.dart';
+import 'package:gruve_app/features/profile_menu_drawer/screens/terms_and_conditions_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/language_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/account_privacy_screen.dart';
 import 'package:gruve_app/features/subscription/subscription_screen.dart';
+import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
@@ -211,7 +213,7 @@ class ProfileMenuDrawer extends StatelessWidget {
                         },
                       ),
                       _menuItem(
-                        AppAssets.terms,
+                        Icons.subscriptions_outlined,
                         "Subscription",
                         onTap: () {
                           Navigator.pop(context);
@@ -235,19 +237,37 @@ class ProfileMenuDrawer extends StatelessWidget {
                       const SizedBox(height: 10),
 
                       /// Logout
-                      Row(
-                        children: const [
-                          Icon(Icons.logout, color: Colors.white, size: 22),
-                          SizedBox(width: 16),
-                          Text(
-                            "Log out",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                      GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => LogoutWidget(
+                              onConfirm: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
                             ),
-                          ),
-                        ],
+                          );
+                        },
+                        child: Row(
+                          children: const [
+                            Icon(Icons.logout, color: Colors.white, size: 22),
+                            SizedBox(width: 16),
+                            Text(
+                              "Log out",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
 
                       const SizedBox(height: 30),

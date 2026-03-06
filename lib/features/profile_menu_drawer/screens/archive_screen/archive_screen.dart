@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile_menu_drawer/models/archive_model/archive_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Archive/archive_fav_tab.dart';
-import 'package:gruve_app/features/profile_menu_drawer/widgets/Archive/archive_header.dart';
+import 'package:gruve_app/features/profile_menu_drawer/widgets/archive/archive_header.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Archive/archive_switcher_tab.dart';
 
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Archive/archive_grid_view.dart';
