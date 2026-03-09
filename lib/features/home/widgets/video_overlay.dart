@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/notification/screens/notification_screen.dart';
+
 import 'video_user_info.dart';
 import '../controllers/video_feed_controller.dart';
 
@@ -57,35 +57,6 @@ class VideoOverlay extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTab(String text) {
-    final bool isSelected = selectedTab == text;
-
-    return GestureDetector(
-      onTap: () => onTabChanged(text),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            text.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'syncopate',
-              color: isSelected ? const Color(0xFF280131) : Colors.white,
-            ),
-          ),
-          const SizedBox(height: 4),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 2,
-            width: isSelected ? 45 : 0,
-            color: const Color(0xFF280131),
-          ),
-        ],
-      ),
     );
   }
 }

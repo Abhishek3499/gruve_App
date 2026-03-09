@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';
 import '../utils/camera_logger.dart';
 
 /// Simple text mode selector (Story / Gruve)
@@ -12,8 +14,38 @@ class ModeSelector extends StatefulWidget {
 
 class _ModeSelectorState extends State<ModeSelector> {
   static const List<String> _modes = ['Story', 'Gruve'];
+  final ImagePicker _imagePicker = ImagePicker();
 
   int _selectedModeIndex = 0;
+
+  Future<void> openGallery() async {
+    try {
+      CameraLogger.logUserAction('Gallery opened');
+      
+      // Open gallery
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      
+      if (pickedFile != null) {
+        print('Selected gallery file path: ${pickedFile!.path}');
+        
+        // Navigate to StoryPreviewScreen with selected file (same as camera flow)
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => StoryPreviewScreen(mediaPath: pickedFile!.path),
+            ),
+          );
+        }
+      } else {
+        print('User cancelled gallery selection');
+      }
+    } catch (e) {
+      print('Error picking from gallery: $e');
+    }
+  }
 
   void _onModeSelected(int index) {
     final mode = _modes[index];
@@ -34,9 +66,7 @@ class _ModeSelectorState extends State<ModeSelector> {
         children: [
           /// LEFT ICON (Gallery)
           IconButton(
-            onPressed: () {
-              CameraLogger.logUserAction('Gallery opened');
-            },
+            onPressed: openGallery,
             icon: Image.asset(AppAssets.gallery, width: 32, height: 32),
           ),
 

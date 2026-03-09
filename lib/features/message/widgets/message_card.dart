@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
+import '../models/message_model.dart';
+import '../screen/chat_screen.dart';
 
 class MessageCard extends StatelessWidget {
   final String title;
@@ -19,13 +21,33 @@ class MessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 08),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        color: const Color(0xA672008D),
-      ),
+    return GestureDetector(
+      onTap: () {
+        // Create ChatUser from MessageCard data
+        final chatUser = ChatUser(
+          id: title.hashCode.toString(), // Generate unique ID from title
+          name: title,
+          avatar: avatar,
+          lastMessage: message,
+          lastMessageTime: time,
+          unreadCount: unreadCount,
+        );
+
+        // Navigate to ChatScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(user: chatUser),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 08),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: const Color(0xA672008D),
+        ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -116,6 +138,7 @@ class MessageCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

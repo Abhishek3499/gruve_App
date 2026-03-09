@@ -1,5 +1,3 @@
-import 'dart:async';
-
 class AppAssets {
   // Videos
   static const splashVideo = 'assets/splash_screen_logo/splashmp4.mp4';
@@ -97,4 +95,14 @@ class AppAssets {
   // camera
   static const gallery = 'assets/slide_bar/gallery_icon.png';
   static const idea = 'assets/slide_bar/icon.png';
+  //  story
+  static const text = 'assets/story/text.png';
+
+  static const filter = 'assets/story/filter.png';
+  static const musics = 'assets/story/music.png';
+  static const extradots = 'assets/story/3dots.png';
+  static const hightlight = 'assets/story/highlight.png';
+  //send
+  static const send = 'assets/message/send.png';
+  static const camera = 'assets/message/camera.png';
 }

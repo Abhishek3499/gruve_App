@@ -21,13 +21,14 @@ class SideToolbar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildEffectsButton(),
+          _buildMusicButton(),
           const SizedBox(height: 28),
           _buildTimerButton(),
           const SizedBox(height: 28),
           _buildFlashButton(),
+
           const SizedBox(height: 28),
-          _buildMusicButton(),
+          _buildEffectsButton(),
           const SizedBox(height: 28),
           _buildemojiButton(),
         ],
@@ -79,10 +80,10 @@ class SideToolbar extends StatelessWidget {
         _showComingSoon('Music');
       },
       child: Image.asset(
-        AppAssets.tymer,
-        width: 28,
-        height: 28,
+        AppAssets.music,
         color: Colors.white,
+        height: 26,
+        width: 26,
       ),
     );
   }
@@ -106,10 +107,10 @@ class SideToolbar extends StatelessWidget {
         _showComingSoon('Effects');
       },
       child: Image.asset(
-        AppAssets.music,
-        width: 28,
-        height: 28,
+        AppAssets.tymer,
         color: Colors.white,
+        height: 26,
+        width: 26,
       ),
     );
   }
@@ -117,15 +118,10 @@ class SideToolbar extends StatelessWidget {
   Widget _buildemojiButton() {
     return GestureDetector(
       onTap: () {
-        CameraLogger.logUserAction('Music button pressed');
-        _showComingSoon('Music');
+        CameraLogger.logUserAction('Effects button pressed');
+        _showComingSoon('Effects');
       },
-      child: Image.asset(
-        AppAssets.emoji,
-        width: 28,
-        height: 28,
-        color: Colors.white,
-      ),
+      child: Image.asset(AppAssets.emoji, width: 28, height: 28),
     );
   }
 

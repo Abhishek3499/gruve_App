@@ -22,7 +22,11 @@ class _CameraScreenState extends State<CameraScreen> {
   void initState() {
     super.initState();
     CameraLogger.log('CameraScreen initialized');
-    _initializeCamera();
+    
+    // Initialize camera immediately without delay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeCamera();
+    });
 
     // Set portrait orientation
     SystemChrome.setPreferredOrientations([

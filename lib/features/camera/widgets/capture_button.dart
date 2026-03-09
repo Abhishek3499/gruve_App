@@ -60,6 +60,7 @@ class _CaptureButtonState extends State<CaptureButton>
     final image = await _cameraService.captureImage();
 
     if (image != null && mounted) {
+      // Return image path to camera handler for navigation to story preview
       Navigator.of(context).pop(image.path);
     }
   }

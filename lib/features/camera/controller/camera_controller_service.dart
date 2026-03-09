@@ -63,7 +63,7 @@ class CameraControllerService {
     }
   }
 
-  // 🔥 FIXED INITIALIZATION
+  // 🔥 OPTIMIZED INITIALIZATION
   Future<void> initializeCamera() async {
     if (_isInitialized) {
       _initializationStreamController.add(true);
@@ -73,39 +73,32 @@ class CameraControllerService {
     try {
       CameraLogger.logInitializationStart();
 
+      // Get cameras first
       _cameras = await availableCameras();
 
       if (_cameras.isEmpty) {
         throw Exception('No cameras available');
       }
 
-      for (var camera in _cameras) {
-        try {
-          _controller = CameraController(
-            camera,
-            ResolutionPreset.high,
-            enableAudio: false,
-            imageFormatGroup: ImageFormatGroup.jpeg,
-          );
-
-          await _controller!.initialize();
-          await _controller!.setZoomLevel(1.0);
-
-          _isInitialized = true;
-          CameraLogger.logInitializationSuccess();
-          _initializationStreamController.add(true);
-          return;
-        } catch (e) {
-          CameraLogger.log('Failed to initialize camera: ${camera.name}');
-        }
-      }
-
-      throw Exception('All cameras failed to initialize');
-    } catch (e) {
-      CameraLogger.logInitializationFailure(e.toString());
-      _errorStreamController.add(
-        'Camera initialization failed: ${e.toString()}',
+      // Initialize first camera immediately
+      final camera = _cameras.first;
+      _controller = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
       );
+
+      // Initialize without delay
+      await _controller!.initialize();
+      await _controller!.setZoomLevel(1.0);
+
+      _isInitialized = true;
+      CameraLogger.logInitializationSuccess();
+      _initializationStreamController.add(true);
+    } catch (e) {
+      CameraLogger.log('Failed to initialize camera: ${_cameras.first.name}');
+      _errorStreamController.add('Camera initialization failed: ${e.toString()}');
       _initializationStreamController.add(false);
     }
   }

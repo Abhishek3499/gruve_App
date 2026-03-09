@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/message_header.dart';
 import '../widgets/message_card.dart';
+import '../data/dummy_messages.dart';
 
 class MessageScreen extends StatelessWidget {
   const MessageScreen({super.key});
@@ -34,77 +35,14 @@ class MessageScreen extends StatelessWidget {
                     ),
                     child: ListView(
                       padding: const EdgeInsets.all(16),
-                      children: const [
+                      children: DummyMessages.getChatUsers().map((user) => 
                         MessageCard(
-                          title: 'Emma Watson',
-                          message: 'Did you check the design updates?',
-                          time: '5 min ago',
-                          unreadCount: 2,
+                          title: user.name,
+                          message: user.lastMessage,
+                          time: user.lastMessageTime,
+                          unreadCount: user.unreadCount,
                         ),
-
-                        MessageCard(
-                          title: 'Michael Carter',
-                          message: 'Let’s catch up in the evening.',
-                          time: '12 min ago',
-                          unreadCount: 1,
-                        ),
-
-                        MessageCard(
-                          title: 'Sophia Williams',
-                          message: 'I have shared the documents.',
-                          time: '25 min ago',
-                          unreadCount: 4,
-                        ),
-
-                        MessageCard(
-                          title: 'Daniel Brown',
-                          message: 'Call me when you’re free.',
-                          time: '40 min ago',
-                          unreadCount: 0,
-                        ),
-
-                        MessageCard(
-                          title: 'Olivia Johnson',
-                          message: 'Meeting is confirmed for tomorrow.',
-                          time: '1 hr ago',
-                          unreadCount: 3,
-                        ),
-
-                        MessageCard(
-                          title: 'James Anderson',
-                          message: 'Thanks for your quick response!',
-                          time: '2 hr ago',
-                          unreadCount: 0,
-                        ),
-
-                        MessageCard(
-                          title: 'Ava Martinez',
-                          message: 'Can you review the latest build?',
-                          time: '3 hr ago',
-                          unreadCount: 5,
-                        ),
-
-                        MessageCard(
-                          title: 'William Taylor',
-                          message: 'Everything looks perfect 👍',
-                          time: 'Yesterday',
-                          unreadCount: 0,
-                        ),
-
-                        MessageCard(
-                          title: 'Isabella Thomas',
-                          message: 'Please send me the invoice.',
-                          time: 'Yesterday',
-                          unreadCount: 2,
-                        ),
-
-                        MessageCard(
-                          title: 'Ethan Harris',
-                          message: 'Let’s finalize the deal today.',
-                          time: '2 days ago',
-                          unreadCount: 1,
-                        ),
-                      ],
+                      ).toList(),
                     ),
                   ),
                 ),
