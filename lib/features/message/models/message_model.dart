@@ -7,6 +7,7 @@ class MessageModel {
   final String? imagePath;
   final MessageModel? replyTo;
   final bool isPinned;
+  final bool isRead;
 
   const MessageModel({
     required this.id,
@@ -17,6 +18,7 @@ class MessageModel {
     this.imagePath,
     this.replyTo,
     this.isPinned = false,
+    this.isRead = false,
   });
 
   bool get hasImage => imagePath != null && imagePath!.isNotEmpty;
@@ -31,6 +33,7 @@ class MessageModel {
     String? imagePath,
     MessageModel? replyTo,
     bool? isPinned,
+    bool? isRead,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -41,6 +44,7 @@ class MessageModel {
       imagePath: imagePath ?? this.imagePath,
       replyTo: replyTo ?? this.replyTo,
       isPinned: isPinned ?? this.isPinned,
+      isRead: isRead ?? this.isRead,
     );
   }
 }

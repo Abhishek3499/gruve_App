@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'video_user_info.dart';
+import 'subscribe_button.dart';
 import '../controllers/video_feed_controller.dart';
+import '../controllers/subscribe_controller.dart';
 import 'right_action_bar.dart';
 import '../../gifts/widgets/gift_panel.dart';
 import '../../video_options/widgets/video_options_sheet.dart';
+import '../../video_options/sheets/comment_sheet.dart';
 
-class VideoOverlay extends StatelessWidget {
+class VideoOverlay extends StatefulWidget {
   final String selectedTab;
   final Function(String) onTabChanged;
   final VideoFeedController controller;
@@ -19,6 +22,31 @@ class VideoOverlay extends StatelessWidget {
   });
 
   @override
+  State<VideoOverlay> createState() => _VideoOverlayState();
+}
+
+class _VideoOverlayState extends State<VideoOverlay> {
+  late final SubscribeController _subscribeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeController = SubscribeController();
+    // Initialize users with dummy data
+    _initializeUsers();
+  }
+
+  void _initializeUsers() {
+    // This would come from your actual video data
+    final dummyUsers = [
+      {'userId': 'user1', 'username': 'jenny_m'},
+      {'userId': 'user2', 'username': 'alex_d'},
+      {'userId': 'user3', 'username': 'sarah_k'},
+    ];
+    _subscribeController.initializeUsers(dummyUsers);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
@@ -28,16 +56,15 @@ class VideoOverlay extends StatelessWidget {
           left: 04,
           right: 80,
           child: AnimatedBuilder(
-            animation: controller.currentIndex,
+            animation: widget.controller.currentIndex,
             builder: (context, _) {
-              final videoData = controller.getCurrentVideoData();
+              final videoData = widget.controller.getCurrentVideoData();
               return VideoUserInfo(
                 username: videoData['username'] ?? '',
                 caption: videoData['caption'] ?? '',
                 musicTitle: videoData['music'] ?? '',
-                onSubscribe: () {
-                  // Handle subscribe action
-                },
+                userId: videoData['userId'] ?? videoData['username'] ?? '',
+                subscribeController: _subscribeController,
               );
             },
           ),
@@ -60,7 +87,14 @@ class VideoOverlay extends StatelessWidget {
               );
             },
             onLike: () {},
-            onComment: () {},
+            onComment: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const CommentSheet(),
+              );
+            },
             onShare: () {},
             onOptions: () {
               showModalBottomSheet(

@@ -8,7 +8,7 @@ class SimpleBlockSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -16,7 +16,7 @@ class SimpleBlockSheet extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(45)),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -33,20 +33,23 @@ class SimpleBlockSheet extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               /// AVATAR CENTER
               Container(
-                width: 80,
-                height: 80,
+                width: 85,
+                height: 85,
                 decoration: BoxDecoration(
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(40),
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 40),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(40),
+                  child: Image.asset(AppAssets.appleIcon, fit: BoxFit.cover),
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               /// TITLE LEFT ALIGN
               const Padding(
@@ -54,7 +57,7 @@ class SimpleBlockSheet extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Block username?',
+                    'Block gaivyyy?',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -64,7 +67,7 @@ class SimpleBlockSheet extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 08),
 
               /// DESCRIPTION
               Padding(
@@ -79,7 +82,7 @@ class SimpleBlockSheet extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
 
               /// INFO ROWS (UNCHANGED)
               Padding(
@@ -92,14 +95,14 @@ class SimpleBlockSheet extends StatelessWidget {
                       description:
                           'Blocked users can\'t see your posts or profile',
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Image.asset(AppAssets.message3dot),
                       title: 'Messages',
                       description:
                           'Lorem Ipsum is simply dummy text of the printing',
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _buildInfoRow(
                       icon: Image.asset(AppAssets.setting3dot),
                       title: 'Activity',
@@ -110,7 +113,7 @@ class SimpleBlockSheet extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
 
               /// BLOCK BUTTON
               Padding(

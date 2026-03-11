@@ -15,9 +15,9 @@ class ReplyPreviewBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 08),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF000000),
+        color: Colors.black.withOpacity(0.25),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -27,7 +27,13 @@ class ReplyPreviewBar extends StatelessWidget {
           Container(
             width: 4,
             height: 36,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(2)),
+            decoration: const BoxDecoration(
+              color: Color(0xFF72008D),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(2),
+                bottomLeft: Radius.circular(2),
+              ),
+            ),
           ),
 
           const SizedBox(width: 10),

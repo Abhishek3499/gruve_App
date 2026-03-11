@@ -109,16 +109,24 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           // Unpin existing message if any
           if (_pinnedMessage != null) {
-            final pinnedIndex = _messages.indexWhere((msg) => msg.id == _pinnedMessage!.id);
+            final pinnedIndex = _messages.indexWhere(
+              (msg) => msg.id == _pinnedMessage!.id,
+            );
             if (pinnedIndex != -1) {
-              _messages[pinnedIndex] = _messages[pinnedIndex].copyWith(isPinned: false);
+              _messages[pinnedIndex] = _messages[pinnedIndex].copyWith(
+                isPinned: false,
+              );
             }
           }
-          
+
           // Pin new message
-          final messageIndex = _messages.indexWhere((msg) => msg.id == message.id);
+          final messageIndex = _messages.indexWhere(
+            (msg) => msg.id == message.id,
+          );
           if (messageIndex != -1) {
-            _messages[messageIndex] = _messages[messageIndex].copyWith(isPinned: true);
+            _messages[messageIndex] = _messages[messageIndex].copyWith(
+              isPinned: true,
+            );
             _pinnedMessage = _messages[messageIndex];
           }
         });
@@ -182,61 +190,75 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final sortedMessages = _getSortedMessages();
-    
-    return Scaffold(
-      backgroundColor: const Color(0xFF1C0B21),
-      body: SafeArea(
-        child: Column(
-          children: [
-            /// Chat Header
-            ChatHeader(user: widget.user, onBack: () => Navigator.pop(context)),
 
-            /// Chat Messages
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                itemCount: sortedMessages.length,
-                itemBuilder: (context, index) {
-                  final message = sortedMessages[index];
-                  
-                  // Show pinned message banner for pinned messages
-                  if (message.isPinned) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1A0A1F), Color(0xFF240A2C)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              /// Chat Header
+              ChatHeader(
+                user: widget.user,
+                onBack: () => Navigator.pop(context),
+              ),
+
+              /// Chat Messages
+              Expanded(
+                child: ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: sortedMessages.length,
+                  itemBuilder: (context, index) {
+                    final message =
+                        sortedMessages[sortedMessages.length - 1 - index];
+
+                    // Show pinned message banner for pinned messages
+                    if (message.isPinned) {
+                      return Column(
+                        children: [
+                          PinnedMessageBanner(
+                            pinnedMessage: message,
+                            username: widget.user.name,
+                          ),
+                          const SizedBox(height: 10),
+                          ChatBubble(message: message),
+                        ],
+                      );
+                    }
+
                     return Column(
                       children: [
-                        PinnedMessageBanner(
-                          pinnedMessage: message,
-                          username: widget.user.name,
-                        ),
-                        ChatBubble(
-                          message: message,
-                          onActionSelected: (action) => _handleMessageAction(action, message),
-                        ),
+                        if (index > 0) const SizedBox(height: 10),
+                        ChatBubble(message: message),
                       ],
                     );
-                  }
-                  
-                  return ChatBubble(
-                    message: message,
-                    onActionSelected: (action) => _handleMessageAction(action, message),
-                  );
-                },
-              ),
-            ),
-
-            /// Reply Preview Bar (if active)
-            if (_activeReply != null)
-              ReplyPreviewBar(
-                replyMessage: _activeReply!,
-                onClose: _clearReply,
+                  },
+                ),
               ),
 
-            /// Chat Input Field
-            ChatInputField(
-              onSendMessage: _sendMessage,
-              onSendImage: _sendImage,
-              isLoading: _isLoading,
-            ),
-          ],
+              /// Reply Preview Bar (if active)
+              if (_activeReply != null)
+                ReplyPreviewBar(
+                  replyMessage: _activeReply!,
+                  onClose: _clearReply,
+                ),
+
+              /// Chat Input Field
+              ChatInputField(
+                onSendMessage: _sendMessage,
+                onSendImage: _sendImage,
+                isLoading: _isLoading,
+              ),
+            ],
+          ),
         ),
       ),
     );

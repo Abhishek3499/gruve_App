@@ -2,19 +2,23 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
+import '../controllers/subscribe_controller.dart';
+import 'subscribe_button.dart';
 
 class VideoUserInfo extends StatelessWidget {
   final String username;
   final String caption;
   final String musicTitle;
-  final VoidCallback? onSubscribe;
+  final String userId;
+  final SubscribeController subscribeController;
 
   const VideoUserInfo({
     super.key,
     required this.username,
     required this.caption,
     required this.musicTitle,
-    this.onSubscribe,
+    required this.userId,
+    required this.subscribeController,
   });
 
   String get displayUsername {
@@ -88,23 +92,10 @@ class VideoUserInfo extends StatelessWidget {
 
               SizedBox(
                 height: 32,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  onPressed: onSubscribe,
-                  child: const Text(
-                    "Subscribe",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                child: SubscribeButton(
+                  userId: userId,
+                  username: username,
+                  subscribeController: subscribeController,
                 ),
               ),
             ],

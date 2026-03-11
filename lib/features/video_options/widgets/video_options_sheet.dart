@@ -5,6 +5,7 @@ import 'option_button.dart';
 import 'option_item.dart';
 import '../sheets/simple_report_sheet.dart';
 import '../sheets/simple_block_sheet.dart';
+import '../sheets/simple_not_interested_sheet.dart';
 
 class VideoOptionsSheet extends StatefulWidget {
   const VideoOptionsSheet({super.key});
@@ -208,7 +209,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
-                                builder: (context) => const SimpleReportSheet(),
+                                builder: (context) => const SimpleNotInterestedSheet(),
                               );
                             },
                           ),

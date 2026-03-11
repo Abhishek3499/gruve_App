@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'nav_item.dart';
+import 'nav_bar_clipper.dart';
 import 'center_nav_button.dart';
 
-class CustomBottomNavigationBar extends StatefulWidget {
+class CustomBottomNavigationBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
 
@@ -14,76 +15,67 @@ class CustomBottomNavigationBar extends StatefulWidget {
   });
 
   @override
-  State<CustomBottomNavigationBar> createState() =>
-      _CustomBottomNavigationBarState();
-}
-
-class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
-  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 01),
+    return SizedBox(
+      height: 100,
       child: Stack(
+        clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
         children: [
-          /// MAIN BAR
-          Container(
-            margin: EdgeInsets.zero,
-
-            height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(25),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF42174C),
-                  Color(0xFF210C26),
-                  Color(0xFF000000),
-                ],
+          // NAVBAR with CustomPaint
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: CustomPaint(
+              painter: NavBarPainter(),
+              child: SizedBox(
+                height: 80,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: 28,
+                  ), // icons neeche push karo
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      NavItem(
+                        imagePath: AppAssets.homelogo,
+                        index: 0,
+                        selectedIndex: selectedIndex,
+                        onTap: () => onItemSelected(0),
+                      ),
+                      NavItem(
+                        imagePath: AppAssets.search,
+                        index: 1,
+                        selectedIndex: selectedIndex,
+                        onTap: () => onItemSelected(1),
+                      ),
+                      const SizedBox(width: 55),
+                      NavItem(
+                        imagePath: AppAssets.notification,
+                        index: 3,
+                        selectedIndex: selectedIndex,
+                        onTap: () => onItemSelected(3),
+                      ),
+                      NavItem(
+                        imagePath: AppAssets.user,
+                        index: 4,
+                        selectedIndex: selectedIndex,
+                        onTap: () => onItemSelected(4),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              border: Border.all(width: 1, color: const Color(0xFFFF3AFF)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                NavItem(
-                  imagePath: AppAssets.homelogo,
-                  index: 0,
-                  selectedIndex: widget.selectedIndex,
-                  onTap: () => widget.onItemSelected(0),
-                ),
-                NavItem(
-                  imagePath: AppAssets.search,
-                  index: 1,
-                  selectedIndex: widget.selectedIndex,
-                  onTap: () => widget.onItemSelected(1),
-                ),
-
-                const SizedBox(width: 56), // center space
-
-                NavItem(
-                  imagePath: AppAssets.notification, // 🔥 PNG IMAGE
-                  index: 3,
-                  selectedIndex: widget.selectedIndex,
-                  onTap: () => widget.onItemSelected(3),
-                ),
-                NavItem(
-                  imagePath: AppAssets.user,
-                  index: 4,
-                  selectedIndex: widget.selectedIndex,
-                  onTap: () => widget.onItemSelected(4),
-                ),
-              ],
             ),
           ),
 
-          /// CENTER FLOATING +
+          // CENTER BUTTON
           Positioned(
-            top: 10,
+            top: 35,
             child: CenterNavButton(
-              isSelected: widget.selectedIndex == 2,
-              onTap: () => widget.onItemSelected(2),
+              isSelected: selectedIndex == 2,
+              onTap: () => onItemSelected(2),
             ),
           ),
         ],

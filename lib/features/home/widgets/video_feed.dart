@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import '../controllers/video_feed_controller.dart';
 import 'video_overlay.dart';
@@ -30,7 +31,13 @@ class _VideoFeedState extends State<VideoFeed> {
   void initState() {
     super.initState();
     _controller = VideoFeedController();
-    _pageController = PageController();
+    
+    // Configure PageController for smooth scrolling
+    _pageController = PageController(
+      viewportFraction: 1.0,
+      keepPage: true,
+    );
+    
     _controllers = _controller.controllers;
     
     // Notify parent that controller is ready
@@ -54,7 +61,11 @@ class _VideoFeedState extends State<VideoFeed> {
   }
 
   void _onPageChanged(int page) {
+    // Add smooth transition
     _controller.playVideo(page);
+    
+    // Add haptic feedback for better UX
+    HapticFeedback.lightImpact();
   }
 
   void _onVideoTap() {
@@ -83,6 +94,11 @@ class _VideoFeedState extends State<VideoFeed> {
                   scrollDirection: Axis.vertical,
                   onPageChanged: _onPageChanged,
                   itemCount: _controllers.length,
+                  // Add smooth scrolling settings
+                  physics: const BouncingScrollPhysics(),
+                  pageSnapping: true,
+                  // Add animation duration for smoother transitions
+                  allowImplicitScrolling: true,
 
                   itemBuilder: (context, index) {
                     return GestureDetector(

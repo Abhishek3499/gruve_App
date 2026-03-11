@@ -20,75 +20,74 @@ class MessagePopupMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF311B36), // Dark purple background
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 200),
+      tween: Tween(begin: 0.8, end: 1.0),
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF311B36), // Dark purple background
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Reply
+                _buildMenuItem(
+                  icon: Icons.reply,
+                  label: 'Reply',
+                  color: Colors.white,
+                  isSelected: selectedAction == MessageAction.reply,
+                  onTap: () => onActionSelected?.call(MessageAction.reply),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Copy
+                _buildMenuItem(
+                  icon: Icons.copy,
+                  label: 'Copy',
+                  color: Colors.white,
+                  isSelected: selectedAction == MessageAction.forward,
+                  onTap: () => onActionSelected?.call(MessageAction.forward),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Delete
+                _buildMenuItem(
+                  icon: Icons.delete,
+                  label: 'Delete',
+                  color: const Color(0xFFF51829), // Red for danger
+                  isSelected: selectedAction == MessageAction.delete,
+                  onTap: () => onActionSelected?.call(MessageAction.delete),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Forward
+                _buildMenuItem(
+                  icon: Icons.send,
+                  label: 'Forward',
+                  color: Colors.white,
+                  isSelected: selectedAction == MessageAction.forward,
+                  onTap: () => onActionSelected?.call(MessageAction.forward),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Reply
-          _buildMenuItem(
-            icon: Icons.reply,
-            label: 'Reply',
-            color: Colors.white,
-            isSelected: selectedAction == MessageAction.reply,
-            onTap: () => onActionSelected?.call(MessageAction.reply),
-          ),
-
-          const Divider(height: 1, color: Color(0xFF4A4A5A)),
-
-          // Forward
-          _buildMenuItem(
-            icon: Icons.send,
-            label: 'Forward',
-            color: Colors.white,
-            isSelected: selectedAction == MessageAction.forward,
-            onTap: () => onActionSelected?.call(MessageAction.forward),
-          ),
-
-          const Divider(height: 1, color: Color(0xFF4A4A5A)),
-
-          // Pin
-          _buildMenuItem(
-            icon: Icons.push_pin,
-            label: 'Pin',
-            color: Colors.white,
-            isSelected: selectedAction == MessageAction.pin,
-            onTap: () => onActionSelected?.call(MessageAction.pin),
-          ),
-
-          const Divider(height: 1, color: Color(0xFF4A4A5A)),
-
-          // Report
-          _buildMenuItem(
-            icon: Icons.report,
-            label: 'Report',
-            color: const Color(0xFFF51829), // Red for danger
-            isSelected: selectedAction == MessageAction.report,
-            onTap: () => onActionSelected?.call(MessageAction.report),
-          ),
-
-          const Divider(height: 1, color: Color(0xFF4A4A5A)),
-
-          // Delete
-          _buildMenuItem(
-            icon: Icons.delete,
-            label: 'Delete',
-            color: const Color(0xFFF51829), // Red for danger
-            isSelected: selectedAction == MessageAction.delete,
-            onTap: () => onActionSelected?.call(MessageAction.delete),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

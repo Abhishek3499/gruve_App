@@ -14,34 +14,23 @@ class CenterNavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFFFF3AFF), Color(0xFF990099)],
-              ),
-            ),
-            child: const Icon(Icons.add, size: 28, color: Colors.white),
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const RadialGradient(
+            colors: [Color(0xFFCC44CC), Color(0xFF6A006A)],
           ),
-          const SizedBox(height: 6),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSelected ? 1 : 0,
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.6),
+              blurRadius: 16,
+              spreadRadius: 3,
             ),
-          ),
-        ],
+          ],
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
     );
   }
