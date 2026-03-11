@@ -135,4 +135,7 @@ class AppAssets {
   static const downloads = 'assets/3 dots/downloads.png';
   static const blocks = 'assets/3 dots/block.png';
   static const reports = 'assets/3 dots/report.png';
+  static const blockuser = 'assets/3 dots/block_user.png';
+  static const message3dot = 'assets/3 dots/message3dot.png';
+  static const setting3dot = 'assets/3 dots/setting3dot.png';
 }
