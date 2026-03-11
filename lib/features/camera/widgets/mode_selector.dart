@@ -21,29 +21,30 @@ class _ModeSelectorState extends State<ModeSelector> {
   Future<void> openGallery() async {
     try {
       CameraLogger.logUserAction('Gallery opened');
-      
+
       // Open gallery
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: ImageSource.gallery,
       );
-      
+
       if (pickedFile != null) {
-        print('Selected gallery file path: ${pickedFile!.path}');
-        
+        debugPrint('Selected gallery file path: ${pickedFile.path}');
+
         // Navigate to StoryPreviewScreen with selected file (same as camera flow)
         if (mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => StoryPreviewScreen(mediaPath: pickedFile!.path),
+              builder: (context) =>
+                  StoryPreviewScreen(mediaPath: pickedFile.path),
             ),
           );
         }
       } else {
-        print('User cancelled gallery selection');
+        debugPrint('User cancelled gallery selection');
       }
     } catch (e) {
-      print('Error picking from gallery: $e');
+      debugPrint('Error picking from gallery: $e');
     }
   }
 

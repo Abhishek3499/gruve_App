@@ -55,9 +55,7 @@ class ChatHeader extends StatelessWidget {
 
           /// More Options
           IconButton(
-            onPressed: () {
-              // TODO: Implement more options
-            },
+            onPressed: () {},
             icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
           ),
         ],

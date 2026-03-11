@@ -74,7 +74,7 @@ class StoryViewerTopBar extends StatelessWidget {
                 Text(
                   time,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),

@@ -20,7 +20,9 @@ class StoryTopBar extends StatelessWidget {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6), // background color
+                  color: Colors.black.withValues(
+                    alpha: 0.6,
+                  ), // background color
                   shape: BoxShape.circle,
                 ),
                 child: Image.asset(

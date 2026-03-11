@@ -95,6 +95,19 @@ class AppAssets {
   // camera
   static const gallery = 'assets/slide_bar/gallery_icon.png';
   static const idea = 'assets/slide_bar/icon.png';
+  // New custom gift icons
+  static const custom1 = 'assets/custom1.png';
+  static const custom2 = 'assets/custom2.png';
+  static const custom3 = 'assets/custom3.png';
+  static const custom4 = 'assets/custom4.png';
+  // Video options icons
+  static const save = 'assets/video_options/save.png';
+  static const collab = 'assets/video_options/collab.png';
+  static const remix = 'assets/video_options/remix.png';
+  static const notInterested = 'assets/video_options/not_interested.png';
+  static const download = 'assets/video_options/download.png';
+  static const block = 'assets/video_options/block.png';
+  static const report = 'assets/video_options/report.png';
   //  story
   static const text = 'assets/story/text.png';
 
@@ -105,4 +118,21 @@ class AppAssets {
   //send
   static const send = 'assets/message/send.png';
   static const camera = 'assets/message/camera.png';
+  // gift icons
+  static const flash = 'assets/flash_sales/flash_sales.png';
+  static const trophy = 'assets/flash_sales/trophy.png';
+  static const stone = 'assets/flash_sales/stone.png';
+  static const plus = 'assets/flash_sales/plus.png';
+  static const flower = 'assets/flash_sales/flower.png';
+  static const heart2 = 'assets/flash_sales/heart2.png';
+  static const boost = 'assets/flash_sales/boost.png';
+  static const gost2 = 'assets/flash_sales/gost2.png';
+  // 3dots popup
+  static const savs = 'assets/3 dots/saved.png';
+  static const coll = 'assets/3 dots/collabs.png';
+  static const remixx = 'assets/3 dots/remix.png';
+  static const eye = 'assets/3 dots/eye.png';
+  static const downloads = 'assets/3 dots/downloads.png';
+  static const blocks = 'assets/3 dots/block.png';
+  static const reports = 'assets/3 dots/report.png';
 }

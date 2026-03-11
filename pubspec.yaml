@@ -79,6 +79,8 @@ flutter:
     - assets/slide_bar/
     - assets/story/
     - assets/message/
+    - assets/flash_sales/
+    - assets/3 dots/
 
   fonts:
     - family: Raleway

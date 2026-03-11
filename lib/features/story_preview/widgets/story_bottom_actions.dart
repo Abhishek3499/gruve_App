@@ -15,7 +15,7 @@ class StoryViewBottom extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3), // 👈 glass bg
+            color: Colors.black.withValues(alpha: 0.3), // 👈 glass bg
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: Row(

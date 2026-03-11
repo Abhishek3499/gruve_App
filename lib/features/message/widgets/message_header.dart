@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import '../screen/search_users_screen.dart';
 import 'message_avatar_list.dart';
 
 class MessageHeader extends StatelessWidget {
@@ -53,9 +54,21 @@ class MessageHeader extends StatelessWidget {
                 /// Search
                 Align(
                   alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white),
-                    onPressed: () {},
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SearchUsersScreen(),
+                        ),
+                      );
+                    },
+                    child: Image.asset(
+                      AppAssets.search,
+                      width: 24,
+                      height: 24,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],

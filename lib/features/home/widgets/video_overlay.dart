@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'video_user_info.dart';
 import '../controllers/video_feed_controller.dart';
-
 import 'right_action_bar.dart';
+import '../../gifts/widgets/gift_panel.dart';
+import '../../video_options/widgets/video_options_sheet.dart';
 
 class VideoOverlay extends StatelessWidget {
   final String selectedTab;
@@ -50,10 +51,25 @@ class VideoOverlay extends StatelessWidget {
             likeCount: 125000,
             commentCount: 8200,
             shareCount: 2100,
-            onGift: () {},
+            onGift: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const GiftPanel(),
+              );
+            },
             onLike: () {},
             onComment: () {},
             onShare: () {},
+            onOptions: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const VideoOptionsSheet(),
+              );
+            },
           ),
         ),
       ],

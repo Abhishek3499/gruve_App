@@ -7,7 +7,8 @@ class DummyMessages {
         id: '1',
         name: 'Emma Watson',
         avatar: 'assets/images/profile.png',
-        lastMessage: 'Did you check the design updates?',
+        lastMessage:
+            'Did you check the design updates?iadhusagefdsuhsadgfhadgfhadgfhadgfhagdafhadfahadffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
         lastMessageTime: '5 min ago',
         unreadCount: 2,
       ),
@@ -57,6 +58,8 @@ class DummyMessages {
             timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
             isSent: false,
             senderId: '1',
+            replyTo: null,
+            isPinned: false,
           ),
           MessageModel(
             id: '2',
@@ -64,6 +67,8 @@ class DummyMessages {
             timestamp: DateTime.now().subtract(const Duration(minutes: 8)),
             isSent: true,
             senderId: 'me',
+            replyTo: null,
+            isPinned: false,
           ),
           MessageModel(
             id: '3',
@@ -71,6 +76,8 @@ class DummyMessages {
             timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
             isSent: false,
             senderId: '1',
+            replyTo: null,
+            isPinned: false,
           ),
         ];
       case '2':
@@ -81,6 +88,8 @@ class DummyMessages {
             timestamp: DateTime.now().subtract(const Duration(minutes: 12)),
             isSent: false,
             senderId: '2',
+            replyTo: null,
+            isPinned: false,
           ),
         ];
       case '3':
@@ -91,6 +100,8 @@ class DummyMessages {
             timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
             isSent: false,
             senderId: '3',
+            replyTo: null,
+            isPinned: false,
           ),
         ];
       default:
@@ -101,6 +112,8 @@ class DummyMessages {
             timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
             isSent: false,
             senderId: userId,
+            replyTo: null,
+            isPinned: false,
           ),
         ];
     }

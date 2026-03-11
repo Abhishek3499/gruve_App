@@ -9,6 +9,7 @@ class RightActionBar extends StatelessWidget {
   final VoidCallback? onLike;
   final VoidCallback? onComment;
   final VoidCallback? onShare;
+  final VoidCallback? onOptions;
 
   const RightActionBar({
     super.key,
@@ -19,6 +20,7 @@ class RightActionBar extends StatelessWidget {
     this.onLike,
     this.onComment,
     this.onShare,
+    this.onOptions,
   });
 
   @override
@@ -50,11 +52,11 @@ class RightActionBar extends StatelessWidget {
             onTap: onComment,
           ),
 
-          /// 🔥 Share
+          /// 🔥 Three Dots Options
           _ActionIcon(
             iconPath: AppAssets.doticon,
             count: _formatCount(shareCount),
-            onTap: onShare,
+            onTap: onOptions,
           ),
 
           /// 🔥 Indicator Dots
