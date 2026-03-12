@@ -1,5 +1,3 @@
-import '../models/subscribe_model.dart';
-
 class SubscribeService {
   static final SubscribeService _instance = SubscribeService._internal();
   factory SubscribeService() => _instance;

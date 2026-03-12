@@ -16,7 +16,7 @@ class GiftPanel extends StatefulWidget {
 
 class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
   GiftCategory _selectedCategory = GiftCategory.new_;
-  int _stonesCount = 0;
+  final int _stonesCount = 0;
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _slideController;
   late AnimationController _fadeController;

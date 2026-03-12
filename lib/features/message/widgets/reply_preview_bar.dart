@@ -17,7 +17,7 @@ class ReplyPreviewBar extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.25),
+        color: Color(0x3B000000),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

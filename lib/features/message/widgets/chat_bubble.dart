@@ -1,20 +1,66 @@
+import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/message_model.dart';
 import '../../../core/assets.dart';
+import 'message_popup_menu.dart';
 
 class ChatBubble extends StatelessWidget {
   final MessageModel message;
-  final Function(dynamic)? onActionSelected;
+  final Function(MessageAction)? onActionSelected;
 
   const ChatBubble({super.key, required this.message, this.onActionSelected});
 
+  void _showPopupMenu(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.transparent,
+      builder: (context) {
+        return Stack(
+          children: [
+            /// Blur Background
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(color: Color(0x33000000)),
+            ),
+
+            /// Tap outside to close
+            GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+              },
+              child: Container(color: Colors.transparent),
+            ),
+
+            /// Popup Menu
+            Positioned(
+              left: 30,
+              top: 200,
+              child: MessagePopupMenu(
+                onActionSelected: (action) {
+                  Navigator.pop(context);
+                  if (onActionSelected != null) {
+                    onActionSelected!(action);
+                  }
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: message.isSent
-          ? _buildSentBubble(context)
-          : _buildReceivedBubble(context),
+    return GestureDetector(
+      onLongPress: () => _showPopupMenu(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: message.isSent
+            ? _buildSentBubble(context)
+            : _buildReceivedBubble(context),
+      ),
     );
   }
 
@@ -45,10 +91,57 @@ class ChatBubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      message.text,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                    ),
+                    // Image content
+                    if (message.hasImage) ...[
+                      Container(
+                        width: double.infinity,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                        ),
+                        child: Image.file(
+                          File(message.imagePath!),
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.grey[600],
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 48,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Image not available',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // Text content
+                    if (message.text.isNotEmpty) ...[
+                      Text(
+                        message.text,
+                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     const SizedBox(height: 4),
                     Align(
                       alignment: Alignment.bottomRight,
@@ -115,14 +208,62 @@ class ChatBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    message.text,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                // Image content
+                if (message.hasImage) ...[
+                  Container(
+                    width: double.infinity,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                    ),
+                    child: Image.file(
+                      File(message.imagePath!),
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: double.infinity,
+                          height: 200,
+                          color: Colors.grey[600],
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                color: Colors.white,
+                                size: 48,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Image not available',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 8),
+                ],
+
+                // Text content
+                if (message.text.isNotEmpty) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      message.text,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+
+                // Timestamp row
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

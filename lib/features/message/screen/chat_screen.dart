@@ -212,13 +212,11 @@ class _ChatScreenState extends State<ChatScreen> {
               /// Chat Messages
               Expanded(
                 child: ListView.builder(
-                  reverse: true,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   physics: const BouncingScrollPhysics(),
                   itemCount: sortedMessages.length,
                   itemBuilder: (context, index) {
-                    final message =
-                        sortedMessages[sortedMessages.length - 1 - index];
+                    final message = sortedMessages[index];
 
                     // Show pinned message banner for pinned messages
                     if (message.isPinned) {
@@ -229,7 +227,10 @@ class _ChatScreenState extends State<ChatScreen> {
                             username: widget.user.name,
                           ),
                           const SizedBox(height: 10),
-                          ChatBubble(message: message),
+                          ChatBubble(
+                            message: message,
+                            onActionSelected: (action) => _handleMessageAction(action, message),
+                          ),
                         ],
                       );
                     }
@@ -237,7 +238,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     return Column(
                       children: [
                         if (index > 0) const SizedBox(height: 10),
-                        ChatBubble(message: message),
+                        ChatBubble(
+                          message: message,
+                          onActionSelected: (action) => _handleMessageAction(action, message),
+                        ),
                       ],
                     );
                   },

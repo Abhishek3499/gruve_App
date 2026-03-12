@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/home/home_screen.dart';
+
+import 'package:gruve_app/screens/splash_screen.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
       // 🔥 THIS IS IMPORTANT
       navigatorObservers: [routeObserver],
 
-      home: HomeScreen(),
+      home: SplashScreen(),
     );
   }
 }

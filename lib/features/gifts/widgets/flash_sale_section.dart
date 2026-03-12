@@ -10,7 +10,6 @@ class FlashSaleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final hours = timeRemaining.inHours;
     final minutes = timeRemaining.inMinutes % 60;
-    final seconds = timeRemaining.inSeconds % 60;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

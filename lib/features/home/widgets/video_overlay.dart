@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'video_user_info.dart';
-import 'subscribe_button.dart';
+
 import '../controllers/video_feed_controller.dart';
 import '../controllers/subscribe_controller.dart';
 import 'right_action_bar.dart';

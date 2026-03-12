@@ -75,7 +75,7 @@ class SimpleBlockSheet extends StatelessWidget {
                 child: Text(
                   'Blocking this user will prevent them from seeing your content and interacting with you.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Color(0xB3FFFFFF),
                     fontSize: 14,
                     height: 1.4,
                   ),

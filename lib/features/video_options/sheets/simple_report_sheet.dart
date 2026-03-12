@@ -23,13 +23,13 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.60,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -39,11 +39,10 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white54,
+              color: Color(0x80FFFFFF),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
           const SizedBox(height: 24),
 
           // Title
@@ -58,17 +57,15 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
               ),
             ),
           ),
-
           const SizedBox(height: 20),
 
-          // Report list
+          // Report reasons list
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: reportReasons.length,
               itemBuilder: (context, index) {
                 final isSelected = selectedReason == reportReasons[index];
-
                 return GestureDetector(
                   onTap: () {
                     setState(() {
@@ -92,7 +89,7 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.white10,
+                            color: Color(0x1AFFFFFF),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Icon(
@@ -103,27 +100,29 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
                             size: 16,
                           ),
                         ),
-
                         const SizedBox(width: 12),
-
                         // Text
                         Expanded(
                           child: Text(
                             reportReasons[index],
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Color(0xB3FFFFFF),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-
-                        // Radio icon
+                        // Radio button
                         Icon(
                           isSelected
                               ? Icons.radio_button_checked
                               : Icons.radio_button_unchecked,
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.7),
+                          size: 20,
                         ),
                       ],
                     ),
@@ -132,7 +131,6 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
               },
             ),
           ),
-
           const SizedBox(height: 20),
 
           // Submit button
@@ -149,9 +147,7 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: selectedReason != null
-                      ? () {
-                          Navigator.of(context).pop(selectedReason);
-                        }
+                      ? () => Navigator.of(context).pop(selectedReason)
                       : null,
                   borderRadius: BorderRadius.circular(25),
                   child: Center(
@@ -160,7 +156,7 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
                       style: TextStyle(
                         color: selectedReason != null
                             ? Colors.white
-                            : Colors.white54,
+                            : Color(0x80FFFFFF),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -170,8 +166,7 @@ class _SimpleReportSheetState extends State<SimpleReportSheet> {
               ),
             ),
           ),
-
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );

@@ -33,7 +33,7 @@ class MessagePopupMenu extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Color(0x99000000),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),

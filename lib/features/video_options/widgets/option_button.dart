@@ -20,7 +20,7 @@ class OptionButton extends StatelessWidget {
         width: 103,
         height: 62,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.23), // #000000 23%
+          color: Color(0x3B000000), // #000000 23%
           borderRadius: BorderRadius.circular(30),
         ),
         child: Column(

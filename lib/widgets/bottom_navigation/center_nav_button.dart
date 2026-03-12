@@ -24,7 +24,7 @@ class CenterNavButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.purple.withOpacity(0.6),
+              color: Color(0x99FF00FF),
               blurRadius: 16,
               spreadRadius: 3,
             ),

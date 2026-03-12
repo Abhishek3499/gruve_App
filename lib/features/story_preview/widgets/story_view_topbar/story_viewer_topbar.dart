@@ -37,7 +37,7 @@ class StoryViewerTopBar extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: index <= currentIndex
                           ? Colors.white
-                          : Colors.white.withOpacity(0.3),
+                          : Color(0x4DFFFFFF),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

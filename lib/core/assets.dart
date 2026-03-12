@@ -138,4 +138,10 @@ class AppAssets {
   static const blockuser = 'assets/3 dots/block_user.png';
   static const message3dot = 'assets/3 dots/message3dot.png';
   static const setting3dot = 'assets/3 dots/setting3dot.png';
+
+  // Chat header menu icons
+  // Using existing icon as placeholder
+  static const repor = 'assets/3 dots/restrict.png'; // Using existing icon
+  static const blockIcon = 'assets/3 dots/blocked.png';
+  static const ree = 'assets/3 dots/reee.png';
 }
