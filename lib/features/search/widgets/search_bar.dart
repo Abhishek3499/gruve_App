@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 
 class CustomSearchBar extends StatelessWidget {
   final TextEditingController? controller;
+  final FocusNode? focusNode;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final String hintText;
 
   const CustomSearchBar({
     super.key,
     this.controller,
+    this.focusNode,
     this.onTap,
     this.onChanged,
+    this.onSubmitted,
     this.hintText = "Search Users, Hashtags",
   });
 
@@ -35,8 +39,10 @@ class CustomSearchBar extends StatelessWidget {
         ),
         child: TextField(
           controller: controller,
+          focusNode: focusNode,
           onTap: onTap,
           onChanged: onChanged,
+          onSubmitted: onSubmitted,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
             border: InputBorder.none,

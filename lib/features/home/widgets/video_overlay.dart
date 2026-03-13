@@ -8,6 +8,7 @@ import 'right_action_bar.dart';
 import '../../gifts/widgets/gift_panel.dart';
 import '../../video_options/widgets/video_options_sheet.dart';
 import '../../video_options/sheets/comment_sheet.dart';
+import '../../share/screens/share_bottom_sheet.dart';
 
 class VideoOverlay extends StatefulWidget {
   final String selectedTab;
@@ -95,7 +96,14 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 builder: (context) => const CommentSheet(),
               );
             },
-            onShare: () {},
+            onShare: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const ShareBottomSheet(),
+              );
+            },
             onOptions: () {
               showModalBottomSheet(
                 context: context,

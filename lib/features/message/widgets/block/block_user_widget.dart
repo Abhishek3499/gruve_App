@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
-class LogoutWidget extends StatelessWidget {
+class BlockUserWidget extends StatelessWidget {
+  final String name;
+  final String username;
   final VoidCallback onConfirm;
 
-  const LogoutWidget({super.key, required this.onConfirm});
+  const BlockUserWidget({
+    super.key,
+    required this.name,
+    required this.username,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,26 +34,36 @@ class LogoutWidget extends StatelessWidget {
                   children: [
                     const SizedBox(height: 20),
 
-                    const Text(
-                      "Logout",
-                      style: TextStyle(
+                    Text(
+                      "Block $name",
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 9),
+
+                    Text(
+                      "($username) ?",
+                      style: const TextStyle(
+                        color: Color(0xFFD9C7E0),
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    const SizedBox(height: 19),
 
                     const Text(
-                      "Are you sure you want to logout from your account?",
+                      "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
 
                     const SizedBox(height: 27),
 
-                    /// LOGOUT BUTTON
+                    /// YES BUTTON
                     GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
@@ -70,7 +87,7 @@ class LogoutWidget extends StatelessWidget {
                         ),
                         child: const Center(
                           child: Text(
-                            "Logout",
+                            "Yes",
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,

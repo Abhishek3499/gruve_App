@@ -19,6 +19,7 @@ class AppAssets {
   static const likeicon = 'assets/home/like_icon.png';
   static const commenticon = 'assets/home/comment_icon.png';
   static const doticon = 'assets/home/3_dot_icon.png';
+  static const share = 'assets/home/share_icon.png';
 
   //search screen
   static const baner =
@@ -32,6 +33,7 @@ class AppAssets {
   static const newprofile = 'assets/notification_images/Oval.png';
   static const thisweek = 'assets/notification_images/ovalk.png';
   static const today = 'assets/notification_images/Rectangle.png';
+  static const notification1 = 'assets/notification_images/notification.png';
 
   // Fonts
   static const String ralewayFont = 'Raleway';
@@ -144,4 +146,10 @@ class AppAssets {
   static const repor = 'assets/3 dots/restrict.png'; // Using existing icon
   static const blockIcon = 'assets/3 dots/blocked.png';
   static const ree = 'assets/3 dots/reee.png';
+
+  // share whatsapp icon
+  static const whatsapps = 'assets/share/whatsapp 1.png';
+  static const social = 'assets/share/social 1.png';
+  static const snapchats = 'assets/share/snapchat (1) 1.png';
+  static const copy = 'assets/share/link 1.png';
 }

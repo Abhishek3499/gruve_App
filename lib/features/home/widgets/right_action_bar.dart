@@ -27,16 +27,16 @@ class RightActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 55,
-      height: 280,
+
       decoration: BoxDecoration(
         color: const Color(0x80990099),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           /// 🔥 Gift
-          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 40),
+          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 60),
 
           /// 🔥 Like
           _ActionIcon(
@@ -44,6 +44,7 @@ class RightActionBar extends StatelessWidget {
             count: _formatCount(likeCount),
             onTap: onLike,
           ),
+          const SizedBox(height: 12),
 
           /// 🔥 Comment
           _ActionIcon(
@@ -51,6 +52,13 @@ class RightActionBar extends StatelessWidget {
             count: _formatCount(commentCount),
             onTap: onComment,
           ),
+          const SizedBox(height: 12),
+          _ActionIcon(
+            iconPath: AppAssets.share,
+            count: _formatCount(shareCount),
+            onTap: onShare,
+          ),
+          const SizedBox(height: 12),
 
           /// 🔥 Three Dots Options
           _ActionIcon(

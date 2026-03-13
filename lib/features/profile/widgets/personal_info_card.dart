@@ -160,17 +160,9 @@ class PersonalInfoCard extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFB5179E), Color(0xFF7209B7)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: const Color(0xFF72008D),
       ),
+
       child: Material(
         color: Colors.transparent,
         child: InkWell(

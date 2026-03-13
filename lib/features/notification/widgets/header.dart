@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 
 class Header extends StatelessWidget {
   const Header({super.key});
@@ -13,7 +14,7 @@ class Header extends StatelessWidget {
 
             /// BACK BUTTON
             IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+              icon: Image.asset(AppAssets.back, height: 22, width: 22),
               onPressed: () {
                 Navigator.pop(context);
               },

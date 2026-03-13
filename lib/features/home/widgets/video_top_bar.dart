@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/notification/screens/notification_screen.dart';
 
 class VideoTopBar extends StatelessWidget {
@@ -21,53 +22,50 @@ class VideoTopBar extends StatelessWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 17),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Center toggle tabs
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildTab("Subscribed"),
-                  const SizedBox(width: 12),
-                  Container(
-                    height: 20,
-                    width: 1.5,
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildTab("For you"),
-                ],
-              ),
-              // Notification icon
-              Positioned(
-                right: 16,
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.notifications_none,
-                      color: Color(0xFF280131),
-                      size: 20,
+          child: SizedBox(
+            height: 50,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTab("Subscribed"),
+                    const SizedBox(width: 12),
+                    Container(
+                      height: 20,
+                      width: 1.5,
+                      color: Colors.white.withOpacity(0.7),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationScreen(),
+                    const SizedBox(width: 12),
+                    _buildTab("For you"),
+                  ],
+                ),
+
+                Positioned(
+                  right: 16,
+                  top: 0,
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        height: 25,
+                        width: 25,
+                        child: Image.asset(
+                          AppAssets.notification1,
+                          fit: BoxFit.contain,
                         ),
-                      );
-                      debugPrint("Notification icon tapped");
-                    },
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

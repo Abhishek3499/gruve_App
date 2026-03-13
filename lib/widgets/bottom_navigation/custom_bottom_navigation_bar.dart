@@ -72,7 +72,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
           // CENTER BUTTON
           Positioned(
-            top: 35,
+            top: 32,
             child: CenterNavButton(
               isSelected: selectedIndex == 2,
               onTap: () => onItemSelected(2),

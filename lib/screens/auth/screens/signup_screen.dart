@@ -27,22 +27,6 @@ class _SignupScreenState extends State<SignupScreen> {
         overlayOpacity: 0.85,
         child: Stack(
           children: [
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 4),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-            ),
             LayoutBuilder(
               builder: (context, constraints) {
                 return Padding(

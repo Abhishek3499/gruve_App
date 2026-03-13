@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
+import '../../video_options/sheets/simple_report_sheet.dart';
+import 'block/block_user_widget.dart';
 
 class ChatHeaderMenu extends StatefulWidget {
   final VoidCallback? onClose;
@@ -44,7 +46,39 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
 
   void _handleMenuAction(String action) {
     debugPrint(action); // Print action to console
-    widget.onClose?.call();
+    
+    if (action == "Report user") {
+      _showReportSheet();
+    } else if (action == "Block user") {
+      _showBlockDialog();
+    } else {
+      widget.onClose?.call();
+    }
+  }
+
+  void _showReportSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const SimpleReportSheet(),
+    );
+  }
+
+  void _showBlockDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (context) {
+        return BlockUserWidget(
+          name: "User Name",
+          username: "@username",
+          onConfirm: () {
+            debugPrint("User Blocked");
+          },
+        );
+      },
+    );
   }
 
   @override

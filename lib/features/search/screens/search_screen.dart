@@ -3,6 +3,7 @@ import 'package:gruve_app/core/assets.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/profile_section.dart';
 import '../widgets/horizontal_image_list.dart';
+import 'search_page.dart';
 
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key});
@@ -25,9 +26,18 @@ class SearchScreen extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 /// SEARCH BAR
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: CustomSearchBar(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CustomSearchBar(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SearchPage(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
                 const SizedBox(height: 20),

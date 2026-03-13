@@ -81,6 +81,7 @@ flutter:
     - assets/message/
     - assets/flash_sales/
     - assets/3 dots/
+    - assets/share/
 
   fonts:
     - family: Raleway
