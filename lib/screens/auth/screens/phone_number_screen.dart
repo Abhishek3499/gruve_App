@@ -5,8 +5,8 @@ import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/auth/screens/signup_screen.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
+import 'package:gruve_app/widgets/inputs/phone_input_field.dart';
 import 'package:gruve_app/widgets/video_background.dart';
-import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
 
 class PhoneNumberScreen extends StatefulWidget {
   const PhoneNumberScreen({super.key});
@@ -45,7 +45,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.26,
@@ -53,7 +53,6 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                       /// TITLE
                       RichText(
-                        textAlign: TextAlign.center,
                         text: const TextSpan(
                           style: TextStyle(
                             color: Colors.white,
@@ -63,12 +62,11 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             fontFamily: AppAssets.syncopateFont,
                           ),
                           children: [
-                            TextSpan(text: 'Phone'),
+                            TextSpan(text: 'Phone '),
                             TextSpan(
-                              text: ' Number',
+                              text: 'Number',
                               style: TextStyle(
                                 color: Color(0xFFB86AD0),
-                                fontFamily: 'syncopate',
                                 fontSize: 26,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -83,7 +81,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       const Text(
                         'Please enter your valid number. we will send\n'
                         'you a 4- digit code to verify your account.',
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.left,
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 13,
@@ -94,89 +92,94 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       const SizedBox(height: 26),
 
                       /// LABEL
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Phone Number',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      const Text(
+                        'Phone Number',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
 
                       const SizedBox(height: 10),
 
-                      /// INPUT FIELD
-                      const NeonTextField(hintText: 'Phone number'),
+                      /// PHONE INPUT
+                      const PhoneInputField(),
 
                       const SizedBox(height: 36),
 
                       /// LOGIN BUTTON
-                      GetStartedButton(
-                        text: 'Login',
-                        onComplete: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => OtpScreen(
-                                authFlow: AuthFlow.signIn,
-                                title: 'Enter your Code',
-                                description:
-                                    'Enter the 4-digit code sent to your phone number.',
-                                buttonText: 'Verify',
-                                onVerified: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => HomeScreen(),
-                                    ),
-                                  );
-                                },
+                      const SizedBox(height: 36),
+
+                      /// LOGIN BUTTON
+                      Center(
+                        child: GetStartedButton(
+                          text: 'Login',
+                          onComplete: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => OtpScreen(
+                                  authFlow: AuthFlow.signIn,
+                                  title: 'Enter your Code',
+                                  description:
+                                      'Enter the 4-digit code sent to your phone number.',
+                                  buttonText: 'Continue',
+
+                                  onVerified: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const HomeScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
 
                       const SizedBox(height: 90),
 
                       /// SIGNUP
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SignupScreen(),
-                            ),
-                          );
-                        },
-                        child: RichText(
-                          textAlign: TextAlign.center,
-                          text: const TextSpan(
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: 'Don\'t have an account?  ',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontFamily: AppAssets.montserratfont,
-                                ),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SignupScreen(),
                               ),
-                              TextSpan(
-                                text: 'Sign Up',
-                                style: TextStyle(
-                                  color: Color(0xFFB86AD0),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  fontFamily: AppAssets.montserratfont,
-                                ),
+                            );
+                          },
+                          child: RichText(
+                            textAlign: TextAlign.center,
+                            text: const TextSpan(
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
                               ),
-                            ],
+                              children: [
+                                TextSpan(
+                                  text: "Don't have an account?  ",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: AppAssets.montserratfont,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: "Sign Up",
+                                  style: TextStyle(
+                                    color: Color(0xFFB86AD0),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    fontFamily: AppAssets.montserratfont,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

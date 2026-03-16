@@ -166,7 +166,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       const SizedBox(height: 10),
                       NeonTextField(
                         hintText: 'Enter your username',
-                        prefixIcon: Icons.person_outline,
+                        prefixIcon: AppAssets.user2,
                       ),
                       const SizedBox(height: 40),
                       GetStartedButton(
@@ -174,9 +174,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         onComplete: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => HomeScreen(),
-                            ),
+                            MaterialPageRoute(builder: (_) => HomeScreen()),
                           );
                         },
                       ),

@@ -2,111 +2,77 @@ import 'package:flutter/material.dart';
 import 'package:country_picker/country_picker.dart';
 
 class PhoneInputField extends StatefulWidget {
-  final Country country;
-  final ValueChanged<Country> onCountryChanged;
   final TextEditingController? controller;
-  final String hintText;
 
-  const PhoneInputField({
-    super.key,
-    required this.country,
-    required this.onCountryChanged,
-    this.controller,
-    this.hintText = '',
-  });
+  const PhoneInputField({super.key, this.controller});
 
   @override
   State<PhoneInputField> createState() => _PhoneInputFieldState();
 }
 
 class _PhoneInputFieldState extends State<PhoneInputField> {
+  Country selectedCountry = Country.parse('US');
+
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF8B3FAE).withAlpha(46),
+        color: const Color(0xFF461851),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withAlpha(46), width: 1),
+        border: Border.all(color: const Color(0xFFAF50C4)),
       ),
       child: Row(
         children: [
+          /// COUNTRY PICKER
           GestureDetector(
-            onTap: () => _showCountryPicker(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(15),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withAlpha(26), width: 1),
-              ),
+            onTap: () {
+              showCountryPicker(
+                context: context,
+                onSelect: (country) {
+                  setState(() {
+                    selectedCountry = country;
+                  });
+                },
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 children: [
                   Text(
-                    widget.country.flagEmoji,
-                    style: const TextStyle(fontSize: 18),
+                    selectedCountry.flagEmoji,
+                    style: const TextStyle(fontSize: 20),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
+                  const SizedBox(width: 6),
+                  const Icon(
                     Icons.keyboard_arrow_down,
-                    color: Colors.white70,
+                    color: Colors.white,
                     size: 18,
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
+
+          /// DIVIDER
+          Container(height: 28, width: 1, color: const Color(0xFFAF50C4)),
+
+          /// PHONE TEXTFIELD
           Expanded(
             child: TextField(
               controller: widget.controller,
               keyboardType: TextInputType.phone,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: widget.hintText.isEmpty
-                    ? '${widget.country.phoneCode} (454) 726-0592'
-                    : widget.hintText,
-                hintStyle: const TextStyle(color: Colors.white60),
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "(454) 726-0592",
+                hintStyle: TextStyle(color: Colors.white60),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showCountryPicker(BuildContext context) {
-    showCountryPicker(
-      context: context,
-      showPhoneCode: true,
-      onSelect: widget.onCountryChanged,
-      countryListTheme: CountryListThemeData(
-        backgroundColor: const Color(0xFF1E1E2E),
-        textStyle: const TextStyle(color: Colors.white, fontSize: 16),
-        searchTextStyle: const TextStyle(color: Colors.white),
-        inputDecoration: InputDecoration(
-          hintText: 'Search country...',
-          hintStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: const Icon(Icons.search, color: Colors.white54),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.white24),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.white24),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFB86AD0)),
-          ),
-        ),
-        bottomSheetHeight: 600,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
     );
   }

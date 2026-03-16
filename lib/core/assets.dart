@@ -6,6 +6,11 @@ class AppAssets {
   static const logoMain = 'assets/splash_screen_logo/image 2.png';
   static const googleIcon = 'assets/auth/icons/google_2504914 1.png';
   static const appleIcon = 'assets/auth/icons/apple 1.png';
+  static const user2 = 'assets/auth/icons/user2.png';
+  static const emailicon = 'assets/auth/icons/email_icon.png';
+  static const eyeoff = 'assets/auth/icons/eyeOffIcon.png';
+
+  // button
   static const notification = 'assets/button/notification (1).png';
   static const homelogo = 'assets/button/home.png';
   static const editprofile = 'assets/button/edit_profile_button.png';

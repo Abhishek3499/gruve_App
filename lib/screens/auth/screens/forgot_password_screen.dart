@@ -63,31 +63,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       children: [
                         SizedBox(height: constraints.maxHeight * 0.18),
 
-                       FittedBox(
-  fit: BoxFit.scaleDown,
-  child: Text.rich(
-    TextSpan(
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 26,
-        fontWeight: FontWeight.w700,
-        
-        fontFamily: AppAssets.syncopateFont,
-      ),
-      children: const [
-        TextSpan(text: 'Forgot '),
-        TextSpan(
-          text: 'Password ',
-          style: TextStyle  (color: Color(0xFFB86AD0)),
-        ),
-      ],
-    ),
-    maxLines: 1,
-    softWrap: false,
-  ),
-),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text.rich(
+                            TextSpan(
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w700,
 
-
+                                fontFamily: AppAssets.syncopateFont,
+                              ),
+                              children: const [
+                                TextSpan(text: 'Forgot '),
+                                TextSpan(
+                                  text: 'Password ',
+                                  style: TextStyle(color: Color(0xFFB86AD0)),
+                                ),
+                              ],
+                            ),
+                            maxLines: 1,
+                            softWrap: false,
+                          ),
+                        ),
 
                         const SizedBox(height: 12),
 
@@ -120,7 +118,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         NeonTextField(
                           controller: _emailController,
                           hintText: 'Enter your email address',
-                          prefixIcon: Icons.email_outlined,
+                          prefixIcon: AppAssets.user2,
                           keyboardType: TextInputType.emailAddress,
                         ),
 

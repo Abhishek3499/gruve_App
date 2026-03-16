@@ -47,9 +47,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 fontFamily: AppAssets.syncopateFont,
                               ),
                               children: [
-                                TextSpan(text: 'SIGN '),
+                                TextSpan(text: 'Sign'),
                                 TextSpan(
-                                  text: 'UP',
+                                  text: ' Up',
                                   style: TextStyle(color: Color(0xFFB86AD0)),
                                 ),
                               ],
@@ -79,14 +79,13 @@ class _SignupScreenState extends State<SignupScreen> {
                               color: Color(0xFFFFFFFF),
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              fontFamily: 'montserrat',
                             ),
                           ),
                         ),
                         const SizedBox(height: 10),
                         NeonTextField(
-                          hintText: 'Enter your full name',
-                          prefixIcon: Icons.person_outline,
+                          hintText: 'Skyler',
+                          prefixIcon: AppAssets.user2,
                         ),
                         const SizedBox(height: 20),
                         const Align(
@@ -102,8 +101,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 10),
                         NeonTextField(
-                          hintText: 'Enter your email address',
-                          prefixIcon: Icons.email_outlined,
+                          hintText: 'Loisbecket@gmail.com',
+                          prefixIcon: AppAssets.emailicon,
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 20),
@@ -119,7 +118,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        NeonPasswordField(hintText: 'Create a strong password'),
+                        NeonPasswordField(hintText: '********'),
                         const SizedBox(height: 20),
                         const Align(
                           alignment: Alignment.centerLeft,
@@ -133,10 +132,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        NeonPasswordField(hintText: 'Confirm your password'),
+                        NeonPasswordField(hintText: '********'),
                         const SizedBox(height: 30),
                         GetStartedButton(
-                          text: 'SIGN UP',
+                          text: 'Sign Up',
                           onComplete: () {
                             Navigator.push(
                               context,
@@ -162,7 +161,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           },
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 35),
                         Align(
                           alignment: Alignment.center,
                           child: GestureDetector(
@@ -172,18 +171,18 @@ class _SignupScreenState extends State<SignupScreen> {
                             child: RichText(
                               text: const TextSpan(
                                 style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
                                 ),
                                 children: [
                                   TextSpan(text: 'Already have an account? '),
                                   TextSpan(
                                     text: 'Sign In',
                                     style: TextStyle(
-                                      color: Color(0xFFB86AD0),
+                                      color: Color(0xFF72008D),
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
-                                      fontFamily: 'montserrat',
                                     ),
                                   ),
                                 ],

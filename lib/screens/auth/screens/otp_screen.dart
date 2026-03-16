@@ -119,7 +119,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                 padding: const EdgeInsets.only(left: 24, top: 8),
                 child: GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                  child: Image.asset(AppAssets.back, height: 25, width: 25),
                 ),
               ),
             ),

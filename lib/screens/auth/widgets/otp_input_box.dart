@@ -42,10 +42,11 @@ class OtpInputBox extends StatelessWidget {
             decoration: InputDecoration(
               counterText: '',
               hintText: '-',
+              contentPadding: const EdgeInsets.only(bottom: 6),
               hintStyle: const TextStyle(
-                color: Colors.white38,
-                fontSize: 20,
-                fontWeight: FontWeight.w300,
+                color: Colors.white70,
+                fontSize: 30,
+                fontWeight: FontWeight.w700,
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
