@@ -17,17 +17,13 @@ class AccountPrivacyHeader extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: Image.asset(
-                AppAssets.back,
-                width: 25,
-                height: 25,
-              ),
+              child: Image.asset(AppAssets.back, width: 25, height: 25),
             ),
           ),
 
           // Title
           const Text(
-            "Account Privacy",
+            "Account&Privacy",
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,

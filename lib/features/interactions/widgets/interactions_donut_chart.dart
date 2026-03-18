@@ -37,8 +37,8 @@ class _InteractionsDonutChartState extends State<InteractionsDonutChart>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 100,
-      height: 100,
+      width: 120,
+      height: 120,
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {

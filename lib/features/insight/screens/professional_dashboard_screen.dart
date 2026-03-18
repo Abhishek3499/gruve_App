@@ -27,116 +27,111 @@ class ProfessionalDashboardScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              /// 🔥 HEADER
+              /// 🔥 FIXED HEADER (Stack hata kar Row lagaya hai)
               Container(
                 height: 70,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Stack(
-                  alignment: Alignment.center,
+                child: Row(
+                  // 👈 Stack ki jagah Row use kiya for perfect alignment
                   children: [
                     /// Back Button
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GestureDetector(
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
                         onTap: () => Navigator.pop(context),
+                        splashColor: Colors.transparent, // ❌ No white splash
+                        highlightColor:
+                            Colors.transparent, // ❌ No click highlight
                         child: Container(
                           height: 36,
                           width: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Image.asset(
                               AppAssets.back,
-                              width: 20,
-                              height: 20,
+                              width: 25,
+                              height: 25,
                             ),
                           ),
                         ),
                       ),
                     ),
 
+                    /// 🔥 GAP (Back button aur Text ke beech)
+                    const SizedBox(width: 15),
+
                     /// Title
-                    const Text(
-                      "Professional Dashboard",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'syncopate',
+                    const Expanded(
+                      child: Text(
+                        "Professional Dashboard",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'syncopate',
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              /// 🔥 BODY SECTION
+              /// 🔥 BODY SECTION (Same as before)
               Expanded(
                 child: Column(
                   children: [
-                    /// Scrollable List
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.only(top: 20),
                         children: [
                           InsightListTile(
                             title: "Views",
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ViewsScreen(),
-                                ),
-                              );
-                            },
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ViewsScreen(),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 10),
-
                           InsightListTile(
                             title: "Interactions",
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => InteractionsScreen(),
-                                ),
-                              );
-                            },
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const InteractionsScreen(),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 10),
-
                           InsightListTile(
                             title: "Top Performing Reel",
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PerformanceScreen(),
-                                ),
-                              );
-                            },
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PerformanceScreen(),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 10),
-
                           InsightListTile(
                             title: "Activity",
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ActivityScreen(),
-                                ),
-                              );
-                            },
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ActivityScreen(),
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-
-                    /// Footer (Fixed Bottom)
                     const InsightFooter(),
                   ],
                 ),

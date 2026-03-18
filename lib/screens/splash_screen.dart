@@ -39,10 +39,21 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 400),
+          opaque: false,
+          transitionDuration: const Duration(milliseconds: 280),
+          reverseTransitionDuration: const Duration(milliseconds: 280),
           pageBuilder: (_, __, ___) => const IntroScreen(),
           transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOut,
+              )),
+              child: child,
+            );
           },
         ),
       );

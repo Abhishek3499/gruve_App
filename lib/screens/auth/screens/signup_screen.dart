@@ -45,7 +45,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: VideoBackground(
         videoPath: AppAssets.splashVideo,
         overlayOpacity: 0.85,
@@ -136,23 +136,30 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 30),
 
                     // SIGN UP BUTTON
+                    // SIGN UP BUTTON
                     GetStartedButton(
                       text: 'Sign Up',
                       onComplete: () {
-                        // ✅ Validation check (Basic)
-                        if (_emailController.text.isEmpty) return;
+                        print("Button Clicked!"); // Debug ke liye
 
+                        // Check if email is not empty
+                        if (_emailController.text.trim().isEmpty) {
+                          print("Email is empty");
+                          return;
+                        }
+
+                        // Direct Navigation
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => OtpScreen(
+                            builder: (context) => OtpScreen(
                               authFlow: AuthFlow.signUp,
                               title: 'Enter your Code',
                               description:
                                   'Enter the 4-digit code sent to ${_emailController.text}',
                               buttonText: 'Continue',
-                              phoneNumber: _emailController
-                                  .text, // ✅ FIX 2: Passed required field
+                              phoneNumber: _emailController.text
+                                  .trim(), // Trim extra spaces
                               onVerified: () {
                                 Navigator.push(
                                   context,

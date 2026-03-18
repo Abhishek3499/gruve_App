@@ -69,7 +69,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: VideoBackground(
         videoPath: AppAssets.splashVideo,
         overlayOpacity: 0.85,

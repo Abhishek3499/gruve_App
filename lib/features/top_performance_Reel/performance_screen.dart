@@ -33,15 +33,12 @@ class PerformanceScreen extends StatelessWidget {
                         child: Container(
                           height: 36,
                           width: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(shape: BoxShape.circle),
                           child: Center(
                             child: Image.asset(
                               AppAssets.back,
-                              width: 10,
-                              height: 20,
+                              width: 25,
+                              height: 25,
                             ),
                           ),
                         ),
@@ -81,7 +78,7 @@ class PerformanceScreen extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
 

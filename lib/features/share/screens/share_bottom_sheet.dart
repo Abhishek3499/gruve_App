@@ -23,10 +23,10 @@ class ShareBottomSheet extends StatelessWidget {
           // Handle bar
           Container(
             margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
+            width: 65,
+            height: 3,
             decoration: BoxDecoration(
-              color: Colors.white54,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

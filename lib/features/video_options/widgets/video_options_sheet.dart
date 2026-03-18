@@ -229,6 +229,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
+
                                 backgroundColor: Colors.transparent,
                                 builder: (context) => const SimpleBlockSheet(),
                               );

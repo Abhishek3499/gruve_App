@@ -23,7 +23,7 @@ class InteractionsCountSection extends StatelessWidget {
         Text(
           'Interactions',
           style: const TextStyle(
-            color: AppColors.white70,
+            color: AppColors.white,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),

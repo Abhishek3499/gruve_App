@@ -15,16 +15,14 @@ class LanguageScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF9544A7), Color(0xFF42174C)],
+            colors: [
+              Color.fromARGB(255, 55, 14, 65),
+              Color.fromARGB(255, 6, 1, 7),
+            ],
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: const [
-              LanguageHeader(),
-              LanguageList(),
-            ],
-          ),
+          child: Column(children: const [LanguageHeader(), LanguageList()]),
         ),
       ),
     );

@@ -54,10 +54,11 @@ class ProfileMenuDrawer extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.close,
+                      child: Image.asset(
+                        AppAssets.close,
                         color: Colors.white,
-                        size: 24,
+                        height: 16,
+                        width: 16,
                       ),
                     ),
                   ),

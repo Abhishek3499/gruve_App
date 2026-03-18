@@ -24,7 +24,7 @@ class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
   static const double _circleSize = 45;
 
   double get _maxDrag => _buttonWidth - _circleSize - 5;
-  double get _threshold => _maxDrag * 0.6;
+  double get _threshold => _maxDrag * 0.4; // Reduced from 0.6 to 0.4 for easier sliding
 
   @override
   void didChangeDependencies() {

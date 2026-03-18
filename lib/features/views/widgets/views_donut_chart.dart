@@ -37,8 +37,8 @@ class _ViewsDonutChartState extends State<ViewsDonutChart>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 100,
-      height: 100,
+      width: 128,
+      height: 128,
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {

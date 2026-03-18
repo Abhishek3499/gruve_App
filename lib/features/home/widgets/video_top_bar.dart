@@ -35,7 +35,7 @@ class VideoTopBar extends StatelessWidget {
                     Container(
                       height: 20,
                       width: 1.5,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                     const SizedBox(width: 12),
                     _buildTab("For you"),
@@ -98,11 +98,11 @@ class VideoTopBar extends StatelessWidget {
               color: isSelected ? const Color(0xFF280131) : Colors.white,
             ),
           ),
-          const SizedBox(height: 4),
+
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            height: 2,
-            width: isSelected ? 45 : 0,
+            height: 1,
+            width: isSelected ? 80 : 0,
             color: const Color(0xFF280131),
           ),
         ],

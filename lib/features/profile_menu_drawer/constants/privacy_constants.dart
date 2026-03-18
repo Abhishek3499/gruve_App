@@ -20,14 +20,14 @@ class PrivacyConstants {
   // 👇 YAHAN ADD KARNA HAI (Text Styles)
 
   static const TextStyle titleStyle = TextStyle(
-    color: Color(0xFFF5CDFF),
+    color: Colors.white,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.3,
   );
 
   static const TextStyle descriptionStyle = TextStyle(
-    color: Color(0xFFF5CDFF),
+    color: Colors.white,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.5,
@@ -44,7 +44,10 @@ class PrivacyConstants {
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF72008D), Color(0xFF511263)],
+    colors: [
+      Color.fromARGB(255, 203, 69, 234), // 👈 Aapka pehla color (#72008D)
+      Color.fromARGB(255, 197, 77, 231),
+    ],
   );
 
   static const double cardBorderRadius = 10.0;

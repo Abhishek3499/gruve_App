@@ -74,41 +74,24 @@ class _IntroScreenState extends State<IntroScreen> {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          transitionDuration: const Duration(milliseconds: 450),
-                          reverseTransitionDuration: const Duration(
-                            milliseconds: 300,
-                          ),
+                          opaque: false,
+                          transitionDuration: const Duration(milliseconds: 280),
+                          reverseTransitionDuration: const Duration(milliseconds: 280),
                           pageBuilder: (_, animation, secondaryAnimation) =>
                               const SignInScreen(),
                           transitionsBuilder:
                               (_, animation, secondaryAnimation, child) {
-                                final fade = Tween(
-                                  begin: 0.0,
-                                  end: 1.0,
-                                ).animate(animation);
-
-                                final slide =
-                                    Tween(
-                                      begin: const Offset(
-                                        0.0,
-                                        0.05,
-                                      ), // slight up animation
-                                      end: Offset.zero,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOut,
-                                      ),
-                                    );
-
-                                return FadeTransition(
-                                  opacity: fade,
-                                  child: SlideTransition(
-                                    position: slide,
-                                    child: child,
-                                  ),
-                                );
-                              },
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(1.0, 0.0),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOut,
+                              )),
+                              child: child,
+                            );
+                          },
                         ),
                       );
                     },

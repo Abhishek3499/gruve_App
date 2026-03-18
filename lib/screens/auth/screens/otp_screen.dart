@@ -92,7 +92,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: VideoBackground(
         videoPath: AppAssets.splashVideo,
         overlayOpacity: 0.85,
@@ -138,6 +138,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
               ),
 
               // 🔹 Content Area
+              const SizedBox(height: 100),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -175,12 +176,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                         Text(
                           "Enter 4-digit code we have sent to you at",
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 13,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 13),
                         ),
-
+                        const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

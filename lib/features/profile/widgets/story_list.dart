@@ -7,35 +7,29 @@ class StoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 90,
-      child: Row(
+      height: 100, // Thodi height badhayi taaki text niche se cut na ho
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        // Left side se thodi spacing jaisa pehle SizedBox(width: 30) se thi
+        padding: const EdgeInsets.only(left: 30),
         children: [
-          /// 🔥 FIXED + BUTTON (NOT SCROLLABLE)
-          const SizedBox(width: 30),
+          /// 🔥 AB YE BHI SCROLL HOGA (List ke andar aa gaya)
           _buildAddStory(),
-          const SizedBox(width: 18),
 
-          /// 🔥 SCROLLABLE STORIES
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildStory(AppAssets.frame1, "Image 1"),
-                _buildStory(AppAssets.frame2, "Image 2"),
-                _buildStory(AppAssets.frame3, "Image 3"),
-                _buildStory(AppAssets.frame2, "Image 4"),
-                _buildStory(AppAssets.frame3, "Image 5"),
-                _buildStory(AppAssets.frame2, "Image 6"),
-                _buildStory(AppAssets.frame1, "Image 7"),
-              ],
-            ),
-          ),
+          /// 🔥 BAAKI STORIES
+          _buildStory(AppAssets.frame1, "Admin..."),
+          _buildStory(AppAssets.frame2, "Admin..."),
+          _buildStory(AppAssets.frame3, "Admin..."),
+          _buildStory(AppAssets.frame2, "Admin..."),
+          _buildStory(AppAssets.frame3, "Admin..."),
+          _buildStory(AppAssets.frame2, "Admin..."),
+          _buildStory(AppAssets.frame1, "Admin..."),
         ],
       ),
     );
   }
 
-  /// 🔥 ADD STORY (STATIC)
+  /// 🔥 ADD STORY (UI SAME HAI)
   Widget _buildAddStory() {
     return Padding(
       padding: const EdgeInsets.only(right: 18),
@@ -74,7 +68,7 @@ class StoryList extends StatelessWidget {
     );
   }
 
-  /// 🔥 STORY WITH GRADIENT BORDER
+  /// 🔥 STORIES (UI SAME HAI)
   Widget _buildStory(String imagePath, String title) {
     return Padding(
       padding: const EdgeInsets.only(right: 18),
@@ -92,7 +86,7 @@ class StoryList extends StatelessWidget {
               ),
             ),
             child: CircleAvatar(
-              radius: 30,
+              radius: 28, // Thoda adjust kiya taaki border ke sath set rahe
               backgroundImage: AssetImage(imagePath),
             ),
           ),

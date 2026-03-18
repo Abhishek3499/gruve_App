@@ -9,20 +9,32 @@ class NavBarPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final borderPaint = Paint()
-      ..color = const Color(0xFFFF3AFF)
+      ..shader =
+          const LinearGradient(
+            colors: [Color(0x99FF3AFF), Color(0x99990099)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ).createShader(
+            Rect.fromLTWH(0, 0, size.width, size.height),
+          ) // ✅ fixed dynamic
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
     double center = size.width / 2;
     double bumpHeight = 10;
     double bumpWidth = 35;
+    double radius = 18; // ✅ only for smooth corners
 
     final path = Path();
-    path.moveTo(0, bumpHeight); // start from left (offset down by bumpHeight)
 
+    // 🔹 LEFT START (rounded)
+    path.moveTo(0, bumpHeight + radius);
+    path.quadraticBezierTo(0, bumpHeight, radius, bumpHeight);
+
+    // 🔹 TOP LINE BEFORE BUMP
     path.lineTo(center - bumpWidth, bumpHeight);
 
-    // Curve UP in center
+    // 🔹 CENTER BUMP (UNCHANGED)
     path.cubicTo(
       center - bumpWidth + 10,
       bumpHeight,
@@ -40,9 +52,28 @@ class NavBarPainter extends CustomPainter {
       bumpHeight,
     );
 
-    path.lineTo(size.width, bumpHeight);
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
+    // 🔹 RIGHT SIDE (rounded)
+    path.lineTo(size.width - radius, bumpHeight);
+    path.quadraticBezierTo(
+      size.width,
+      bumpHeight,
+      size.width,
+      bumpHeight + radius,
+    );
+
+    // 🔹 RIGHT BOTTOM
+    path.lineTo(size.width, size.height - radius);
+    path.quadraticBezierTo(
+      size.width,
+      size.height,
+      size.width - radius,
+      size.height,
+    );
+
+    // 🔹 BOTTOM LEFT
+    path.lineTo(radius, size.height);
+    path.quadraticBezierTo(0, size.height, 0, size.height - radius);
+
     path.close();
 
     canvas.drawPath(path, paint);

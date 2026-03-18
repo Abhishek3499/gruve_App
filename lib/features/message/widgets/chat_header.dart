@@ -46,6 +46,8 @@ class ChatHeader extends StatelessWidget {
     Navigator.push(
       context,
       PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (context, animation, secondaryAnimation) =>
             UserProfileScreen2(
               userId: user.id,
@@ -53,7 +55,16 @@ class ChatHeader extends StatelessWidget {
               profileImageUrl: user.avatar,
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
+            child: child,
+          );
         },
       ),
     );

@@ -17,6 +17,7 @@ class AppAssets {
   static const editavtar = 'assets/button/edit avtar button.png';
   static const search2 = 'assets/button/search2.png';
   static const sendbutton = 'assets/button/send button.png';
+  static const close = 'assets/button/close 3.png';
 
   static const user = 'assets/button/user circle.png';
   static const search = 'assets/button/search.png';

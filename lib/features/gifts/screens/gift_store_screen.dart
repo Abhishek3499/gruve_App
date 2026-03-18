@@ -17,7 +17,6 @@ class _GiftStoreScreenState extends State<GiftStoreScreen> {
   int _stonesCount = 0;
   final TextEditingController _searchController = TextEditingController();
 
-  // Dummy gift data
   final List<Map<String, dynamic>> _gifts = [
     {'image': 'assets/images/heart_gift.png', 'cost': 5},
     {'image': 'assets/images/flower_gift.png', 'cost': 6},
@@ -37,34 +36,35 @@ class _GiftStoreScreenState extends State<GiftStoreScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFCD72E3), // 0%
-              Color(0xFF3C034A), // 100%
-            ],
+            colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Header
-              GiftHeader(stonesCount: _stonesCount),
-
-              // Category tabs
-              GiftCategoryTabs(
-                selectedCategory: _selectedCategory,
-                onCategorySelected: (category) {
-                  setState(() {
-                    _selectedCategory = category;
-                  });
-                },
+              // 🔥 WHITE HANDLE
+              const SizedBox(height: 12),
+              Container(
+                width: 45,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
 
-              // Flash sale section
+              GiftHeader(stonesCount: _stonesCount),
+
+              GiftCategoryTabs(
+                selectedCategory: _selectedCategory,
+                onCategorySelected: (category) =>
+                    setState(() => _selectedCategory = category),
+              ),
+
               FlashSaleSection(
                 timeRemaining: const Duration(hours: 10, minutes: 24),
               ),
 
-              // Gift grid
               Expanded(
                 child: GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -72,43 +72,20 @@ class _GiftStoreScreenState extends State<GiftStoreScreen> {
                     crossAxisCount: 4,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 1.0,
+                    childAspectRatio: 0.85, // Adjusted for better fit
                   ),
                   itemCount: _gifts.length,
                   itemBuilder: (context, index) {
-                    final gift = _gifts[index];
                     return GiftItem(
-                      imagePath: gift['image'],
-                      stonesCost: gift['cost'],
-                      onTap: () {
-                        // Handle gift selection
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Selected ${gift['cost']} stones gift',
-                            ),
-                            backgroundColor: const Color(0xFFCD72E3),
-                          ),
-                        );
-                      },
+                      imagePath: _gifts[index]['image'],
+                      stonesCost: _gifts[index]['cost'],
+                      onTap: () {},
                     );
                   },
                 ),
               ),
 
-              // Search bar
-              GiftSearchBar(
-                controller: _searchController,
-                onSearch: () {
-                  // Handle search
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Search functionality coming soon!'),
-                      backgroundColor: Color(0xFFCD72E3),
-                    ),
-                  );
-                },
-              ),
+              GiftSearchBar(controller: _searchController, onSearch: () {}),
             ],
           ),
         ),

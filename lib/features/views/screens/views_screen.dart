@@ -57,12 +57,12 @@ class _ViewsScreenState extends State<ViewsScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 15),
 
                       /// COUNT ABOVE DONUT
                       const ViewsCountSection(),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 40),
 
                       /// DONUT + LEFT/RIGHT STATS
                       Row(
@@ -90,7 +90,7 @@ class _ViewsScreenState extends State<ViewsScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 35),
 
                       /// ACCOUNT REACHED
                       const ViewsAccountReached(),

@@ -24,7 +24,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         children: [
           // NAVBAR with CustomPaint
           Positioned(
-            bottom: 0,
+            bottom: -2,
             left: 0,
             right: 0,
             child: CustomPaint(

@@ -20,13 +20,14 @@ class ProfileHeader extends StatelessWidget {
                 debugPrint("[ProfileHeader] Menu button tapped");
                 Scaffold.of(context).openEndDrawer();
               },
+
               child: const Icon(Icons.menu, color: Colors.white, size: 30),
             ),
             const SizedBox(width: 20),
           ],
         ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 20),
 
         /// Avatar + User Info Row
         Padding(

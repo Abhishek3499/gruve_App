@@ -83,6 +83,8 @@ class _VideoOverlayState extends State<VideoOverlay> {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
+                showDragHandle: false, // Pehle ye enable karo agar nahi hai
+                // dragHandleColor: Colors.red,
                 backgroundColor: Colors.transparent,
                 builder: (context) => const GiftPanel(),
               );

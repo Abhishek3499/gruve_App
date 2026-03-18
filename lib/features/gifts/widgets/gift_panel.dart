@@ -175,10 +175,10 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
                   // Handle bar for smooth drag indication
                   Container(
                     margin: const EdgeInsets.only(top: 8),
-                    width: 40,
+                    width: 65,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

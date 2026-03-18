@@ -23,16 +23,29 @@ class AccountHeader extends StatelessWidget {
             Positioned(
               left: 16,
               top: 15,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  height: 30,
-                  width: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(30),
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  child: SizedBox(
+                    height: 60, // 👈 bigger tap area (important)
+                    width: 50,
+                    child: Center(
+                      child: Container(
+                        height: 30,
+                        width: 30,
+                        decoration: BoxDecoration(shape: BoxShape.circle),
+                        child: Image.asset(AppAssets.back),
+                      ),
+                    ),
                   ),
-                  child: Image.asset(AppAssets.back),
                 ),
               ),
             ),

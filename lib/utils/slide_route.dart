@@ -5,19 +5,18 @@ class SlideRoute extends PageRouteBuilder {
 
   SlideRoute({required this.page})
     : super(
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (context, animation, secondaryAnimation) => page,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0); // 👉 right se slide
-          const end = Offset.zero;
-          const curve = Curves.easeOutCubic;
-
-          final tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-
           return SlideTransition(
-            position: animation.drive(tween),
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
             child: child,
           );
         },

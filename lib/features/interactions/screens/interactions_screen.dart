@@ -53,12 +53,12 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 15),
 
                       // COUNT ABOVE DONUT
                       const InteractionsCountSection(),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 40),
 
                       // DONUT + LEFT/RIGHT STATS
                       Row(

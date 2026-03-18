@@ -16,7 +16,7 @@ class InteractionsAccountReached extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Text(
-                'Account reached',
+                'Account Engaged',
                 style: TextStyle(
                   color: Color(0xFFFFFFFF),
                   fontSize: 16,

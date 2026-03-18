@@ -13,7 +13,7 @@ class LanguageTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: LanguageConstants.backgroundColor.withValues(
@@ -44,13 +44,8 @@ class LanguageTile extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Arrow Icon
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white54,
-              size: 16,
-            ),
           ],
         ),
       ),

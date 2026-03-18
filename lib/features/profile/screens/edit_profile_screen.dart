@@ -123,23 +123,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Positioned(
                     left: 16,
                     top: 15,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
+                    child: Material(
+                      // 🔥 Splash color control karne ke liye
+                      color:
+                          Colors.transparent, // Background transparent rakhein
+                      child: InkWell(
+                        // 🔥 GestureDetector ki jagah InkWell use karein splash hatane ke liye
+                        onTap: () {
+                          Navigator.of(
+                            context,
+                          ).pop(); // ✅ Explicitly pop the current route
+                        },
+                        splashColor:
+                            Colors.transparent, // ✅ Safed splash khatam
+                        highlightColor:
+                            Colors.transparent, // ✅ Click highlight bhi khatam
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          height: 44,
+                          width: 40,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
                           ),
-                        );
-                      },
-                      child: Container(
-                        height: 30,
-                        width: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
+                          child: Image.asset(
+                            AppAssets.back,
+                            // fit: BoxFit.contain, // Agar image kat rahi ho toh
+                          ),
                         ),
-                        child: Image.asset(AppAssets.back),
                       ),
                     ),
                   ),

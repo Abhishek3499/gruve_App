@@ -23,11 +23,7 @@ class CenterNavButton extends StatelessWidget {
             colors: [Color(0xFFCC44CC), Color(0xFF6A006A)],
           ),
           boxShadow: [
-            BoxShadow(
-              color: Color(0x99FF00FF),
-              blurRadius: 16,
-              spreadRadius: 3,
-            ),
+            BoxShadow(color: Color(0x99FF00FF), blurRadius: 1, spreadRadius: 1),
           ],
         ),
         child: const Icon(Icons.add, color: Colors.white, size: 30),

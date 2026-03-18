@@ -24,51 +24,52 @@ class OtpInputBox extends StatelessWidget {
       builder: (context, value, child) {
         final hasValue = value.text.isNotEmpty;
 
-        return SizedBox(
-          width: 45,
-          height: 55,
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            autofocus: autoFocus,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 1,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+        return Container(
+          width: 70,
+          height: 70,
+          decoration: BoxDecoration(
+            color: hasValue
+                ? const Color(0xFFB86AD0)
+                : Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(22), // ✅ perfect shape
+            border: Border.all(
+              color: hasValue ? Colors.transparent : Colors.white,
+              width: 1.5,
             ),
-            decoration: InputDecoration(
-              counterText: '',
-              hintText: '-',
-              contentPadding: const EdgeInsets.only(bottom: 6),
-              hintStyle: const TextStyle(
-                color: Colors.white70,
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
+          ),
+          child: Center(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              autofocus: autoFocus,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 1,
+              showCursor: false,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withAlpha(8)),
+              decoration: const InputDecoration(
+                counterText: '',
+                border: InputBorder.none, // ✅ IMPORTANT
+                hintText: '-',
+                hintStyle: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFB86AD0)),
-              ),
-              filled: true,
-              fillColor: hasValue
-                  ? const Color(0xFF9544A7)
-                  : Colors.white.withAlpha(20),
+              onChanged: (val) {
+                if (val.isNotEmpty) {
+                  onChanged?.call(val);
+                } else {
+                  onBackspace?.call();
+                }
+              },
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
-            onChanged: (value) {
-              if (value.isNotEmpty && RegExp(r'^[0-9]$').hasMatch(value)) {
-                onChanged?.call(value);
-              } else if (value.isEmpty) {
-                onBackspace?.call();
-              }
-            },
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
         );
       },

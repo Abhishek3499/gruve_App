@@ -192,6 +192,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final sortedMessages = _getSortedMessages();
 
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
