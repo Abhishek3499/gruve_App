@@ -1,9 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/intro/intro_screen.dart';
-
 import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,6 +13,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
+  bool _isReady = false;
 
   @override
   void initState() {
@@ -23,20 +22,29 @@ class _SplashScreenState extends State<SplashScreen> {
     _controller = VideoPlayerController.asset(AppAssets.splashVideo)
       ..initialize().then((_) {
         if (!mounted) return;
-        setState(() {});
+
+        setState(() {
+          _isReady = true;
+        });
+
         _controller
           ..setLooping(true)
           ..setVolume(0.0)
           ..play();
       });
 
-    // ⏳ Navigate after 3 seconds
     Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const IntroScreen()),
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (_, __, ___) => const IntroScreen(),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
       );
     });
   }
@@ -50,23 +58,44 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black, // important
       body: Stack(
         children: [
-          _controller.value.isInitialized
-              ? SizedBox.expand(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: _controller.value.size.width,
-                      height: _controller.value.size.height,
-                      child: VideoPlayer(_controller),
+          // 🎥 VIDEO (FADE IN)
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 500),
+            opacity: _isReady ? 1 : 0,
+            child: _isReady
+                ? SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _controller.value.size.width,
+                        height: _controller.value.size.height,
+                        child: VideoPlayer(_controller),
+                      ),
                     ),
-                  ),
-                )
-              : const Center(child: CircularProgressIndicator()),
+                  )
+                : Container(color: Colors.black),
+          ),
 
-          Center(child: Image.asset(AppAssets.logoMain, width: 140)),
+          // 🔥 LOGO (SCALE + FADE)
+          Center(
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 800),
+              tween: Tween(begin: 0.8, end: 1.0),
+              curve: Curves.easeOut,
+              builder: (context, scale, child) {
+                return Opacity(
+                  opacity: scale,
+                  child: Transform.scale(scale: scale, child: child),
+                );
+              },
+              child: Image.asset(AppAssets.logoMain, width: 140),
+            ),
+          ),
 
+          // 👇 BOTTOM TEXT (NO CHANGE)
           Positioned(
             bottom: 30,
             left: 0,
@@ -93,9 +122,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 6),
-
                 RichText(
                   text: const TextSpan(
                     children: [

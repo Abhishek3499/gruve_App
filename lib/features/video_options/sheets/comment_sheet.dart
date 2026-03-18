@@ -217,10 +217,7 @@ class _CommentSheetState extends State<CommentSheet> {
             decoration: BoxDecoration(
               color: Color(0x1AFFFFFF),
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(
-                color: Color(0x33FFFFFF),
-                width: 1,
-              ),
+              border: Border.all(color: Color(0x33FFFFFF), width: 1),
             ),
             child: Row(
               children: [
@@ -250,7 +247,11 @@ class _CommentSheetState extends State<CommentSheet> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Image.asset(AppAssets.send, height: 20, width: 20),
+                    child: Image.asset(
+                      AppAssets.sendbutton,
+                      height: 18,
+                      width: 18,
+                    ),
                   ),
                 ),
               ],

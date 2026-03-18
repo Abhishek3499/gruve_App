@@ -22,7 +22,7 @@ class GiftItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           /// Gift circle
           Container(
@@ -41,33 +41,41 @@ class GiftItem extends StatelessWidget {
             child: Center(
               child: Image.asset(
                 imagePath,
-                width: 60,
-                height: 60,
+                width: 50,
+                height: 50,
                 fit: BoxFit.contain,
               ),
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
-          /// Stones row
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(AppAssets.stone, width: 20, height: 20),
-              const SizedBox(width: 4),
+          /// 🔥 FIXED ALIGN TEXT (MAIN FIX)
+          SizedBox(
+            width: 80, // 👈 sabka same width
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(AppAssets.stone, width: 16, height: 16),
+                const SizedBox(width: 4),
 
-              Text(
-                isSpecial && specialText != null
-                    ? specialText!
-                    : '$stonesCost Stones',
-                style: TextStyle(
-                  color: isSpecial ? Colors.blue : Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    isSpecial && specialText != null
+                        ? specialText!
+                        : '$stonesCost Stones',
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isSpecial ? Colors.blue : Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           /// Special badge

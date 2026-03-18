@@ -41,24 +41,33 @@ class VideoTopBar extends StatelessWidget {
                     _buildTab("For you"),
                   ],
                 ),
-
                 Positioned(
                   right: 16,
                   top: 0,
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.2),
-                    ),
-                    child: Center(
-                      child: SizedBox(
-                        height: 25,
-                        width: 25,
-                        child: Image.asset(
-                          AppAssets.notification1,
-                          fit: BoxFit.contain,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                      child: Center(
+                        child: SizedBox(
+                          height: 25,
+                          width: 25,
+                          child: Image.asset(
+                            AppAssets.notification1,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
@@ -81,11 +90,11 @@ class VideoTopBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            text.toUpperCase(),
+            text,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              fontFamily: 'syncopate',
+              fontFamily: 'Syncopate',
               color: isSelected ? const Color(0xFF280131) : Colors.white,
             ),
           ),

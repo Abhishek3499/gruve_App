@@ -18,7 +18,7 @@ class StatsRow extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           label,
-          style: const TextStyle(color: AppColors.white70, fontSize: 14),
+          style: const TextStyle(color: AppColors.white, fontSize: 14),
         ),
       ],
     );

@@ -27,6 +27,7 @@ class RightActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 55,
+      height: 300, // Increased height from default
 
       decoration: BoxDecoration(
         color: const Color(0x80990099),
@@ -53,19 +54,11 @@ class RightActionBar extends StatelessWidget {
             onTap: onComment,
           ),
           const SizedBox(height: 12),
-          _ActionIcon(
-            iconPath: AppAssets.share,
-            count: _formatCount(shareCount),
-            onTap: onShare,
-          ),
+          _ActionIcon(iconPath: AppAssets.share, onTap: onShare),
           const SizedBox(height: 12),
 
           /// 🔥 Three Dots Options
-          _ActionIcon(
-            iconPath: AppAssets.doticon,
-            count: _formatCount(shareCount),
-            onTap: onOptions,
-          ),
+          _ActionIcon(iconPath: AppAssets.doticon, onTap: onOptions),
 
           /// 🔥 Indicator Dots
         ],

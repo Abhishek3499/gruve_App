@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
 import '../models/message_model.dart';
 import 'chat_header_menu.dart';
+import '../../../features/user_profiles/widgets/screens/user_profile_screen2.dart';
 
 class ChatHeader extends StatelessWidget {
   final ChatUser user;
@@ -11,7 +12,7 @@ class ChatHeader extends StatelessWidget {
 
   void showChatHeaderMenu(BuildContext context) {
     OverlayEntry? overlayEntry;
-    
+
     overlayEntry = OverlayEntry(
       builder: (context) => GestureDetector(
         onTap: () {
@@ -22,18 +23,14 @@ class ChatHeader extends StatelessWidget {
           child: Stack(
             children: [
               // Full screen transparent barrier
-              Positioned.fill(
-                child: Container(color: Colors.transparent),
-              ),
+              Positioned.fill(child: Container(color: Colors.transparent)),
               // Menu positioned at top right
               Positioned(
                 top: 60, // Position below header
                 right: 16, // Align to right side
                 child: GestureDetector(
                   onTap: () {}, // Prevent tap through to menu
-                  child: ChatHeaderMenu(
-                    onClose: () => overlayEntry?.remove(),
-                  ),
+                  child: ChatHeaderMenu(onClose: () => overlayEntry?.remove()),
                 ),
               ),
             ],
@@ -43,6 +40,23 @@ class ChatHeader extends StatelessWidget {
     );
 
     Overlay.of(context).insert(overlayEntry);
+  }
+
+  void _navigateToUserProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            UserProfileScreen2(
+              userId: user.id,
+              userName: user.name,
+              profileImageUrl: user.avatar,
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
@@ -66,27 +80,36 @@ class ChatHeader extends StatelessWidget {
 
           const SizedBox(width: 16),
 
-          /// User Avatar
-          CircleAvatar(radius: 20, backgroundImage: AssetImage(user.avatar)),
+          /// User Avatar (Clickable)
+          GestureDetector(
+            onTap: () => _navigateToUserProfile(context),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundImage: AssetImage(user.avatar),
+            ),
+          ),
 
           const SizedBox(width: 12),
 
-          /// User Name
+          /// User Name (Clickable)
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  user.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+            child: GestureDetector(
+              onTap: () => _navigateToUserProfile(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-              ],
+                  const SizedBox(height: 2),
+                ],
+              ),
             ),
           ),
 

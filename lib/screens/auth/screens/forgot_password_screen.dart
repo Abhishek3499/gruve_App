@@ -124,6 +124,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         const SizedBox(height: 40),
 
+                        // ... baki imports same ...
+
+                        // GetStartedButton ke andar onComplete ko replace karein:
                         GetStartedButton(
                           text: 'RESET PASSWORD',
                           onComplete: () {
@@ -136,6 +139,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   description:
                                       'Enter the code sent to your email address.',
                                   buttonText: 'Reset Password',
+                                  phoneNumber: _emailController
+                                      .text, // ✅ FIX: Added missing parameter
                                   onVerified: () {
                                     Navigator.push(
                                       context,

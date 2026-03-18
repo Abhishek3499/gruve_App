@@ -50,6 +50,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
           title: 'Enter your Code',
           description: 'Enter the 4-digit code sent to your email address.',
           buttonText: 'Continue',
+          // ✅ FIX: Adding the missing phoneNumber parameter
+          // Yahan hum email controller ki value bhej rahe hain
+          phoneNumber: _emailController.text,
           onVerified: () {
             Navigator.pushAndRemoveUntil(
               context,

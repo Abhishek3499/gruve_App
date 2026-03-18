@@ -90,7 +90,7 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFCD72E3),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
@@ -102,13 +102,13 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
             ),
             child: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const Icon(Icons.check_circle, color: Colors.black, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     message,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -120,7 +120,7 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
                       overlayEntry.remove();
                     }
                   },
-                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+                  child: const Icon(Icons.close, color: Colors.black, size: 18),
                 ),
               ],
             ),
@@ -158,7 +158,9 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
                   colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
                 ),
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(40), // Increased curve for more rounded look
+                  top: Radius.circular(
+                    40,
+                  ), // Increased curve for more rounded look
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -252,9 +254,9 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 4,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: 0.75,
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 14,
+                                    childAspectRatio: 0.70, // 👈 alignment fix
                                   ),
                               itemCount: _gifts.length,
                               itemBuilder: (context, index) {

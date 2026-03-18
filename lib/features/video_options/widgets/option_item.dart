@@ -61,11 +61,7 @@ class OptionItem extends StatelessWidget {
             ),
             // Right side arrow (only for Report)
             if (hasArrow)
-              Icon(
-                Icons.chevron_right,
-                color: textColor ?? Colors.white,
-                size: 20,
-              ),
+              Icon(Icons.chevron_right, color: Colors.white, size: 20),
           ],
         ),
       ),

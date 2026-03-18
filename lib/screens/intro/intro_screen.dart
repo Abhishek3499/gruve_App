@@ -53,7 +53,7 @@ class _IntroScreenState extends State<IntroScreen> {
                             height: 1.2,
                           ),
                         ),
-                         WidgetSpan(child: SizedBox(height: 12)),
+                        WidgetSpan(child: SizedBox(height: 12)),
                         TextSpan(
                           text: 'Fame Begins.',
                           style: TextStyle(
@@ -73,7 +73,43 @@ class _IntroScreenState extends State<IntroScreen> {
                     onComplete: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const SignInScreen()),
+                        PageRouteBuilder(
+                          transitionDuration: const Duration(milliseconds: 450),
+                          reverseTransitionDuration: const Duration(
+                            milliseconds: 300,
+                          ),
+                          pageBuilder: (_, animation, secondaryAnimation) =>
+                              const SignInScreen(),
+                          transitionsBuilder:
+                              (_, animation, secondaryAnimation, child) {
+                                final fade = Tween(
+                                  begin: 0.0,
+                                  end: 1.0,
+                                ).animate(animation);
+
+                                final slide =
+                                    Tween(
+                                      begin: const Offset(
+                                        0.0,
+                                        0.05,
+                                      ), // slight up animation
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOut,
+                                      ),
+                                    );
+
+                                return FadeTransition(
+                                  opacity: fade,
+                                  child: SlideTransition(
+                                    position: slide,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                        ),
                       );
                     },
                   ),

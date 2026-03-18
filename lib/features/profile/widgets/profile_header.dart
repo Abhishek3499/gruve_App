@@ -69,8 +69,6 @@ class ProfileHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
-
                     const Text(
                       "Anastasia Adams",
                       style: TextStyle(
@@ -80,14 +78,17 @@ class ProfileHeader extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 4),
-
+                    // const SizedBox(height: 2),
                     const Text(
                       "__@nastasia__",
-                      style: TextStyle(color: Color(0xFF9544A7), fontSize: 14),
+                      style: TextStyle(
+                        color: Color(0xFF9544A7),
+                        fontSize: 16,
+                        fontWeight: FontWeight(700),
+                      ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 25),
                     const EditProfileButton(),
                   ],
                 ),

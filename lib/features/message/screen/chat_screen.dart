@@ -195,9 +195,14 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A0A1F), Color(0xFF240A2C)],
+            begin: Alignment(-0.95, 0.31), // 168.05deg converted to Flutter alignment
+            end: Alignment(0.95, -0.31),
+            colors: [
+              Color(0xFF42174C), // #42174C
+              Color(0xFF210C26), // #210C26  
+              Color(0xFF000000), // #000000
+            ],
+            stops: [0.0, 0.42, 1.0], // 0%, 42%, 100%
           ),
         ),
         child: SafeArea(

@@ -24,12 +24,13 @@ class Header extends StatelessWidget {
 
             /// TITLE
             const Text(
-              "NOTIFICATIONS",
+              "Notifications",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
-                letterSpacing: 2,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+
+                fontWeight: FontWeight.w700,
+                fontFamily: 'syncopate',
               ),
             ),
 

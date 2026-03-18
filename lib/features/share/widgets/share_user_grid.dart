@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+
 import '../data/dummy_share_users.dart';
 import '../models/share_user_model.dart';
 import 'share_user_item.dart';

@@ -14,6 +14,9 @@ class AppAssets {
   static const notification = 'assets/button/notification (1).png';
   static const homelogo = 'assets/button/home.png';
   static const editprofile = 'assets/button/edit_profile_button.png';
+  static const editavtar = 'assets/button/edit avtar button.png';
+  static const search2 = 'assets/button/search2.png';
+  static const sendbutton = 'assets/button/send button.png';
 
   static const user = 'assets/button/user circle.png';
   static const search = 'assets/button/search.png';
@@ -25,6 +28,7 @@ class AppAssets {
   static const commenticon = 'assets/home/comment_icon.png';
   static const doticon = 'assets/home/3_dot_icon.png';
   static const share = 'assets/home/share_icon.png';
+  static const musicicon = 'assets/home/musicicon.png';
 
   //search screen
   static const baner =
@@ -125,6 +129,10 @@ class AppAssets {
   //send
   static const send = 'assets/message/send.png';
   static const camera = 'assets/message/camera.png';
+  static const reply = 'assets/message/reply.png';
+  static const forward = 'assets/message/forward.png';
+  static const pin = 'assets/message/pin.png';
+  static const deleted = 'assets/message/deleted.png';
   // gift icons
   static const flash = 'assets/flash_sales/flash_sales.png';
   static const trophy = 'assets/flash_sales/trophy.png';
@@ -157,4 +165,12 @@ class AppAssets {
   static const social = 'assets/share/social 1.png';
   static const snapchats = 'assets/share/snapchat (1) 1.png';
   static const copy = 'assets/share/link 1.png';
+
+  // complete profile
+  static const cicle = 'assets/complete_profile/circle.png';
+  static const editbutton = 'assets/complete_profile/editicon.png';
+
+  //user profile.
+  static const img1 = 'assets/user_profile_grid/img1.png';
+  static const img2 = 'assets/user_profile_grid/img2.png';
 }

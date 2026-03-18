@@ -48,7 +48,7 @@ class CustomSearchBar extends StatelessWidget {
             border: InputBorder.none,
             prefixIcon: Icon(Icons.search, color: Colors.white),
             hintText: "Search Users, Hashtags",
-            hintStyle: TextStyle(color: Colors.white70),
+            hintStyle: TextStyle(color: Colors.white),
             contentPadding: EdgeInsets.symmetric(vertical: 14),
           ),
         ),

@@ -113,32 +113,36 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                       /// LOGIN BUTTON
                       Center(
-                        child: GetStartedButton(
-                          text: 'Login',
-                          onComplete: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OtpScreen(
-                                  authFlow: AuthFlow.signIn,
-                                  title: 'Enter your Code',
-                                  description:
-                                      'Enter the 4-digit code sent to your phone number.',
-                                  buttonText: 'Continue',
-
-                                  onVerified: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const HomeScreen(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        child: // ... baki imports same ...
+                            // Login button ke onComplete ko replace karein:
+                            GetStartedButton(
+                              text: 'Login',
+                              onComplete: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OtpScreen(
+                                      authFlow: AuthFlow.signIn,
+                                      title: 'Enter your Code',
+                                      description:
+                                          'Enter the 4-digit code sent to your phone number.',
+                                      buttonText: 'Continue',
+                                      phoneNumber:
+                                          "User Number", // ✅ FIX: Yahan phone number controller ki value pass karein
+                                      onVerified: () {
+                                        Navigator.pushAndRemoveUntil(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const HomeScreen(),
+                                          ),
+                                          (route) => false,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                       ),
 
                       const SizedBox(height: 90),

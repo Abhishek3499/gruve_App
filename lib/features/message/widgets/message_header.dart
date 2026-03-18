@@ -64,7 +64,7 @@ class MessageHeader extends StatelessWidget {
                       );
                     },
                     child: Image.asset(
-                      AppAssets.search,
+                      AppAssets.search2,
                       width: 24,
                       height: 24,
                       color: Colors.white,

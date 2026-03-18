@@ -5,7 +5,6 @@ import 'package:gruve_app/core/auth_flow.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/screens/auth/widgets/otp_input_box.dart';
-
 import 'package:gruve_app/main.dart';
 
 class OtpScreen extends StatefulWidget {
@@ -14,6 +13,7 @@ class OtpScreen extends StatefulWidget {
   final String description;
   final String buttonText;
   final VoidCallback onVerified;
+  final String phoneNumber;
 
   const OtpScreen({
     super.key,
@@ -22,6 +22,7 @@ class OtpScreen extends StatefulWidget {
     required this.description,
     required this.buttonText,
     required this.onVerified,
+    required this.phoneNumber,
   });
 
   @override
@@ -33,15 +34,13 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     4,
     (_) => TextEditingController(),
   );
-
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
   @override
   void initState() {
     super.initState();
-    listenForCode(); // ✅ SMS auto listen
+    listenForCode();
     _focusNodes.first.requestFocus();
-
     for (final controller in _controllers) {
       controller.addListener(_checkOtpComplete);
     }
@@ -50,16 +49,10 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   @override
   void codeUpdated() {
     if (code == null || code!.length < 4) return;
-
-    // ✅ Auto-fill OTP
     for (int i = 0; i < 4; i++) {
       _controllers[i].text = code![i];
     }
-
-    // ✅ Move focus to last field
     _focusNodes.last.requestFocus();
-
-    // ✅ Check completion
     _checkOtpComplete();
   }
 
@@ -67,8 +60,6 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     final otp = _controllers.map((e) => e.text).join();
     if (otp.length == 4) {
       FocusScope.of(context).unfocus();
-
-      // 🔥 AUTO NAVIGATION
       Future.delayed(const Duration(milliseconds: 300), () {
         widget.onVerified();
       });
@@ -84,23 +75,16 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
-    cancel(); // stop listening sms
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    for (final f in _focusNodes) {
-      f.dispose();
-    }
+    cancel();
+    for (final c in _controllers) c.dispose();
+    for (final f in _focusNodes) f.dispose();
     super.dispose();
   }
 
-  /// 🔥 Reset OTP fields when coming back
   @override
   void didPopNext() {
     setState(() {
-      for (final controller in _controllers) {
-        controller.clear();
-      }
+      for (final controller in _controllers) controller.clear();
       _focusNodes.first.requestFocus();
     });
   }
@@ -112,97 +96,167 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       body: VideoBackground(
         videoPath: AppAssets.splashVideo,
         overlayOpacity: 0.85,
-        child: Stack(
-          children: [
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 8),
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Image.asset(AppAssets.back, height: 25, width: 25),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 🔹 Top Bar (Fixed Progress Bar Width)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const Spacer(flex: 2),
-
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: RichText(
-                      textAlign: TextAlign.center,
-                      text: const TextSpan(
-                        style: TextStyle(
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Image.asset(AppAssets.back, height: 25, width: 25),
+                    ),
+                    const SizedBox(width: 55),
+                    // Progress Bar with Fixed Width
+                    SizedBox(
+                      width: 210, // ✅ Width yahan se control karein
+                      child: Container(
+                        height: 9,
+                        decoration: BoxDecoration(
                           color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.0,
-                          fontFamily: AppAssets.syncopateFont,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        children: [
-                          TextSpan(text: 'Enter your '),
-                          TextSpan(
-                            text: 'Code ',
-                            style: TextStyle(
-                              color: Color(0xFFB86AD0),
-                              fontFamily: 'syncopate',
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: 0.2, // 20% progress
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB86AD0),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    widget.description,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(4, (i) {
-                      return OtpInputBox(
-                        controller: _controllers[i],
-                        focusNode: _focusNodes[i],
-                        autoFocus: i == 0,
-                        onChanged: (val) {
-                          if (val.isNotEmpty && i < 3) {
-                            _focusNodes[i + 1].requestFocus();
-                          }
-                          _checkOtpComplete();
-                        },
-                        onBackspace: () {
-                          if (i > 0 && _controllers[i].text.isEmpty) {
-                            _focusNodes[i - 1].requestFocus();
-                          }
-                          _checkOtpComplete();
-                        },
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // 🔹 fallback button (optional)
-                  GetStartedButton(
-                    text: widget.buttonText,
-                    onComplete: widget.onVerified,
-                  ),
-
-                  const Spacer(flex: 3),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // 🔹 Content Area
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: SingleChildScrollView(
+                    // Added scroll to prevent overflow on small screens
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 60),
+
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: RichText(
+                            textAlign: TextAlign.center,
+                            text: const TextSpan(
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                                fontFamily: AppAssets.syncopateFont,
+                              ),
+                              children: [
+                                TextSpan(text: 'Enter your '),
+                                TextSpan(
+                                  text: 'Code ',
+                                  style: TextStyle(color: Color(0xFFB86AD0)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        Text(
+                          "Enter 4-digit code we have sent to you at",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 13,
+                          ),
+                        ),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              widget.phoneNumber,
+                              style: const TextStyle(
+                                color: Color(0xFFB86AD0),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Color(0xFFB86AD0),
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // OTP Boxes
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(4, (i) {
+                            return OtpInputBox(
+                              controller: _controllers[i],
+                              focusNode: _focusNodes[i],
+                              autoFocus: i == 0,
+                              onChanged: (val) {
+                                if (val.isNotEmpty && i < 3) {
+                                  _focusNodes[i + 1].requestFocus();
+                                }
+                                _checkOtpComplete();
+                              },
+                              onBackspace: () {
+                                if (i > 0 && _controllers[i].text.isEmpty) {
+                                  _focusNodes[i - 1].requestFocus();
+                                }
+                                _checkOtpComplete();
+                              },
+                            );
+                          }),
+                        ),
+
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              "Resend code",
+                              style: TextStyle(
+                                color: Color(0xFFB86AD0),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        GetStartedButton(
+                          text: widget.buttonText,
+                          onComplete: widget.onVerified,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

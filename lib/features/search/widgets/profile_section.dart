@@ -41,7 +41,11 @@ class ProfileSection extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: Colors.amber, fontSize: 13),
+                  style: const TextStyle(
+                    color: Color(0xFFFEB301),
+                    fontSize: 14,
+                    fontWeight: FontWeight(400),
+                  ),
                 ),
               ],
             ),
@@ -51,7 +55,11 @@ class ProfileSection extends StatelessWidget {
             children: [
               Text(
                 stats,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
               const SizedBox(width: 6),
               const Icon(Icons.chevron_right, color: Colors.white),

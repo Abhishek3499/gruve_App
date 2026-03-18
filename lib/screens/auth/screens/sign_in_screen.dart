@@ -13,10 +13,23 @@ import 'package:gruve_app/widgets/video_background.dart';
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
+  void _navigate(BuildContext context, Widget screen) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (_, __, ___) => screen,
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black, // ✅ FIX
       body: VideoBackground(
         videoPath: AppAssets.splashVideo,
         overlayOpacity: 0.85,
@@ -33,12 +46,7 @@ class SignInScreen extends StatelessWidget {
                 PrimaryButton(
                   text: 'Continue with Email',
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EmailLoginScreen(),
-                      ),
-                    );
+                    _navigate(context, const EmailLoginScreen());
                   },
                 ),
 
@@ -47,12 +55,7 @@ class SignInScreen extends StatelessWidget {
                 OutlineButton(
                   text: 'Use phone number',
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const PhoneNumberScreen(),
-                      ),
-                    );
+                    _navigate(context, const PhoneNumberScreen());
                   },
                 ),
 
@@ -66,12 +69,8 @@ class SignInScreen extends StatelessWidget {
                 const Spacer(),
 
                 GestureDetector(
-                  behavior: HitTestBehavior.translucent,
                   onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SignupScreen()),
-                    );
+                    _navigate(context, const SignupScreen());
                   },
                   child: RichText(
                     text: const TextSpan(

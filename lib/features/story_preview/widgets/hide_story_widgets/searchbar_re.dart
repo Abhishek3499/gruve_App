@@ -37,8 +37,8 @@ class SearchbarRe extends StatelessWidget {
 
               icon: Icon(Icons.search, color: Colors.white70, size: 20),
 
-              hintText: "Search",
-              hintStyle: TextStyle(color: Colors.white70, fontSize: 14),
+              hintText: "Search Users",
+              hintStyle: TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
         ),

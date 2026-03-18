@@ -37,7 +37,7 @@ class ShareSocialButtons extends StatelessWidget {
           ),
 
           _SocialButton(
-            iconPath: AppAssets.instagram,
+            iconPath: AppAssets.social,
             onTap: () => _onSocialButtonTap(context, 'Instagram'),
           ),
 

@@ -209,7 +209,8 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
-                                builder: (context) => const SimpleNotInterestedSheet(),
+                                builder: (context) =>
+                                    const SimpleNotInterestedSheet(),
                               );
                             },
                           ),
@@ -237,7 +238,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                           OptionItem(
                             title: 'Report',
                             icon: AppAssets.reports,
-                            iconColor: Colors.white,
+                            iconColor: Colors.red,
                             textColor: Colors.red,
                             hasArrow: true,
                             onTap: () {

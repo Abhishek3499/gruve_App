@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 
-enum MessageAction {
-  reply,
-  forward,
-  pin,
-  report,
-  delete,
-}
+enum MessageAction { reply, forward, pin, report, delete }
 
 class MessagePopupMenu extends StatelessWidget {
   final MessageAction? selectedAction;
@@ -44,7 +39,7 @@ class MessagePopupMenu extends StatelessWidget {
               children: [
                 // Reply
                 _buildMenuItem(
-                  icon: Icons.reply,
+                  icon: AppAssets.reply,
                   label: 'Reply',
                   color: Colors.white,
                   isSelected: selectedAction == MessageAction.reply,
@@ -55,8 +50,17 @@ class MessagePopupMenu extends StatelessWidget {
 
                 // Copy
                 _buildMenuItem(
-                  icon: Icons.copy,
-                  label: 'Copy',
+                  icon: AppAssets.forward,
+                     label: 'forward',
+                  color: Colors.white,
+                  isSelected: selectedAction == MessageAction.forward,
+                  onTap: () => onActionSelected?.call(MessageAction.forward),
+                ),
+
+                const SizedBox(height: 14),
+                _buildMenuItem(
+                  icon: AppAssets.pin,
+                  label: 'pin',
                   color: Colors.white,
                   isSelected: selectedAction == MessageAction.forward,
                   onTap: () => onActionSelected?.call(MessageAction.forward),
@@ -66,8 +70,8 @@ class MessagePopupMenu extends StatelessWidget {
 
                 // Delete
                 _buildMenuItem(
-                  icon: Icons.delete,
-                  label: 'Delete',
+                  icon: AppAssets.report,
+                  label: 'report',
                   color: const Color(0xFFF51829), // Red for danger
                   isSelected: selectedAction == MessageAction.delete,
                   onTap: () => onActionSelected?.call(MessageAction.delete),
@@ -77,11 +81,11 @@ class MessagePopupMenu extends StatelessWidget {
 
                 // Forward
                 _buildMenuItem(
-                  icon: Icons.send,
-                  label: 'Forward',
-                  color: Colors.white,
-                  isSelected: selectedAction == MessageAction.forward,
-                  onTap: () => onActionSelected?.call(MessageAction.forward),
+                  icon: AppAssets.report,
+                  label: 'delete',
+                  color: const Color(0xFFF51829), // Red for danger
+                  isSelected: selectedAction == MessageAction.delete,
+                  onTap: () => onActionSelected?.call(MessageAction.delete),
                 ),
               ],
             ),
@@ -92,7 +96,7 @@ class MessagePopupMenu extends StatelessWidget {
   }
 
   Widget _buildMenuItem({
-    required IconData icon,
+    required String icon,
     required String label,
     required Color color,
     required bool isSelected,
@@ -103,16 +107,14 @@ class MessagePopupMenu extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
+            Image.asset(icon, color: color, width: 20, height: 20),
             const SizedBox(width: 12),
             Text(
               label,

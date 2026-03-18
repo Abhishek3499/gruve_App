@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
+import 'package:gruve_app/features/music_screen/music_screen.dart';
 import '../controllers/subscribe_controller.dart';
 import 'subscribe_button.dart';
 
@@ -20,6 +21,20 @@ class VideoUserInfo extends StatelessWidget {
     required this.userId,
     required this.subscribeController,
   });
+
+  void _navigateToMusicScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MusicScreen(
+          musicId: 'music_${userId}',
+          musicTitle: musicTitle,
+          musicUrl: 'https://example.com/music/$userId',
+          userName: username,
+        ),
+      ),
+    );
+  }
 
   String get displayUsername {
     if (username.length <= 15) {
@@ -117,15 +132,26 @@ class VideoUserInfo extends StatelessWidget {
           /// 🔥 MUSIC + USERS ROW
           Row(
             children: [
-              const Icon(Icons.music_note, color: Colors.white, size: 18),
+              GestureDetector(
+                onTap: () => _navigateToMusicScreen(context),
+                child: Image.asset(
+                  AppAssets.musicicon,
+                  color: Colors.white,
+                  height: 15,
+                  width: 15,
+                ),
+              ),
 
               const SizedBox(width: 6),
 
               Expanded(
-                child: Text(
-                  musicTitle,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  overflow: TextOverflow.ellipsis,
+                child: GestureDetector(
+                  onTap: () => _navigateToMusicScreen(context),
+                  child: Text(
+                    musicTitle,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
 
@@ -144,7 +170,9 @@ class VideoUserInfo extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(26),
                       color: Colors.white.withValues(alpha: 0.08),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,

@@ -11,11 +11,12 @@ class SimpleNotInterestedSheet extends StatefulWidget {
 class _SimpleNotInterestedSheetState extends State<SimpleNotInterestedSheet> {
   final List<String> notInterestedReasons = [
     'I just don\'t like it',
-    'I\'m not interested in this author',
-    'I\'m not interested in this topic',
-    'I\'ve seen too many of this',
-    'It\'s not relevant to me',
-    'Other reasons',
+    'Bullying or unwanted contact',
+    'Suicide, self-injury or eating disorders',
+    'Substance abuse or addiction',
+    'Harassment or discrimination',
+    'Violence or threats of violence',
+    "Undo",
   ];
 
   @override

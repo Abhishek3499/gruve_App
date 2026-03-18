@@ -16,7 +16,7 @@ class GetStartedButton extends StatefulWidget {
 }
 
 class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
-  double _dragX = 0;
+  double _dragX = 10;
   bool _animating = false;
 
   static const double _buttonWidth = 200;

@@ -65,28 +65,35 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
                             children: [
                               TextSpan(
-                                text: 'COMPLETE ',
-                                style: TextStyle(color: Colors.white),
+                                text: 'Complete ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
+                                  fontWeight: .w700,
+                                ),
                               ),
                               TextSpan(
-                                text: 'PROFILE',
+                                text: 'Profile',
                                 style: TextStyle(color: Color(0xFFB86AD0)),
                               ),
                             ],
                           ),
-                          textAlign: TextAlign.center,
+                          textAlign: TextAlign.start,
                           maxLines: 1,
                         ),
                       ),
 
                       const SizedBox(height: 12),
-                      const Text(
-                        'Complete your profile to get the best\nexperience with our app.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          height: 1.4,
+                      Align(
+                        alignment: AlignmentGeometry.bottomStart,
+                        child: const Text(
+                          'Lorem Ipsum is simply dummy text of the\n printing and typesetting industry',
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: .w400,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -101,52 +108,86 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             },
                           );
                         },
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF461851),
-                            borderRadius: BorderRadius.circular(60),
-                            border: Border.all(
-                              color: const Color(0xFFAF50C4),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              const BoxShadow(
-                                color: Color(0x40000000),
-                                offset: Offset(0, 4),
-                                blurRadius: 20,
-                              ),
-                              const BoxShadow(
-                                color: Color(0xCC5C1B6D),
-                                offset: Offset(-8, -8),
-                                blurRadius: 20,
-                                spreadRadius: -1,
-                              ),
-                            ],
-                          ),
-                          child: _selectedImage != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(60),
-                                  child: Image.file(
-                                    File(_selectedImage!.path),
-                                    width: 120,
-                                    height: 120,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white70,
-                                        size: 40,
-                                      );
-                                    },
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white70,
-                                  size: 40,
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF461851),
+                                borderRadius: BorderRadius.circular(60),
+                                border: Border.all(
+                                  color: const Color(0xFFAF50C4),
+                                  width: 1,
                                 ),
+                                boxShadow: [
+                                  const BoxShadow(
+                                    color: Color(0x40000000),
+                                    offset: Offset(0, 4),
+                                    blurRadius: 20,
+                                  ),
+                                  const BoxShadow(
+                                    color: Color(0xCC5C1B6D),
+                                    offset: Offset(-8, -8),
+                                    blurRadius: 20,
+                                    spreadRadius: -1,
+                                  ),
+                                ],
+                              ),
+                              child: _selectedImage != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(60),
+                                      child: Image.file(
+                                        File(_selectedImage!.path),
+                                        width: 120,
+                                        height: 120,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return const Icon(
+                                                Icons.camera_alt,
+                                                color: Colors.white70,
+                                                size: 40,
+                                              );
+                                            },
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white70,
+                                      size: 40,
+                                    ),
+                            ),
+
+                            // 👇 Pencil icon (overlay)
+                            Positioned(
+                              bottom: 6,
+                              right: 6,
+                              child: SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    // 👇 Circle background from AppAssets
+                                    Image.asset(
+                                      AppAssets.cicle, // your circle image
+                                      width: 32,
+                                      height: 32,
+                                      fit: BoxFit.cover,
+                                    ),
+
+                                    // 👇 Edit icon from AppAssets
+                                    Image.asset(
+                                      AppAssets.editbutton, // your edit icon
+                                      width: 14,
+                                      height: 14,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 20),
