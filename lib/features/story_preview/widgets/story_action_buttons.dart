@@ -50,12 +50,12 @@ class StoryActionButtons extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Container(
-        width: 32,
-        height: 32,
+        width: 40,
+        height: 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black38,
+          color: Colors.white24,
         ),
         child: SizedBox(width: size, height: size, child: icon),
       ),

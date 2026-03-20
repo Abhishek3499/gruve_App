@@ -10,7 +10,7 @@ class StoryTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 15),
+        padding: const EdgeInsets.symmetric(vertical: 25),
         child: Row(
           children: [
             GestureDetector(
@@ -20,16 +20,14 @@ class StoryTopBar extends StatelessWidget {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(
-                    alpha: 0.6,
-                  ), // background color
+                  // background color
                   shape: BoxShape.circle,
                 ),
                 child: Image.asset(
                   AppAssets.back,
                   color: Colors.white,
-                  height: 20,
-                  width: 20,
+                  height: 25,
+                  width: 25,
                 ),
               ),
             ),

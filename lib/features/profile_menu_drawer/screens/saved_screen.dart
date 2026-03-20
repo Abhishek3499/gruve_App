@@ -10,25 +10,40 @@ class SavedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF14001A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            /// ===== HEADER =====
-            const SavedHeader(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color.fromARGB(255, 71, 18, 86),
+              Color.fromARGB(255, 6, 1, 7),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          // ✅ yaha child use hoga
+          child: Column(
+            children: [
+              /// ===== HEADER =====
+              const SavedHeader(),
 
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
-            /// ===== CARDS ROW =====
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: SavedConstants.categories.map((category) {
-                return SavedCard(model: category);
-              }).toList(),
-            ),
-            Spacer(),
-            const SavesFooter(),
-          ],
+              /// ===== CARDS ROW =====
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: SavedConstants.categories.map((category) {
+                  return SavedCard(model: category);
+                }).toList(),
+              ),
+
+              const Spacer(),
+
+              /// ===== FOOTER =====
+              const SavesFooter(),
+            ],
+          ),
         ),
       ),
     );

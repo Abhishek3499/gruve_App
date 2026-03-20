@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
+import '../screens/real_draft_screen.dart';
 
 class ProfileGrid extends StatelessWidget {
   const ProfileGrid({super.key});
@@ -27,29 +28,42 @@ class ProfileGrid extends StatelessWidget {
         childAspectRatio: 0.75,
       ),
       itemBuilder: (context, index) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              /// Image
-              Image.asset(images[index], fit: BoxFit.cover),
+        return GestureDetector(
+          onTap: () {
+            // Navigate to Draft Screen only for the first item (Drafts)
+            if (index == 0) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ReelsDraftsScreen(),
+                ),
+              );
+            }
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                /// Image
+                Image.asset(images[index], fit: BoxFit.cover),
 
-              /// 🔥 If First Item → Show Draft Overlay
-              if (index == 0)
-                Container(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    "Drafts",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                /// 🔥 If First Item → Show Draft Overlay
+                if (index == 0)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      "Drafts",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },

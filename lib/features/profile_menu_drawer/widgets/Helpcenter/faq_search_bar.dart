@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 
 class FaqSearchBar extends StatelessWidget {
   final String selectedCategory;
-  
-  const FaqSearchBar({
-    super.key,
-    required this.selectedCategory,
-  });
+
+  const FaqSearchBar({super.key, required this.selectedCategory});
 
   @override
   Widget build(BuildContext context) {
@@ -16,18 +13,18 @@ class FaqSearchBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF4A1F5C).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: const Color(0xFF72008D).withValues(alpha: 0.5),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFF7E92F8), width: 1),
       ),
       child: TextField(
         decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 30),
+          prefixIcon: const Icon(Icons.search, color: Colors.white, size: 30),
           hintText: selectedCategory == 'General' ? 'Why I' : null,
-          hintStyle: const TextStyle(color: Colors.white70, fontSize: 16),
+          hintStyle: const TextStyle(color: Colors.white, fontSize: 16),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
         ),
         style: const TextStyle(color: Colors.white, fontSize: 16),
       ),

@@ -174,4 +174,5 @@ class AppAssets {
   //user profile.
   static const img1 = 'assets/user_profile_grid/img1.png';
   static const img2 = 'assets/user_profile_grid/img2.png';
+  static const draft = 'assets/user_profile_grid/draft.png';
 }

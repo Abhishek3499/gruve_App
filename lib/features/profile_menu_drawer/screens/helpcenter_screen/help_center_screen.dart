@@ -28,8 +28,16 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       backgroundColor: Colors.transparent,
       body: Container(
         width: double.infinity,
+        height: double.infinity, // Poori screen cover karne ke liye
         decoration: const BoxDecoration(
-          gradient: PrivacyConstants.backgroundGradient,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter, // Gradient kahan se shuru hoga
+            end: Alignment.bottomCenter, // Kahan khatam hoga
+            colors: [
+              Color.fromARGB(255, 57, 3, 69), // Dark Purple
+              Color.fromARGB(255, 3, 0, 4), // Near Black
+            ],
+          ),
         ),
         child: SafeArea(
           child: Column(

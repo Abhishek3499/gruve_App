@@ -9,7 +9,7 @@ class ContactUsTab extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: const Color(0xFF7D2D90),
+      color: const Color.fromARGB(255, 45, 1, 55),
       child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(17),
@@ -63,7 +63,7 @@ class _ContactSupportButton extends StatelessWidget {
       height: 85,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF8E3AA8),
+        color: const Color.fromARGB(255, 183, 108, 206),
         borderRadius: BorderRadius.circular(27),
       ),
       child: Row(

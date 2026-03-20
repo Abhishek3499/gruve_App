@@ -29,7 +29,7 @@ class ArchiveSwitcherTab extends StatelessWidget {
         /// LINE
         Stack(
           children: [
-            Container(height: 2, color: Colors.white24),
+            Container(height: 2, color: Colors.white),
 
             AnimatedAlign(
               duration: const Duration(milliseconds: 300),

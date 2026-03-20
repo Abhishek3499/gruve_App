@@ -14,7 +14,7 @@ class ActivitySummarySection extends StatelessWidget {
           totalTime,
           style: const TextStyle(
             fontSize: 22,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w600,
             color: Color(0xFFFFFFFF),
           ),
         ),

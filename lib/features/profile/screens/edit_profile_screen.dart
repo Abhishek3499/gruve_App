@@ -194,7 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.only(
-                              top: 70,
+                              top: 120,
                               left: 20,
                               right: 20,
                               bottom: 60,

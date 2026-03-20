@@ -13,53 +13,43 @@ class PinnedMessageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF311B36),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF72008D), width: 1),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
       child: Row(
+        mainAxisAlignment: pinnedMessage.isSent
+            ? MainAxisAlignment
+                  .end // sent message → right side
+            : MainAxisAlignment.start, // received message → left side
         children: [
-          // Pin icon
-          const Icon(
-            Icons.push_pin,
-            color: Color(0xFF72008D),
-            size: 20,
-          ),
-          
-          const SizedBox(width: 12),
-          
-          // Pinned message content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: EdgeInsets.only(
+              left: pinnedMessage.isSent ? 0 : 52, // avatar width offset
+              right: pinnedMessage.isSent ? 52 : 0,
+            ),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Pinned label
-                const Text(
-                  'Pinned message',
-                  style: TextStyle(
-                    color: Color(0xFF72008D),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                // Pin icon
+                Image.asset(
+                  'assets/icons/pin.png', // apna pin asset use karo
+                  width: 14,
+                  height: 14,
+                  color: Colors.white,
+                  errorBuilder: (_, _, _) => Icon(
+                    Icons.push_pin,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
-                
-                const SizedBox(height: 4),
-                
-                // Username and preview
+                const SizedBox(width: 5),
+                // "skyler. Pinned" text
                 Text(
-                  '$username: ${pinnedMessage.text.isNotEmpty ? pinnedMessage.text : "Image"}',
-                  style: const TextStyle(
+                  '$username. Pinned',
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w400,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

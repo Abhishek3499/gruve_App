@@ -211,7 +211,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       ),
                       const SizedBox(height: 40),
                       GetStartedButton(
-                        text: 'COMPLETE',
+                        text: 'Completes',
                         onComplete: () {
                           Navigator.push(
                             context,

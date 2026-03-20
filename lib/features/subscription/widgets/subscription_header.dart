@@ -19,7 +19,7 @@ class SubscriptionHeader extends StatelessWidget {
 
           /// 🔙 Back Button
           Positioned(
-            top: 50,
+            top: 35,
             left: 16,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
@@ -34,7 +34,7 @@ class SubscriptionHeader extends StatelessWidget {
 
           /// ⭐ Center Icon + Text (Manually Adjusted)
           Positioned(
-            top: 90, // 👈 isko adjust karo 80–110 ke beech
+            top: 70, // 👈 isko adjust karo 80–110 ke beech
             left: 0,
             right: 0,
             child: Column(
@@ -52,17 +52,17 @@ class SubscriptionHeader extends StatelessWidget {
                     /// Star Image
                     Image.asset(
                       AppAssets.star, // 👈 tera star image
-                      height: 25,
+                      height: 20,
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 const Text(
                   "Buy Stones",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],

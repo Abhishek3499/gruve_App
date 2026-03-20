@@ -33,7 +33,7 @@ class SearchUsersScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  const SearchbarRe(),
+                  const SearchbarRe(hintText: 'Search users'),
                 ],
               ),
             ),

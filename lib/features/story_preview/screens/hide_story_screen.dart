@@ -34,7 +34,7 @@ class HideStoryScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            const SearchbarRe(),
+            const SearchbarRe(hintText: 'Search'),
 
             const SizedBox(height: 20),
 

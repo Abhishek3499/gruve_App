@@ -25,7 +25,7 @@ class LogoutWidget extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 55),
 
                     const Text(
                       "Logout",
@@ -70,10 +70,11 @@ class LogoutWidget extends StatelessWidget {
                         ),
                         child: const Center(
                           child: Text(
-                            "Logout",
+                            "Yes",
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 16,
                             ),
                           ),
                         ),

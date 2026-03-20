@@ -23,7 +23,6 @@ class _ReplyingCardState extends State<ReplyingCard> {
           end: Alignment.bottomCenter,
           colors: [Color(0xFF72008D), Color(0xFF511263)],
         ),
-
         boxShadow: const [
           BoxShadow(
             color: Color(0xFF2E1735),
@@ -45,7 +44,7 @@ class _ReplyingCardState extends State<ReplyingCard> {
             "Replying",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -53,7 +52,11 @@ class _ReplyingCardState extends State<ReplyingCard> {
           const SizedBox(height: 10),
 
           _buildOption("Everyone", 0),
+          const SizedBox(height: 6),
+
           _buildOption("People you follow", 1),
+          const SizedBox(height: 6),
+
           _buildOption("Off", 2),
         ],
       ),
@@ -61,22 +64,35 @@ class _ReplyingCardState extends State<ReplyingCard> {
   }
 
   Widget _buildOption(String text, int value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(text, style: const TextStyle(color: Colors.white)),
+    final isSelected = selectedValue == value;
 
-        Radio<int>(
-          value: value,
-          groupValue: selectedValue,
-          activeColor: Colors.white,
-          onChanged: (value) {
-            setState(() {
-              selectedValue = value!;
-            });
-          },
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedValue = value;
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 20,
+        ), // 🔥 equal height feel
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+
+            /// 🔥 Custom Radio (better UI)
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: Colors.white,
+              size: 20,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

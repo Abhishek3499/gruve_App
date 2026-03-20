@@ -24,7 +24,7 @@ class _FaqTabState extends State<FaqTab> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: const BoxDecoration(color: Color(0xFF8E3AA8)),
+      decoration: const BoxDecoration(color: Color.fromARGB(255, 51, 3, 66)),
       child: SafeArea(
         child: SingleChildScrollView(
           child: Column(

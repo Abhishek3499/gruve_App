@@ -54,7 +54,13 @@ class Header extends StatelessWidget {
               ),
             ),
             SizedBox(width: 20),
-            Text("Unread", style: TextStyle(color: Colors.white70)),
+            Text(
+              "Unread",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ],

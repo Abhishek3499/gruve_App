@@ -37,8 +37,8 @@ class ProfileMenuDrawer extends StatelessWidget {
               end: Alignment.bottomCenter,
               colors: [
                 // Top color
-                Color(0xFF9544A7),
-                Color(0xFF42174C), // Bottom color // 👈 Bottom
+                Color.fromARGB(255, 50, 10, 59),
+                Color.fromARGB(255, 3, 0, 4), // Bottom color // 👈 Bottom
               ],
             ),
           ),

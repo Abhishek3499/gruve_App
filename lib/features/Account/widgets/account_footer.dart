@@ -20,7 +20,7 @@ class AccountFooter extends StatelessWidget {
             const Text(
               'Made in India',
               style: TextStyle(
-                color: Colors.white70,
+                color: Colors.white,
                 fontSize: 11,
                 fontFamily: 'Syncopate',
                 fontWeight: FontWeight.w700,

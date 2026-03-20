@@ -56,11 +56,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 30),
-                      ActivitySummarySection(
-                        totalTime: _controller.totalTime,
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 23),
+                      ActivitySummarySection(totalTime: _controller.totalTime),
+                      const SizedBox(height: 15),
                       ActivityDescriptionSection(
                         description: _controller.description,
                       ),

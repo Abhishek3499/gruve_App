@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ChatInputField extends StatefulWidget {
@@ -185,80 +186,93 @@ class _ChatInputFieldState extends State<ChatInputField> {
     }
   }
 
+  // ... (initState, dispose, _send, picker functions remain UNCHANGED) ...
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          // Input field
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2A0A35),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: const Color(0xFF72008D), width: 1),
-              ),
-              child: Row(
-                children: [
-                  // Camera icon
-                  GestureDetector(
-                    onTap: _showMediaBottomSheet,
-                    child: const Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.white54,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+      color: Colors.transparent, // Background gradient hata diya
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Container(
+        height: 58, // Thodi height badhayi hai button fit karne ke liye
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 18,
+        ), // Right padding kam ki taki button set rahe
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 171, 20, 209), // Solid purple
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          children: [
+            // Camera Icon
+            GestureDetector(
+              onTap: _showMediaBottomSheet,
+              child: Image.asset(AppAssets.camera, height: 24, width: 24),
+            ),
+            const SizedBox(width: 12),
 
-                  // Text field
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      style: const TextStyle(color: Colors.white),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                        hintText: 'Text Message',
-                        hintStyle: TextStyle(color: Colors.white38),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
+            // Text Field
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                maxLines: 1,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _send(),
+                decoration: const InputDecoration(
+                  hintText: 'Text Message',
+                  hintStyle: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight(400),
                   ),
-                ],
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 10),
+                ),
               ),
             ),
-          ),
 
-          const SizedBox(width: 8),
-
-          // Send / Loading button
-          GestureDetector(
-            onTap: widget.isLoading ? null : _send,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF72008D),
-              ),
-              child: widget.isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
+            // Send Button (Ab TextField ke andar hai)
+            GestureDetector(
+              onTap: widget.isLoading ? null : _send,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    colors: [Colors.white, Color(0xFFFDEFFF)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: widget.isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF6A0D81),
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Center(
+                        child: SizedBox(
+                          height: 20, // 👈 yaha size control hoga
+                          width: 20,
+                          child: Image.asset(
+                            AppAssets.send,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
-                    )
-                  : const Icon(Icons.send, color: Colors.white, size: 20),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

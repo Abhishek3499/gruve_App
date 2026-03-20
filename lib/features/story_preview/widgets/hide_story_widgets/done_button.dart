@@ -12,15 +12,8 @@ class DoneButton extends StatelessWidget {
       height: 48,
 
       decoration: BoxDecoration(
-        color: const Color(0xFF72008D), // new background color
+        color: Color(0xFF72008D), // new background color
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF72008D).withValues(alpha: 0.5),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -32,8 +25,8 @@ class DoneButton extends StatelessWidget {
               "Done",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

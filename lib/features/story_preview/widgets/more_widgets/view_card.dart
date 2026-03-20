@@ -9,6 +9,7 @@ class ViewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
@@ -37,13 +38,12 @@ class ViewCard extends StatelessWidget {
             "Viewing",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
             ),
           ),
 
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 10), // 🔥 match replying card
           /// HIDE STORY
           InkWell(
             onTap: () {
@@ -59,8 +59,7 @@ class ViewCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 25),
-
+          const SizedBox(height: 14), // 🔥 reduced gap
           /// CLOSE FRIENDS
           InkWell(
             onTap: () {
@@ -70,7 +69,6 @@ class ViewCard extends StatelessWidget {
               );
             },
             child: _buildItem(
-              // FIXED HERE
               title: "Close friends",
               subtitle: "Share your story with specific people",
               people: "3 people",
@@ -86,43 +84,48 @@ class ViewCard extends StatelessWidget {
     required String subtitle,
     required String people,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// TEXT
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20), // 🔥 equal height feel
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+
+          Row(
             children: [
               Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                people,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white,
+                size: 14,
               ),
             ],
           ),
-        ),
-
-        /// PEOPLE + ARROW
-        Row(
-          children: [
-            Text(
-              people,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

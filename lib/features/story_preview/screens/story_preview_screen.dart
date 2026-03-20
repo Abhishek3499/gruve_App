@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_top_bar.dart';
@@ -101,7 +102,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
             /// BOTTOM ACTION SECTION
             Container(
-              height: 100,
+              height: 80,
               decoration: const BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -125,25 +126,30 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         /// YOUR STORY
                         Expanded(
                           child: Container(
-                            height: 48,
+                            height: 42,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ), // 🔥 add this
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFE24E0), Color(0xFF9C27B0)],
-                              ),
+                              color: const Color(0xFF72008D),
                             ),
                             child: Row(
                               children: [
-                                const SizedBox(width: 14),
                                 Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: const BoxDecoration(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.white,
+                                    image: DecorationImage(
+                                      image: AssetImage(AppAssets.profile),
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(
+                                  width: 6,
+                                ), // 🔥 spacing same karo
                                 const Text(
                                   "Your Story",
                                   style: TextStyle(
@@ -161,27 +167,25 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
                         /// CLOSE FRIEND
                         Container(
-                          height: 48,
+                          height: 42,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(24),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFE24E0), Color(0xFF9C27B0)],
-                            ),
+                            color: Color(0xFF72008D),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                width: 20,
-                                height: 20,
+                                width: 25,
+                                height: 25,
                                 decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Color(0xFF4CAF50),
+                                  color: Colors.white,
                                 ),
                                 child: const Icon(
                                   Icons.star,
-                                  color: Colors.white,
-                                  size: 12,
+                                  color: Color(0xFF4CAF50),
+                                  size: 20,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -197,7 +201,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                           ),
                         ),
 
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 15),
 
                         /// SEND
                         GestureDetector(
@@ -205,20 +209,24 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => StoryViewScreen(mediaPath: widget.mediaPath),
+                                builder: (context) => StoryViewScreen(
+                                  mediaPath: widget.mediaPath,
+                                ),
                               ),
                             );
                           },
+
                           child: Container(
-                            width: 48,
-                            height: 48,
+                            width: 35,
+                            height: 35,
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white30,
+                              color: Colors.white,
                             ),
                             child: const Icon(
-                              Icons.arrow_forward,
-                              color: Colors.white,
+                              Icons.arrow_forward_ios,
+                              color: Color(0xFF9544A7),
+                              size: 15,
                             ),
                           ),
                         ),

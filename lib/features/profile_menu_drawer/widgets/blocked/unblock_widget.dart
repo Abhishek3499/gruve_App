@@ -32,7 +32,7 @@ class UnblockWidget extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 55),
 
                     Text(
                       "unblock $name",
@@ -48,8 +48,8 @@ class UnblockWidget extends StatelessWidget {
                     Text(
                       "($username) ?",
                       style: const TextStyle(
-                        color: Color(0xFFD9C7E0),
-                        fontSize: 14,
+                        color: Color.fromARGB(255, 187, 84, 227),
+                        fontSize: 18,
                       ),
                     ),
 

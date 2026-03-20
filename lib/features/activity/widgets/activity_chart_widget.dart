@@ -29,12 +29,21 @@ class ActivityChartWidget extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: 2,
+
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: Colors.white.withAlpha(77),
               strokeWidth: 1,
               dashArray: [4, 4],
             );
+          },
+
+          checkToShowHorizontalLine: (value) {
+            // 🔥 FORCE include 0
+            if (value == 0) return true;
+
+            // normal lines (0–10)
+            return value >= 0 && value <= 10;
           },
         ),
 
@@ -46,12 +55,10 @@ class ActivityChartWidget extends StatelessWidget {
               interval: 2,
               reservedSize: 28,
               getTitlesWidget: (value, meta) {
-                // Sirf 2,4,6,8,10 dikhao — 0 aur maxY ke upar wale hide
-                if (value == 0 || value >= maxY) return const SizedBox();
+                if (value > 10) return const SizedBox(); // 🔥 extra remove
                 return Text(
                   value.toInt().toString(),
                   style: const TextStyle(color: Colors.white, fontSize: 11),
-                  textAlign: TextAlign.center,
                 );
               },
             ),

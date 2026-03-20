@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class SearchbarRe extends StatelessWidget {
-  const SearchbarRe({super.key});
+  final String hintText; // 👈 add this
+
+  const SearchbarRe({super.key, required this.hintText});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,6 @@ class SearchbarRe extends StatelessWidget {
           ),
         ),
 
-        /// INNER BACKGROUND
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
@@ -29,16 +30,15 @@ class SearchbarRe extends StatelessWidget {
             ),
           ),
 
-          child: const TextField(
-            style: TextStyle(color: Colors.white),
+          child: TextField(
+            style: const TextStyle(color: Colors.white),
 
             decoration: InputDecoration(
               border: InputBorder.none,
+              icon: const Icon(Icons.search, color: Colors.white70, size: 20),
 
-              icon: Icon(Icons.search, color: Colors.white70, size: 20),
-
-              hintText: "Search Users",
-              hintStyle: TextStyle(color: Colors.white, fontSize: 14),
+              hintText: hintText, // 🔥 dynamic text
+              hintStyle: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
         ),

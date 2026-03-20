@@ -18,7 +18,10 @@ class CloseFriendScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+            colors: [
+              Color.fromARGB(255, 74, 5, 90),
+              Color.fromARGB(255, 25, 2, 31),
+            ],
           ),
         ),
 
@@ -31,9 +34,9 @@ class CloseFriendScreen extends StatelessWidget {
               },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
-            const SearchbarRe(),
+            const SearchbarRe(hintText: 'Search'),
 
             const SizedBox(height: 20),
 
