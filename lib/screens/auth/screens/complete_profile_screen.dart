@@ -34,11 +34,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   alignment: Alignment.topLeft,
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    child: Image.asset(AppAssets.back, height: 25, width: 25),
                   ),
                 ),
               ),
@@ -49,7 +45,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      SizedBox(height: constraints.maxHeight * 0.18),
+                      SizedBox(height: constraints.maxHeight * 0.22),
                       FittedBox(
                         fit: BoxFit.scaleDown, // 🔥 shrink if needed
                         child: Text.rich(

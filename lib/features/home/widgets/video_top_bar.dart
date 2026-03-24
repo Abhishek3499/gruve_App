@@ -38,7 +38,7 @@ class VideoTopBar extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.7),
                     ),
                     const SizedBox(width: 12),
-                    _buildTab("For you"),
+                    _buildTab("For You"),
                   ],
                 ),
                 Positioned(

@@ -93,7 +93,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 38),
 
                     // FULL NAME
                     _buildLabel('Full Name'),
@@ -182,14 +182,18 @@ class _SignupScreenState extends State<SignupScreen> {
                       onTap: () => Navigator.pop(context),
                       child: RichText(
                         text: const TextSpan(
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: .w500,
+                          ),
                           children: [
                             TextSpan(text: 'Already have an account? '),
                             TextSpan(
                               text: 'Sign In',
                               style: TextStyle(
                                 color: Color(0xFFB86AD0),
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w300,
                               ),
                             ),
                           ],

@@ -35,7 +35,7 @@ class SearchbarRe extends StatelessWidget {
 
             decoration: InputDecoration(
               border: InputBorder.none,
-              icon: const Icon(Icons.search, color: Colors.white70, size: 20),
+              icon: const Icon(Icons.search, color: Colors.white, size: 23),
 
               hintText: hintText, // 🔥 dynamic text
               hintStyle: const TextStyle(color: Colors.white, fontSize: 14),

@@ -41,14 +41,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           children: [
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 4),
+                padding: const EdgeInsets.only(left: 16, top: 10),
                 child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(
-                    Icons.arrow_back_ios,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  onTap: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Image.asset(AppAssets.back, height: 25, width: 25),
                 ),
               ),
             ),

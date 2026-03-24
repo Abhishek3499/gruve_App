@@ -130,7 +130,7 @@ class ProfileMenuDrawer extends StatelessWidget {
 
                       _menuItem(
                         Icons.lock,
-                        "Account Privacy",
+                        "Account&Privacy",
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.push(

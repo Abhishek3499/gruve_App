@@ -44,10 +44,7 @@ class PrivacyConstants {
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      Color.fromARGB(255, 203, 69, 234), // 👈 Aapka pehla color (#72008D)
-      Color.fromARGB(255, 197, 77, 231),
-    ],
+    colors: [Color(0xFF72008D), Color(0xFF511263)],
   );
 
   static const double cardBorderRadius = 10.0;

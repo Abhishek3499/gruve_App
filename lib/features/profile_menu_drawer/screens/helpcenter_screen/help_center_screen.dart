@@ -4,7 +4,6 @@ import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/help_c
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/faq_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/contact_us_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/models/help_center_tab.dart';
-import '../../constants/privacy_constants.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});

@@ -16,12 +16,9 @@ class GiftSearchBar extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Color.fromARGB(26, 57, 6, 79),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Color.fromARGB(51, 240, 58, 250), width: 2),
       ),
       child: TextField(
         controller: controller,

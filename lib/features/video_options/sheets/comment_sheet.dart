@@ -215,9 +215,12 @@ class _CommentSheetState extends State<CommentSheet> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: Color(0x1AFFFFFF),
+              color: Color.fromARGB(26, 57, 6, 79),
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Color(0x33FFFFFF), width: 1),
+              border: Border.all(
+                color: Color.fromARGB(51, 240, 58, 250),
+                width: 2,
+              ),
             ),
             child: Row(
               children: [

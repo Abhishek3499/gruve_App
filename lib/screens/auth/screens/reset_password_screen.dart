@@ -41,16 +41,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           children: [
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 4),
+                padding: const EdgeInsets.only(left: 24, top: 9),
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    child: Image.asset(AppAssets.back, height: 22, width: 22),
                   ),
                 ),
               ),
@@ -61,22 +57,23 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: SingleChildScrollView(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: constraints.maxHeight * 0.18),
                         RichText(
-                          textAlign: TextAlign.center,
+                          textAlign: TextAlign.start,
                           text: const TextSpan(
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 28,
+                              fontSize: 26,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 1.0,
+
                               fontFamily: AppAssets.syncopateFont,
                             ),
                             children: [
-                              TextSpan(text: 'RESET '),
+                              TextSpan(text: 'Reset '),
                               TextSpan(
-                                text: 'PASSWORD',
+                                text: 'Password',
                                 style: TextStyle(color: Color(0xFFB86AD0)),
                               ),
                             ],
@@ -87,16 +84,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           'Create a new password for your account.\nMake sure it\'s strong and secure.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            height: 1.4,
+                            color: Colors.white,
+                            fontSize: 16,
+
+                            fontWeight: FontWeight(400),
                           ),
                         ),
                         const SizedBox(height: 40),
                         const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'New Password',
+                            'Password',
                             style: TextStyle(
                               color: Color(0xFFFFFFFF),
                               fontSize: 16,
@@ -127,41 +125,44 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           controller: _confirmPasswordController,
                         ),
                         const SizedBox(height: 40),
-                        GetStartedButton(
-                          text: 'RESET PASSWORD',
-                          onComplete: () {
-                            // Basic validation
-                            if (_newPasswordController.text.isEmpty ||
-                                _confirmPasswordController.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please fill in all fields'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
+                        Align(
+                          alignment: AlignmentGeometry.center,
+                          child: GetStartedButton(
+                            text: 'Reset ',
+                            onComplete: () {
+                              // Basic validation
+                              if (_newPasswordController.text.isEmpty ||
+                                  _confirmPasswordController.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please fill in all fields'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
 
-                            if (_newPasswordController.text !=
-                                _confirmPasswordController.text) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Passwords do not match'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
+                              if (_newPasswordController.text !=
+                                  _confirmPasswordController.text) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Passwords do not match'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
 
-                            // Success - navigate back to email login
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const EmailLoginScreen(),
-                              ),
-                              (route) => false,
-                            );
-                          },
+                              // Success - navigate back to email login
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const EmailLoginScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),

@@ -31,8 +31,14 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
-          gradient: PrivacyConstants.backgroundGradient,
+          gradient: LinearGradient(
+            begin: Alignment(0.8, -1.0),
+            end: Alignment(-0.8, 1.0),
+            colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+            stops: [0.0, 0.3, 1.0],
+          ),
         ),
+
         child: SafeArea(
           child: Column(
             children: [

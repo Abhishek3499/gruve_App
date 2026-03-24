@@ -169,7 +169,7 @@ class VideoUserInfo extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(26),
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: Colors.transparent,
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.15),
                       ),
@@ -177,7 +177,7 @@ class VideoUserInfo extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.person, color: Colors.white, size: 14),
+                        Icon(Icons.person, color: Colors.white, size: 20),
                         SizedBox(width: 6),
                         Text(
                           "2 users",

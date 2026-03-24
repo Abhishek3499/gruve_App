@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/profile/screens/profile_screen.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/assets.dart';
 import '../models/profile_model.dart';
