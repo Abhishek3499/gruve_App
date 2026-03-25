@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
+import '../api/controllers/verifyotp_controller.dart';
 import 'package:sms_autofill/sms_autofill.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/core/auth_flow.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/screens/auth/widgets/otp_input_box.dart';
 import 'package:gruve_app/main.dart';
 
 class OtpScreen extends StatefulWidget {
-  final AuthFlow authFlow;
+  // final AuthFlow authFlow;
   final String title;
   final String description;
   final String buttonText;
   final VoidCallback onVerified;
-  final String phoneNumber;
+  // final String phoneNumber;
+  final String identifier; // email ya phone
+  final String type;
 
-  const OtpScreen({
+  OtpScreen({
     super.key,
-    required this.authFlow,
+    required this.identifier,
+    required this.type,
+    // required this.authFlow,
     required this.title,
     required this.description,
     required this.buttonText,
     required this.onVerified,
-    required this.phoneNumber,
+    // required this.phoneNumber,
   });
 
   @override
@@ -30,11 +34,39 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
+  final VerifyotpController controller = VerifyotpController();
   final List<TextEditingController> _controllers = List.generate(
     4,
     (_) => TextEditingController(),
   );
+
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+
+  // Mask phone number function (crash-proof)
+  String _maskPhoneNumber(String phone) {
+    if (phone.isEmpty) return phone;
+
+    // Remove spaces for processing
+    String cleaned = phone.replaceAll(' ', '');
+
+    // Safety check — if too short, return as is
+    if (cleaned.length < 6) return phone;
+
+    // Last 4 digits always visible
+    String lastFour = cleaned.substring(cleaned.length - 4);
+
+    // Middle digits — everything between first 2 and last 4
+    int middleLength = cleaned.length - 6;
+    String middle = middleLength > 0
+        ? List.filled(middleLength, 'x').join()
+        : '';
+
+    // First 2 digits always visible
+    String firstTwo = cleaned.substring(0, 2);
+
+    // Final result: 98xxxxx8282 style
+    return '$firstTwo$middle$lastFour';
+  }
 
   @override
   void initState() {
@@ -56,13 +88,38 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     _checkOtpComplete();
   }
 
-  void _checkOtpComplete() {
+  void _checkOtpComplete() async {
     final otp = _controllers.map((e) => e.text).join();
+
     if (otp.length == 4) {
       FocusScope.of(context).unfocus();
-      Future.delayed(const Duration(milliseconds: 300), () {
+
+      await controller.verifyOtp(
+        identifier: widget.identifier,
+        type: widget.type,
+        otp: otp,
+      );
+
+      if (!mounted) return;
+
+      if (controller.errorMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
+        return;
+      }
+
+      if (controller.verifyOtpResponse?.success == true) {
         widget.onVerified();
-      });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              controller.verifyOtpResponse?.message ?? "Invalid OTP",
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -183,7 +240,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              widget.phoneNumber,
+                              widget.type == "phone"
+                                  ? _maskPhoneNumber(widget.identifier)
+                                  : widget.identifier,
                               style: const TextStyle(
                                 color: Color(0xFFB86AD0),
                                 fontSize: 14,

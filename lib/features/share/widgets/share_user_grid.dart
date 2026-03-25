@@ -50,12 +50,12 @@ class _ShareUserGridState extends State<ShareUserGrid> {
       children: [
         // Search bar
         Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Color(0x1AFFFFFF),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Color(0x33FFFFFF), width: 1),
+            color: Color.fromARGB(77, 23, 22, 22),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Color.fromARGB(248, 79, 2, 98), width: 1),
           ),
           child: Row(
             children: [
@@ -63,7 +63,7 @@ class _ShareUserGridState extends State<ShareUserGrid> {
                 child: TextField(
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: const InputDecoration(
-                    hintText: 'Search',
+                    hintText: ' Search',
                     hintStyle: TextStyle(color: Colors.white, fontSize: 14),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(vertical: 8),

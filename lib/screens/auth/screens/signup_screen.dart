@@ -3,10 +3,12 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/auth_flow.dart';
 import 'package:gruve_app/screens/auth/screens/complete_profile_screen.dart';
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
+import 'package:gruve_app/screens/auth/validators/signup_validator.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/widgets/inputs/neon_password_field.dart';
+import '../api/controllers/signup_controller.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -21,7 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
-
+  final SignupController controller = SignupController();
   @override
   void initState() {
     super.initState();
@@ -139,27 +141,80 @@ class _SignupScreenState extends State<SignupScreen> {
                     // SIGN UP BUTTON
                     GetStartedButton(
                       text: 'Sign Up',
-                      onComplete: () {
+                      onComplete: () async {
                         print("Button Clicked!"); // Debug ke liye
 
-                        // Check if email is not empty
-                        if (_emailController.text.trim().isEmpty) {
-                          print("Email is empty");
+                        final error = SignupValidator.validateAll(
+                          fullName: _nameController.text,
+                          email: _emailController.text,
+                          password: _passwordController.text,
+                          confirmPassword: _confirmPasswordController.text,
+                        );
+
+                        if (error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error),
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                233,
+                                132,
+                                125,
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
                           return;
                         }
 
-                        // Direct Navigation
+                        // ✅ password match validation
+                        if (_passwordController.text !=
+                            _confirmPasswordController.text) {
+                          print("Password not match");
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Passwords do not match"),
+                            ),
+                          );
+                          return;
+                        }
+
+                        // 🔥 API CALL
+                        await controller.signup(
+                          fullName: _nameController.text.trim(),
+                          email: _emailController.text.trim(),
+                          password: _passwordController.text.trim(),
+                        );
+
+                        if (!mounted) return;
+
+                        // 🔥 RESPONSE HANDLE
+                        if (controller.errorMessage != null) {
+                          print("ERROR: ${controller.errorMessage}");
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(controller.errorMessage!)),
+                          );
+
+                          return; // ❗ IMPORTANT: yahi fix tha
+                        }
+
+                        print("SUCCESS: ${controller.signupResponse?.message}");
+
+                        // ✅ SUCCESS → OTP SCREEN
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => OtpScreen(
-                              authFlow: AuthFlow.signUp,
+                              identifier: _emailController.text.trim(), // ✅ NEW
+                              type: "email", // ✅ NEW
+
                               title: 'Enter your Code',
                               description:
                                   'Enter the 4-digit code sent to ${_emailController.text}',
                               buttonText: 'Continue',
-                              phoneNumber: _emailController.text
-                                  .trim(), // Trim extra spaces
+
                               onVerified: () {
                                 Navigator.push(
                                   context,
@@ -174,7 +229,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         );
                       },
                     ),
-
                     const SizedBox(height: 35),
 
                     // BACK TO LOGIN
@@ -185,7 +239,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
-                            fontWeight: .w500,
+                            fontWeight: FontWeight.w500,
                           ),
                           children: [
                             TextSpan(text: 'Already have an account? '),

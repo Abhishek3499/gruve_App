@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/core/auth_flow.dart';
+
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/screens/auth/screens/forgot_password_screen.dart';
@@ -46,13 +46,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => OtpScreen(
-          authFlow: AuthFlow.signIn,
+          identifier: _emailController.text.trim(), // ✅ FIX
+          type: "email",
           title: 'Enter your Code',
           description: 'Enter the 4-digit code sent to your email address.',
           buttonText: 'Continue',
           // ✅ FIX: Adding the missing phoneNumber parameter
           // Yahan hum email controller ki value bhej rahe hain
-          phoneNumber: _emailController.text,
           onVerified: () {
             Navigator.pushAndRemoveUntil(
               context,

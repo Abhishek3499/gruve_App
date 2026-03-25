@@ -2,9 +2,10 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
+
 import 'package:gruve_app/features/story_preview/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_top_bar.dart';
+import 'package:gruve_app/widgets/story_share_sheet.dart';
 import 'package:video_player/video_player.dart';
 
 class StoryPreviewScreen extends StatefulWidget {
@@ -92,7 +93,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         StoryTopBar(onClose: () => Navigator.pop(context)),
-                        const StoryActionButtons(),
+                        StoryActionButtons(),
                       ],
                     ),
                   ),
@@ -206,16 +207,16 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         /// SEND
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => StoryViewScreen(
-                                  mediaPath: widget.mediaPath,
-                                ),
-                              ),
+                            // Navigator.push ki jagah ye use karein:
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled:
+                                  true, // Zaroori hai taaki size content ke hisaab se ho
+                              backgroundColor: Colors
+                                  .transparent, // Takki rounded corners dikhein
+                              builder: (context) => const StoryShareSheet(),
                             );
                           },
-
                           child: Container(
                             width: 35,
                             height: 35,

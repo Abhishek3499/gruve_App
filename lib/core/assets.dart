@@ -122,6 +122,10 @@ class AppAssets {
   static const report = 'assets/video_options/report.png';
   //  story
   static const text = 'assets/story/text.png';
+  static const stars = 'assets/story/starts.png';
+  static const draw = 'assets/story/draw.png';
+  static const saves = 'assets/story/saves.png';
+  static const turnoff = 'assets/story/turn off.png';
 
   static const filter = 'assets/story/filter.png';
   static const musics = 'assets/story/music.png';

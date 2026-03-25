@@ -134,13 +134,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => OtpScreen(
-                                  authFlow: AuthFlow.forgotPassword,
+                                  identifier: _emailController.text
+                                      .trim(), // ✅ FIX
+                                  type: "email",
                                   title: 'Reset Password',
                                   description:
                                       'Enter the code sent to your email address.',
                                   buttonText: 'Reset Password',
-                                  phoneNumber: _emailController
-                                      .text, // ✅ FIX: Added missing parameter
                                   onVerified: () {
                                     Navigator.push(
                                       context,

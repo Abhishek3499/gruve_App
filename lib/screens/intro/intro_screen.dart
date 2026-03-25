@@ -76,22 +76,27 @@ class _IntroScreenState extends State<IntroScreen> {
                         PageRouteBuilder(
                           opaque: false,
                           transitionDuration: const Duration(milliseconds: 280),
-                          reverseTransitionDuration: const Duration(milliseconds: 280),
+                          reverseTransitionDuration: const Duration(
+                            milliseconds: 280,
+                          ),
                           pageBuilder: (_, animation, secondaryAnimation) =>
                               const SignInScreen(),
                           transitionsBuilder:
                               (_, animation, secondaryAnimation, child) {
-                            return SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(1.0, 0.0),
-                                end: Offset.zero,
-                              ).animate(CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOut,
-                              )),
-                              child: child,
-                            );
-                          },
+                                return SlideTransition(
+                                  position:
+                                      Tween<Offset>(
+                                        begin: const Offset(1.0, 0.0),
+                                        end: Offset.zero,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeInOut,
+                                        ),
+                                      ),
+                                  child: child,
+                                );
+                              },
                         ),
                       );
                     },

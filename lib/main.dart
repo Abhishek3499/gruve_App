@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 
+import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/splash_screen.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -23,10 +23,7 @@ class _SlideRightTransition extends PageTransitionsBuilder {
       position: Tween<Offset>(
         begin: const Offset(1.0, 0.0),
         end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeInOut,
-      )),
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
       child: child,
     );
   }
@@ -40,7 +37,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Gruve',
       debugShowCheckedModeBanner: false,
-      
+
       // 🔥 IMPORTANT: Prevent white flashes during navigation
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.black,
@@ -52,7 +49,7 @@ class MyApp extends StatelessWidget {
           },
         ),
       ),
-      
+
       navigatorObservers: [routeObserver],
       home: SplashScreen(),
     );

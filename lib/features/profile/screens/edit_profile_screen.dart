@@ -124,30 +124,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     left: 16,
                     top: 15,
                     child: Material(
-                      // 🔥 Splash color control karne ke liye
-                      color:
-                          Colors.transparent, // Background transparent rakhein
+                      color: Colors.transparent,
                       child: InkWell(
-                        // 🔥 GestureDetector ki jagah InkWell use karein splash hatane ke liye
                         onTap: () {
-                          Navigator.of(
-                            context,
-                          ).pop(); // ✅ Explicitly pop the current route
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          }
                         },
-                        splashColor:
-                            Colors.transparent, // ✅ Safed splash khatam
-                        highlightColor:
-                            Colors.transparent, // ✅ Click highlight bhi khatam
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          height: 44,
-                          width: 40,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          child: Image.asset(
-                            AppAssets.back,
-                            // fit: BoxFit.contain, // Agar image kat rahi ho toh
+                        borderRadius: BorderRadius.circular(30),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        child: SizedBox(
+                          height: 60, // 👈 bigger tap area (important)
+                          width: 50,
+                          child: Center(
+                            child: Container(
+                              height: 30,
+                              width: 30,
+                              decoration: BoxDecoration(shape: BoxShape.circle),
+                              child: Image.asset(AppAssets.back),
+                            ),
                           ),
                         ),
                       ),

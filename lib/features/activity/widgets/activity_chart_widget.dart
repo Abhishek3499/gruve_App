@@ -48,7 +48,7 @@ class ActivityChartWidget extends StatelessWidget {
             horizontalInterval: 2,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 strokeWidth: 1.5,
                 dashArray: [4, 4],
               );

@@ -95,10 +95,7 @@ class PersonalInfoCard extends StatelessWidget {
         if (showEditIcon)
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
+
             child: Image.asset(AppAssets.editpro, width: 22, height: 22),
           ),
       ],

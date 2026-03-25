@@ -27,7 +27,7 @@ class VideoUserInfo extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => MusicScreen(
-          musicId: 'music_${userId}',
+          musicId: 'music_$userId',
           musicTitle: musicTitle,
           musicUrl: 'https://example.com/music/$userId',
           userName: username,

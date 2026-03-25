@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+
+import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';
+
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/subscribe_button.dart';
 
@@ -24,7 +27,7 @@ class UserProfileHeader extends StatelessWidget {
                   AppAssets.back,
                   width: 22,
                   height: 22,
-                  color: Colors.white, // agar white tint chahiye
+                  color: Colors.white,
                 ),
               ),
               const Spacer(),
@@ -74,10 +77,10 @@ class UserProfileHeader extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    SizedBox(height: 10),
+                  children: [
+                    const SizedBox(height: 10),
 
-                    Text(
+                    const Text(
                       "Anastasia Adams",
                       style: TextStyle(
                         color: AppColors.white,
@@ -86,20 +89,32 @@ class UserProfileHeader extends StatelessWidget {
                       ),
                     ),
 
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                    Text(
+                    const Text(
                       "__@nastasia__",
                       style: TextStyle(color: Color(0xFF9544A7), fontSize: 14),
                     ),
 
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     Row(
                       children: [
-                        SubscribeButton(),
-                        SizedBox(width: 21),
-                        GiftButton(),
+                        const SubscribeButton(),
+                        const SizedBox(width: 21),
+
+                        /// 🔥 FIXED GIFT BUTTON
+                        GiftButton(
+                          onTap: () {
+                            print("Gift Button Tapped!");
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const GiftPanel(),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ],

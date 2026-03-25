@@ -16,6 +16,20 @@ class PhoneNumberScreen extends StatefulWidget {
 }
 
 class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
+  late final TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,7 +118,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       const SizedBox(height: 10),
 
                       /// PHONE INPUT
-                      const PhoneInputField(),
+                      PhoneInputField(controller: _phoneController),
 
                       const SizedBox(height: 36),
 
@@ -122,13 +136,12 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => OtpScreen(
-                                      authFlow: AuthFlow.signIn,
+                                      identifier: _phoneController.text.trim(),
+                                      type: "phone",
                                       title: 'Enter your Code',
                                       description:
                                           'Enter the 4-digit code sent to your phone number.',
                                       buttonText: 'Continue',
-                                      phoneNumber:
-                                          "User Number", // ✅ FIX: Yahan phone number controller ki value pass karein
                                       onVerified: () {
                                         Navigator.pushAndRemoveUntil(
                                           context,
