@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/splash_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  await dotenv.load(fileName: ".env"); // 👈 IMPORTANT
+  runApp(MyApp());
 }
 
 // Custom slide transition builder for consistent animations

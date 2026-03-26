@@ -41,7 +41,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   );
 
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
-
+  bool isLoading = false;
   // Mask phone number function (crash-proof)
   String _maskPhoneNumber(String phone) {
     if (phone.isEmpty) return phone;
@@ -73,53 +73,64 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     super.initState();
     listenForCode();
     _focusNodes.first.requestFocus();
-    for (final controller in _controllers) {
-      controller.addListener(_checkOtpComplete);
-    }
   }
 
   @override
   void codeUpdated() {
-    if (code == null || code!.length < 4) return;
+    if (code == null) return;
+
+    final otp = code!.toString();
+
+    // ✅ safety check
+    if (otp.length < 4) return;
+
     for (int i = 0; i < 4; i++) {
-      _controllers[i].text = code![i];
+      _controllers[i].text = otp[i]; // ✅ safe indexing
     }
+
     _focusNodes.last.requestFocus();
-    _checkOtpComplete();
   }
 
-  void _checkOtpComplete() async {
+  Future<void> _verifyOtpManually() async {
     final otp = _controllers.map((e) => e.text).join();
 
-    if (otp.length == 4) {
-      FocusScope.of(context).unfocus();
-
-      await controller.verifyOtp(
-        identifier: widget.identifier,
-        type: widget.type,
-        otp: otp,
+    // ✅ VALIDATION
+    if (otp.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter complete OTP")),
       );
+      return;
+    }
 
-      if (!mounted) return;
+    FocusScope.of(context).unfocus();
 
-      if (controller.errorMessage != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
-        return;
-      }
+    setState(() => isLoading = true);
 
-      if (controller.verifyOtpResponse?.success == true) {
-        widget.onVerified();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              controller.verifyOtpResponse?.message ?? "Invalid OTP",
-            ),
-          ),
-        );
-      }
+    await controller.verifyOtp(
+      identifier: widget.identifier,
+      type: widget.type,
+      otp: otp,
+    );
+
+    if (!mounted) return;
+
+    setState(() => isLoading = false);
+
+    if (controller.errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
+      return;
+    }
+
+    if (controller.verifyOtpResponse?.success == true) {
+      widget.onVerified(); // ✅ ONLY SUCCESS NAVIGATION
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(controller.verifyOtpResponse?.message ?? "Invalid OTP"),
+        ),
+      );
     }
   }
 
@@ -275,13 +286,11 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                                 if (val.isNotEmpty && i < 3) {
                                   _focusNodes[i + 1].requestFocus();
                                 }
-                                _checkOtpComplete();
                               },
                               onBackspace: () {
                                 if (i > 0 && _controllers[i].text.isEmpty) {
                                   _focusNodes[i - 1].requestFocus();
                                 }
-                                _checkOtpComplete();
                               },
                             );
                           }),
@@ -305,13 +314,18 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
                         GetStartedButton(
                           text: widget.buttonText,
-                          onComplete: widget.onVerified,
+                          onComplete: _verifyOtpManually,
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
+              if (isLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.6),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
             ],
           ),
         ),

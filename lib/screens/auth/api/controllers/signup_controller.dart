@@ -10,9 +10,11 @@ class SignupController {
   final SignupService _service = SignupService();
 
   Future<void> signup({
-    required String fullName,
-    required String email,
-    required String password,
+    String? fullName,
+    String? email,
+    String? password,
+    String? countryCode,
+    String? phoneNumber,
   }) async {
     isLoading = true;
     errorMessage = null;
@@ -22,6 +24,8 @@ class SignupController {
         fullName: fullName,
         email: email,
         password: password,
+        countryCode: countryCode,
+        phoneNumber: phoneNumber,
       );
 
       signupResponse = await _service.signup(request);

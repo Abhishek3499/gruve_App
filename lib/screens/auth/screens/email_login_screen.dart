@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
 import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:gruve_app/screens/auth/api/controllers/login_controller.dart';
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/screens/auth/screens/forgot_password_screen.dart';
 import 'package:gruve_app/screens/auth/screens/signup_screen.dart'; // ✅ FIX 1: Missing import added
@@ -19,6 +20,8 @@ class EmailLoginScreen extends StatefulWidget {
 }
 
 class _EmailLoginScreenState extends State<EmailLoginScreen> {
+  final EmailSignInController _controller = EmailSignInController();
+  bool isLoading = false;
   // ✅ FIX 2: Added controllers & focus nodes — fields were completely uncontrolled
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -39,30 +42,35 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   }
 
   // ✅ FIX 5: Extracted login logic — validate before navigating
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState?.validate() != true) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OtpScreen(
-          identifier: _emailController.text.trim(), // ✅ FIX
-          type: "email",
-          title: 'Enter your Code',
-          description: 'Enter the 4-digit code sent to your email address.',
-          buttonText: 'Continue',
-          // ✅ FIX: Adding the missing phoneNumber parameter
-          // Yahan hum email controller ki value bhej rahe hain
-          onVerified: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-              (route) => false,
-            );
-          },
-        ),
-      ),
+    setState(() => isLoading = true);
+
+    await _controller.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
     );
+
+    setState(() => isLoading = false);
+
+    // ❌ ERROR CASE
+    if (_controller.errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_controller.errorMessage!)));
+      return;
+    }
+
+    // ✅ SUCCESS CASE
+    if (_controller.response?.success == true) {
+      print("🚀 LOGIN SUCCESS → GO TO OTP");
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
   }
 
   @override

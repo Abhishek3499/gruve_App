@@ -1,20 +1,50 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenStorage {
-  static const String _tokenKey = "auth_token";
+  static const String _accessTokenKey = "access_token";
+  static const String _refreshTokenKey = "refresh_token";
 
-  static Future<void> saveToken(String token) async {
+  /// ✅ Save both tokens
+  static Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+
+    await prefs.setString(_accessTokenKey, accessToken);
+    await prefs.setString(_refreshTokenKey, refreshToken);
+
+    print("💾 ACCESS TOKEN SAVED: $accessToken");
+    print("💾 REFRESH TOKEN SAVED: $refreshToken");
   }
 
-  static Future<String?> getToken() async {
+  /// ✅ Get access token
+  static Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    final token = prefs.getString(_accessTokenKey);
+
+    print("📤 GET ACCESS TOKEN: $token");
+
+    return token;
   }
 
-  static Future<void> clearToken() async {
+  /// ✅ Get refresh token
+  static Future<String?> getRefreshToken() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    final token = prefs.getString(_refreshTokenKey);
+
+    print("📤 GET REFRESH TOKEN: $token");
+
+    return token;
+  }
+
+  /// ✅ Clear all tokens (logout)
+  static Future<void> clearTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove(_accessTokenKey);
+    await prefs.remove(_refreshTokenKey);
+
+    print("🗑️ TOKENS CLEARED");
   }
 }

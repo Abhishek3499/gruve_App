@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SignupService {
   final Dio dio = Dio(
     BaseOptions(
-      baseUrl:
-          "https://6f60-2401-4900-b9ed-d9df-6d2b-4928-c8be-b18d.ngrok-free.app/api/v1/", // 🔥 CHANGE THIS
+      baseUrl: dotenv.env['BASE_URL']!, // 🔥 CHANGE THIS
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ),

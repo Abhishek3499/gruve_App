@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
@@ -6,7 +7,7 @@ import '../models/complete_profile_response.dart';
 class ProfileService {
   final Dio dio = Dio(
     BaseOptions(
-      baseUrl: "https://YOUR_BASE_URL/api/v1/", // ✅ FIXED BASE URL
+      baseUrl: dotenv.env['BASE_URL']!, // 🔥  // ✅ FIXED BASE URL
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ),
@@ -18,7 +19,7 @@ class ProfileService {
   }) async {
     try {
       // 🔥 GET TOKEN
-      final token = await TokenStorage.getToken();
+      final token = await TokenStorage.getAccessToken();
       print("USING TOKEN: $token");
 
       FormData formData = FormData.fromMap({

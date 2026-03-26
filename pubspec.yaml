@@ -36,6 +36,7 @@ dependencies:
   http: ^0.13.6
   dio: ^5.4.0
   shared_preferences: ^2.2.2
+  flutter_dotenv: ^5.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -64,6 +65,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/splash_screen_logo/
     - assets/fonts/
     - assets/auth/icons/
@@ -86,7 +88,7 @@ flutter:
     - assets/3 dots/
     - assets/share/
     - assets/complete_profile/
-    - assets//user_profile_grid/
+    - assets/user_profile_grid/
 
   fonts:
     - family: Raleway

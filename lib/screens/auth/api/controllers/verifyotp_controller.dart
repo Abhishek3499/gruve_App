@@ -9,7 +9,6 @@ class VerifyotpController {
   bool isLoading = false;
   String? errorMessage;
   VerifyOtpResponse? verifyOtpResponse;
-
   Future<void> verifyOtp({
     required String identifier,
     required String type,
@@ -27,12 +26,16 @@ class VerifyotpController {
 
       verifyOtpResponse = response;
 
-      // ✅ 🔥 SAVE TOKEN HERE
-      if (response.token != null && response.token!.isNotEmpty) {
-        await TokenStorage.saveToken(response.token!);
-        print("TOKEN SAVED: ${response.token}");
+      // ✅ SAFE CHECK
+      if (response.success && response.data != null) {
+        await TokenStorage.saveTokens(
+          accessToken: response.data!.accessToken,
+          refreshToken: response.data!.refreshToken,
+        );
+
+        print("✅ TOKENS SAVED");
       } else {
-        print("⚠️ Token is null or empty");
+        errorMessage = response.message;
       }
     } catch (e) {
       errorMessage = e.toString();
