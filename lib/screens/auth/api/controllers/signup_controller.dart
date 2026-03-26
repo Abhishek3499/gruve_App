@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart' show debugPrint;
+
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
 import '../services/signup_service.dart';
@@ -15,6 +17,7 @@ class SignupController {
     String? password,
     String? countryCode,
     String? phoneNumber,
+    String? gender,
   }) async {
     isLoading = true;
     errorMessage = null;
@@ -26,11 +29,12 @@ class SignupController {
         password: password,
         countryCode: countryCode,
         phoneNumber: phoneNumber,
+        gender: gender,
       );
 
       signupResponse = await _service.signup(request);
 
-      print("User ID: ${signupResponse?.data?.id}");
+      debugPrint("User ID: ${signupResponse?.data?.id}");
     } catch (e) {
       errorMessage = e.toString();
     }

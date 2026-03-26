@@ -174,8 +174,9 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           if (_pinnedMessage != null) {
             final idx = _messages.indexWhere((m) => m.id == _pinnedMessage!.id);
-            if (idx != -1)
+            if (idx != -1) {
               _messages[idx] = _messages[idx].copyWith(isPinned: false);
+            }
           }
           final idx = _messages.indexWhere((m) => m.id == message.id);
           if (idx != -1) {
@@ -214,13 +215,12 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final sortedMessages = _getSortedMessages();
 
-    return WillPopScope(
-      onWillPop: () async {
-        if (_isDeleteMode) {
+    return PopScope(
+      canPop: !_isDeleteMode,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _isDeleteMode) {
           _exitDeleteMode();
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.black,

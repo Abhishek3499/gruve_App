@@ -82,12 +82,12 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF1A0A2E).withOpacity(0.9),
+                      color: const Color(0xFF1A0A2E).withValues(alpha: 0.9),
                       blurRadius: 30,
                       spreadRadius: 10,
                     ),
                     BoxShadow(
-                      color: const Color(0xFF9C27B0).withOpacity(0.35),
+                      color: const Color(0xFF9C27B0).withValues(alpha: 0.35),
                       blurRadius: 40,
                       spreadRadius: 8,
                     ),
@@ -146,7 +146,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -278,7 +278,7 @@ class _OptionTile extends StatelessWidget {
           border: Border.all(color: const Color(0xFF9544A7), width: 1),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF9544A7).withOpacity(0.2),
+              color: const Color(0xFF9544A7).withValues(alpha: 0.2),
               blurRadius: 12,
               spreadRadius: 1,
             ),

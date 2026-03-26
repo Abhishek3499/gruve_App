@@ -13,11 +13,14 @@ class OtpScreen extends StatefulWidget {
   final String description;
   final String buttonText;
   final VoidCallback onVerified;
+
   // final String phoneNumber;
   final String identifier; // email ya phone
   final String type;
+  final bool isLogin;
+  final bool isForgot;
 
-  OtpScreen({
+  const OtpScreen({
     super.key,
     required this.identifier,
     required this.type,
@@ -26,6 +29,9 @@ class OtpScreen extends StatefulWidget {
     required this.description,
     required this.buttonText,
     required this.onVerified,
+
+    this.isLogin = false,
+    this.isForgot = false,
     // required this.phoneNumber,
   });
 
@@ -110,6 +116,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       identifier: widget.identifier,
       type: widget.type,
       otp: otp,
+      isLogin: widget.isLogin,
     );
 
     if (!mounted) return;
@@ -144,15 +151,21 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   void dispose() {
     routeObserver.unsubscribe(this);
     cancel();
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
   @override
   void didPopNext() {
     setState(() {
-      for (final controller in _controllers) controller.clear();
+      for (final controller in _controllers) {
+        controller.clear();
+      }
       _focusNodes.first.requestFocus();
     });
   }
@@ -323,7 +336,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
               ),
               if (isLoading)
                 Container(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                   child: const Center(child: CircularProgressIndicator()),
                 ),
             ],

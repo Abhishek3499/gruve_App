@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart' show debugPrint;
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -25,7 +26,10 @@ class SignupService {
         throw result.message;
       }
     } on DioException catch (e) {
-      throw e.response?.data["message"] ?? "Something went wrong";
+      debugPrint("STATUS CODE: ${e.response?.statusCode}");
+      debugPrint("FULL ERROR: ${e.response?.data}");
+
+      throw e.response?.data.toString() ?? "Something went wrong";
     }
   }
 }

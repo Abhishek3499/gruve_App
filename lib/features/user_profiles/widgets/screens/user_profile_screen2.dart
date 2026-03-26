@@ -68,7 +68,7 @@ class UserProfileScreen2 extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.purpleAccent.withOpacity(0.4),
+                  color: Colors.purpleAccent.withValues(alpha: 0.4),
                   blurRadius: 25,
                   spreadRadius: 2,
                 ),

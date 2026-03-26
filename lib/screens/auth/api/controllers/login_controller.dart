@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../models/login_model.dart';
 import '../services/login_services.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
@@ -18,29 +20,29 @@ class EmailSignInController {
 
       response = res;
 
-      print("✅ SUCCESS: ${res.success}");
-      print("📩 MESSAGE: ${res.message}");
+      debugPrint("✅ SUCCESS: ${res.success}");
+      debugPrint("📩 MESSAGE: ${res.message}");
 
       // ✅ TOKEN SAVE SAFE
       if (res.success && res.data != null) {
         final accessToken = res.data!.accessToken;
         final refreshToken = res.data!.refreshToken;
 
-        print("🔑 ACCESS TOKEN: $accessToken");
-        print("🔄 REFRESH TOKEN: $refreshToken");
+        debugPrint("🔑 ACCESS TOKEN: $accessToken");
+        debugPrint("🔄 REFRESH TOKEN: $refreshToken");
 
         await TokenStorage.saveTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
 
-        print("✅ TOKENS SAVED SUCCESSFULLY");
+        debugPrint("✅ TOKENS SAVED SUCCESSFULLY");
       } else {
         errorMessage = res.message;
       }
     } catch (e) {
       errorMessage = e.toString();
-      print("❌ CONTROLLER ERROR: $e");
+      debugPrint("❌ CONTROLLER ERROR: $e");
     }
 
     isLoading = false;

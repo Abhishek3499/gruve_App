@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/login_model.dart';
 
@@ -14,11 +15,11 @@ class EmailSignInService {
         data: {"email": email, "password": password},
       );
 
-      print("🔥 EMAIL LOGIN RESPONSE: ${response.data}");
+      debugPrint("🔥 EMAIL LOGIN RESPONSE: ${response.data}");
 
       return EmailSignInResponse.fromJson(response.data);
     } on DioException catch (e) {
-      print("❌ API ERROR: ${e.response?.data}");
+      debugPrint("❌ API ERROR: ${e.response?.data}");
 
       throw e.response?.data["message"] ?? "Something went wrong";
     }

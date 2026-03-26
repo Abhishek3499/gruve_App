@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class TokenStorage {
   static const String _accessTokenKey = "access_token";
@@ -14,8 +15,8 @@ class TokenStorage {
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
 
-    print("💾 ACCESS TOKEN SAVED: $accessToken");
-    print("💾 REFRESH TOKEN SAVED: $refreshToken");
+    debugPrint("💾 ACCESS TOKEN SAVED: $accessToken");
+    debugPrint("💾 REFRESH TOKEN SAVED: $refreshToken");
   }
 
   /// ✅ Get access token
@@ -23,7 +24,7 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_accessTokenKey);
 
-    print("📤 GET ACCESS TOKEN: $token");
+    debugPrint("📤 GET ACCESS TOKEN: $token");
 
     return token;
   }
@@ -33,7 +34,7 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_refreshTokenKey);
 
-    print("📤 GET REFRESH TOKEN: $token");
+    debugPrint("📤 GET REFRESH TOKEN: $token");
 
     return token;
   }
@@ -45,6 +46,6 @@ class TokenStorage {
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
 
-    print("🗑️ TOKENS CLEARED");
+    debugPrint("🗑️ TOKENS CLEARED");
   }
 }

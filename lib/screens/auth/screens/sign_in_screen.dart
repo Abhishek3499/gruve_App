@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/screens/auth/screens/phone_number_screen.dart';
 import 'package:gruve_app/screens/auth/widgets/auth_header.dart';
 import 'package:gruve_app/screens/auth/widgets/auth_divider.dart';
 import 'package:gruve_app/screens/auth/widgets/social_login_row.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/auth/screens/email_login_screen.dart';
-import 'package:gruve_app/screens/auth/screens/phone_number_screen.dart';
+
 import 'package:gruve_app/screens/auth/screens/signup_screen.dart';
 import 'package:gruve_app/widgets/primary_button.dart';
 import 'package:gruve_app/widgets/outline_button.dart';
@@ -19,8 +20,8 @@ class SignInScreen extends StatelessWidget {
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 280),
         reverseTransitionDuration: const Duration(milliseconds: 280),
-        pageBuilder: (_, __, ___) => screen,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => screen,
+        transitionsBuilder: (_, animation, _, child) {
           return SlideTransition(
             position:
                 Tween<Offset>(

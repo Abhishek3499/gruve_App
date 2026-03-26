@@ -3,7 +3,6 @@ import 'package:gruve_app/core/assets.dart';
 
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/auth/api/controllers/login_controller.dart';
-import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/screens/auth/screens/forgot_password_screen.dart';
 import 'package:gruve_app/screens/auth/screens/signup_screen.dart'; // ✅ FIX 1: Missing import added
 
@@ -52,6 +51,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       password: _passwordController.text.trim(),
     );
 
+    if (!mounted) return;
     setState(() => isLoading = false);
 
     // ❌ ERROR CASE
@@ -64,7 +64,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
     // ✅ SUCCESS CASE
     if (_controller.response?.success == true) {
-      print("🚀 LOGIN SUCCESS → GO TO OTP");
+      debugPrint("LOGIN SUCCESS -> GO TO HOME");
 
       Navigator.push(
         context,

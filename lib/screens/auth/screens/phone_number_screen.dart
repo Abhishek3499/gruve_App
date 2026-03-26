@@ -131,17 +131,35 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             // Login button ke onComplete ko replace karein:
                             GetStartedButton(
                               text: 'Login',
-                              onComplete: () {
+                              onComplete: () async {
+                                final phone = _phoneController.text.trim();
+
+                                // ✅ validation
+                                if (phone.isEmpty || phone.length < 7) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Enter valid phone number"),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // 🔥 DEBUG
+                                debugPrint("📤 Sending OTP to: $phone");
+
+                                // ❗ (OPTIONAL) CALL SEND OTP API HERE
+
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => OtpScreen(
-                                      identifier: _phoneController.text.trim(),
+                                      identifier: phone,
                                       type: "phone",
                                       title: 'Enter your Code',
                                       description:
                                           'Enter the 4-digit code sent to your phone number.',
                                       buttonText: 'Continue',
+                                      isLogin: true, // ✅ CORRECT
                                       onVerified: () {
                                         Navigator.pushAndRemoveUntil(
                                           context,

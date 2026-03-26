@@ -21,14 +21,20 @@ class _SignupScreenState extends State<SignupScreen> {
   // ✅ FIX 1: Controllers added to capture user input
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
+
   final SignupController controller = SignupController();
+  String? selectedGender;
+  final GlobalKey _genderFieldKey = GlobalKey();
+  bool _useEmail = true;
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
     _emailController = TextEditingController();
+    _phoneController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
   }
@@ -38,8 +44,10 @@ class _SignupScreenState extends State<SignupScreen> {
     // ✅ Always dispose controllers to prevent memory leaks
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+
     super.dispose();
   }
 
@@ -107,13 +115,67 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 20),
 
-                    // EMAIL
-                    _buildLabel('Email'),
+                    // EMAIL / PHONE
+                    _buildContactToggle(),
+                    const SizedBox(height: 12),
+                    _buildLabel(_useEmail ? 'Email' : 'Phone Number'),
                     NeonTextField(
-                      controller: _emailController, // ✅ Linked
-                      hintText: 'Loisbecket@gmail.com',
-                      prefixIcon: AppAssets.emailicon,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _useEmail
+                          ? _emailController
+                          : _phoneController,
+                      hintText: _useEmail
+                          ? 'Loisbecket@gmail.com'
+                          : 'Enter phone number',
+                      prefixIcon: _useEmail ? AppAssets.emailicon : null,
+                      keyboardType: _useEmail
+                          ? TextInputType.emailAddress
+                          : TextInputType.phone,
+                    ),
+
+                    const SizedBox(height: 20),
+                    // GENDER
+                    _buildLabel('Gender'),
+
+                    GestureDetector(
+                      key: _genderFieldKey,
+                      onTap: _showGenderMenu,
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: const Color(0xFFB86AD0)),
+                          color: const Color(0xFF461851),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              AppAssets.user2,
+                              width: 22,
+                              height: 22,
+                              color: const Color(0x99FF00FF),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                selectedGender ?? 'Select Gender',
+                                style: TextStyle(
+                                  color: selectedGender == null
+                                      ? Colors.white54
+                                      : Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 20),
@@ -142,14 +204,33 @@ class _SignupScreenState extends State<SignupScreen> {
                     GetStartedButton(
                       text: 'Sign Up',
                       onComplete: () async {
-                        print("Button Clicked!"); // Debug ke liye
+                        debugPrint("Button Clicked!"); // Debug ke liye
 
-                        final error = SignupValidator.validateAll(
-                          fullName: _nameController.text,
-                          email: _emailController.text,
-                          password: _passwordController.text,
-                          confirmPassword: _confirmPasswordController.text,
-                        );
+                        final identifierError = _useEmail
+                            ? SignupValidator.validateEmail(
+                                _emailController.text,
+                              )
+                            : _validatePhone(_phoneController.text);
+                        final error =
+                            SignupValidator.validateFullName(
+                              _nameController.text,
+                            ) ??
+                            identifierError ??
+                            SignupValidator.validatePassword(
+                              _passwordController.text,
+                            ) ??
+                            SignupValidator.validateConfirmPassword(
+                              _passwordController.text,
+                              _confirmPasswordController.text,
+                            );
+                        if (selectedGender == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please select gender"),
+                            ),
+                          );
+                          return;
+                        }
 
                         if (error != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -170,7 +251,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ✅ password match validation
                         if (_passwordController.text !=
                             _confirmPasswordController.text) {
-                          print("Password not match");
+                          debugPrint("Password not match");
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -183,15 +264,21 @@ class _SignupScreenState extends State<SignupScreen> {
                         // 🔥 API CALL
                         await controller.signup(
                           fullName: _nameController.text.trim(),
-                          email: _emailController.text.trim(),
+                          email: _useEmail
+                              ? _emailController.text.trim()
+                              : null,
+                          phoneNumber: _useEmail
+                              ? null
+                              : _phoneController.text.trim(),
                           password: _passwordController.text.trim(),
+                          gender: selectedGender,
                         );
 
-                        if (!mounted) return;
+                        if (!context.mounted) return;
 
                         // 🔥 RESPONSE HANDLE
                         if (controller.errorMessage != null) {
-                          print("ERROR: ${controller.errorMessage}");
+                          debugPrint("ERROR: ${controller.errorMessage}");
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(controller.errorMessage!)),
@@ -200,19 +287,23 @@ class _SignupScreenState extends State<SignupScreen> {
                           return; // ❗ IMPORTANT: yahi fix tha
                         }
 
-                        print("SUCCESS: ${controller.signupResponse?.message}");
+                        debugPrint(
+                          "SUCCESS: ${controller.signupResponse?.message}",
+                        );
 
                         // ✅ SUCCESS → OTP SCREEN
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => OtpScreen(
-                              identifier: _emailController.text.trim(), // ✅ NEW
-                              type: "email", // ✅ NEW
+                              identifier: _useEmail
+                                  ? _emailController.text.trim()
+                                  : _phoneController.text.trim(),
+                              type: _useEmail ? "email" : "phone",
 
                               title: 'Enter your Code',
                               description:
-                                  'Enter the 4-digit code sent to ${_emailController.text}',
+                                  'Enter the 4-digit code sent to ${_useEmail ? _emailController.text : _phoneController.text}',
                               buttonText: 'Continue',
 
                               onVerified: () {
@@ -224,6 +315,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                 );
                               },
+                              isLogin: false,
                             ),
                           ),
                         );
@@ -281,5 +373,102 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildContactToggle() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF461851),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFB86AD0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildToggleOption(
+              title: 'Email',
+              isSelected: _useEmail,
+              onTap: () => setState(() => _useEmail = true),
+            ),
+          ),
+          Expanded(
+            child: _buildToggleOption(
+              title: 'Phone',
+              isSelected: !_useEmail,
+              onTap: () => setState(() => _useEmail = false),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleOption({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFB86AD0) : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _validatePhone(String value) {
+    final phone = value.trim();
+    if (phone.isEmpty) return "Phone number is required";
+    if (!RegExp(r'^[0-9]{7,15}$').hasMatch(phone)) {
+      return "Enter a valid phone number";
+    }
+    return null;
+  }
+
+  Future<void> _showGenderMenu() async {
+    final context = _genderFieldKey.currentContext;
+    if (context == null) return;
+
+    final RenderBox box = context.findRenderObject()! as RenderBox;
+    final Offset topLeft = box.localToGlobal(Offset.zero);
+    final Size size = box.size;
+
+    final selected = await showMenu<String>(
+      context: this.context,
+      color: const Color(0xFF461851),
+      position: RelativeRect.fromLTRB(
+        topLeft.dx,
+        topLeft.dy + size.height + 6,
+        topLeft.dx + size.width,
+        0,
+      ),
+      items: const [
+        PopupMenuItem(value: 'Male', child: Text('Male')),
+        PopupMenuItem(value: 'Female', child: Text('Female')),
+        PopupMenuItem(value: 'Other', child: Text('Other')),
+      ],
+    );
+
+    if (selected == null || !mounted) return;
+    setState(() {
+      selectedGender = selected;
+    });
   }
 }

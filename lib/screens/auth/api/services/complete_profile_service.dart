@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 import '../models/complete_profile_request.dart';
@@ -18,9 +19,8 @@ class ProfileService {
     String? imagePath,
   }) async {
     try {
-      // 🔥 GET TOKEN
       final token = await TokenStorage.getAccessToken();
-      print("USING TOKEN: $token");
+      debugPrint("USING TOKEN: $token");
 
       FormData formData = FormData.fromMap({
         "username": request.username,

@@ -106,7 +106,7 @@ class UserProfileHeader extends StatelessWidget {
                         /// 🔥 FIXED GIFT BUTTON
                         GiftButton(
                           onTap: () {
-                            print("Gift Button Tapped!");
+                            debugPrint("Gift Button Tapped!");
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,

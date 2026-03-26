@@ -39,13 +39,13 @@ class ProfileScreen extends StatelessWidget {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     // Glassy purple effect as seen in SS
-                    color: const Color(0xFF7D63D1).withOpacity(0.12),
+                    color: const Color(0xFF7D63D1).withValues(alpha: 0.12),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(100),
                       topRight: Radius.circular(30),
                     ),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       width: 1,
                     ),
                   ),

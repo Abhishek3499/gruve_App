@@ -74,7 +74,7 @@ class ActivityChartWidget extends StatelessWidget {
                   child: Text(
                     value.toInt().toString(),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 13,
                     ),
                   ),
@@ -93,7 +93,7 @@ class ActivityChartWidget extends StatelessWidget {
                       child: Text(
                         data[index].day,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 13,
                         ),
                       ),
@@ -138,8 +138,8 @@ class ActivityChartWidget extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color(0xFF00CED1).withOpacity(0.2),
-                    const Color(0xFF00CED1).withOpacity(0.0),
+                    const Color(0xFF00CED1).withValues(alpha: 0.2),
+                    const Color(0xFF00CED1).withValues(alpha: 0.0),
                   ],
                 ),
               ),

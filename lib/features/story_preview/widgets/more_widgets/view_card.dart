@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/story_preview/screens/close_friend_Screen.dart';
+import 'package:gruve_app/features/story_preview/screens/close_friend_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/hide_story_screen.dart';
 
 class ViewCard extends StatelessWidget {

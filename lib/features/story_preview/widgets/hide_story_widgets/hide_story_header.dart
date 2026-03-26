@@ -8,7 +8,7 @@ class HideStoryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 100,
       width: double.infinity,
 

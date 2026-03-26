@@ -105,7 +105,7 @@ class _FaqItemState extends State<_FaqItem> {
             child: Text(
               widget.answer,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
               ),
             ),
@@ -123,7 +123,7 @@ class _FaqDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 1,
-      color: Colors.white.withOpacity(0.1),
+      color: Colors.white.withValues(alpha: 0.1),
       margin: const EdgeInsets.symmetric(horizontal: 20),
     );
   }

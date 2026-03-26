@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 
 import '../services/verify_otp_service.dart';
@@ -13,6 +14,7 @@ class VerifyotpController {
     required String identifier,
     required String type,
     required String otp,
+    bool isLogin = false,
   }) async {
     isLoading = true;
     errorMessage = null;
@@ -22,6 +24,7 @@ class VerifyotpController {
         identifier: identifier,
         type: type,
         otp: otp,
+        isLogin: isLogin,
       );
 
       verifyOtpResponse = response;
@@ -33,7 +36,7 @@ class VerifyotpController {
           refreshToken: response.data!.refreshToken,
         );
 
-        print("✅ TOKENS SAVED");
+        debugPrint("✅ TOKENS SAVED");
       } else {
         errorMessage = response.message;
       }

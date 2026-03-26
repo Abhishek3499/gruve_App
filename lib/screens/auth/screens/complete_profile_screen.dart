@@ -98,7 +98,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       imagePath: _selectedImage?.path,
                     );
 
-                    if (!mounted) return;
+                    if (!context.mounted) return;
 
                     if (controller.errorMessage != null) {
                       ScaffoldMessenger.of(context).showSnackBar(

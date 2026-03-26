@@ -61,6 +61,8 @@ class _ShareUserGridState extends State<ShareUserGrid> {
             children: [
               Expanded(
                 child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: const InputDecoration(
                     hintText: ' Search',

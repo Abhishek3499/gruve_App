@@ -30,7 +30,7 @@ class OtpInputBox extends StatelessWidget {
           decoration: BoxDecoration(
             color: hasValue
                 ? const Color(0xFFB86AD0)
-                : Colors.white.withOpacity(0.08),
+                : Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(22), // ✅ perfect shape
             border: Border.all(
               color: hasValue ? Colors.transparent : Colors.white,

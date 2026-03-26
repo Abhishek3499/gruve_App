@@ -4,6 +4,7 @@ class SignupRequest {
   final String? password;
   final String? countryCode;
   final String? phoneNumber;
+  final String? gender;
 
   SignupRequest({
     this.fullName,
@@ -11,6 +12,7 @@ class SignupRequest {
     this.password,
     this.countryCode,
     this.phoneNumber,
+    this.gender,
   });
 
   Map<String, dynamic> toJson() {
@@ -21,7 +23,7 @@ class SignupRequest {
     if (password != null) data["password"] = password;
     if (countryCode != null) data["country_code"] = countryCode;
     if (phoneNumber != null) data["phone_number"] = phoneNumber;
-
+    if (gender != null) data["gender"] = gender;
     return data;
   }
 }
