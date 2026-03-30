@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/screens/auth/api/controllers/login_controller.dart';
 
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
@@ -16,7 +19,9 @@ class PhoneNumberScreen extends StatefulWidget {
 }
 
 class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
+  final EmailSignInController _controller = EmailSignInController();
   late final TextEditingController _phoneController;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -131,10 +136,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             // Login button ke onComplete ko replace karein:
                             GetStartedButton(
                               text: 'Login',
+                              isLoading: isLoading,
                               onComplete: () async {
                                 final phone = _phoneController.text.trim();
 
-                                // ✅ validation
                                 if (phone.isEmpty || phone.length < 7) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -144,11 +149,44 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                   return;
                                 }
 
-                                // 🔥 DEBUG
                                 debugPrint("📤 Sending OTP to: $phone");
 
-                                // ❗ (OPTIONAL) CALL SEND OTP API HERE
+                                // 🔥 ADD THIS
+                                debugPrint("📤 Sending OTP to: $phone");
 
+                                // 🔥 ADD FROM HERE
+                                final dio = Dio(
+                                  BaseOptions(baseUrl: dotenv.env['BASE_URL']!),
+                                );
+
+                                try {
+                                  final response = await dio.post(
+                                    "auth/login/",
+                                    data: {
+                                      "phone_number": phone,
+                                      "type": "phone",
+                                    },
+                                  );
+
+                                  debugPrint("✅ OTP SENT: ${response.data}");
+                                } catch (e) {
+                                  if (e is DioException) {
+                                    debugPrint(
+                                      "❌ STATUS: ${e.response?.statusCode}",
+                                    );
+                                    debugPrint("❌ DATA: ${e.response?.data}");
+                                  } else {
+                                    debugPrint("❌ ERROR: $e");
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("OTP failed")),
+                                  );
+                                  return;
+                                }
+                                // 🔥 ADD TILL HERE
+
+                                // ✅ NAVIGATION (already correct)
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -159,7 +197,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                       description:
                                           'Enter the 4-digit code sent to your phone number.',
                                       buttonText: 'Continue',
-                                      isLogin: true, // ✅ CORRECT
+                                      isLogin: true,
                                       onVerified: () {
                                         Navigator.pushAndRemoveUntil(
                                           context,

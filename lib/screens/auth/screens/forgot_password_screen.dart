@@ -129,7 +129,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         // GetStartedButton ke andar onComplete ko replace karein:
                         GetStartedButton(
                           text: 'RESET PASSWORD',
-                          onComplete: () {
+                          onComplete: () async {
                             Navigator.push(
                               context,
                               MaterialPageRoute(

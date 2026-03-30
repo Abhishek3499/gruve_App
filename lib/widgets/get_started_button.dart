@@ -3,12 +3,14 @@ import 'package:gruve_app/main.dart';
 
 class GetStartedButton extends StatefulWidget {
   final String text;
-  final VoidCallback onComplete;
+  final Future<void> Function() onComplete;
+  final bool isLoading; // optional external lock
 
   const GetStartedButton({
     super.key,
     required this.text,
     required this.onComplete,
+    this.isLoading = false,
   });
 
   @override
@@ -16,15 +18,17 @@ class GetStartedButton extends StatefulWidget {
 }
 
 class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
-  double _dragX = 10;
+  double _dragX = 0;
   bool _animating = false;
+  bool _internalLoading = false;
 
   static const double _buttonWidth = 200;
   static const double _buttonHeight = 50;
   static const double _circleSize = 45;
 
   double get _maxDrag => _buttonWidth - _circleSize - 5;
-  double get _threshold => _maxDrag * 0.4; // Reduced from 0.6 to 0.4 for easier sliding
+  double get _threshold =>
+      _maxDrag * 0.4; // Reduced from 0.6 to 0.4 for easier sliding
 
   @override
   void didChangeDependencies() {
@@ -48,6 +52,7 @@ class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    final isBusy = widget.isLoading || _internalLoading;
     return SizedBox(
       width: _buttonWidth,
       height: _buttonHeight,
@@ -107,31 +112,51 @@ class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
           ),
 
           // Sliding circle
-          Positioned(
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
             left: _dragX,
             top: (_buttonHeight - _circleSize) / 2,
             child: GestureDetector(
-              onPanUpdate: (d) {
-                if (_animating) return;
-                setState(() {
-                  _dragX = (_dragX + d.delta.dx).clamp(0, _maxDrag);
-                });
-              },
-              onPanEnd: (_) async {
-                if (_animating) return;
-                _animating = true;
+              onPanUpdate: isBusy
+                  ? null
+                  : (d) {
+                      if (_animating) return;
+                      setState(() {
+                        _dragX = (_dragX + d.delta.dx).clamp(0, _maxDrag);
+                      });
+                    },
+              onPanEnd: isBusy
+                  ? null
+                  : (_) async {
+                      if (_animating || _internalLoading || widget.isLoading) {
+                        return;
+                      }
+                      _animating = true;
 
-                if (_dragX >= _threshold) {
-                  setState(() => _dragX = _maxDrag);
-                  await Future.delayed(const Duration(milliseconds: 220));
-                  widget.onComplete();
-                } else {
-                  setState(() => _dragX = 0);
-                }
+                      if (_dragX >= _threshold) {
+                        setState(() {
+                          _dragX = _maxDrag;
+                          _internalLoading = true;
+                        });
 
-                await Future.delayed(const Duration(milliseconds: 180));
-                _animating = false;
-              },
+                        try {
+                          if (!mounted) return;
+                          await widget.onComplete();
+                        } finally {
+                          if (!mounted) return;
+                          setState(() {
+                            _internalLoading = false;
+                          });
+                        }
+                      } else {
+                        setState(() => _dragX = 0);
+                      }
+
+                      if (!mounted) return;
+                      await Future.delayed(const Duration(milliseconds: 180));
+                      _animating = false;
+                    },
               child: Container(
                 width: _circleSize,
                 height: _circleSize,
@@ -139,11 +164,22 @@ class _GetStartedButtonState extends State<GetStartedButton> with RouteAware {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.keyboard_double_arrow_right,
-                  size: 20,
-                  color: Color(0xFF9544A7),
-                ),
+                child: isBusy
+                    ? const Center(
+                        child: SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF9544A7),
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.keyboard_double_arrow_right,
+                        size: 20,
+                        color: Color(0xFF9544A7),
+                      ),
               ),
             ),
           ),

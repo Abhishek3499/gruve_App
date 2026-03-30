@@ -222,6 +222,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             alignment: AlignmentGeometry.center,
                             child: GetStartedButton(
                               text: 'Login',
+                              isLoading: isLoading,
                               onComplete:
                                   _handleLogin, // ✅ FIX 10: Uses validated handler
                             ),

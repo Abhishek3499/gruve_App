@@ -18,36 +18,33 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  // ✅ FIX 1: Controllers added to capture user input
   late final TextEditingController _nameController;
-  late final TextEditingController _emailController;
-  late final TextEditingController _phoneController;
+  late final TextEditingController _identifierController;
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
 
   final SignupController controller = SignupController();
+
   String? selectedGender;
   final GlobalKey _genderFieldKey = GlobalKey();
+
   bool _useEmail = true;
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _emailController = TextEditingController();
-    _phoneController = TextEditingController();
+    _identifierController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
   }
 
   @override
   void dispose() {
-    // ✅ Always dispose controllers to prevent memory leaks
     _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-
     super.dispose();
   }
 
@@ -90,41 +87,39 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 12),
+
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Create Your Account',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
 
                     const SizedBox(height: 38),
 
-                    // FULL NAME
+                    // NAME
                     _buildLabel('Full Name'),
                     NeonTextField(
-                      controller: _nameController, // ✅ Linked
+                      controller: _nameController,
                       hintText: 'Skyler',
                       prefixIcon: AppAssets.user2,
                     ),
 
                     const SizedBox(height: 20),
 
-                    // EMAIL / PHONE
+                    // TOGGLE
                     _buildContactToggle(),
                     const SizedBox(height: 12),
+
+                    // IDENTIFIER FIELD
                     _buildLabel(_useEmail ? 'Email' : 'Phone Number'),
                     NeonTextField(
-                      controller: _useEmail
-                          ? _emailController
-                          : _phoneController,
+                      controller: _identifierController,
                       hintText: _useEmail
-                          ? 'Loisbecket@gmail.com'
+                          ? 'example@gmail.com'
                           : 'Enter phone number',
                       prefixIcon: _useEmail ? AppAssets.emailicon : null,
                       keyboardType: _useEmail
@@ -133,9 +128,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
 
                     const SizedBox(height: 20),
+
                     // GENDER
                     _buildLabel('Gender'),
-
                     GestureDetector(
                       key: _genderFieldKey,
                       onTap: _showGenderMenu,
@@ -164,8 +159,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                   color: selectedGender == null
                                       ? Colors.white54
                                       : Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -183,8 +176,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     // PASSWORD
                     _buildLabel('Password'),
                     NeonPasswordField(
-                      controller:
-                          _passwordController, // ✅ Make sure your widget accepts controller
+                      controller: _passwordController,
                       hintText: '********',
                     ),
 
@@ -193,24 +185,23 @@ class _SignupScreenState extends State<SignupScreen> {
                     // CONFIRM PASSWORD
                     _buildLabel('Confirm Password'),
                     NeonPasswordField(
-                      controller: _confirmPasswordController, // ✅ Linked
+                      controller: _confirmPasswordController,
                       hintText: '********',
                     ),
 
                     const SizedBox(height: 30),
 
                     // SIGN UP BUTTON
-                    // SIGN UP BUTTON
                     GetStartedButton(
                       text: 'Sign Up',
                       onComplete: () async {
-                        debugPrint("Button Clicked!"); // Debug ke liye
+                        if (!mounted) return;
+                        final identifier = _identifierController.text.trim();
 
                         final identifierError = _useEmail
-                            ? SignupValidator.validateEmail(
-                                _emailController.text,
-                              )
-                            : _validatePhone(_phoneController.text);
+                            ? SignupValidator.validateEmail(identifier)
+                            : _validatePhone(identifier);
+
                         final error =
                             SignupValidator.validateFullName(
                               _nameController.text,
@@ -223,7 +214,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               _passwordController.text,
                               _confirmPasswordController.text,
                             );
+
                         if (selectedGender == null) {
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Please select gender"),
@@ -233,79 +226,41 @@ class _SignupScreenState extends State<SignupScreen> {
                         }
 
                         if (error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(error),
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                233,
-                                132,
-                                125,
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(error)));
                           return;
                         }
 
-                        // ✅ password match validation
-                        if (_passwordController.text !=
-                            _confirmPasswordController.text) {
-                          debugPrint("Password not match");
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Passwords do not match"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // 🔥 API CALL
+                        // API CALL
                         await controller.signup(
                           fullName: _nameController.text.trim(),
-                          email: _useEmail
-                              ? _emailController.text.trim()
-                              : null,
-                          phoneNumber: _useEmail
-                              ? null
-                              : _phoneController.text.trim(),
+                          identifier: identifier, // ✅ ALWAYS SEND
                           password: _passwordController.text.trim(),
                           gender: selectedGender,
                         );
 
                         if (!context.mounted) return;
 
-                        // 🔥 RESPONSE HANDLE
                         if (controller.errorMessage != null) {
-                          debugPrint("ERROR: ${controller.errorMessage}");
-
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(controller.errorMessage!)),
                           );
-
-                          return; // ❗ IMPORTANT: yahi fix tha
+                          return;
                         }
 
-                        debugPrint(
-                          "SUCCESS: ${controller.signupResponse?.message}",
-                        );
-
-                        // ✅ SUCCESS → OTP SCREEN
+                        // NAVIGATE TO OTP
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => OtpScreen(
-                              identifier: _useEmail
-                                  ? _emailController.text.trim()
-                                  : _phoneController.text.trim(),
+                              identifier: identifier,
                               type: _useEmail ? "email" : "phone",
-
                               title: 'Enter your Code',
-                              description:
-                                  'Enter the 4-digit code sent to ${_useEmail ? _emailController.text : _phoneController.text}',
+                              description: 'Enter the code sent to $identifier',
                               buttonText: 'Continue',
-
+                              isLogin: false,
                               onVerified: () {
                                 Navigator.push(
                                   context,
@@ -315,37 +270,22 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                 );
                               },
-                              isLogin: false,
                             ),
                           ),
                         );
                       },
                     ),
+
                     const SizedBox(height: 35),
 
-                    // BACK TO LOGIN
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: RichText(
-                        text: const TextSpan(
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          children: [
-                            TextSpan(text: 'Already have an account? '),
-                            TextSpan(
-                              text: 'Sign In',
-                              style: TextStyle(
-                                color: Color(0xFFB86AD0),
-                                fontWeight: FontWeight.w300,
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: const Text(
+                        'Already have an account? Sign In',
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
+
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -357,7 +297,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // Helper method to keep UI clean
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -365,11 +304,7 @@ class _SignupScreenState extends State<SignupScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
       ),
     );
@@ -414,7 +349,6 @@ class _SignupScreenState extends State<SignupScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
         height: 44,
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFB86AD0) : Colors.transparent,
@@ -425,7 +359,6 @@ class _SignupScreenState extends State<SignupScreen> {
           title,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 14,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
@@ -467,6 +400,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
 
     if (selected == null || !mounted) return;
+
     setState(() {
       selectedGender = selected;
     });

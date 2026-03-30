@@ -30,9 +30,9 @@ class VerifyOtpService {
 
       // ✅ Body
       if (type == "phone") {
-        body = {"phone_number": identifier, "otp": otp};
+        body = {"identifier": identifier, "otp": otp};
       } else {
-        body = {"email": identifier, "otp": otp};
+        body = {"identifier": identifier, "otp": otp};
       }
 
       // 🔥 DEBUG

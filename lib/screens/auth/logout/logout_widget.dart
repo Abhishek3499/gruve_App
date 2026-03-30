@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/screens/auth/api/controllers/logout_controller.dart';
+import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 
 class LogoutWidget extends StatelessWidget {
-  final VoidCallback onConfirm;
-
-  const LogoutWidget({super.key, required this.onConfirm});
+  final LogoutController _logoutController = LogoutController();
 
   @override
   Widget build(BuildContext context) {
@@ -48,10 +48,24 @@ class LogoutWidget extends StatelessWidget {
 
                     /// LOGOUT BUTTON
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        onConfirm();
+                      onTap: () async {
+                        print("🔥 YES CLICKED");
+                        final navigator = Navigator.of(context);
+                        navigator.pop();
+
+                        await _logoutController.logout();
+
+                        print("🔥 LOGOUT DONE");
+
+                        // ❌ don't use old context
+                        navigator.pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const SignInScreen(),
+                          ),
+                          (route) => false,
+                        );
                       },
+
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),

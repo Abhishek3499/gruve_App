@@ -70,7 +70,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   const Spacer(),
                   GetStartedButton(
                     text: 'To Get Started',
-                    onComplete: () {
+                    onComplete: () async {
                       Navigator.push(
                         context,
                         PageRouteBuilder(

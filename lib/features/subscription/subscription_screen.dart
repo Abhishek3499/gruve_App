@@ -89,7 +89,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               padding: const EdgeInsets.all(20),
               child: GetStartedButton(
                 text: 'Buy',
-                onComplete: () {
+                onComplete: () async {
                   // Handle buy action
                 },
               ),

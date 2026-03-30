@@ -129,7 +129,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           alignment: AlignmentGeometry.center,
                           child: GetStartedButton(
                             text: 'Reset ',
-                            onComplete: () {
+                            onComplete: () async {
                               // Basic validation
                               if (_newPasswordController.text.isEmpty ||
                                   _confirmPasswordController.text.isEmpty) {

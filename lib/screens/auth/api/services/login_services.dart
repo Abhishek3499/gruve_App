@@ -12,7 +12,10 @@ class EmailSignInService {
     try {
       final response = await _dio.post(
         "auth/login/",
-        data: {"email": email, "password": password},
+        data: {
+          "email": email, // 🔥 email OR phone
+          "password": password,
+        },
       );
 
       debugPrint("🔥 EMAIL LOGIN RESPONSE: ${response.data}");

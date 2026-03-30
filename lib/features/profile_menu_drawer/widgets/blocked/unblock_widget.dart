@@ -35,7 +35,7 @@ class UnblockWidget extends StatelessWidget {
                     const SizedBox(height: 55),
 
                     Text(
-                      "unblock $name",
+                      "Unblock $name",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,

@@ -24,7 +24,7 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_accessTokenKey);
 
-    debugPrint("📤 GET ACCESS TOKEN: $token");
+    debugPrint("📤 GET ACCESS TOKEN: ${token ?? "EMPTY ❌"}");
 
     return token;
   }
@@ -34,9 +34,22 @@ class TokenStorage {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_refreshTokenKey);
 
-    debugPrint("📤 GET REFRESH TOKEN: $token");
+    debugPrint("📤 GET REFRESH TOKEN: ${token ?? "EMPTY ❌"}");
 
     return token;
+  }
+
+  /// 🆕 DEBUG: Check both tokens together
+  static Future<void> debugCheckTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final access = prefs.getString(_accessTokenKey);
+    final refresh = prefs.getString(_refreshTokenKey);
+
+    debugPrint("========== TOKEN DEBUG ==========");
+    debugPrint("Access Token  : ${access ?? "EMPTY ❌"}");
+    debugPrint("Refresh Token : ${refresh ?? "EMPTY ❌"}");
+    debugPrint("=================================");
   }
 
   /// ✅ Clear all tokens (logout)

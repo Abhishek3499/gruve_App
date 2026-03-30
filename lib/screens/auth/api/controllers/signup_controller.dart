@@ -10,33 +10,34 @@ class SignupController {
   SignupResponse? signupResponse;
 
   final SignupService _service = SignupService();
-
   Future<void> signup({
     String? fullName,
-    String? email,
+    String? identifier,
     String? password,
-    String? countryCode,
-    String? phoneNumber,
     String? gender,
   }) async {
     isLoading = true;
     errorMessage = null;
 
+    debugPrint("🚀 Signup Start");
+    debugPrint("Name: $fullName");
+    debugPrint("Identifier: $identifier");
+
     try {
       final request = SignupRequest(
         fullName: fullName,
-        email: email,
+        identifier: identifier,
         password: password,
-        countryCode: countryCode,
-        phoneNumber: phoneNumber,
         gender: gender,
       );
 
       signupResponse = await _service.signup(request);
 
-      debugPrint("User ID: ${signupResponse?.data?.id}");
+      debugPrint("✅ User ID: ${signupResponse?.data?.id}");
     } catch (e) {
-      errorMessage = e.toString();
+      final rawMessage = e.toString();
+      errorMessage = rawMessage.replaceFirst("Exception: ", "").trim();
+      debugPrint("❌ Signup Error: $errorMessage");
     }
 
     isLoading = false;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/features/profile_menu_drawer/logout/logout_widget.dart';
+import 'package:gruve_app/screens/auth/logout/logout_widget.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';
@@ -10,7 +10,6 @@ import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dar
 import 'package:gruve_app/features/profile_menu_drawer/screens/language_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/account_privacy_screen.dart';
 import 'package:gruve_app/features/subscription/subscription_screen.dart';
-import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
@@ -130,7 +129,7 @@ class ProfileMenuDrawer extends StatelessWidget {
 
                       _menuItem(
                         Icons.lock,
-                        "Account&Privacy",
+                        "Account & Privacy",
                         onTap: () {
                           Navigator.pop(context);
                           Navigator.push(
@@ -240,21 +239,17 @@ class ProfileMenuDrawer extends StatelessWidget {
                       /// Logout
                       GestureDetector(
                         onTap: () {
+                          print("🔥 LOGOUT CLICKED");
+
+                          Navigator.pop(context); // 👈 close drawer first
+
                           showDialog(
                             context: context,
-                            builder: (context) => LogoutWidget(
-                              onConfirm: () {
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignInScreen(),
-                                  ),
-                                  (route) => false,
-                                );
-                              },
-                            ),
+                            barrierDismissible: false,
+                            builder: (dialogContext) => LogoutWidget(),
                           );
                         },
+
                         child: Row(
                           children: const [
                             Icon(Icons.logout, color: Colors.white, size: 22),
