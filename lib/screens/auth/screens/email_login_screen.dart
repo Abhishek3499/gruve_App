@@ -41,8 +41,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   }
 
   // ✅ FIX 5: Extracted login logic — validate before navigating
-  Future<void> _handleLogin() async {
-    if (_formKey.currentState?.validate() != true) return;
+  Future<bool> _handleLogin() async {
+    if (_formKey.currentState?.validate() != true) return false;
 
     setState(() => isLoading = true);
 
@@ -51,7 +51,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       password: _passwordController.text.trim(),
     );
 
-    if (!mounted) return;
+    if (!mounted) return false;
     setState(() => isLoading = false);
 
     // ❌ ERROR CASE
@@ -59,7 +59,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_controller.errorMessage!)));
-      return;
+      return false;
     }
 
     // ✅ SUCCESS CASE
@@ -70,7 +70,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+
+      return true; // ✅ ADD THIS
     }
+    return false;
   }
 
   @override
@@ -165,6 +168,18 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             onFieldSubmitted: (_) => FocusScope.of(
                               context,
                             ).requestFocus(_passwordFocus),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Email is required';
+                              }
+                              final emailRegex = RegExp(
+                                r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              );
+                              if (!emailRegex.hasMatch(value.trim())) {
+                                return 'Enter a valid email address';
+                              }
+                              return null;
+                            },
                           ),
 
                           const SizedBox(height: 20),

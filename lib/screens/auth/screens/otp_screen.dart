@@ -12,7 +12,8 @@ class OtpScreen extends StatefulWidget {
   final String title;
   final String description;
   final String buttonText;
-  final VoidCallback onVerified;
+  final Function(String token)? onVerifiedWithToken; // 👈 NEW
+  final VoidCallback? onVerified; // 👈 OLD (SAFE)
 
   // final String phoneNumber;
   final String identifier; // email ya phone
@@ -28,7 +29,8 @@ class OtpScreen extends StatefulWidget {
     required this.title,
     required this.description,
     required this.buttonText,
-    required this.onVerified,
+    this.onVerified,
+    this.onVerifiedWithToken,
 
     this.isLogin = false,
     this.isForgot = false,
@@ -79,6 +81,12 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     super.initState();
     listenForCode();
     _focusNodes.first.requestFocus();
+
+    debugPrint("🔥 OTP SCREEN INIT");
+    debugPrint("👉 isForgot: ${widget.isForgot}");
+    debugPrint("👉 isLogin: ${widget.isLogin}");
+    debugPrint("👉 type: ${widget.type}");
+    debugPrint("👉 identifier: ${widget.identifier}");
   }
 
   @override
@@ -97,29 +105,49 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     _focusNodes.last.requestFocus();
   }
 
-  Future<void> _verifyOtpManually() async {
+  Future<bool> _verifyOtpManually() async {
+    if (isLoading) return false;
+
     final otp = _controllers.map((e) => e.text).join();
 
-    // ✅ VALIDATION
-    if (otp.length < 4) {
+    debugPrint("🟡 OTP ENTERED: $otp");
+
+    // ✅ STEP 1: EMPTY CHECK
+    if (otp.isEmpty || otp.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter complete OTP")),
       );
-      return;
+      return false;
+    }
+
+    // ✅ STEP 2: REGEX VALIDATION (ADD HERE 🔥)
+    if (!RegExp(r'^\d{4}$').hasMatch(otp)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter valid 4 digit OTP")));
+      return false;
     }
 
     FocusScope.of(context).unfocus();
 
     setState(() => isLoading = true);
 
+    debugPrint("🟡 BEFORE API CALL");
+    debugPrint("👉 isForgot: ${widget.isForgot}");
+    debugPrint("👉 isLogin: ${widget.isLogin}");
+    debugPrint("📡 CALLING CONTROLLER...");
+
     await controller.verifyOtp(
       identifier: widget.identifier,
+      phone_number: widget.type == "phone" ? widget.identifier : "",
+      email: widget.type == "email" ? widget.identifier : "",
       type: widget.type,
       otp: otp,
       isLogin: widget.isLogin,
+      isForgot: widget.isForgot,
     );
 
-    if (!mounted) return;
+    if (!mounted) return false;
 
     setState(() => isLoading = false);
 
@@ -127,17 +155,34 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
-      return;
+      return false;
     }
 
     if (controller.verifyOtpResponse?.success == true) {
-      widget.onVerified(); // ✅ ONLY SUCCESS NAVIGATION
+      if (widget.isForgot) {
+        final token = controller.verifyOtpResponse?.resetToken ?? "";
+
+        if (widget.onVerifiedWithToken != null) {
+          widget.onVerifiedWithToken!(token);
+        } else {
+          debugPrint("⚠️ onVerifiedWithToken is null");
+        }
+      } else {
+        if (widget.onVerified != null) {
+          widget.onVerified!();
+        } else {
+          debugPrint("⚠️ onVerified is null");
+        }
+      }
+
+      return true;
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(controller.verifyOtpResponse?.message ?? "Invalid OTP"),
         ),
       );
+      return false;
     }
   }
 
@@ -327,6 +372,8 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
                         GetStartedButton(
                           text: widget.buttonText,
+                          isLoading: isLoading,
+
                           onComplete: _verifyOtpManually,
                         ),
                       ],
@@ -334,11 +381,6 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                   ),
                 ),
               ),
-              if (isLoading)
-                Container(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
             ],
           ),
         ),

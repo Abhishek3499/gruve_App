@@ -13,29 +13,42 @@ class VerifyOtpService {
   );
   Future<VerifyOtpResponse> verifyOtp({
     required String identifier,
-    required String type, // "email" OR "phone"
+    required String email,
+    required String phone_number,
+    required String type,
     required String otp,
-    bool isLogin = false, // ✅ NEW
+    bool isLogin = false,
+    bool isForgot = false, // ✅ ADD THIS
   }) async {
     try {
+      debugPrint("🚀 SERVICE HIT");
+      debugPrint("👉 isForgot: $isForgot");
+      debugPrint("👉 isLogin: $isLogin");
+      debugPrint("👉 type: $type");
+      debugPrint("👉 email: $email");
+      debugPrint("👉 phone: $phone_number");
+
       Map<String, dynamic> body;
       String endpoint;
 
       // ✅ Decide endpoint
-      if (isLogin) {
+      if (isForgot) {
+        endpoint = "auth/password-reset/verify-otp/";
+        body = {"email": email, "otp": otp};
+      } else if (isLogin) {
         endpoint = "auth/verify-phone-login-otp/";
+        body = {"phone_number": phone_number, "otp": otp};
       } else {
         endpoint = "auth/verify-otp/";
+
+        // ✅ Signup (email OR phone)
+        if (type == "phone") {
+          body = {"phone_number": phone_number, "otp": otp};
+        } else {
+          body = {"email": identifier, "otp": otp};
+        }
       }
 
-      // ✅ Body
-      if (type == "phone") {
-        body = {"identifier": identifier, "otp": otp};
-      } else {
-        body = {"identifier": identifier, "otp": otp};
-      }
-
-      // 🔥 DEBUG
       debugPrint("📤 ENDPOINT: $endpoint");
       debugPrint("📤 BODY: $body");
 

@@ -98,19 +98,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       imagePath: _selectedImage?.path,
                     );
 
-                    if (!context.mounted) return;
+                    if (!context.mounted) return false;
 
                     if (controller.errorMessage != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(controller.errorMessage!)),
                       );
-                      return;
+                      return false;
                     }
 
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const HomeScreen()),
                     );
+                    return true;
                   },
                 ),
               ],

@@ -1,7 +1,7 @@
 class VerifyOtpResponse {
   final bool success;
   final String message;
-  final OtpData? data; // ✅ nullable
+  final OtpData? data;
 
   VerifyOtpResponse({required this.success, required this.message, this.data});
 
@@ -11,9 +11,11 @@ class VerifyOtpResponse {
       message: json['message']?.toString() ?? "",
       data: json['data'] is Map<String, dynamic>
           ? OtpData.fromJson(json['data'])
-          : null, // ✅ SAFE CHECK
+          : null,
     );
   }
+
+  String? get resetToken => data?.accessToken; // ✅ FIXED
 }
 
 class OtpData {

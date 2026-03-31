@@ -1,8 +1,7 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/screens/auth/api/controllers/login_controller.dart';
+import 'package:gruve_app/screens/auth/api/controllers/phone_sigin_controller.dart';
 
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
@@ -19,8 +18,9 @@ class PhoneNumberScreen extends StatefulWidget {
 }
 
 class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
-  final EmailSignInController _controller = EmailSignInController();
+  // final EmailSignInController _controller = EmailSignInController();
   late final TextEditingController _phoneController;
+  final PhoneSignInController _controller = PhoneSignInController();
   bool isLoading = false;
 
   @override
@@ -146,47 +146,26 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                       content: Text("Enter valid phone number"),
                                     ),
                                   );
-                                  return;
+                                  return false;
                                 }
 
-                                debugPrint("📤 Sending OTP to: $phone");
+                                setState(() => isLoading = true);
 
-                                // 🔥 ADD THIS
-                                debugPrint("📤 Sending OTP to: $phone");
+                                await _controller.signIn(phone_number: phone);
 
-                                // 🔥 ADD FROM HERE
-                                final dio = Dio(
-                                  BaseOptions(baseUrl: dotenv.env['BASE_URL']!),
-                                );
+                                setState(() => isLoading = false);
 
-                                try {
-                                  final response = await dio.post(
-                                    "auth/login/",
-                                    data: {
-                                      "phone_number": phone,
-                                      "type": "phone",
-                                    },
-                                  );
-
-                                  debugPrint("✅ OTP SENT: ${response.data}");
-                                } catch (e) {
-                                  if (e is DioException) {
-                                    debugPrint(
-                                      "❌ STATUS: ${e.response?.statusCode}",
-                                    );
-                                    debugPrint("❌ DATA: ${e.response?.data}");
-                                  } else {
-                                    debugPrint("❌ ERROR: $e");
-                                  }
-
+                                // ❌ Error case
+                                if (_controller.errorMessage != null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("OTP failed")),
+                                    SnackBar(
+                                      content: Text(_controller.errorMessage!),
+                                    ),
                                   );
-                                  return;
+                                  return false;
                                 }
-                                // 🔥 ADD TILL HERE
 
-                                // ✅ NAVIGATION (already correct)
+                                // ✅ Success → Navigate to OTP
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -210,6 +189,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                     ),
                                   ),
                                 );
+                                return true;
                               },
                             ),
                       ),

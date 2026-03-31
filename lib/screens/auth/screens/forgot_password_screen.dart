@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/screens/auth/api/services/forgot_password_service.dart';
 
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
 import 'package:gruve_app/screens/auth/screens/reset_password_screen.dart';
@@ -14,8 +15,14 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
+bool isValidEmail(String email) {
+  return RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email);
+}
+
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   late final TextEditingController _emailController;
+  bool isLoading = false;
+  final ForgotPasswordService _service = ForgotPasswordService();
 
   @override
   void initState() {
@@ -129,30 +136,76 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         // GetStartedButton ke andar onComplete ko replace karein:
                         GetStartedButton(
                           text: 'RESET PASSWORD',
+                          isLoading: isLoading,
                           onComplete: () async {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OtpScreen(
-                                  identifier: _emailController.text
-                                      .trim(), // ✅ FIX
-                                  type: "email",
-                                  title: 'Reset Password',
-                                  description:
-                                      'Enter the code sent to your email address.',
-                                  buttonText: 'Reset Password',
-                                  onVerified: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const ResetPasswordScreen(),
-                                      ),
-                                    );
-                                  },
+                            final email = _emailController.text.trim();
+
+                            // ✅ validation
+                            if (email.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Email is required"),
                                 ),
-                              ),
-                            );
+                              );
+                              return false;
+                            }
+
+                            if (!isValidEmail(email)) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Enter valid email"),
+                                ),
+                              );
+                              return false;
+                            }
+
+                            // ✅ LOADER START 🔥
+                            setState(() => isLoading = true);
+
+                            try {
+                              await _service.sendResetLink(email: email);
+
+                              // ✅ LOADER STOP
+                              setState(() => isLoading = false);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => OtpScreen(
+                                    identifier: email,
+                                    type: "email",
+                                    title: 'Reset Password',
+
+                                    description:
+                                        'Enter the code sent to your email address.',
+                                    buttonText: 'Reset Password',
+                                    isForgot: true,
+                                    onVerifiedWithToken: (token) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              ResetPasswordScreen(token: token),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+
+                              return true;
+                            } catch (e) {
+                              // ✅ LOADER STOP ON ERROR
+                              setState(() => isLoading = false);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error: ${e.toString()}"),
+                                ),
+                              );
+
+                              return false;
+                            }
                           },
                         ),
                       ],

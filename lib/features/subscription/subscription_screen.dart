@@ -90,7 +90,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               child: GetStartedButton(
                 text: 'Buy',
                 onComplete: () async {
-                  // Handle buy action
+                  if (_selectedCardIndex == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Please select a plan")),
+                    );
+                    return false;
+                  }
+
+                  // TODO: handle purchase logic
+
+                  return true; // ✅ MUST ADD
                 },
               ),
             ),

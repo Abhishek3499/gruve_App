@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-
 import 'package:gruve_app/screens/auth/screens/complete_profile_screen.dart';
 import 'package:gruve_app/screens/auth/screens/otp_screen.dart';
-import 'package:gruve_app/screens/auth/validators/signup_validator.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
+import 'package:gruve_app/widgets/inputs/phone_input_field.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/widgets/inputs/neon_password_field.dart';
@@ -18,26 +17,31 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _identifierController;
-  late final TextEditingController _passwordController;
-  late final TextEditingController _confirmPasswordController;
+  // ── Controllers ──────────────────────────────────────────
+  final _nameController = TextEditingController();
+  final _identifierController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
+  // ── Focus Nodes ──────────────────────────────────────────
+  final _nameFocus = FocusNode();
+  final _identifierFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
+
+  // ── Form Key ─────────────────────────────────────────────
+  final _formKey = GlobalKey<FormState>();
+
+  // ── Other State ──────────────────────────────────────────
   final SignupController controller = SignupController();
-
-  String? selectedGender;
   final GlobalKey _genderFieldKey = GlobalKey();
-
+  String? selectedGender;
+  bool _genderTouched = false;
   bool _useEmail = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController();
-    _identifierController = TextEditingController();
-    _passwordController = TextEditingController();
-    _confirmPasswordController = TextEditingController();
-  }
+  String? get _genderError => (_genderTouched && selectedGender == null)
+      ? 'Please select gender'
+      : null;
 
   @override
   void dispose() {
@@ -45,6 +49,10 @@ class _SignupScreenState extends State<SignupScreen> {
     _identifierController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _nameFocus.dispose();
+    _identifierFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
@@ -60,234 +68,335 @@ class _SignupScreenState extends State<SignupScreen> {
           builder: (context, constraints) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SizedBox(height: constraints.maxHeight * 0.15),
+              child: Form(
+                // ✅ Form wrap
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(height: constraints.maxHeight * 0.15),
 
-                    // TITLE
-                    Align(
-                      alignment: AlignmentDirectional.topStart,
-                      child: RichText(
-                        text: const TextSpan(
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                            fontFamily: AppAssets.syncopateFont,
+                      // TITLE
+                      Align(
+                        alignment: AlignmentDirectional.topStart,
+                        child: RichText(
+                          text: const TextSpan(
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                              fontFamily: AppAssets.syncopateFont,
+                            ),
+                            children: [
+                              TextSpan(text: 'Sign'),
+                              TextSpan(
+                                text: ' Up',
+                                style: TextStyle(color: Color(0xFFB86AD0)),
+                              ),
+                            ],
                           ),
-                          children: [
-                            TextSpan(text: 'Sign'),
-                            TextSpan(
-                              text: ' Up',
-                              style: TextStyle(color: Color(0xFFB86AD0)),
-                            ),
-                          ],
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Create Your Account',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-
-                    const SizedBox(height: 38),
-
-                    // NAME
-                    _buildLabel('Full Name'),
-                    NeonTextField(
-                      controller: _nameController,
-                      hintText: 'Skyler',
-                      prefixIcon: AppAssets.user2,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // TOGGLE
-                    _buildContactToggle(),
-                    const SizedBox(height: 12),
-
-                    // IDENTIFIER FIELD
-                    _buildLabel(_useEmail ? 'Email' : 'Phone Number'),
-                    NeonTextField(
-                      controller: _identifierController,
-                      hintText: _useEmail
-                          ? 'example@gmail.com'
-                          : 'Enter phone number',
-                      prefixIcon: _useEmail ? AppAssets.emailicon : null,
-                      keyboardType: _useEmail
-                          ? TextInputType.emailAddress
-                          : TextInputType.phone,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // GENDER
-                    _buildLabel('Gender'),
-                    GestureDetector(
-                      key: _genderFieldKey,
-                      onTap: _showGenderMenu,
-                      child: Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: const Color(0xFFB86AD0)),
-                          color: const Color(0xFF461851),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Create Your Account',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
+                      ),
+
+                      const SizedBox(height: 38),
+
+                      // ── FULL NAME ───────────────────────────────────
+                      _buildLabel('Full Name'),
+                      NeonTextField(
+                        controller: _nameController,
+                        hintText: 'Skyler',
+                        prefixIcon: AppAssets.user2,
+                        focusNode: _nameFocus,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) {
+                          _formKey.currentState?.validate(); // 🔥 ADD THIS
+                          FocusScope.of(context).requestFocus(_identifierFocus);
+                        },
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Full name is required';
+                          }
+                          if (value.trim().length < 2) {
+                            return 'Name too short';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ── TOGGLE ──────────────────────────────────────
+                      _buildContactToggle(),
+                      const SizedBox(height: 12),
+
+                      // ── EMAIL / PHONE ───────────────────────────────
+                      // ── EMAIL / PHONE ───────────────────────────────────────
+                      _buildLabel(_useEmail ? 'Email' : 'Phone Number'),
+
+                      // ✅ Toggle ke basis pe alag widget
+                      if (_useEmail)
+                        NeonTextField(
+                          controller: _identifierController,
+                          hintText: 'example@gmail.com',
+                          prefixIcon: AppAssets.emailicon,
+                          focusNode: _identifierFocus,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) {
+                            _formKey.currentState?.validate(); // 🔥 ADD THIS
+                            FocusScope.of(context).requestFocus(_passwordFocus);
+                          },
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Email is required';
+                            }
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                            );
+                            if (!emailRegex.hasMatch(value.trim())) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
+                        )
+                      else
+                        PhoneInputField(
+                          // ✅ phone wala widget
+                          controller: _identifierController,
+                          focusNode: _identifierFocus,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) {
+                            _formKey.currentState?.validate(); // 🔥 ADD THIS
+                            FocusScope.of(context).requestFocus(_passwordFocus);
+                          },
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Phone number is required';
+                            }
+                            if (!RegExp(
+                              r'^[6-9][0-9]{9}$',
+                            ).hasMatch(value.trim())) {
+                              return 'Enter a valid phone number';
+                            }
+                            return null;
+                          },
+                        ),
+
+                      const SizedBox(height: 20),
+
+                      // ── GENDER ──────────────────────────────────────
+                      _buildLabel('Gender'),
+                      GestureDetector(
+                        key: _genderFieldKey,
+                        onTap: () async {
+                          setState(() => _genderTouched = true);
+                          await _showGenderMenu();
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Image.asset(
-                              AppAssets.user2,
-                              width: 22,
-                              height: 22,
-                              color: const Color(0x99FF00FF),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                selectedGender ?? 'Select Gender',
-                                style: TextStyle(
-                                  color: selectedGender == null
-                                      ? Colors.white54
-                                      : Colors.white,
+                            Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(28),
+                                border: Border.all(
+                                  color: _genderError != null
+                                      ? const Color(0xFFFF6B6B) // ✅ red
+                                      : const Color(0xFFB86AD0),
                                 ),
+                                color: const Color(0xFF461851),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    AppAssets.user2,
+                                    width: 22,
+                                    height: 22,
+                                    color: const Color(0x99FF00FF),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      selectedGender ?? 'Select Gender',
+                                      style: TextStyle(
+                                        color: selectedGender == null
+                                            ? Colors.white54
+                                            : Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Colors.white,
+                                  ),
+                                ],
                               ),
                             ),
-                            const Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.white,
+
+                            // ✅ Gender error bahar
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 200),
+                              child: _genderError != null
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 16,
+                                        top: 5,
+                                      ),
+                                      child: Text(
+                                        _genderError!,
+                                        style: const TextStyle(
+                                          color: Color(0xFFFF6B6B),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ],
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    // PASSWORD
-                    _buildLabel('Password'),
-                    NeonPasswordField(
-                      controller: _passwordController,
-                      hintText: '********',
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // CONFIRM PASSWORD
-                    _buildLabel('Confirm Password'),
-                    NeonPasswordField(
-                      controller: _confirmPasswordController,
-                      hintText: '********',
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // SIGN UP BUTTON
-                    GetStartedButton(
-                      text: 'Sign Up',
-                      onComplete: () async {
-                        if (!mounted) return;
-                        final identifier = _identifierController.text.trim();
-
-                        final identifierError = _useEmail
-                            ? SignupValidator.validateEmail(identifier)
-                            : _validatePhone(identifier);
-
-                        final error =
-                            SignupValidator.validateFullName(
-                              _nameController.text,
-                            ) ??
-                            identifierError ??
-                            SignupValidator.validatePassword(
-                              _passwordController.text,
-                            ) ??
-                            SignupValidator.validateConfirmPassword(
-                              _passwordController.text,
-                              _confirmPasswordController.text,
-                            );
-
-                        if (selectedGender == null) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please select gender"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        if (error != null) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(
+                      // ── PASSWORD ────────────────────────────────────
+                      _buildLabel('Password'),
+                      NeonPasswordField(
+                        controller: _passwordController,
+                        hintText: '********',
+                        focusNode: _passwordFocus,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) {
+                          _formKey.currentState?.validate(); // 🔥 ADD THIS
+                          FocusScope.of(
                             context,
-                          ).showSnackBar(SnackBar(content: Text(error)));
-                          return;
-                        }
-
-                        // API CALL
-                        await controller.signup(
-                          fullName: _nameController.text.trim(),
-                          identifier: identifier, // ✅ ALWAYS SEND
-                          password: _passwordController.text.trim(),
-                          gender: selectedGender,
-                        );
-
-                        if (!context.mounted) return;
-
-                        if (controller.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(controller.errorMessage!)),
-                          );
-                          return;
-                        }
-
-                        // NAVIGATE TO OTP
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OtpScreen(
-                              identifier: identifier,
-                              type: _useEmail ? "email" : "phone",
-                              title: 'Enter your Code',
-                              description: 'Enter the code sent to $identifier',
-                              buttonText: 'Continue',
-                              isLogin: false,
-                              onVerified: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const CompleteProfileScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 35),
-
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Text(
-                        'Already have an account? Sign In',
-                        style: TextStyle(color: Colors.white),
+                          ).requestFocus(_confirmPasswordFocus);
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password is required';
+                          }
+                          if (!RegExp(
+                            r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$',
+                          ).hasMatch(value)) {
+                            return 'Password must contain letter & number';
+                          }
+                          return null;
+                        },
                       ),
-                    ),
 
-                    const SizedBox(height: 20),
-                  ],
+                      const SizedBox(height: 20),
+
+                      // ── CONFIRM PASSWORD ────────────────────────────
+                      _buildLabel('Confirm Password'),
+                      NeonPasswordField(
+                        controller: _confirmPasswordController,
+                        hintText: '********',
+                        focusNode: _confirmPasswordFocus,
+                        textInputAction: TextInputAction.done,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm password';
+                          }
+                          if (value != _passwordController.text) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // ── SIGN UP BUTTON ──────────────────────────────
+                      GetStartedButton(
+                        text: 'Sign Up',
+                        onComplete: () async {
+                          if (!mounted) return false;
+
+                          // ✅ Gender touched mark — error dikhao agar empty
+                          setState(() => _genderTouched = true);
+
+                          // ✅ Sab fields validate
+                          final isFormValid =
+                              _formKey.currentState?.validate() == true;
+                          final isGenderValid = selectedGender != null;
+
+                          if (!isFormValid || !isGenderValid) return false;
+
+                          final identifier = _identifierController.text.trim();
+
+                          await controller.signup(
+                            fullName: _nameController.text.trim(),
+                            identifier: identifier,
+                            password: _passwordController.text.trim(),
+                            gender: selectedGender,
+                          );
+
+                          if (!context.mounted) return false;
+
+                          if (controller.errorMessage != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(controller.errorMessage!)),
+                            );
+                            return false;
+                          }
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OtpScreen(
+                                identifier: identifier,
+                                type: _useEmail ? "email" : "phone",
+                                title: 'Enter your Code',
+                                description:
+                                    'Enter the code sent to $identifier',
+                                buttonText: 'Continue',
+                                isLogin: false,
+                                onVerified: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const CompleteProfileScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                          return true;
+                        },
+                      ),
+
+                      const SizedBox(height: 35),
+
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Text(
+                          'Already have an account? Sign In',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -366,15 +475,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  String? _validatePhone(String value) {
-    final phone = value.trim();
-    if (phone.isEmpty) return "Phone number is required";
-    if (!RegExp(r'^[0-9]{7,15}$').hasMatch(phone)) {
-      return "Enter a valid phone number";
-    }
-    return null;
-  }
-
   Future<void> _showGenderMenu() async {
     final context = _genderFieldKey.currentContext;
     if (context == null) return;
@@ -393,16 +493,22 @@ class _SignupScreenState extends State<SignupScreen> {
         0,
       ),
       items: const [
-        PopupMenuItem(value: 'Male', child: Text('Male')),
-        PopupMenuItem(value: 'Female', child: Text('Female')),
-        PopupMenuItem(value: 'Other', child: Text('Other')),
+        PopupMenuItem(
+          value: 'Male',
+          child: Text('Male', style: TextStyle(color: Colors.white)),
+        ),
+        PopupMenuItem(
+          value: 'Female',
+          child: Text('Female', style: TextStyle(color: Colors.white)),
+        ),
+        PopupMenuItem(
+          value: 'Other',
+          child: Text('Other', style: TextStyle(color: Colors.white)),
+        ),
       ],
     );
 
     if (selected == null || !mounted) return;
-
-    setState(() {
-      selectedGender = selected;
-    });
+    setState(() => selectedGender = selected);
   }
 }
