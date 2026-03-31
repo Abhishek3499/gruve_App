@@ -15,19 +15,25 @@ class VerifyOtpResponse {
     );
   }
 
-  String? get resetToken => data?.accessToken; // ✅ FIXED
+  String? get resetToken => data?.reset_token; // ✅ FIXED
 }
 
 class OtpData {
   final String accessToken;
   final String refreshToken;
+  final String? reset_token; // ✅ ADDED
 
-  OtpData({required this.accessToken, required this.refreshToken});
+  OtpData({
+    required this.accessToken,
+    required this.refreshToken,
+    this.reset_token,
+  });
 
   factory OtpData.fromJson(Map<String, dynamic> json) {
     return OtpData(
       accessToken: json['access_token']?.toString() ?? "",
       refreshToken: json['refresh_token']?.toString() ?? "",
+      reset_token: json['reset_token']?.toString(), // ✅ ADDED
     );
   }
 }

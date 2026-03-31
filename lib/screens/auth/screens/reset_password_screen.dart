@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/auth/api/controllers/reset_password_controller.dart';
+import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_password_field.dart';
 import 'package:gruve_app/screens/auth/screens/email_login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  final String token; // 👈 ADD THIS
-
-  const ResetPasswordScreen({super.key, required this.token});
+  const ResetPasswordScreen({super.key});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -140,7 +139,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   .text
                                   .trim();
 
-                              // validation
                               if (password.isEmpty || confirmPassword.isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -161,14 +159,31 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 return false;
                               }
 
+                              // ✅ GET TOKEN FROM STORAGE
+                              final token = await TokenStorage.getResetToken();
+
+                              if (token == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Session expired. Please try again.",
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return false;
+                              }
+
                               // 🔥 CALL API
                               final message = await _controller.resetPassword(
-                                token: widget.token,
+                                token: token,
                                 password: password,
                               );
 
-                              // SUCCESS CHECK
                               if (message.toLowerCase().contains("success")) {
+                                // ✅ CLEAR TOKEN AFTER SUCCESS
+                                await TokenStorage.clearResetToken();
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(message)),
                                 );

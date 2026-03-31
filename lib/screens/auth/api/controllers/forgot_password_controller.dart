@@ -4,18 +4,19 @@ import '../services/forgot_password_service.dart';
 
 class ForgotPasswordController {
   final ForgotPasswordService _service = ForgotPasswordService();
-  Future<bool> forgotPassword(String email) async {
+
+  ValueNotifier<bool> isLoading = ValueNotifier(false);
+
+  Future<String> sendEmail(String email) async {
     try {
-      debugPrint("📤 CALLING FORGOT PASSWORD API");
+      isLoading.value = true;
 
-      await _service.sendResetLink(email: email);
-
-      debugPrint("✅ FORGOT PASSWORD SUCCESS");
-
-      return true;
+      final message = await _service.sendResetLink(email: email);
+      return message;
     } catch (e) {
-      debugPrint("❌ CONTROLLER ERROR: $e");
-      return false;
+      return e.toString();
+    } finally {
+      isLoading.value = false;
     }
   }
 }

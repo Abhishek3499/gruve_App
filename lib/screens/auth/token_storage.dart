@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 class TokenStorage {
   static const String _accessTokenKey = "access_token";
   static const String _refreshTokenKey = "refresh_token";
+  static const String _resetTokenKey = "reset_token";
 
   /// ✅ Save both tokens
   static Future<void> saveTokens({
@@ -60,5 +61,25 @@ class TokenStorage {
     await prefs.remove(_refreshTokenKey);
 
     debugPrint("🗑️ TOKENS CLEARED");
+  }
+
+  /// ✅ Save Reset Token
+  static Future<void> saveResetToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_resetTokenKey, token);
+
+    debugPrint("💾 RESET TOKEN SAVED: $token");
+  }
+
+  /// ✅ Get Reset Token
+  static Future<String?> getResetToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_resetTokenKey);
+  }
+
+  /// ✅ Clear Reset Token (optional)
+  static Future<void> clearResetToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_resetTokenKey);
   }
 }

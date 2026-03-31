@@ -44,14 +44,25 @@ class VerifyotpController {
 
       // ❗ DO NOT SAVE TOKENS IN FORGOT PASSWORD
       if (response.success) {
-        // ✅ Save tokens only for login/signup
-        if (!isForgot && response.data != null) {
-          await TokenStorage.saveTokens(
-            accessToken: response.data!.accessToken,
-            refreshToken: response.data!.refreshToken,
-          );
+        if (response.data != null) {
+          // ✅ LOGIN / SIGNUP FLOW
+          if (!isForgot) {
+            await TokenStorage.saveTokens(
+              accessToken: response.data!.accessToken,
+              refreshToken: response.data!.refreshToken,
+            );
 
-          debugPrint("✅ TOKENS SAVED");
+            debugPrint("✅ TOKENS SAVED");
+          }
+
+          // ✅ FORGOT PASSWORD FLOW
+          if (isForgot) {
+            final resetToken = response.data!.reset_token;
+
+            await TokenStorage.saveResetToken(resetToken!);
+
+            debugPrint("🔐 RESET TOKEN SAVED: $resetToken");
+          }
         }
       } else {
         errorMessage = response.message;
