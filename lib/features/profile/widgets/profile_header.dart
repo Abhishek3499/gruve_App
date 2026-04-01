@@ -4,8 +4,16 @@ import '../../../core/assets.dart';
 import 'edit_profile_button.dart';
 
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({super.key});
+  final String fullName;
+  final String username;
+  final String profileImage;
 
+  const ProfileHeader({
+    super.key,
+    required this.fullName,
+    required this.username,
+    required this.profileImage,
+  });
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -59,7 +67,9 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage: AssetImage(AppAssets.profile),
+                  backgroundImage: (profileImage.isNotEmpty)
+                      ? NetworkImage(profileImage)
+                      : AssetImage(AppAssets.profile) as ImageProvider,
                 ),
               ),
 
@@ -70,9 +80,9 @@ class ProfileHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Anastasia Adams",
-                      style: TextStyle(
+                    Text(
+                      fullName.isNotEmpty ? fullName : "No Name",
+                      style: const TextStyle(
                         color: AppColors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -80,9 +90,9 @@ class ProfileHeader extends StatelessWidget {
                     ),
 
                     // const SizedBox(height: 2),
-                    const Text(
-                      "__@nastasia__",
-                      style: TextStyle(
+                    Text(
+                      username.isNotEmpty ? username : "@username",
+                      style: const TextStyle(
                         color: Color(0xFF9544A7),
                         fontSize: 16,
                         fontWeight: FontWeight(700),

@@ -47,7 +47,7 @@ class StatsRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          buildStat("1615", "Followers"),
+          buildStat("1615", "Subscribers"),
           buildDivider(),
           buildStat("12412", "Likes"),
           buildDivider(),

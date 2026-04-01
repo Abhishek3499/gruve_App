@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class NeonPasswordField extends StatefulWidget {
   final TextEditingController? controller;

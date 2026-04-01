@@ -4,7 +4,7 @@ import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
 
 class CompleteProfileController {
-  final ProfileService _service = ProfileService();
+  final CompleteProfileService _service = CompleteProfileService();
   bool isLoading = false;
   String? errorMessage;
   CompleteProfileResponse? response;

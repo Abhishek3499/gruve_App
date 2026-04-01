@@ -43,9 +43,9 @@ class VerifyOtpService {
 
         // ✅ Signup (email OR phone)
         if (type == "phone") {
-          body = {"phone_number": phone_number, "otp": otp};
+          body = {"identifier": identifier, "otp": otp};
         } else {
-          body = {"email": identifier, "otp": otp};
+          body = {"identifier": identifier, "otp": otp};
         }
       }
 

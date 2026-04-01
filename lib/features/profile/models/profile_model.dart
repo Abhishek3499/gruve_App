@@ -2,13 +2,13 @@
 class ProfileModel {
   /// User's unique username/handle
   final String username;
-  
+
   /// User's bio/description
   final String bio;
-  
+
   /// User's email address
   final String email;
-  
+
   /// Path to profile image (asset or network)
   final String profileImagePath;
 

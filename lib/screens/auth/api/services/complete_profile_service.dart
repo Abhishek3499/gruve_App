@@ -5,7 +5,7 @@ import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
 
-class ProfileService {
+class CompleteProfileService {
   final Dio dio = Dio(
     BaseOptions(
       baseUrl: dotenv.env['BASE_URL']!, // 🔥  // ✅ FIXED BASE URL
