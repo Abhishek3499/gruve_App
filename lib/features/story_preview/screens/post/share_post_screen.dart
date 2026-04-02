@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/story_preview/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/more_option_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_people_screen.dart';
 import 'package:gruve_app/features/story_preview/widgets/post/menu_row.dart';
@@ -137,7 +138,14 @@ class SharePostScreen extends StatelessWidget {
                       MenuRow(
                         icon: Icons.visibility_outlined,
                         title: 'Audience',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AudienceScreen(),
+                            ),
+                          );
+                        },
                       ),
                       const Divider(color: Colors.white10, height: 1),
 
