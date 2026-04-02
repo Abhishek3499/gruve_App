@@ -131,6 +131,9 @@ class AppAssets {
   static const musics = 'assets/story/music.png';
   static const extradots = 'assets/story/3dots.png';
   static const hightlight = 'assets/story/highlight.png';
+  static const cuts = 'assets/story/cut.png';
+  static const download2 = 'assets/story/download2.png';
+  static const gallery2 = 'assets/story/gallery2.png';
   //send
   static const send = 'assets/message/send.png';
   static const camera = 'assets/message/camera.png';

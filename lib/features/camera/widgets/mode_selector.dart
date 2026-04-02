@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/story_preview/screens/post/post_preview_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';
@@ -30,8 +31,8 @@ class _ModeSelectorState extends State<ModeSelector> {
       if (pickedFile != null) {
         debugPrint('Selected gallery file path: ${pickedFile.path}');
 
-        // Navigate to StoryPreviewScreen with selected file (same as camera flow)
-        if (mounted) {
+        if (!mounted) return;
+        if (_selectedModeIndex == 0) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -39,9 +40,15 @@ class _ModeSelectorState extends State<ModeSelector> {
                   StoryPreviewScreen(mediaPath: pickedFile.path),
             ),
           );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  PostPreviewScreen(mediaPath: pickedFile.path),
+            ),
+          );
         }
-      } else {
-        debugPrint('User cancelled gallery selection');
       }
     } catch (e) {
       debugPrint('Error picking from gallery: $e');

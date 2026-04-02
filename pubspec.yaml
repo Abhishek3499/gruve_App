@@ -90,6 +90,7 @@ flutter:
     - assets/share/
     - assets/complete_profile/
     - assets/user_profile_grid/
+    - assets/icons/
 
   fonts:
     - family: Raleway
