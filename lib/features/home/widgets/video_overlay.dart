@@ -60,11 +60,12 @@ class _VideoOverlayState extends State<VideoOverlay> {
             animation: widget.controller.currentIndex,
             builder: (context, _) {
               final videoData = widget.controller.getCurrentVideoData();
+
               return VideoUserInfo(
                 username: videoData['username'] ?? '',
                 caption: videoData['caption'] ?? '',
                 musicTitle: videoData['music'] ?? '',
-                userId: videoData['userId'] ?? videoData['username'] ?? '',
+                userId: videoData['userId'] ?? '',
                 subscribeController: _subscribeController,
               );
             },

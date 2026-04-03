@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:video_player/video_player.dart';
 import '../controllers/video_feed_controller.dart';
 import 'video_overlay.dart';
@@ -30,17 +31,14 @@ class _VideoFeedState extends State<VideoFeed> {
   @override
   void initState() {
     super.initState();
+
     _controller = VideoFeedController();
-    
-    // Configure PageController for smooth scrolling
-    _pageController = PageController(
-      viewportFraction: 1.0,
-      keepPage: true,
-    );
-    
+    _controller.initVideos(); // 🔥 ADD THIS
+
+    _pageController = PageController(viewportFraction: 1.0, keepPage: true);
+
     _controllers = _controller.controllers;
-    
-    // Notify parent that controller is ready
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.onControllerReady != null) {
         widget.onControllerReady!(_controller);
@@ -63,7 +61,7 @@ class _VideoFeedState extends State<VideoFeed> {
   void _onPageChanged(int page) {
     // Add smooth transition
     _controller.playVideo(page);
-    
+
     // Add haptic feedback for better UX
     HapticFeedback.lightImpact();
   }
@@ -113,8 +111,14 @@ class _VideoFeedState extends State<VideoFeed> {
                                     child: FittedBox(
                                       fit: BoxFit.cover,
                                       child: SizedBox(
-                                        width: _controllers[index].value.size.width,
-                                        height: _controllers[index].value.size.height,
+                                        width: _controllers[index]
+                                            .value
+                                            .size
+                                            .width,
+                                        height: _controllers[index]
+                                            .value
+                                            .size
+                                            .height,
                                         child: VideoPlayer(_controllers[index]),
                                       ),
                                     ),
@@ -125,7 +129,7 @@ class _VideoFeedState extends State<VideoFeed> {
                                     ),
                                   ),
                           ),
-                          
+
                           // Video overlay UI (user info and right action bar only)
                           VideoOverlay(
                             selectedTab: selectedContentTab,

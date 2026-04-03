@@ -41,7 +41,7 @@ class _AudienceScreenState extends State<AudienceScreen> {
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
+                    color: Colors.purple.withValues(alpha: 0.3),
                     blurRadius: 15,
                     spreadRadius: 2,
                   ),
@@ -127,10 +127,10 @@ class _AudienceScreenState extends State<AudienceScreen> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.white,
+          activeThumbColor: Colors.white,
           activeTrackColor: Colors.grey.shade400,
           inactiveThumbColor: Colors.white,
-          inactiveTrackColor: Colors.grey.withOpacity(0.3),
+          inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
         ),
       ],
     );

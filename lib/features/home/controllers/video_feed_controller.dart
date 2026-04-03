@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:video_player/video_player.dart';
-import '../../../core/constants/video_assets.dart';
-import '../data/video_dummy_data.dart';
 
 class VideoFeedController {
+  final PostService _postService = PostService();
   final List<VideoPlayerController> _controllers = [];
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
@@ -14,32 +15,51 @@ class VideoFeedController {
 
   /// Get current video data from dummy reels list
   Map<String, String> getCurrentVideoData() {
-    final index = _currentIndex.value % dummyReels.length;
-    return dummyReels[index];
+    return {
+      "username": "user_${_currentIndex.value}",
+      "caption": "Sample caption",
+      "music": "Sample music",
+      "userId": "user_${_currentIndex.value}",
+    };
   }
 
-  /// Get video data for specific index
-  Map<String, String> getVideoData(int index) {
-    final safeIndex = index % dummyReels.length;
-    return dummyReels[safeIndex];
-  }
+  Future<void> initVideos() async {
+    try {
+      print("📥 Fetching posts...");
 
-  VideoFeedController() {
-    _initializeControllers();
-  }
+      final posts = await _postService.getPosts();
 
-  void _initializeControllers() {
-    for (final videoPath in VideoAssets.videoPaths) {
-      final controller = VideoPlayerController.asset(videoPath);
-      controller.setLooping(true);
-      _controllers.add(controller);
-    }
+      print("✅ POSTS: ${posts.length}");
 
-    if (_controllers.isNotEmpty) {
-      _controllers.first.initialize().then((_) {
-        _isPlaying.value = true;
+      _controllers.clear();
+
+      for (var post in posts) {
+        String url = post.media;
+
+        print("🎥 RAW URL: $url");
+
+        // ✅ Fix relative URL
+        if (!url.startsWith("http")) {
+          url = dotenv.env['BASE_URL']! + url;
+        }
+
+        print("🌐 FINAL URL: $url");
+
+        final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+
+        await controller.initialize();
+        controller.setLooping(true);
+
+        _controllers.add(controller);
+      }
+
+      if (_controllers.isNotEmpty) {
+        _currentIndex.value = 0;
         _controllers.first.play();
-      });
+        _isPlaying.value = true;
+      }
+    } catch (e) {
+      print("❌ VIDEO LOAD ERROR: $e");
     }
   }
 

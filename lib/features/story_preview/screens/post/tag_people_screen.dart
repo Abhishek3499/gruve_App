@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
-import 'package:gruve_app/features/story_preview/screens/post/TagUsersScreen.dart';
+import 'package:gruve_app/features/story_preview/screens/post/tag_users_screen.dart';
 
 class TagPeopleScreen extends StatefulWidget {
   final String mediaPath;
@@ -139,7 +139,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                         final users = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const TagUsersScreen(),
+                            builder: (context) => TagUsersScreen(),
                           ),
                         );
 

@@ -1,9 +1,19 @@
-/// Lets flows that are not awaited by [HomeScreen] (e.g. gallery → preview → share)
-/// trigger the same post-share processing as the camera tab handler.
 class PostShareFlowBridge {
-  static void Function()? onShareStartProcessing;
+  // 🔥 EXISTING (dialog ke liye)
+  static Function()? onShareStartProcessing;
 
   static void notifyShareStartProcessing() {
-    onShareStartProcessing?.call();
+    if (onShareStartProcessing != null) {
+      onShareStartProcessing!();
+    }
+  }
+
+  // 🔥 NEW (optional future use)
+  static Function()? onPostCreated;
+
+  static void notifyPostCreated() {
+    if (onPostCreated != null) {
+      onPostCreated!();
+    }
   }
 }

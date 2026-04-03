@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   int _currentIndex = 0;
   int _previousIndex = 0;
   bool _isInBackground = false;
-  bool _isNavigatingAway = false;
+  final bool _isNavigatingAway = false;
   bool _isDisposed = false;
   VideoFeedController? _videoController;
 
@@ -130,8 +130,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _handleTabChange(int newIndex) {
     if (newIndex == 0) {
-      if (!_isInBackground && !_isNavigatingAway)
+      if (!_isInBackground && !_isNavigatingAway) {
         _resumeVideo('Tab changed to Home');
+      }
     } else if (_previousIndex == 0) {
       _pauseVideo('Tab changed from Home');
     }

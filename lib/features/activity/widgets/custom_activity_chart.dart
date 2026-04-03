@@ -64,7 +64,7 @@ class _CustomActivityChartState extends State<CustomActivityChart>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6B46C1).withOpacity(0.3), // Purple glow
+            color: const Color(0xFF6B46C1).withValues(alpha: 0.3), // Purple glow
             blurRadius: 20,
             spreadRadius: 0,
           ),
@@ -149,7 +149,7 @@ class ChartPainter extends CustomPainter {
 
   void _drawGridLines(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight) {
     final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.15)
+      ..color = Colors.white.withValues(alpha: 0.15)
       ..strokeWidth = 1.5;
 
     for (int i = 0; i <= 5; i++) {
@@ -176,7 +176,7 @@ class ChartPainter extends CustomPainter {
 
   void _drawAxisLabels(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight, double sectionWidth) {
     final labelStyle = TextStyle(
-      color: Colors.white.withOpacity(0.5),
+      color: Colors.white.withValues(alpha: 0.5),
       fontSize: 13,
     );
 
@@ -244,8 +244,8 @@ class ChartPainter extends CustomPainter {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
-        const Color(0xFF00BFA5).withOpacity(0.2),
-        const Color(0xFF00BFA5).withOpacity(0.0),
+        const Color(0xFF00BFA5).withValues(alpha: 0.2),
+        const Color(0xFF00BFA5).withValues(alpha: 0.0),
       ],
     );
 

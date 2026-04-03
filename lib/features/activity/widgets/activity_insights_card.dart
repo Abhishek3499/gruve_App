@@ -84,7 +84,7 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6B46C1).withOpacity(0.3), // Purple glow
+                  color: const Color(0xFF6B46C1).withValues(alpha: 0.3), // Purple glow
                   blurRadius: 20,
                   spreadRadius: 0,
                 ),
@@ -115,7 +115,7 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),

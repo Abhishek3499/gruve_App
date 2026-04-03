@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/story_preview/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/more_option_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_people_screen.dart';
-import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
+
 import 'package:gruve_app/features/story_preview/widgets/post/menu_row.dart';
 
 class SharePostScreen extends StatefulWidget {
@@ -21,6 +24,18 @@ class SharePostScreen extends StatefulWidget {
 class _SharePostScreenState extends State<SharePostScreen> {
   List<ChatUser> selectedUsers = [];
   List<ChatUser> taggedUsers = [];
+  TextEditingController captionController = TextEditingController();
+  final PostService _postService = PostService();
+  Future<void> _handlePostUpload(String caption, String mediaPath) async {
+    print("🚀 Upload function called");
+    try {
+      PostShareFlowBridge.notifyShareStartProcessing();
+      print("🔄 Processing started");
+      await _postService.createPost(caption: caption, mediaPath: mediaPath);
+    } catch (e) {
+      print("❌ POST ERROR: $e");
+    }
+  }
 
   @override
   void initState() {
@@ -34,7 +49,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
   @override
   Widget build(BuildContext context) {
     // Debug logging
-    print('SharePostScreen received mediaPath: ${widget.mediaPath}');
+    debugPrint('SharePostScreen received mediaPath: ${widget.mediaPath}');
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0214), // Dark purple background
@@ -86,18 +101,18 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       const SizedBox(height: 20),
 
                       // Caption Area
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: TextField(
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
+                          controller: captionController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
                             hintText: 'Add a caption...',
                             hintStyle: TextStyle(color: Colors.white54),
                             border: InputBorder.none,
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 10),
 
                       // Hashtag Chip (Reusable Component)
@@ -106,7 +121,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: ActionChip(
-                            backgroundColor: Colors.white.withOpacity(0.1),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.1,
+                            ),
                             avatar: const Text(
                               '#',
                               style: TextStyle(color: Colors.white60),
@@ -118,7 +135,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                             onPressed: () {},
                             shape: StadiumBorder(
                               side: BorderSide(
-                                color: Colors.white.withOpacity(0.05),
+                                color: Colors.white.withValues(alpha: 0.05),
                               ),
                             ),
                           ),
@@ -144,14 +161,14 @@ class _SharePostScreenState extends State<SharePostScreen> {
                             ),
                           );
 
-                          print("Returned users: $users");
-                          print("Users type: ${users.runtimeType}");
+                          debugPrint("Returned users: $users");
+                          debugPrint("Users type: ${users.runtimeType}");
 
                           if (!mounted) return;
                           if (users != null && users is List) {
                             setState(() {
                               taggedUsers = List<ChatUser>.from(users);
-                              print("Updated taggedUsers: $taggedUsers");
+                              debugPrint("Updated taggedUsers: $taggedUsers");
                             });
                           }
                         },
@@ -237,13 +254,24 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       child: SizedBox(
                         height: 42,
                         child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context, rootNavigator: true)
-                                .popUntil((route) => route.isFirst);
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              PostShareFlowBridge
-                                  .notifyShareStartProcessing();
-                            });
+                          onTap: () async {
+                            print("🔥 SHARE CLICKED");
+
+                            final caption = captionController.text;
+                            final mediaPath = widget.mediaPath;
+
+                            try {
+                              await _handlePostUpload(caption, mediaPath);
+
+                              print("✅ Upload done");
+
+                              Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).pop(); // ✅ only once
+                            } catch (e) {
+                              print("❌ Upload failed: $e");
+                            }
                           },
                           child: Container(
                             decoration: BoxDecoration(

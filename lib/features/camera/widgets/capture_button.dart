@@ -19,8 +19,7 @@ class _CaptureButtonState extends State<CaptureButton>
 
   bool _isCapturing = false;
   bool _isRecordingVideo = false;
-  bool _isLongPressing = false;
-
+  
   @override
   void initState() {
     super.initState();
@@ -94,10 +93,6 @@ class _CaptureButtonState extends State<CaptureButton>
   Future<void> _onLongPressStart() async {
     if (_isCapturing || _isRecordingVideo) return;
 
-    setState(() {
-      _isLongPressing = true;
-    });
-
     CameraLogger.logUserAction('Video recording started (long press)');
 
     // Start video recording
@@ -106,10 +101,6 @@ class _CaptureButtonState extends State<CaptureButton>
 
   Future<void> _onLongPressEnd() async {
     if (!_isRecordingVideo) return;
-
-    setState(() {
-      _isLongPressing = false;
-    });
 
     CameraLogger.logUserAction('Video recording stopped (long press released)');
 
