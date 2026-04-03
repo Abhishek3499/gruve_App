@@ -31,7 +31,7 @@ class AccountBody extends StatelessWidget {
       children: [
         /// 🔥 Dark Rounded Container
         Container(
-          margin: const EdgeInsets.only(top: 20), // 👈 moved upward (was 60)
+          margin: const EdgeInsets.only(top: 04), // 👈 moved upward (was 60)
           decoration: const BoxDecoration(
             color: Color(0xFF1B182D),
             borderRadius: BorderRadius.only(
@@ -40,7 +40,7 @@ class AccountBody extends StatelessWidget {
             ),
           ),
           padding: const EdgeInsets.only(
-            top: 85, // 👈 adjust avatar space
+            top: 80, // 👈 adjust avatar space
             left: 20,
             right: 20,
             bottom: 20,
@@ -70,7 +70,7 @@ class AccountBody extends StatelessWidget {
 
         /// 🔥 Avatar
         Positioned(
-          top: -40, // 👈 shift avatar upward
+          top: -70, // 👈 shift avatar upward
           left: 0,
           right: 0,
           child: Center(

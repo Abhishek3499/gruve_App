@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/features/home/home_screen.dart';
 
-import 'package:gruve_app/screens/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Gruve',
       debugShowCheckedModeBanner: false,
+      navigatorKey: rootNavigatorKey,
 
       // 🔥 IMPORTANT: Prevent white flashes during navigation
       theme: ThemeData(
@@ -52,7 +54,7 @@ class MyApp extends StatelessWidget {
       ),
 
       navigatorObservers: [routeObserver],
-      home: SplashScreen(),
+      home: HomeScreen(),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../controllers/activity_controller.dart';
-import 'activity_chart_widget.dart';
+import 'custom_activity_chart.dart';
 
 class ActivityInsightsCard extends StatefulWidget {
   final ActivityController controller;
@@ -80,14 +80,12 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(40),
+              color: const Color(0xFF1E1A2E), // Deep purple-dark background
               borderRadius: BorderRadius.circular(20),
-
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x08000000),
-                  offset: Offset(0, 10),
-                  blurRadius: 35,
+                  color: const Color(0xFF6B46C1).withOpacity(0.3), // Purple glow
+                  blurRadius: 20,
                   spreadRadius: 0,
                 ),
               ],
@@ -114,10 +112,10 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(51),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withAlpha(60),
+                            color: Colors.white.withOpacity(0.3),
                             width: 1,
                           ),
                         ),
@@ -144,8 +142,8 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  height: 230,
-                  child: ActivityChartWidget(
+                  height: 300,
+                  child: CustomActivityChart(
                     controller: widget.controller,
                     filterType: _selected,
                   ),

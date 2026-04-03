@@ -22,7 +22,7 @@ class AccountHeader extends StatelessWidget {
           children: [
             Positioned(
               left: 16,
-              top: 15,
+              top: 10,
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(

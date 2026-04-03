@@ -1,20 +1,40 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/story_preview/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/more_option_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_people_screen.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/story_preview/widgets/post/menu_row.dart';
 
-class SharePostScreen extends StatelessWidget {
+class SharePostScreen extends StatefulWidget {
   final String mediaPath;
+  final List<ChatUser>? taggedUsers;
 
-  const SharePostScreen({super.key, required this.mediaPath});
+  const SharePostScreen({super.key, required this.mediaPath, this.taggedUsers});
+
+  @override
+  State<SharePostScreen> createState() => _SharePostScreenState();
+}
+
+class _SharePostScreenState extends State<SharePostScreen> {
+  List<ChatUser> selectedUsers = [];
+  List<ChatUser> taggedUsers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with tagged users if provided
+    if (widget.taggedUsers != null) {
+      taggedUsers = List.from(widget.taggedUsers!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // Debug logging
-    print('SharePostScreen received mediaPath: $mediaPath');
+    print('SharePostScreen received mediaPath: ${widget.mediaPath}');
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0214), // Dark purple background
@@ -38,7 +58,9 @@ class SharePostScreen extends StatelessWidget {
                   height: 28,
                   width: 28,
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context, taggedUsers);
+                },
               ),
 
               Expanded(
@@ -110,14 +132,28 @@ class SharePostScreen extends StatelessWidget {
                       MenuRow(
                         icon: Icons.person_outline,
                         title: 'Tag People',
-                        onTap: () {
-                          Navigator.push(
+                        subtitle: taggedUsers.isNotEmpty
+                            ? taggedUsers.map((e) => e.name).join(', ')
+                            : null,
+                        onTap: () async {
+                          final users = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  TagPeopleScreen(mediaPath: mediaPath),
+                                  TagPeopleScreen(mediaPath: widget.mediaPath),
                             ),
                           );
+
+                          print("Returned users: $users");
+                          print("Users type: ${users.runtimeType}");
+
+                          if (!mounted) return;
+                          if (users != null && users is List) {
+                            setState(() {
+                              taggedUsers = List<ChatUser>.from(users);
+                              print("Updated taggedUsers: $taggedUsers");
+                            });
+                          }
                         },
                       ),
                       const Divider(
@@ -201,7 +237,14 @@ class SharePostScreen extends StatelessWidget {
                       child: SizedBox(
                         height: 42,
                         child: GestureDetector(
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.of(context, rootNavigator: true)
+                                .popUntil((route) => route.isFirst);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              PostShareFlowBridge
+                                  .notifyShareStartProcessing();
+                            });
+                          },
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
@@ -237,10 +280,11 @@ class SharePostScreen extends StatelessWidget {
 
   Widget _buildMediaPreview() {
     // Check if it's a network URL or local file
-    if (mediaPath.startsWith('http') || mediaPath.startsWith('https')) {
+    if (widget.mediaPath.startsWith('http') ||
+        widget.mediaPath.startsWith('https')) {
       // Network image
       return Image.network(
-        mediaPath,
+        widget.mediaPath,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
@@ -268,10 +312,10 @@ class SharePostScreen extends StatelessWidget {
       );
     } else {
       // Local file
-      final file = File(mediaPath);
-      if (mediaPath.toLowerCase().endsWith('.mp4') ||
-          mediaPath.toLowerCase().endsWith('.mov') ||
-          mediaPath.toLowerCase().endsWith('.avi')) {
+      final file = File(widget.mediaPath);
+      if (widget.mediaPath.toLowerCase().endsWith('.mp4') ||
+          widget.mediaPath.toLowerCase().endsWith('.mov') ||
+          widget.mediaPath.toLowerCase().endsWith('.avi')) {
         // Video file - show placeholder for now
         return Container(
           width: double.infinity,

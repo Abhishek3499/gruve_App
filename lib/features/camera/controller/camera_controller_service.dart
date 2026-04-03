@@ -16,10 +16,13 @@ class CameraControllerService {
   int _currentCameraIndex = 0;
   bool _isInitialized = false;
   bool _isCapturing = false;
+  bool _isRecordingVideo = false;
 
   final StreamController<bool> _initializationStreamController =
       StreamController<bool>.broadcast();
   final StreamController<bool> _captureStreamController =
+      StreamController<bool>.broadcast();
+  final StreamController<bool> _videoRecordingStreamController =
       StreamController<bool>.broadcast();
   final StreamController<String> _errorStreamController =
       StreamController<String>.broadcast();
@@ -31,12 +34,15 @@ class CameraControllerService {
 
   Stream<bool> get captureStream => _captureStreamController.stream;
 
+  Stream<bool> get videoRecordingStream => _videoRecordingStreamController.stream;
+
   Stream<String> get errorStream => _errorStreamController.stream;
 
   Stream<FlashMode> get flashModeStream => _flashModeStreamController.stream;
 
   bool get isInitialized => _isInitialized;
   bool get isCapturing => _isCapturing;
+  bool get isRecordingVideo => _isRecordingVideo;
   CameraController? get controller => _controller;
   List<CameraDescription> get cameras => _cameras;
   int get currentCameraIndex => _currentCameraIndex;
@@ -85,7 +91,7 @@ class CameraControllerService {
       _controller = CameraController(
         camera,
         ResolutionPreset.high,
-        enableAudio: false,
+        enableAudio: true, // Enable audio for video recording
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
@@ -121,7 +127,7 @@ class CameraControllerService {
       _controller = CameraController(
         _cameras[_currentCameraIndex],
         ResolutionPreset.high,
-        enableAudio: false,
+        enableAudio: true, // Enable audio for video recording
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
@@ -143,7 +149,7 @@ class CameraControllerService {
   }
 
   Future<XFile?> captureImage() async {
-    if (!_isInitialized || _isCapturing) return null;
+    if (!_isInitialized || _isCapturing || _isRecordingVideo) return null;
 
     try {
       _isCapturing = true;
@@ -160,6 +166,38 @@ class CameraControllerService {
     }
   }
 
+  Future<void> startVideoRecording() async {
+    if (!_isInitialized || _isCapturing || _isRecordingVideo) return;
+
+    try {
+      _isRecordingVideo = true;
+      _videoRecordingStreamController.add(true);
+      
+      await _controller!.startVideoRecording();
+      CameraLogger.log('Video recording started');
+    } catch (e) {
+      _isRecordingVideo = false;
+      _videoRecordingStreamController.add(false);
+      _errorStreamController.add('Failed to start video recording: ${e.toString()}');
+    }
+  }
+
+  Future<XFile?> stopVideoRecording() async {
+    if (!_isRecordingVideo) return null;
+
+    try {
+      final video = await _controller!.stopVideoRecording();
+      CameraLogger.log('Video recording stopped: ${video.path}');
+      return video;
+    } catch (e) {
+      _errorStreamController.add('Failed to stop video recording: ${e.toString()}');
+      return null;
+    } finally {
+      _isRecordingVideo = false;
+      _videoRecordingStreamController.add(false);
+    }
+  }
+
   Future<void> dispose() async {
     await _controller?.dispose();
     _controller = null;
@@ -170,6 +208,7 @@ class CameraControllerService {
   void disposeStreams() {
     _initializationStreamController.close();
     _captureStreamController.close();
+    _videoRecordingStreamController.close();
     _errorStreamController.close();
     _flashModeStreamController.close();
   }

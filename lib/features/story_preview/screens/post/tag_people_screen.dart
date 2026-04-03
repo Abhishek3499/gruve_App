@@ -1,13 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/features/message/screen/search_users_screen.dart';
+import 'package:gruve_app/features/message/models/message_model.dart';
+import 'package:gruve_app/features/story_preview/screens/post/TagUsersScreen.dart';
 
-class TagPeopleScreen extends StatelessWidget {
+class TagPeopleScreen extends StatefulWidget {
   final String mediaPath;
 
   const TagPeopleScreen({super.key, required this.mediaPath});
 
+  @override
+  State<TagPeopleScreen> createState() => _TagPeopleScreenState();
+}
+
+class _TagPeopleScreenState extends State<TagPeopleScreen> {
+  List<ChatUser> selectedUsers = [];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,7 +57,9 @@ class TagPeopleScreen extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context, selectedUsers); // ✅ MUST
+                      },
                       child: const Text(
                         "Done",
                         style: TextStyle(
@@ -70,20 +79,13 @@ class TagPeopleScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    // MEDIA PREVIEW CARD
+                    // 1. MEDIA PREVIEW
                     Center(
                       child: Container(
                         width: MediaQuery.of(context).size.width * 0.75,
                         height: 400,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(30),
@@ -92,44 +94,73 @@ class TagPeopleScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 20),
 
-                    // TAP TO TAG BUTTON
+                    // ✅ 2. YAHI ADD KARNA HAI (Selected Users List)
+                    if (selectedUsers.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: selectedUsers.map((user) {
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                backgroundImage: AssetImage(user.avatar),
+                              ),
+                              title: Text(
+                                user.name,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                user.name,
+                                style: const TextStyle(color: Colors.white54),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedUsers.remove(user);
+                                  });
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // 3. TAP TO TAG BUTTON (already hai)
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final users = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const SearchUsersScreen(),
+                            builder: (context) => const TagUsersScreen(),
                           ),
                         );
+
+                        if (users != null && users is List) {
+                          setState(() {
+                            selectedUsers = List<ChatUser>.from(users);
+                          });
+                        }
                       },
                       child: Column(
                         children: [
                           Container(
                             height: 70,
                             width: 70,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 35,
-                            ),
+                            decoration: BoxDecoration(shape: BoxShape.circle),
+                            child: const Icon(Icons.add, color: Colors.white),
                           ),
                           const SizedBox(height: 12),
                           const Text(
                             "Tap to Tag People",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: TextStyle(color: Colors.white70),
                           ),
                         ],
                       ),
@@ -145,18 +176,18 @@ class TagPeopleScreen extends StatelessWidget {
   }
 
   Widget _buildMediaPreview() {
-    if (mediaPath.startsWith('http')) {
+    if (widget.mediaPath.startsWith('http')) {
       return Image.network(
-        mediaPath,
+        widget.mediaPath,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
       );
     } else {
-      final file = File(mediaPath);
+      final file = File(widget.mediaPath);
       // Check for video formats
-      if (mediaPath.toLowerCase().endsWith('.mp4') ||
-          mediaPath.toLowerCase().endsWith('.mov')) {
+      if (widget.mediaPath.toLowerCase().endsWith('.mp4') ||
+          widget.mediaPath.toLowerCase().endsWith('.mov')) {
         return Container(
           color: Colors.black,
           child: const Center(

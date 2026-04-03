@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_screen.dart';
+import 'package:gruve_app/features/story_preview/screens/post/share_post_sheet.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';
 import '../utils/camera_logger.dart';
+import '../services/mode_service.dart';
 
 /// Simple text mode selector (Story / Gruve)
 class ModeSelector extends StatefulWidget {
@@ -16,8 +20,22 @@ class ModeSelector extends StatefulWidget {
 class _ModeSelectorState extends State<ModeSelector> {
   static const List<String> _modes = ['Story', 'Gruve'];
   final ImagePicker _imagePicker = ImagePicker();
+  final ModeService _modeService = ModeService();
 
-  int _selectedModeIndex = 0;
+  late int _selectedModeIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedModeIndex =
+        _modeService.selectedMode == CameraMode.story ? 0 : 1;
+    // Keep singleton in sync with the visible tab when camera opens (capture reads ModeService).
+    if (_selectedModeIndex == 0) {
+      _modeService.setStoryMode();
+    } else {
+      _modeService.setGrooveMode();
+    }
+  }
 
   Future<void> openGallery() async {
     try {
@@ -32,7 +50,7 @@ class _ModeSelectorState extends State<ModeSelector> {
         debugPrint('Selected gallery file path: ${pickedFile.path}');
 
         if (!mounted) return;
-        if (_selectedModeIndex == 0) {
+        if (_modeService.selectedMode == CameraMode.story) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -40,14 +58,24 @@ class _ModeSelectorState extends State<ModeSelector> {
                   StoryPreviewScreen(mediaPath: pickedFile.path),
             ),
           );
-        } else {
-          Navigator.push(
+        } else if (_modeService.selectedMode == CameraMode.groove) {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) =>
                   PostPreviewScreen(mediaPath: pickedFile.path),
             ),
           );
+          if (!mounted) return;
+          if (result is PostPreviewOpenShare) {
+            Navigator.of(context).pop();
+            await Future<void>.delayed(Duration.zero);
+            final shareResult =
+                await showSharePostOnHomeSheet(result.mediaPath);
+            if (shareResult == 'start_processing') {
+              PostShareFlowBridge.notifyShareStartProcessing();
+            }
+          }
         }
       }
     } catch (e) {
@@ -63,6 +91,13 @@ class _ModeSelectorState extends State<ModeSelector> {
     setState(() {
       _selectedModeIndex = index;
     });
+
+    // Update the global mode service
+    if (index == 0) {
+      _modeService.setStoryMode();
+    } else {
+      _modeService.setGrooveMode();
+    }
   }
 
   @override
