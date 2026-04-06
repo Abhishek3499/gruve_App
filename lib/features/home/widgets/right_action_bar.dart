@@ -5,6 +5,7 @@ class RightActionBar extends StatelessWidget {
   final int likeCount;
   final int commentCount;
   final int shareCount;
+  final bool isLiked; // ✅ ADD THIS
   final VoidCallback? onGift;
   final VoidCallback? onLike;
   final VoidCallback? onComment;
@@ -13,9 +14,10 @@ class RightActionBar extends StatelessWidget {
 
   const RightActionBar({
     super.key,
-    this.likeCount = 125000,
+    this.likeCount = 0,
     this.commentCount = 8200,
     this.shareCount = 2100,
+    this.isLiked = false, // ✅ ADD
     this.onGift,
     this.onLike,
     this.onComment,
@@ -27,8 +29,7 @@ class RightActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 55,
-      height: 300, // Increased height from default
-
+      height: 300,
       decoration: BoxDecoration(
         color: const Color(0x80990099),
         borderRadius: BorderRadius.circular(30),
@@ -36,31 +37,31 @@ class RightActionBar extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          /// 🔥 Gift
           _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 60),
 
-          /// 🔥 Like
+          /// ❤️ LIKE (COLOR CHANGE)
           _ActionIcon(
             iconPath: AppAssets.likeicon,
             count: _formatCount(likeCount),
             onTap: onLike,
+            // ✅ KEY FIX
           ),
+
           const SizedBox(height: 12),
 
-          /// 🔥 Comment
           _ActionIcon(
             iconPath: AppAssets.commenticon,
             count: _formatCount(commentCount),
             onTap: onComment,
           ),
+
           const SizedBox(height: 12),
+
           _ActionIcon(iconPath: AppAssets.share, onTap: onShare),
+
           const SizedBox(height: 12),
 
-          /// 🔥 Three Dots Options
           _ActionIcon(iconPath: AppAssets.doticon, onTap: onOptions),
-
-          /// 🔥 Indicator Dots
         ],
       ),
     );
@@ -82,23 +83,33 @@ class _ActionIcon extends StatelessWidget {
   final String? count;
   final VoidCallback? onTap;
   final double size;
+  final Color? color;
 
   const _ActionIcon({
     required this.iconPath,
     this.count,
     this.onTap,
     this.size = 29,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        print('DEBUG: User tapped on ${iconPath.split('/').last}');
+        onTap?.call();
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(iconPath, height: size, width: size),
-
+          Image.asset(
+            iconPath,
+            height: size,
+            width: size,
+            color: color,
+            colorBlendMode: BlendMode.srcIn, // 🔥 IMPORTANT
+          ),
           if (count != null) ...[
             const SizedBox(height: 4),
             Text(

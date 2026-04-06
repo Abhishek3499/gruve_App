@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:video_player/video_player.dart';
+
 import '../controllers/video_feed_controller.dart';
 import 'video_overlay.dart';
 import 'video_top_bar.dart';
@@ -26,6 +26,7 @@ class _VideoFeedState extends State<VideoFeed> {
   late VideoFeedController _controller;
   late PageController _pageController;
   late List<VideoPlayerController> _controllers;
+
   String selectedContentTab = 'For You';
 
   @override
@@ -33,22 +34,15 @@ class _VideoFeedState extends State<VideoFeed> {
     super.initState();
 
     _controller = VideoFeedController();
-    _controller.initVideos(); // 🔥 ADD THIS
-
-    _pageController = PageController(viewportFraction: 1.0, keepPage: true);
+    _pageController = PageController(viewportFraction: 1.0);
 
     _controllers = _controller.controllers;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.onControllerReady != null) {
-        widget.onControllerReady!(_controller);
-      }
-    });
-  }
+    _controller.initVideos();
 
-  @override
-  void didUpdateWidget(VideoFeed oldWidget) {
-    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onControllerReady?.call(_controller);
+    });
   }
 
   @override
@@ -59,10 +53,7 @@ class _VideoFeedState extends State<VideoFeed> {
   }
 
   void _onPageChanged(int page) {
-    // Add smooth transition
     _controller.playVideo(page);
-
-    // Add haptic feedback for better UX
     HapticFeedback.lightImpact();
   }
 
@@ -86,51 +77,91 @@ class _VideoFeedState extends State<VideoFeed> {
           builder: (context, _) {
             return Stack(
               children: [
-                // Video PageView (scrollable content)
                 PageView.builder(
                   controller: _pageController,
                   scrollDirection: Axis.vertical,
                   onPageChanged: _onPageChanged,
-                  itemCount: _controllers.length,
-                  // Add smooth scrolling settings
+                  itemCount: _controller.mediaUrls.length,
                   physics: const BouncingScrollPhysics(),
-                  pageSnapping: true,
-                  // Add animation duration for smoother transitions
-                  allowImplicitScrolling: true,
 
                   itemBuilder: (context, index) {
+                    final url = _controller.mediaUrls[index];
+
+                    print("🎬 UI URL: $url");
+
+                    final isVideo = url.toLowerCase().contains(".mp4");
+
+                    int videoIndex = 0;
+                    for (int i = 0; i < index; i++) {
+                      if (_controller.mediaUrls[i].toLowerCase().contains(
+                        ".mp4",
+                      )) {
+                        videoIndex++;
+                      }
+                    }
+
                     return GestureDetector(
                       onTap: _onVideoTap,
                       child: Stack(
                         children: [
-                          // Video background
                           Container(
                             color: Colors.black,
-                            child: _controllers[index].value.isInitialized
-                                ? SizedBox.expand(
-                                    child: FittedBox(
-                                      fit: BoxFit.cover,
-                                      child: SizedBox(
-                                        width: _controllers[index]
-                                            .value
-                                            .size
-                                            .width,
-                                        height: _controllers[index]
-                                            .value
-                                            .size
-                                            .height,
-                                        child: VideoPlayer(_controllers[index]),
-                                      ),
-                                    ),
-                                  )
-                                : const Center(
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                    ),
+                            child: isVideo
+                                ? (_controllers.isNotEmpty &&
+                                          videoIndex < _controllers.length &&
+                                          _controllers[videoIndex]
+                                              .value
+                                              .isInitialized)
+                                      ? SizedBox.expand(
+                                          child: FittedBox(
+                                            fit: BoxFit.cover,
+                                            child: SizedBox(
+                                              width: _controllers[videoIndex]
+                                                  .value
+                                                  .size
+                                                  .width,
+                                              height: _controllers[videoIndex]
+                                                  .value
+                                                  .size
+                                                  .height,
+                                              child: VideoPlayer(
+                                                _controllers[videoIndex],
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                : Image.network(
+                                    url,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    loadingBuilder: (context, child, progress) {
+                                      print("🖼️ Rendering image: $url");
+                                      if (progress == null) return child;
+                                      return const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print("❌ IMAGE LOAD ERROR: $error");
+                                      return const Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white,
+                                          size: 50,
+                                        ),
+                                      );
+                                    },
                                   ),
                           ),
 
-                          // Video overlay UI (user info and right action bar only)
                           VideoOverlay(
                             selectedTab: selectedContentTab,
                             onTabChanged: _onTabChanged,
@@ -142,7 +173,6 @@ class _VideoFeedState extends State<VideoFeed> {
                   },
                 ),
 
-                // Fixed top bar (Subscribed/For You tabs and Notification icon)
                 VideoTopBar(
                   selectedTab: selectedContentTab,
                   onTabChanged: _onTabChanged,

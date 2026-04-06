@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 
 import 'video_user_info.dart';
 
@@ -28,17 +29,17 @@ class VideoOverlay extends StatefulWidget {
 
 class _VideoOverlayState extends State<VideoOverlay> {
   late final SubscribeController _subscribeController;
+  int _likeCount = 125000;
+  bool _isLiked = false;
 
   @override
   void initState() {
     super.initState();
     _subscribeController = SubscribeController();
-    // Initialize users with dummy data
-    _initializeUsers();
+    _initializeUsers(); // (UI same rakhne ke liye rehne diya)
   }
 
   void _initializeUsers() {
-    // This would come from your actual video data
     final dummyUsers = [
       {'userId': 'user1', 'username': 'jenny_m'},
       {'userId': 'user2', 'username': 'alex_d'},
@@ -51,10 +52,10 @@ class _VideoOverlayState extends State<VideoOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Left bottom section - User info
+        /// LEFT BOTTOM USER INFO
         Positioned(
           bottom: 80,
-          left: 04,
+          left: 4, // ✅ FIX (04 → 4)
           right: 80,
           child: AnimatedBuilder(
             animation: widget.controller.currentIndex,
@@ -62,17 +63,17 @@ class _VideoOverlayState extends State<VideoOverlay> {
               final videoData = widget.controller.getCurrentVideoData();
 
               return VideoUserInfo(
-                username: videoData['username'] ?? '',
+                username: videoData['username'] ?? 'user',
                 caption: videoData['caption'] ?? '',
-                musicTitle: videoData['music'] ?? '',
-                userId: videoData['userId'] ?? '',
+                musicTitle: videoData['music'] ?? 'Original audio',
+                userId: videoData['userId'] ?? 'user1',
                 subscribeController: _subscribeController,
               );
             },
           ),
         ),
 
-        // Right side action bar
+        /// RIGHT ACTION BAR
         Positioned(
           right: 16,
           bottom: 150,
@@ -80,17 +81,35 @@ class _VideoOverlayState extends State<VideoOverlay> {
             likeCount: 125000,
             commentCount: 8200,
             shareCount: 2100,
+
             onGift: () {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                showDragHandle: false, // Pehle ye enable karo agar nahi hai
-                // dragHandleColor: Colors.red,
+                showDragHandle: false,
                 backgroundColor: Colors.transparent,
                 builder: (context) => const GiftPanel(),
               );
             },
-            onLike: () {},
+
+            onLike: () {
+              final data = widget.controller.getCurrentVideoData();
+              final postId = data['postId'];
+
+              if (postId != null && postId.isNotEmpty) {
+                PostService().likePost(postId);
+
+                setState(() {
+                  if (_isLiked) {
+                    _likeCount--;
+                    _isLiked = false;
+                  } else {
+                    _likeCount++;
+                    _isLiked = true;
+                  }
+                });
+              }
+            },
             onComment: () {
               showModalBottomSheet(
                 context: context,
@@ -99,6 +118,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 builder: (context) => const CommentSheet(),
               );
             },
+
             onShare: () {
               showModalBottomSheet(
                 context: context,
@@ -107,6 +127,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 builder: (context) => const ShareBottomSheet(),
               );
             },
+
             onOptions: () {
               showModalBottomSheet(
                 context: context,

@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen>
   final bool _isNavigatingAway = false;
   bool _isDisposed = false;
   VideoFeedController? _videoController;
+  VideoService? _currentVideoService;
 
   static final RouteObserver<PageRoute> _routeObserver =
       RouteObserver<PageRoute>();
@@ -32,9 +33,22 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    print("🏠 Home Screen initState called");
     PostShareFlowBridge.onShareStartProcessing = () {
+      print("🏠 Home Screen: Share start processing callback triggered");
       if (mounted && !_isDisposed) _startVideoProcessing();
     };
+
+    PostShareFlowBridge.onShareUploadError = () {
+      if (!mounted || _isDisposed) return;
+      _currentVideoService?.dispose();
+      _currentVideoService = null;
+      final nav = Navigator.of(context, rootNavigator: true);
+      if (nav.canPop()) {
+        nav.pop();
+      }
+    };
+
     _setupLifecycleObservers();
   }
 
@@ -69,7 +83,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _startVideoProcessing() {
-    final videoService = VideoService();
+    _currentVideoService = VideoService();
+    PostShareFlowBridge.setVideoService(_currentVideoService!);
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -77,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen>
       barrierLabel: "Processing",
       pageBuilder: (context, anim1, anim2) {
         return StreamBuilder<double>(
-          stream: videoService.getProcessingProgress(),
+          stream: _currentVideoService!.getProcessingProgress(),
           initialData: 0.0,
           builder: (context, snapshot) {
             final progress = snapshot.data ?? 0.0;
@@ -91,7 +106,11 @@ class _HomeScreenState extends State<HomeScreen>
             }
             return ProcessingDialog(
               progress: progress,
-              onCancel: () => Navigator.pop(context),
+              onCancel: () {
+                _currentVideoService?.dispose();
+                _currentVideoService = null;
+                Navigator.pop(context);
+              },
             );
           },
         );
@@ -129,6 +148,25 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _handleTabChange(int newIndex) {
+    print("🏠 Home Screen: Tab changed to $newIndex, previous: $_previousIndex");
+    
+    // Check if we're switching back to home tab and need refresh
+    if (newIndex == 0 && PostShareFlowBridge.checkAndClearRefreshNeeded()) {
+      print("🔄 Home Screen: Refreshing due to new post");
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          if (_videoController != null) {
+            _videoController!.initVideos();
+            print("✅ Home Screen: Video feed refreshed on tab change");
+          } else {
+            print("🔄 Home Screen: Video controller not available, but refresh triggered");
+            // Force refresh by reinitializing the entire home screen
+            setState(() {});
+          }
+        }
+      });
+    }
+    
     if (newIndex == 0) {
       if (!_isInBackground && !_isNavigatingAway) {
         _resumeVideo('Tab changed to Home');
@@ -143,11 +181,17 @@ class _HomeScreenState extends State<HomeScreen>
       _videoController?.playVideo(_videoController!.currentIndex.value);
 
   List<Widget> _getScreens() {
+    print("🏠 Home Screen: _getScreens called, _currentIndex: $_currentIndex");
     return [
       VideoFeed(
         selectedIndex: _currentIndex,
         onTabChanged: _onItemTapped,
-        onControllerReady: (controller) => _videoController = controller,
+        onControllerReady: (controller) {
+          print("🏠 Home Screen: VideoFeed onControllerReady called!");
+          _videoController = controller;
+          PostShareFlowBridge.setVideoController(controller);
+          print("🏠 Home Screen: Video controller ready and set to bridge");
+        },
       ),
       const SearchScreen(),
       const SizedBox.shrink(),
@@ -158,6 +202,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    print("🏠 Home Screen build called, _isDisposed: $_isDisposed");
     if (_isDisposed) return const SizedBox.shrink();
     return Scaffold(
       extendBody: true,
@@ -172,8 +217,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    PostShareFlowBridge.onShareStartProcessing = null;
+    print("🏠 Home Screen: Disposing, clearing callbacks");
+    PostShareFlowBridge.clearCallbacks();
     _isDisposed = true;
+    _currentVideoService?.dispose();
     _videoController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _routeObserver.unsubscribe(this);

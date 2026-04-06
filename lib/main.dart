@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/app_navigator.dart';
-import 'package:gruve_app/features/home/home_screen.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/splash_screen.dart';

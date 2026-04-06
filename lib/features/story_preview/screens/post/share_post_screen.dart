@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/story_preview/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/more_option_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_people_screen.dart';
@@ -25,18 +24,6 @@ class _SharePostScreenState extends State<SharePostScreen> {
   List<ChatUser> selectedUsers = [];
   List<ChatUser> taggedUsers = [];
   TextEditingController captionController = TextEditingController();
-  final PostService _postService = PostService();
-  Future<void> _handlePostUpload(String caption, String mediaPath) async {
-    print("🚀 Upload function called");
-    try {
-      PostShareFlowBridge.notifyShareStartProcessing();
-      print("🔄 Processing started");
-      await _postService.createPost(caption: caption, mediaPath: mediaPath);
-    } catch (e) {
-      print("❌ POST ERROR: $e");
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -254,24 +241,17 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       child: SizedBox(
                         height: 42,
                         child: GestureDetector(
-                          onTap: () async {
+                          onTap: () {
                             print("🔥 SHARE CLICKED");
 
                             final caption = captionController.text;
                             final mediaPath = widget.mediaPath;
 
-                            try {
-                              await _handlePostUpload(caption, mediaPath);
-
-                              print("✅ Upload done");
-
-                              Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).pop(); // ✅ only once
-                            } catch (e) {
-                              print("❌ Upload failed: $e");
-                            }
+                            Navigator.of(context).pop();
+                            PostShareFlowBridge.scheduleShareUploadAfterReturningHome(
+                              caption: caption,
+                              mediaPath: mediaPath,
+                            );
                           },
                           child: Container(
                             decoration: BoxDecoration(

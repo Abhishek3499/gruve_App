@@ -5,9 +5,11 @@ class CreatePostResponse {
   CreatePostResponse({required this.success, required this.message});
 
   factory CreatePostResponse.fromJson(Map<String, dynamic> json) {
+    print("🧾 CREATE RESPONSE JSON: $json");
+
     return CreatePostResponse(
-      success: json['success'],
-      message: json['message'],
+      success: json['success'] ?? false,
+      message: json['message'] ?? "",
     );
   }
 }
@@ -20,10 +22,12 @@ class Post {
   Post({required this.id, required this.caption, required this.media});
 
   factory Post.fromJson(Map<String, dynamic> json) {
+    print("📦 RAW POST JSON: $json");
+
     return Post(
-      id: json['_id'] ?? "",
+      id: json['id'] ?? json['_id'] ?? "",
       caption: json['caption'] ?? "",
-      media: json['media'] ?? "",
+      media: json['media_url'] ?? "", // ✅ CORRECT
     );
   }
 }
