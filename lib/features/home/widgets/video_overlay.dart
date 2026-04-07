@@ -52,6 +52,29 @@ class _VideoOverlayState extends State<VideoOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // User Info at Bottom Left
+        Positioned(
+          left: 0,
+          right: 80,
+          bottom: 72,
+          child: AnimatedBuilder(
+            animation: widget.controller.currentIndex,
+            builder: (context, _) {
+              final index = widget.controller.currentIndex.value;
+              final post = widget.controller.posts[index];
+
+              return VideoUserInfo(
+                userId: post.id,
+                username: post.username,
+                caption: post.caption,
+                musicTitle: "Original Audio",
+                subscribeController: _subscribeController,
+              );
+            },
+          ),
+        ),
+
+        // Right Action Bar
         Positioned(
           right: 16,
           bottom: 150,
