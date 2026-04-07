@@ -52,20 +52,54 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
-            onPressed: () {
-              widget.subscribeController.toggleSubscription(widget.userId);
+            onPressed: () async {
+              print("🔘 SUBSCRIBE BUTTON PRESSED FOR USER: ${widget.userId}");
               
-              // Show feedback
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isSubscribed ? 'Unsubscribed from ${widget.username}' 
-                                 : 'Subscribed to ${widget.username}',
-                  ),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              try {
+                // Show loading state
+                final wasSubscribed = isSubscribed;
+                
+                final newSubscriptionStatus = await widget.subscribeController.toggleSubscription(widget.userId);
+                
+                // Show feedback
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        newSubscriptionStatus ? 'Subscribed to ${widget.username}' 
+                                           : 'Unsubscribed from ${widget.username}',
+                      ),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                
+                print("✅ SUBSCRIPTION TOGGLE COMPLETED: ${widget.userId} -> $newSubscriptionStatus");
+              } catch (e) {
+                print("❌ SUBSCRIPTION BUTTON ERROR: $e");
+                
+                // Show specific error feedback
+                String errorMessage = 'Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} ${widget.username}';
+                
+                if (e.toString().contains('subscribe to yourself')) {
+                  errorMessage = 'You cannot subscribe to yourself';
+                } else if (e.toString().contains('405') || e.toString().contains('Method Not Allowed')) {
+                  errorMessage = 'Subscription service unavailable. Please try again later.';
+                }
+                
+                // Show error feedback
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(errorMessage),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
             },
             child: Text(
               isSubscribed ? "Subscribed" : "Subscribe",

@@ -40,12 +40,26 @@ class _VideoOverlayState extends State<VideoOverlay> {
   }
 
   void _initializeUsers() {
-    final dummyUsers = [
-      {'userId': 'user1', 'username': 'jenny_m'},
-      {'userId': 'user2', 'username': 'alex_d'},
-      {'userId': 'user3', 'username': 'sarah_k'},
-    ];
-    _subscribeController.initializeUsers(dummyUsers);
+    print("🔧 INITIALIZING USERS FOR SUBSCRIBE CONTROLLER");
+
+    // Initialize with posts data when available
+    if (widget.controller.posts.isNotEmpty) {
+      final usersData = widget.controller.posts
+          .map((post) => {'userId': post.userId, 'username': post.username})
+          .toList();
+
+      print("📊 INITIALIZING WITH ${usersData.length} USERS FROM POSTS");
+      _subscribeController.initializeUsers(usersData);
+    } else {
+      // Fallback dummy data
+      final dummyUsers = [
+        {'userId': 'user1', 'username': 'jenny_m'},
+        {'userId': 'user2', 'username': 'alex_d'},
+        {'userId': 'user3', 'username': 'sarah_k'},
+      ];
+      print("⚠️ INITIALIZING WITH DUMMY DATA (NO POSTS AVAILABLE)");
+      _subscribeController.initializeUsers(dummyUsers);
+    }
   }
 
   @override
@@ -64,10 +78,10 @@ class _VideoOverlayState extends State<VideoOverlay> {
               final post = widget.controller.posts[index];
 
               return VideoUserInfo(
-                userId: post.id,
                 username: post.username,
                 caption: post.caption,
-                musicTitle: "Original Audio",
+                musicTitle: "Original Audio - ${post.username}",
+                userId: post.userId,
                 subscribeController: _subscribeController,
               );
             },

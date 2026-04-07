@@ -18,6 +18,7 @@ class Post {
   final String id;
   final String caption;
   final String media;
+  final String userId;
 
   int likesCount;
   int commentsCount; // ✅ NEW
@@ -30,6 +31,7 @@ class Post {
     required this.id,
     required this.caption,
     required this.media,
+    required this.userId,
     required this.likesCount,
     required this.commentsCount,
     required this.isLiked,
@@ -44,6 +46,7 @@ class Post {
       id: json['id'] ?? "",
       caption: json['caption'] ?? "",
       media: json['media_url'] ?? "",
+      userId: json['user']?['id'] ?? json['user_id'] ?? "unknown",
 
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0, // ✅

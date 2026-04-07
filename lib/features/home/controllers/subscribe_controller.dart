@@ -22,51 +22,80 @@ class SubscribeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Toggle subscription
-  bool toggleSubscription(String userId) {
-    final isSubscribed = _subscribeService.toggleSubscription(userId);
+  // Toggle subscription (async)
+  Future<bool> toggleSubscription(String userId) async {
+    print("🔄 CONTROLLER TOGGLING SUBSCRIPTION FOR USER: $userId");
     
-    // Update user model if exists
-    if (_users.containsKey(userId)) {
-      final currentUser = _users[userId]!;
-      _users[userId] = currentUser.copyWith(
-        isSubscribed: isSubscribed,
-        subscribedAt: isSubscribed ? DateTime.now() : null,
-      );
+    try {
+      final isSubscribed = await _subscribeService.toggleSubscription(userId);
+      
+      // Update user model if exists
+      if (_users.containsKey(userId)) {
+        final currentUser = _users[userId]!;
+        _users[userId] = currentUser.copyWith(
+          isSubscribed: isSubscribed,
+          subscribedAt: isSubscribed ? DateTime.now() : null,
+        );
+        print("✅ UPDATED USER MODEL FOR $userId: subscribed=$isSubscribed");
+      }
+      
+      notifyListeners();
+      print("📢 NOTIFIED LISTENERS ABOUT SUBSCRIPTION CHANGE");
+      return isSubscribed;
+    } catch (e) {
+      print("❌ CONTROLLER ERROR TOGGLING SUBSCRIPTION FOR $userId: $e");
+      rethrow;
     }
-    
-    notifyListeners();
-    return isSubscribed;
   }
 
-  // Subscribe to user
-  void subscribeToUser(String userId) {
-    _subscribeService.subscribeToUser(userId);
+  // Subscribe to user (async)
+  Future<bool> subscribeToUser(String userId) async {
+    print("📡 CONTROLLER SUBSCRIBING TO USER: $userId");
     
-    if (_users.containsKey(userId)) {
-      final currentUser = _users[userId]!;
-      _users[userId] = currentUser.copyWith(
-        isSubscribed: true,
-        subscribedAt: DateTime.now(),
-      );
+    try {
+      final isSubscribed = await _subscribeService.subscribeToUser(userId);
+      
+      if (_users.containsKey(userId)) {
+        final currentUser = _users[userId]!;
+        _users[userId] = currentUser.copyWith(
+          isSubscribed: true,
+          subscribedAt: DateTime.now(),
+        );
+        print("✅ UPDATED USER MODEL FOR $userId: subscribed=true");
+      }
+      
+      notifyListeners();
+      print("📢 NOTIFIED LISTENERS ABOUT SUBSCRIPTION");
+      return isSubscribed;
+    } catch (e) {
+      print("❌ CONTROLLER ERROR SUBSCRIBING TO $userId: $e");
+      rethrow;
     }
-    
-    notifyListeners();
   }
 
-  // Unsubscribe from user
-  void unsubscribeFromUser(String userId) {
-    _subscribeService.unsubscribeFromUser(userId);
+  // Unsubscribe from user (async)
+  Future<bool> unsubscribeFromUser(String userId) async {
+    print("🚫 CONTROLLER UNSUBSCRIBING FROM USER: $userId");
     
-    if (_users.containsKey(userId)) {
-      final currentUser = _users[userId]!;
-      _users[userId] = currentUser.copyWith(
-        isSubscribed: false,
-        subscribedAt: null,
-      );
+    try {
+      final isSubscribed = await _subscribeService.unsubscribeFromUser(userId);
+      
+      if (_users.containsKey(userId)) {
+        final currentUser = _users[userId]!;
+        _users[userId] = currentUser.copyWith(
+          isSubscribed: false,
+          subscribedAt: null,
+        );
+        print("✅ UPDATED USER MODEL FOR $userId: subscribed=false");
+      }
+      
+      notifyListeners();
+      print("📢 NOTIFIED LISTENERS ABOUT UNSUBSCRIPTION");
+      return isSubscribed;
+    } catch (e) {
+      print("❌ CONTROLLER ERROR UNSUBSCRIBING FROM $userId: $e");
+      rethrow;
     }
-    
-    notifyListeners();
   }
 
   // Get all subscribed users
