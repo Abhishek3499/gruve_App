@@ -93,6 +93,10 @@ class PostService {
         print("ID: ${post.id}");
         print("CAPTION: ${post.caption}");
         print("MEDIA: ${post.media}");
+        print("❤️ Likes: ${post.likesCount}");
+        print("💬 Comments: ${post.commentsCount}");
+        print("👤 User: ${post.username}");
+        print("🔔 Subscribed: ${post.isSubscribed}");
 
         return post;
       }).toList();
@@ -117,6 +121,29 @@ class PostService {
       print("❤️ LIKE SUCCESS: ${res.data}");
     } catch (e) {
       print("❌ LIKE ERROR: $e");
+    }
+  }
+
+  Future<void> addComment(String postId, String text) async {
+    final token = await TokenStorage.getAccessToken();
+
+    try {
+      print("💬 ADD COMMENT → $text");
+
+      final res = await _dio.post(
+        "posts/get-post/", // ⚠️ endpoint check kar lena
+        data: {"post_id": postId, "comment": text},
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      print("✅ COMMENT RESPONSE: ${res.data}");
+    } catch (e) {
+      if (e is DioException) {
+        print("❌ STATUS CODE: ${e.response?.statusCode}");
+        print("❌ RESPONSE: ${e.response?.data}");
+      } else {
+        print("❌ ERROR: $e");
+      }
     }
   }
 }

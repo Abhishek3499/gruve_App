@@ -30,6 +30,7 @@ class AppAssets {
   static const doticon = 'assets/home/3_dot_icon.png';
   static const share = 'assets/home/share_icon.png';
   static const musicicon = 'assets/home/musicicon.png';
+  static const like2 = 'assets/home/like (2).png';
 
   //search screen
   static const baner =

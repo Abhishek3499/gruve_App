@@ -19,15 +19,39 @@ class Post {
   final String caption;
   final String media;
 
-  Post({required this.id, required this.caption, required this.media});
+  int likesCount;
+  int commentsCount; // ✅ NEW
+  bool isLiked;
+
+  String username;
+  bool isSubscribed; // ✅ NEW
+
+  Post({
+    required this.id,
+    required this.caption,
+    required this.media,
+    required this.likesCount,
+    required this.commentsCount,
+    required this.isLiked,
+    required this.username,
+    required this.isSubscribed,
+  });
 
   factory Post.fromJson(Map<String, dynamic> json) {
-    print("📦 RAW POST JSON: $json");
+    print("🧾 POST JSON: $json");
 
     return Post(
-      id: json['id'] ?? json['_id'] ?? "",
+      id: json['id'] ?? "",
       caption: json['caption'] ?? "",
-      media: json['media_url'] ?? "", // ✅ CORRECT
+      media: json['media_url'] ?? "",
+
+      likesCount: json['likes_count'] ?? 0,
+      commentsCount: json['comments_count'] ?? 0, // ✅
+
+      isLiked: json['is_liked'] ?? false,
+
+      username: json['user']?['username'] ?? "unknown",
+      isSubscribed: json['user']?['is_subscribed'] ?? false, // ✅
     );
   }
 }

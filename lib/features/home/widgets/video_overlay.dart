@@ -27,16 +27,16 @@ class VideoOverlay extends StatefulWidget {
   State<VideoOverlay> createState() => _VideoOverlayState();
 }
 
+// SAME imports...
+
 class _VideoOverlayState extends State<VideoOverlay> {
   late final SubscribeController _subscribeController;
-  int _likeCount = 125000;
-  bool _isLiked = false;
 
   @override
   void initState() {
     super.initState();
     _subscribeController = SubscribeController();
-    _initializeUsers(); // (UI same rakhne ke liye rehne diya)
+    _initializeUsers();
   }
 
   void _initializeUsers() {
@@ -52,88 +52,88 @@ class _VideoOverlayState extends State<VideoOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        /// LEFT BOTTOM USER INFO
-        Positioned(
-          bottom: 80,
-          left: 4, // ✅ FIX (04 → 4)
-          right: 80,
-          child: AnimatedBuilder(
-            animation: widget.controller.currentIndex,
-            builder: (context, _) {
-              final videoData = widget.controller.getCurrentVideoData();
-
-              return VideoUserInfo(
-                username: videoData['username'] ?? 'user',
-                caption: videoData['caption'] ?? '',
-                musicTitle: videoData['music'] ?? 'Original audio',
-                userId: videoData['userId'] ?? 'user1',
-                subscribeController: _subscribeController,
-              );
-            },
-          ),
-        ),
-
-        /// RIGHT ACTION BAR
         Positioned(
           right: 16,
           bottom: 150,
-          child: RightActionBar(
-            likeCount: 125000,
-            commentCount: 8200,
-            shareCount: 2100,
+          child: AnimatedBuilder(
+            animation: widget.controller.currentIndex,
+            builder: (context, _) {
+              final index = widget.controller.currentIndex.value;
+              final post = widget.controller.posts[index];
 
-            onGift: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                showDragHandle: false,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const GiftPanel(),
-              );
-            },
+              return RightActionBar(
+                likeCount: post.likesCount,
+                isLiked: post.isLiked,
+                commentCount: post.commentsCount,
+                shareCount: 2100,
 
-            onLike: () {
-              final data = widget.controller.getCurrentVideoData();
-              final postId = data['postId'];
+                /// 🎁
+                onGift: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const GiftPanel(),
+                  );
+                },
 
-              if (postId != null && postId.isNotEmpty) {
-                PostService().likePost(postId);
+                /// ❤️ LIKE (same as before)
+                onLike: () {
+                  final postId = post.id;
 
-                setState(() {
-                  if (_isLiked) {
-                    _likeCount--;
-                    _isLiked = false;
-                  } else {
-                    _likeCount++;
-                    _isLiked = true;
+                  if (postId.isNotEmpty) {
+                    PostService().likePost(postId);
+
+                    setState(() {
+                      post.isLiked = !post.isLiked;
+
+                      if (post.isLiked) {
+                        post.likesCount++;
+                      } else {
+                        post.likesCount--;
+                      }
+                    });
                   }
-                });
-              }
-            },
-            onComment: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const CommentSheet(),
-              );
-            },
+                },
 
-            onShare: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const ShareBottomSheet(),
-              );
-            },
+                /// 💬 COMMENT
+                onComment: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => CommentSheet(
+                      postId: post.id,
+                      onCommentAdded: () {
+                        setState(() {
+                          post.commentsCount++; // 🔥 MAIN FIX
+                        });
 
-            onOptions: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const VideoOptionsSheet(),
+                        print("💬 COUNT: ${post.commentsCount}");
+                      },
+                    ),
+                  );
+                },
+
+                /// 🔗 SHARE
+                onShare: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const ShareBottomSheet(),
+                  );
+                },
+
+                /// ⚙️ OPTIONS
+                onOptions: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const VideoOptionsSheet(),
+                  );
+                },
               );
             },
           ),

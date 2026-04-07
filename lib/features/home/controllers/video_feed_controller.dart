@@ -41,6 +41,7 @@ class VideoFeedController {
   ValueNotifier<int> get currentIndex => _currentIndex;
   ValueNotifier<bool> get isPlaying => _isPlaying;
   List<VideoPlayerController> get controllers => _controllers;
+  List<Post> get posts => _posts;
 
   Future<bool?> initVideos() async {
     final gen = ++_feedLoadGeneration;
@@ -125,7 +126,7 @@ class VideoFeedController {
   }
 
   /// ✅ ADD THIS (MISSING METHOD)
-  Map<String, String> getCurrentVideoData() {
+  Map<String, dynamic> getCurrentVideoData() {
     if (_posts.isNotEmpty && _currentIndex.value < _posts.length) {
       final post = _posts[_currentIndex.value];
 
@@ -134,17 +135,10 @@ class VideoFeedController {
         "caption": post.caption,
         "music": "Original audio",
         "postId": post.id,
-      };
-    }
 
-    if (_currentIndex.value < dummyReels.length) {
-      final reel = dummyReels[_currentIndex.value];
-
-      return {
-        "username": reel['username'] ?? '',
-        "caption": reel['caption'] ?? '',
-        "music": reel['music'] ?? '',
-        "userId": reel['username'] ?? '',
+        // ✅ ADD THESE
+        "likesCount": post.likesCount,
+        "isLiked": post.isLiked,
       };
     }
 

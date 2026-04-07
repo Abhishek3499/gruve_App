@@ -5,7 +5,7 @@ class RightActionBar extends StatelessWidget {
   final int likeCount;
   final int commentCount;
   final int shareCount;
-  final bool isLiked; // ✅ ADD THIS
+  final bool isLiked;
   final VoidCallback? onGift;
   final VoidCallback? onLike;
   final VoidCallback? onComment;
@@ -17,7 +17,7 @@ class RightActionBar extends StatelessWidget {
     this.likeCount = 0,
     this.commentCount = 8200,
     this.shareCount = 2100,
-    this.isLiked = false, // ✅ ADD
+    this.isLiked = false, // ✅ correct
     this.onGift,
     this.onLike,
     this.onComment,
@@ -27,42 +27,48 @@ class RightActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    print("🔥 RightActionBar rebuild | isLiked: $isLiked"); // ✅ DEBUG
+
+    return SizedBox(
       width: 55,
       height: 300,
-      decoration: BoxDecoration(
-        color: const Color(0x80990099),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 60),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0x80990099),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 60),
 
-          /// ❤️ LIKE (COLOR CHANGE)
-          _ActionIcon(
-            iconPath: AppAssets.likeicon,
-            count: _formatCount(likeCount),
-            onTap: onLike,
-            // ✅ KEY FIX
-          ),
+            /// ❤️ LIKE
+            _ActionIcon(
+              iconPath: isLiked
+                  ? AppAssets
+                        .likeicon // ❤️ liked
+                  : AppAssets.like2, // 🤍 default
+              count: _formatCount(likeCount),
+              onTap: onLike,
+            ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          _ActionIcon(
-            iconPath: AppAssets.commenticon,
-            count: _formatCount(commentCount),
-            onTap: onComment,
-          ),
+            _ActionIcon(
+              iconPath: AppAssets.commenticon,
+              count: _formatCount(commentCount),
+              onTap: onComment,
+            ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          _ActionIcon(iconPath: AppAssets.share, onTap: onShare),
+            _ActionIcon(iconPath: AppAssets.share, onTap: onShare),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          _ActionIcon(iconPath: AppAssets.doticon, onTap: onOptions),
-        ],
+            _ActionIcon(iconPath: AppAssets.doticon, onTap: onOptions),
+          ],
+        ),
       ),
     );
   }
@@ -77,39 +83,31 @@ class RightActionBar extends StatelessWidget {
   }
 }
 
-/// 🔥 Asset Icon Widget (ONLY ONE VERSION)
 class _ActionIcon extends StatelessWidget {
   final String iconPath;
   final String? count;
   final VoidCallback? onTap;
   final double size;
-  final Color? color;
 
   const _ActionIcon({
     required this.iconPath,
     this.count,
     this.onTap,
     this.size = 29,
-    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        print('DEBUG: User tapped on ${iconPath.split('/').last}');
+        print('👉 tapped: ${iconPath.split('/').last}'); // ✅ DEBUG
         onTap?.call();
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(
-            iconPath,
-            height: size,
-            width: size,
-            color: color,
-            colorBlendMode: BlendMode.srcIn, // 🔥 IMPORTANT
-          ),
+          Image.asset(iconPath, height: size, width: size),
+
           if (count != null) ...[
             const SizedBox(height: 4),
             Text(
