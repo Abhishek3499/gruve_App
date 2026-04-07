@@ -7,6 +7,7 @@ import 'package:gruve_app/widgets/inputs/phone_input_field.dart';
 import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/widgets/inputs/neon_password_field.dart';
+import 'package:gruve_app/screens/auth/validators/signup_validator.dart';
 import '../api/controllers/signup_controller.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -125,13 +126,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           FocusScope.of(context).requestFocus(_identifierFocus);
                         },
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Full name is required';
-                          }
-                          if (value.trim().length < 2) {
-                            return 'Name too short';
-                          }
-                          return null;
+                          return SignupValidator.validateFullName(value ?? '');
                         },
                       ),
 
@@ -159,16 +154,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             FocusScope.of(context).requestFocus(_passwordFocus);
                           },
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Email is required';
-                            }
-                            final emailRegex = RegExp(
-                              r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                            );
-                            if (!emailRegex.hasMatch(value.trim())) {
-                              return 'Enter a valid email';
-                            }
-                            return null;
+                            return SignupValidator.validateEmail(value ?? '');
                           },
                         )
                       else
@@ -289,15 +275,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ).requestFocus(_confirmPasswordFocus);
                         },
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required';
-                          }
-                          if (!RegExp(
-                            r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$',
-                          ).hasMatch(value)) {
-                            return 'Password must contain letter & number';
-                          }
-                          return null;
+                          return SignupValidator.validatePassword(value ?? '');
                         },
                       ),
 
@@ -311,13 +289,10 @@ class _SignupScreenState extends State<SignupScreen> {
                         focusNode: _confirmPasswordFocus,
                         textInputAction: TextInputAction.done,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please confirm password';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Passwords do not match';
-                          }
-                          return null;
+                          return SignupValidator.validateConfirmPassword(
+                            _passwordController.text,
+                            value ?? '',
+                          );
                         },
                       ),
 

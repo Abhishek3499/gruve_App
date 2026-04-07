@@ -10,6 +10,8 @@ class NeonTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final Function(String)? onFieldSubmitted;
   final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
+  final String? externalErrorText;
 
   const NeonTextField({
     super.key,
@@ -22,6 +24,8 @@ class NeonTextField extends StatefulWidget {
     this.textInputAction,
     this.onFieldSubmitted,
     this.validator,
+    this.onChanged,
+    this.externalErrorText,
   });
 
   @override
@@ -31,16 +35,14 @@ class NeonTextField extends StatefulWidget {
 class _NeonTextFieldState extends State<NeonTextField> {
   String? _errorText;
   late FocusNode _effectiveFocusNode;
-  bool _hasBeenFocused = false; // ✅ track karo ki user aaya tha ya nahi
+  bool _hasBeenFocused = false;
 
   @override
   void initState() {
     super.initState();
-    // ✅ Agar bahar se focusNode aaya toh use karo, warna apna banao
     _effectiveFocusNode = widget.focusNode ?? FocusNode();
 
     _effectiveFocusNode.addListener(() {
-      // ✅ Jab focus CHALI JAAYE (user next field mein gaya) tab validate karo
       if (!_effectiveFocusNode.hasFocus && _hasBeenFocused) {
         _validate();
       }
@@ -52,7 +54,6 @@ class _NeonTextFieldState extends State<NeonTextField> {
 
   @override
   void dispose() {
-    // ✅ Sirf apna wala dispose karo
     if (widget.focusNode == null) {
       _effectiveFocusNode.dispose();
     }
@@ -61,12 +62,15 @@ class _NeonTextFieldState extends State<NeonTextField> {
 
   void _validate() {
     final error = widget.validator?.call(widget.controller?.text);
-    if (mounted) setState(() => _errorText = error);
+    if (mounted) {
+      setState(() => _errorText = error);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isEmailField = widget.keyboardType == TextInputType.emailAddress;
+    final isEmailField = widget.keyboardType == TextInputType.emailAddress;
+    final effectiveErrorText = widget.externalErrorText ?? _errorText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,9 +81,9 @@ class _NeonTextFieldState extends State<NeonTextField> {
             color: const Color(0xFF461851),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: _errorText != null
-                  ? const Color(0xFFFF6B6B) // ❌ red border on error
-                  : const Color(0xFFAF50C4), // ✅ normal border
+              color: effectiveErrorText != null
+                  ? const Color(0xFFFF6B6B)
+                  : const Color(0xFFAF50C4),
               width: 1,
             ),
           ),
@@ -90,12 +94,20 @@ class _NeonTextFieldState extends State<NeonTextField> {
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
             onFieldSubmitted: widget.onFieldSubmitted,
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              if (_hasBeenFocused) {
+                _validate();
+              }
+            },
             validator: (value) {
               final error = widget.validator?.call(value);
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() => _errorText = error);
+                if (mounted) {
+                  setState(() => _errorText = error);
+                }
               });
-              return null; // andar mat dikhao
+              return null;
             },
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
@@ -110,7 +122,7 @@ class _NeonTextFieldState extends State<NeonTextField> {
                     : TextDecoration.none,
               ),
               border: InputBorder.none,
-              errorStyle: const TextStyle(fontSize: 0, height: 0), // hide
+              errorStyle: const TextStyle(fontSize: 0, height: 0),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
@@ -129,15 +141,13 @@ class _NeonTextFieldState extends State<NeonTextField> {
             ),
           ),
         ),
-
-        // ✅ Error text field ke bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: _errorText != null
+          child: effectiveErrorText != null
               ? Padding(
                   padding: const EdgeInsets.only(left: 16, top: 5),
                   child: Text(
-                    _errorText!,
+                    effectiveErrorText,
                     style: const TextStyle(
                       color: Color(0xFFFF6B6B),
                       fontSize: 11,

@@ -6,7 +6,9 @@ class NeonPasswordField extends StatefulWidget {
   final FocusNode? focusNode;
   final TextInputAction? textInputAction;
   final Function(String)? onFieldSubmitted;
-  final String? Function(String?)? validator; // ✅ ADD
+  final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
+  final String? externalErrorText;
 
   const NeonPasswordField({
     super.key,
@@ -15,7 +17,9 @@ class NeonPasswordField extends StatefulWidget {
     this.focusNode,
     this.textInputAction,
     this.onFieldSubmitted,
-    this.validator, // ✅ ADD
+    this.validator,
+    this.onChanged,
+    this.externalErrorText,
   });
 
   @override
@@ -24,40 +28,45 @@ class NeonPasswordField extends StatefulWidget {
 
 class _NeonPasswordFieldState extends State<NeonPasswordField> {
   bool _obscurePassword = true;
-  String? _errorText; // ✅ ADD
-  late FocusNode _effectiveFocusNode; // ✅ ADD
-  bool _hasBeenFocused = false; // ✅ ADD
+  String? _errorText;
+  late FocusNode _effectiveFocusNode;
+  bool _hasBeenFocused = false;
 
   @override
   void initState() {
     super.initState();
-    // ✅ Bahar se aaya toh use karo, warna apna banao
     _effectiveFocusNode = widget.focusNode ?? FocusNode();
 
     _effectiveFocusNode.addListener(() {
-      // ✅ Focus GAYI tab validate karo
       if (!_effectiveFocusNode.hasFocus && _hasBeenFocused) {
         _validate();
       }
-      if (_effectiveFocusNode.hasFocus) _hasBeenFocused = true;
+      if (_effectiveFocusNode.hasFocus) {
+        _hasBeenFocused = true;
+      }
     });
   }
 
   @override
   void dispose() {
-    if (widget.focusNode == null) _effectiveFocusNode.dispose();
+    if (widget.focusNode == null) {
+      _effectiveFocusNode.dispose();
+    }
     super.dispose();
   }
 
   void _validate() {
     final error = widget.validator?.call(widget.controller?.text);
-    if (mounted) setState(() => _errorText = error);
+    if (mounted) {
+      setState(() => _errorText = error);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final effectiveErrorText = widget.externalErrorText ?? _errorText;
+
     return Column(
-      // ✅ Column — error bahar dikhega
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -66,26 +75,33 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
             color: const Color(0xFF461851),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: _errorText != null
-                  ? const Color(0xFFFF6B6B) // ✅ red border on error
+              color: effectiveErrorText != null
+                  ? const Color(0xFFFF6B6B)
                   : const Color(0xFFAF50C4),
               width: 1,
             ),
           ),
           child: TextFormField(
-            // ✅ TextField → TextFormField
             controller: widget.controller,
             focusNode: _effectiveFocusNode,
             obscureText: _obscurePassword,
             obscuringCharacter: '*',
             textInputAction: widget.textInputAction,
             onFieldSubmitted: widget.onFieldSubmitted,
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              if (_hasBeenFocused) {
+                _validate();
+              }
+            },
             validator: (value) {
               final error = widget.validator?.call(value);
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() => _errorText = error);
+                if (mounted) {
+                  setState(() => _errorText = error);
+                }
               });
-              return null; // ✅ andar mat dikhao
+              return null;
             },
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
@@ -93,7 +109,7 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
               hintText: widget.hintText,
               hintStyle: const TextStyle(color: Colors.white),
               border: InputBorder.none,
-              errorStyle: const TextStyle(fontSize: 0, height: 0), // ✅ hide
+              errorStyle: const TextStyle(fontSize: 0, height: 0),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
@@ -103,14 +119,15 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
                 minWidth: 20,
               ),
               suffixIcon: GestureDetector(
-                onTap: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+                onTap: () {
+                  setState(() => _obscurePassword = !_obscurePassword);
+                },
                 child: Padding(
                   padding: const EdgeInsets.only(right: 16),
                   child: Icon(
                     _obscurePassword
                         ? Icons.visibility_off
-                        : Icons.visibility, // ✅ no asset needed
+                        : Icons.visibility,
                     size: 22,
                     color: const Color(0x99FF00FF),
                   ),
@@ -119,15 +136,13 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
             ),
           ),
         ),
-
-        // ✅ Error text field ke bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: _errorText != null
+          child: effectiveErrorText != null
               ? Padding(
                   padding: const EdgeInsets.only(left: 16, top: 5),
                   child: Text(
-                    _errorText!,
+                    effectiveErrorText,
                     style: const TextStyle(
                       color: Color(0xFFFF6B6B),
                       fontSize: 11,

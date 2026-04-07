@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:flutter/material.dart';
 
 class PhoneInputField extends StatefulWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
-  final String? Function(String?)? validator; // ✅
+  final String? Function(String?)? validator;
   final TextInputAction? textInputAction;
   final Function(String)? onFieldSubmitted;
+  final ValueChanged<String>? onChanged;
+  final String? externalErrorText;
 
   const PhoneInputField({
     super.key,
@@ -15,6 +17,8 @@ class PhoneInputField extends StatefulWidget {
     this.validator,
     this.textInputAction,
     this.onFieldSubmitted,
+    this.onChanged,
+    this.externalErrorText,
   });
 
   @override
@@ -35,25 +39,33 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       if (!_effectiveFocusNode.hasFocus && _hasBeenFocused) {
         _validate();
       }
-      if (_effectiveFocusNode.hasFocus) _hasBeenFocused = true;
+      if (_effectiveFocusNode.hasFocus) {
+        _hasBeenFocused = true;
+      }
     });
   }
 
   @override
   void dispose() {
-    if (widget.focusNode == null) _effectiveFocusNode.dispose();
+    if (widget.focusNode == null) {
+      _effectiveFocusNode.dispose();
+    }
     super.dispose();
   }
 
   void _validate() {
     final error = widget.validator?.call(widget.controller?.text);
-    if (mounted) setState(() => _errorText = error);
+    if (mounted) {
+      setState(() => _errorText = error);
+    }
   }
 
   String get dialCode => '+${selectedCountry.phoneCode}';
 
   @override
   Widget build(BuildContext context) {
+    final effectiveErrorText = widget.externalErrorText ?? _errorText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -63,14 +75,13 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             color: const Color(0xFF461851),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: _errorText != null
-                  ? const Color(0xFFFF6B6B) // ✅ red on error
+              color: effectiveErrorText != null
+                  ? const Color(0xFFFF6B6B)
                   : const Color(0xFFAF50C4),
             ),
           ),
           child: Row(
             children: [
-              // ── COUNTRY PICKER ──────────────────────────
               GestureDetector(
                 onTap: () {
                   showCountryPicker(
@@ -106,11 +117,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                   ),
                 ),
               ),
-
-              // ── DIVIDER ─────────────────────────────────
               Container(height: 28, width: 1, color: const Color(0xFFAF50C4)),
-
-              // ── PHONE INPUT ──────────────────────────────
               Expanded(
                 child: TextFormField(
                   controller: widget.controller,
@@ -118,12 +125,20 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                   keyboardType: TextInputType.phone,
                   textInputAction: widget.textInputAction,
                   onFieldSubmitted: widget.onFieldSubmitted,
+                  onChanged: (value) {
+                    widget.onChanged?.call(value);
+                    if (_hasBeenFocused) {
+                      _validate();
+                    }
+                  },
                   validator: (value) {
                     final error = widget.validator?.call(value);
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) setState(() => _errorText = error);
+                      if (mounted) {
+                        setState(() => _errorText = error);
+                      }
                     });
-                    return null; // andar mat dikhao
+                    return null;
                   },
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
@@ -138,15 +153,13 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             ],
           ),
         ),
-
-        // ✅ Error bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: _errorText != null
+          child: effectiveErrorText != null
               ? Padding(
                   padding: const EdgeInsets.only(left: 16, top: 5),
                   child: Text(
-                    _errorText!,
+                    effectiveErrorText,
                     style: const TextStyle(
                       color: Color(0xFFFF6B6B),
                       fontSize: 11,
