@@ -60,13 +60,31 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         Container(
           height: 56,
           decoration: BoxDecoration(
-            color: const Color(0xFF461851),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(30),
+
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF43184D), // 🔥 exact figma color
+                Color(0xFF2A0D33),
+              ],
+            ),
+
             border: Border.all(
               color: _errorText != null
-                  ? const Color(0xFFFF6B6B) // ✅ red on error
-                  : const Color(0xFFAF50C4),
+                  ? const Color(0xFFFF6B6B)
+                  : const Color(0xFFB86AD0),
+              width: 1.2,
             ),
+
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFB86AD0).withOpacity(0.25),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -81,7 +99,10 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                   );
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       Text(
@@ -108,7 +129,11 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               ),
 
               // ── DIVIDER ─────────────────────────────────
-              Container(height: 28, width: 1, color: const Color(0xFFAF50C4)),
+              Container(
+                height: 30,
+                width: 1.2,
+                color: const Color(0xFFB86AD0).withOpacity(0.6),
+              ),
 
               // ── PHONE INPUT ──────────────────────────────
               Expanded(
