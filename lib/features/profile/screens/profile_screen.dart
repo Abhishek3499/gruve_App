@@ -16,6 +16,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  int selectedTab = 0;
   final ProfileController controller = ProfileController();
 
   @override
@@ -73,16 +74,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       child: Column(
-                        children: const [
-                          SizedBox(height: 110),
-                          StatsRow(),
-                          SizedBox(height: 25),
-                          StoryList(),
-                          SizedBox(height: 20),
-                          FilterTabs(),
+                        children: [
+                          const SizedBox(height: 110),
+                          StatsRow(
+                            subscribersCount: controller.stats?.subscribersCount ?? 0,
+                            likesCount: controller.stats?.likesCount ?? 0,
+                            videosCount: controller.stats?.videosCount ?? 0,
+                          ),
+                          const SizedBox(height: 25),
+                          const StoryList(),
+                          const SizedBox(height: 20),
+                          FilterTabs(
+                            selectedIndex: selectedTab,
+                            onTabSelected: (index) {
+                              setState(() {
+                                selectedTab = index;
+                              });
+                            },
+                          ),
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 10),
-                            child: ProfileGrid(),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: ProfileGrid(selectedTab: selectedTab),
                           ),
                           SizedBox(height: 100),
                         ],

@@ -2,7 +2,25 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 class StatsRow extends StatelessWidget {
-  const StatsRow({super.key});
+  final int subscribersCount;
+  final int likesCount;
+  final int videosCount;
+
+  const StatsRow({
+    super.key,
+    this.subscribersCount = 0,
+    this.likesCount = 0,
+    this.videosCount = 0,
+  });
+
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
+  }
 
   Widget buildStat(String number, String label) {
     return Column(
@@ -47,11 +65,11 @@ class StatsRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          buildStat("1615", "Subscribers"),
+          buildStat(_formatCount(subscribersCount), "Subscribers"),
           buildDivider(),
-          buildStat("12412", "Likes"),
+          buildStat(_formatCount(likesCount), "Likes"),
           buildDivider(),
-          buildStat("300", "Videos"),
+          buildStat(_formatCount(videosCount), "Videos"),
         ],
       ),
     );

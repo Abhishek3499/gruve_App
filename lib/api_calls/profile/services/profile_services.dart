@@ -18,14 +18,20 @@ class ProfileService {
 
     debugPrint("[ProfileService] GET user/profile_data/");
 
-    final response = await _dio.get(
-      "user/profile_data/",
-      options: Options(headers: {"Authorization": "Bearer $token"}),
-    );
+    try {
+      final response = await _dio.get(
+        "user/profile_data/",
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
 
-    debugPrint("[ProfileService] status code: ${response.statusCode}");
-    debugPrint("[ProfileService] response data: ${response.data}");
+      debugPrint("✅ Status Code: ${response.statusCode}");
+      debugPrint("📦 Response: ${response.data}");
 
-    return response.data["data"]["user"];
+      final data = response.data["data"] ?? response.data;
+      return data;
+    } catch (e) {
+      debugPrint("❌ Error: $e");
+      rethrow;
+    }
   }
 }
