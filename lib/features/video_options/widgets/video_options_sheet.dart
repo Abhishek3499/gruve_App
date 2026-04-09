@@ -196,7 +196,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
 
                   // Menu list
                   Expanded(
-                    child: Padding(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         children: [
@@ -229,7 +229,6 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
-
                                 backgroundColor: Colors.transparent,
                                 builder: (context) => const SimpleBlockSheet(),
                               );

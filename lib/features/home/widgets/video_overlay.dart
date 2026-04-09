@@ -8,7 +8,7 @@ import '../controllers/subscribe_controller.dart';
 import 'right_action_bar.dart';
 import '../../gifts/widgets/gift_panel.dart';
 import '../../video_options/widgets/video_options_sheet.dart';
-import '../../video_options/sheets/comment_sheet.dart';
+import '../../comments/widgets/comment_sheet.dart';
 import '../../share/screens/share_bottom_sheet.dart';
 
 class VideoOverlay extends StatefulWidget {
@@ -75,6 +75,9 @@ class _VideoOverlayState extends State<VideoOverlay> {
             animation: widget.controller.currentIndex,
             builder: (context, _) {
               final index = widget.controller.currentIndex.value;
+              if (widget.controller.posts.isEmpty || index >= widget.controller.posts.length) {
+                return const SizedBox.shrink();
+              }
               final post = widget.controller.posts[index];
 
               return VideoUserInfo(
@@ -96,6 +99,9 @@ class _VideoOverlayState extends State<VideoOverlay> {
             animation: widget.controller.currentIndex,
             builder: (context, _) {
               final index = widget.controller.currentIndex.value;
+              if (widget.controller.posts.isEmpty || index >= widget.controller.posts.length) {
+                return const SizedBox.shrink();
+              }
               final post = widget.controller.posts[index];
 
               return RightActionBar(

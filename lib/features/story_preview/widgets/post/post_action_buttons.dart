@@ -7,9 +7,11 @@ class PostActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
         _buildActionButton(
           const Icon(Icons.volume_up, color: Colors.white),
           "Volume",
@@ -67,8 +69,9 @@ class PostActionButtons extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   // ✅ BUTTON BUILDER
   Widget _buildActionButton(

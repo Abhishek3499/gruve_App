@@ -57,26 +57,32 @@ class SubscribeService {
     }
   }
 
+  // Set subscription manually (Optimistic UI support)
+  void setSubscriptionStatus(String userId, bool isSubscribed) {
+    if (isSubscribed) {
+      _subscribedUsers.add(userId);
+    } else {
+      _subscribedUsers.remove(userId);
+    }
+  }
+
   // Toggle subscription (API call)
   Future<bool> toggleSubscription(String userId) async {
+    final wasSubscribed = _subscribedUsers.contains(userId);
+    
+    // Optimistic UI update
+    setSubscriptionStatus(userId, !wasSubscribed);
+
     try {
-      print("🔄 TOGGLING SUBSCRIPTION FOR USER: $userId");
-      final wasSubscribed = _subscribedUsers.contains(userId);
-      print("📊 PREVIOUS STATUS: ${wasSubscribed ? 'Subscribed' : 'Not Subscribed'}");
+      print("🔄 CALLING API TO TOGGLE SUBSCRIPTION FOR USER: $userId");
+      final isSubscribed = await _apiService.toggleSubscription(userId, wasSubscribed);
       
-      final isSubscribed = await _apiService.toggleSubscription(userId);
-      
-      if (isSubscribed) {
-        _subscribedUsers.add(userId);
-        print("✅ NOW SUBSCRIBED TO USER: $userId");
-      } else {
-        _subscribedUsers.remove(userId);
-        print("✅ NOW UNSUBSCRIBED FROM USER: $userId");
-      }
-      
+      // Update with final server truth
+      setSubscriptionStatus(userId, isSubscribed);
       return isSubscribed;
     } catch (e) {
       print("❌ ERROR TOGGLING SUBSCRIPTION FOR USER $userId: $e");
+      // Removed revert
       rethrow;
     }
   }

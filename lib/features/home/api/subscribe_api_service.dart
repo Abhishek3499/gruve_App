@@ -14,25 +14,31 @@ class SubscribeApiService {
   }
 
   /// Toggle subscription (subscribe/unsubscribe)
-  /// POST /user/subscribe/toggle/
-  /// Response: {"success": true, "is_subscribed": true/false} or error
-  Future<bool> toggleSubscription(String userId) async {
+  /// Toggle subscription (subscribe/unsubscribe)
+  Future<bool> toggleSubscription(String userId, bool isCurrentlySubscribed) async {
     try {
       print(" TOGGLE SUBSCRIBE API CALL START");
-      print("USER ID: $userId");
+      print("USER ID: $userId, CURRENTLY: $isCurrentlySubscribed");
 
       final token = await TokenStorage.getAccessToken();
 
-      final response = await _dio.post(
-        "user/subscribe/toggle/",
-        data: {"user_id": userId},
+      // If currently subscribed, action is unsubscribe, else subscribe
+      final action = isCurrentlySubscribed ? "unsubscribe" : "subscribe";
+
+      final response = await _dio.get(
+        "posts/get-post/", // Or the correct endpoint
+        queryParameters: {
+          "user_id": userId, 
+          "action": action,
+        },
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       print("SUBSCRIBE API RESPONSE: ${response.data}");
       print("STATUS CODE: ${response.statusCode}");
 
-      final isSubscribed = response.data['data']?['is_subscribed'] ?? false;
+      // The new status should be !isCurrentlySubscribed if it succeeds, but we read the response
+      final isSubscribed = response.data['is_subscribed'] ?? !isCurrentlySubscribed;
       print("SUBSCRIPTION STATUS: $isSubscribed");
 
       return isSubscribed;

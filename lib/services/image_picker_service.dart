@@ -41,26 +41,18 @@ class ImagePickerService {
     }
   }
 
-  static Future<XFile?> pickImageFromGallery() async {
+  static Future<XFile?> pickMediaFromGallery() async {
     try {
-      // Request storage permission
-      final hasPermission = await _requestStoragePermission();
-      if (!hasPermission) {
-        debugPrint('Storage permission denied');
-        return null;
-      }
-
-      final image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+      final media = await _imagePicker.pickMedia(
         imageQuality: 80,
         maxWidth: 800,
         maxHeight: 800,
       );
       
-      debugPrint('Gallery image picked: ${image?.path}');
-      return image;
+      debugPrint('Gallery media picked: ${media?.path}');
+      return media;
     } catch (e) {
-      debugPrint('Error picking image from gallery: $e');
+      debugPrint('Error picking media from gallery: $e');
       return null;
     }
   }
@@ -115,11 +107,11 @@ class ImagePickerService {
                       label: 'Gallery',
                       onTap: () async {
                         Navigator.pop(context);
-                        final image = await pickImageFromGallery();
-                        if (image != null) {
-                          onImageSelected(image);
+                        final media = await pickMediaFromGallery();
+                        if (media != null) {
+                          onImageSelected(media);
                         } else {
-                          debugPrint('Gallery image selection cancelled or failed');
+                          debugPrint('Gallery media selection cancelled or failed');
                         }
                       },
                     ),

@@ -77,100 +77,109 @@ class _VideoFeedState extends State<VideoFeed> {
           builder: (context, _) {
             return Stack(
               children: [
-                PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  onPageChanged: _onPageChanged,
-                  itemCount: _controller.mediaUrls.length,
-                  physics: const BouncingScrollPhysics(),
+                RefreshIndicator(
+                  color: Colors.white,
+                  backgroundColor: Colors.black54,
+                  onRefresh: () async {
+                    await _controller.initVideos();
+                  },
+                  child: PageView.builder(
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _controller.mediaUrls.length,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
 
-                  itemBuilder: (context, index) {
-                    final url = _controller.mediaUrls[index];
+                    itemBuilder: (context, index) {
+                      final url = _controller.mediaUrls[index];
 
-                    print("🎬 UI URL: $url");
+                      print("🎬 UI URL: $url");
 
-                    final isVideo = url.toLowerCase().contains(".mp4");
+                      final isVideo = url.toLowerCase().contains(".mp4");
 
-                    int videoIndex = 0;
-                    for (int i = 0; i < index; i++) {
-                      if (_controller.mediaUrls[i].toLowerCase().contains(
-                        ".mp4",
-                      )) {
-                        videoIndex++;
+                      int videoIndex = 0;
+                      for (int i = 0; i < index; i++) {
+                        if (_controller.mediaUrls[i].toLowerCase().contains(
+                          ".mp4",
+                        )) {
+                          videoIndex++;
+                        }
                       }
-                    }
 
-                    return GestureDetector(
-                      onTap: _onVideoTap,
-                      child: Stack(
-                        children: [
-                          Container(
-                            color: Colors.black,
-                            child: isVideo
-                                ? (_controllers.isNotEmpty &&
-                                          videoIndex < _controllers.length &&
-                                          _controllers[videoIndex]
-                                              .value
-                                              .isInitialized)
-                                      ? SizedBox.expand(
-                                          child: FittedBox(
-                                            fit: BoxFit.cover,
-                                            child: SizedBox(
-                                              width: _controllers[videoIndex]
-                                                  .value
-                                                  .size
-                                                  .width,
-                                              height: _controllers[videoIndex]
-                                                  .value
-                                                  .size
-                                                  .height,
-                                              child: VideoPlayer(
-                                                _controllers[videoIndex],
+                      return GestureDetector(
+                        onTap: _onVideoTap,
+                        child: Stack(
+                          children: [
+                            Container(
+                              color: Colors.black,
+                              child: isVideo
+                                  ? (_controllers.isNotEmpty &&
+                                            videoIndex < _controllers.length &&
+                                            _controllers[videoIndex]
+                                                .value
+                                                .isInitialized)
+                                        ? SizedBox.expand(
+                                            child: FittedBox(
+                                              fit: BoxFit.cover,
+                                              child: SizedBox(
+                                                width: _controllers[videoIndex]
+                                                    .value
+                                                    .size
+                                                    .width,
+                                                height: _controllers[videoIndex]
+                                                    .value
+                                                    .size
+                                                    .height,
+                                                child: VideoPlayer(
+                                                  _controllers[videoIndex],
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        )
-                                      : const Center(
+                                          )
+                                        : const Center(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                  : Image.network(
+                                      url,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      loadingBuilder: (context, child, progress) {
+                                        print("🖼️ Rendering image: $url");
+                                        if (progress == null) return child;
+                                        return const Center(
                                           child: CircularProgressIndicator(
                                             color: Colors.white,
                                           ),
-                                        )
-                                : Image.network(
-                                    url,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    loadingBuilder: (context, child, progress) {
-                                      print("🖼️ Rendering image: $url");
-                                      if (progress == null) return child;
-                                      return const Center(
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      print("❌ IMAGE LOAD ERROR: $error");
-                                      return const Center(
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          color: Colors.white,
-                                          size: 50,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        print("❌ IMAGE LOAD ERROR: $error");
+                                        return const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: Colors.white,
+                                            size: 50,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
 
-                          VideoOverlay(
-                            selectedTab: selectedContentTab,
-                            onTabChanged: _onTabChanged,
-                            controller: _controller,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                            VideoOverlay(
+                              selectedTab: selectedContentTab,
+                              onTabChanged: _onTabChanged,
+                              controller: _controller,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
 
                 VideoTopBar(

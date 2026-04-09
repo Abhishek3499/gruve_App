@@ -25,9 +25,9 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     // Initialize user if not already done
     if (widget.subscribeController.getUserSubscribeModel(widget.userId) == null) {
       widget.subscribeController.addOrUpdateUser(
-        const SubscribeModel(
-          userId: '',
-          username: '',
+        SubscribeModel(
+          userId: widget.userId,
+          username: widget.username,
           isSubscribed: false,
         ),
       );
@@ -53,33 +53,27 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
             onPressed: () async {
-              print("🔘 SUBSCRIBE BUTTON PRESSED FOR USER: ${widget.userId}");
-              
               try {
-                // Show loading state
-                final wasSubscribed = isSubscribed;
-                
                 final newSubscriptionStatus = await widget.subscribeController.toggleSubscription(widget.userId);
                 
-                // Show feedback
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        newSubscriptionStatus ? 'Subscribed to ${widget.username}' 
-                                           : 'Unsubscribed from ${widget.username}',
-                      ),
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
+                // Securely check context mounted state to prevent deactivated widget lookup crash
+                if (!context.mounted) return;
                 
-                print("✅ SUBSCRIPTION TOGGLE COMPLETED: ${widget.userId} -> $newSubscriptionStatus");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newSubscriptionStatus ? 'Subscribed to ${widget.username}' 
+                                         : 'Unsubscribed from ${widget.username}',
+                    ),
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               } catch (e) {
                 print("❌ SUBSCRIPTION BUTTON ERROR: $e");
                 
-                // Show specific error feedback
+                if (!context.mounted) return;
+
                 String errorMessage = 'Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} ${widget.username}';
                 
                 if (e.toString().contains('subscribe to yourself')) {
@@ -88,17 +82,14 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                   errorMessage = 'Subscription service unavailable. Please try again later.';
                 }
                 
-                // Show error feedback
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(errorMessage),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 3),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(errorMessage),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               }
             },
             child: Text(

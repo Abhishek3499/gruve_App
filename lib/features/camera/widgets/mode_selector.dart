@@ -42,9 +42,7 @@ class _ModeSelectorState extends State<ModeSelector> {
       CameraLogger.logUserAction('Gallery opened');
 
       // Open gallery
-      final XFile? pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final XFile? pickedFile = await _imagePicker.pickMedia();
 
       if (pickedFile != null) {
         debugPrint('Selected gallery file path: ${pickedFile.path}');
