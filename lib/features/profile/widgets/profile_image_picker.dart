@@ -173,6 +173,20 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
         child: const Icon(Icons.person, size: 60, color: Colors.white38),
       );
     }
+    if (widget.currentImagePath.startsWith('http')) {
+      return Image.network(
+        widget.currentImagePath,
+        width: widget.radius * 2,
+        height: widget.radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: const Color(0xFF2D1150),
+            child: const Icon(Icons.error, size: 40, color: Colors.white38),
+          );
+        },
+      );
+    }
     if (widget.currentImagePath.startsWith('assets')) {
       return Image.asset(
         widget.currentImagePath,

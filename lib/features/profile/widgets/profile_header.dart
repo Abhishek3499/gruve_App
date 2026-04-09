@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/assets.dart';
+import '../models/profile_model.dart';
 import 'edit_profile_button.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -28,15 +29,12 @@ class ProfileHeader extends StatelessWidget {
                 debugPrint("[ProfileHeader] Menu button tapped");
                 Scaffold.of(context).openEndDrawer();
               },
-
               child: const Icon(Icons.menu, color: Colors.white, size: 30),
             ),
             const SizedBox(width: 20),
           ],
         ),
-
         const SizedBox(height: 20),
-
         /// Avatar + User Info Row
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 25),
@@ -72,9 +70,7 @@ class ProfileHeader extends StatelessWidget {
                       : AssetImage(AppAssets.profile) as ImageProvider,
                 ),
               ),
-
               const SizedBox(width: 25),
-
               /// Name + Username + Button
               Expanded(
                 child: Column(
@@ -88,8 +84,6 @@ class ProfileHeader extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // const SizedBox(height: 2),
                     Text(
                       username.isNotEmpty ? username : "@username",
                       style: const TextStyle(
@@ -98,9 +92,15 @@ class ProfileHeader extends StatelessWidget {
                         fontWeight: FontWeight(700),
                       ),
                     ),
-
                     const SizedBox(height: 25),
-                    const EditProfileButton(),
+                    EditProfileButton(
+                      profile: ProfileModel(
+                        username: username,
+                        bio: "",
+                        email: "",
+                        profileImagePath: profileImage,
+                      ),
+                    ),
                   ],
                 ),
               ),

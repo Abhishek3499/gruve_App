@@ -14,6 +14,7 @@ class VideoUserInfo extends StatelessWidget {
   final String musicTitle;
   final String userId;
   final int userCount;
+  final String? profilePicture;
   final SubscribeController subscribeController;
 
   const VideoUserInfo({
@@ -23,6 +24,7 @@ class VideoUserInfo extends StatelessWidget {
     required this.musicTitle,
     required this.userId,
     this.userCount = 2,
+    this.profilePicture,
     required this.subscribeController,
   });
 
@@ -102,13 +104,19 @@ class VideoUserInfo extends StatelessWidget {
                 child: Container(
                   width: 35,
                   height: 35,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: AssetImage(AppAssets.user),
-                      fit: BoxFit.cover,
-                    ),
                   ),
+                  clipBehavior: Clip.antiAlias,
+                  child: (profilePicture != null && profilePicture!.isNotEmpty && profilePicture!.startsWith('http'))
+                      ? Image.network(
+                          profilePicture!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(AppAssets.user, fit: BoxFit.cover);
+                          },
+                        )
+                      : Image.asset(AppAssets.user, fit: BoxFit.cover),
                 ),
               ),
               const SizedBox(width: 8),

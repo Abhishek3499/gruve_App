@@ -46,7 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return Scaffold(
           extendBody: true,
           backgroundColor: const Color(0xFF42174C),
-          endDrawer: const ProfileMenuDrawer(),
+          endDrawer: ProfileMenuDrawer(profileImage: user?.profileImage),
           body: Container(
             width: double.infinity,
             height: double.infinity,

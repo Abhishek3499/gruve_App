@@ -16,7 +16,8 @@ import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
 
 class ProfileMenuDrawer extends StatelessWidget {
-  const ProfileMenuDrawer({super.key});
+  final String? profileImage;
+  const ProfileMenuDrawer({super.key, this.profileImage});
 
   @override
   Widget build(BuildContext context) {

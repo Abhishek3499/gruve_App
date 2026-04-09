@@ -85,6 +85,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 caption: post.caption,
                 musicTitle: "Original Audio - ${post.username}",
                 userId: post.userId,
+                profilePicture: post.profilePicture,
                 subscribeController: _subscribeController,
               );
             },

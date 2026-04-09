@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../screens/edit_profile_screen.dart';
+import '../models/profile_model.dart';
 
 class EditProfileButton extends StatelessWidget {
-  const EditProfileButton({super.key});
+  final ProfileModel? profile;
+
+  const EditProfileButton({super.key, this.profile});
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +14,7 @@ class EditProfileButton extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+          MaterialPageRoute(builder: (context) => EditProfileScreen(initialProfile: profile)),
         );
       },
       child: Container(

@@ -26,6 +26,7 @@ class Post {
 
   String username;
   bool isSubscribed; // ✅ NEW
+  String profilePicture; // ✅ NEW
 
   Post({
     required this.id,
@@ -37,6 +38,7 @@ class Post {
     required this.isLiked,
     required this.username,
     required this.isSubscribed,
+    required this.profilePicture,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class Post {
 
       username: json['user']?['username'] ?? "unknown",
       isSubscribed: json['user']?['is_subscribed'] ?? false, // ✅
+      profilePicture: json['user']?['profile_picture'] ?? "", // ✅
     );
   }
 }
