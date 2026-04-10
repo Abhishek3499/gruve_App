@@ -6,12 +6,14 @@ class SubscribeButton extends StatefulWidget {
   final String userId;
   final String username;
   final SubscribeController subscribeController;
+  final bool initialIsSubscribed;
 
   const SubscribeButton({
     super.key,
     required this.userId,
     required this.username,
     required this.subscribeController,
+    this.initialIsSubscribed = false,
   });
 
   @override
@@ -28,7 +30,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
         SubscribeModel(
           userId: widget.userId,
           username: widget.username,
-          isSubscribed: false,
+          isSubscribed: widget.initialIsSubscribed,
         ),
       );
     }

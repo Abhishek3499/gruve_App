@@ -2,19 +2,22 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music_screen/music_screen.dart';
+import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 
 import '../controllers/subscribe_controller.dart';
 import 'subscribe_button.dart';
 
-class VideoUserInfo extends StatelessWidget {
+class VideoUserInfo extends StatefulWidget {
   final String username;
   final String caption;
   final String musicTitle;
   final String userId;
   final int userCount;
   final String? profilePicture;
+  final bool initialIsSubscribed;
   final SubscribeController subscribeController;
 
   const VideoUserInfo({
@@ -25,28 +28,99 @@ class VideoUserInfo extends StatelessWidget {
     required this.userId,
     this.userCount = 2,
     this.profilePicture,
+    this.initialIsSubscribed = false,
     required this.subscribeController,
   });
+
+  @override
+  State<VideoUserInfo> createState() => _VideoUserInfoState();
+}
+
+class _VideoUserInfoState extends State<VideoUserInfo> {
+  ProfileIdentityResolution? _identityResolution;
+  bool _isResolvingIdentity = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveProfileIdentity();
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoUserInfo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId) {
+      _resolveProfileIdentity();
+    }
+  }
+
+  Future<void> _resolveProfileIdentity() async {
+    setState(() {
+      _isResolvingIdentity = true;
+    });
+
+    final resolution = await ProfileIdentityService.instance
+        .resolveProfileIdentity(widget.userId);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _identityResolution = resolution;
+      _isResolvingIdentity = false;
+    });
+  }
+
+  Future<void> _openProfile(BuildContext context) async {
+    final resolution = _identityResolution ??
+        await ProfileIdentityService.instance.resolveProfileIdentity(
+          widget.userId,
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (resolution.isOwnProfile) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(
+          profileUserId: widget.userId,
+          userName: widget.username,
+          profileImageUrl: widget.profilePicture,
+        ),
+      ),
+    );
+  }
 
   void _navigateToMusicScreen(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MusicScreen(
-          musicId: 'music_$userId',
-          musicTitle: musicTitle,
-          musicUrl: 'https://example.com/music/$userId',
-          userName: username,
+          musicId: 'music_${widget.userId}',
+          musicTitle: widget.musicTitle,
+          musicUrl: 'https://example.com/music/${widget.userId}',
+          userName: widget.username,
         ),
       ),
     );
   }
 
   String get displayUsername {
-    if (username.length <= 15) {
-      return username;
+    if (widget.username.length <= 15) {
+      return widget.username;
     }
-    return '${username.substring(0, 15)}...';
+    return '${widget.username.substring(0, 15)}...';
   }
 
   Widget _buildUsersPill() {
@@ -67,7 +141,7 @@ class VideoUserInfo extends StatelessWidget {
               const Icon(Icons.person, color: Colors.white, size: 18),
               const SizedBox(width: 5),
               Text(
-                '$userCount users',
+                '${widget.userCount} users',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,
@@ -77,6 +151,26 @@ class VideoUserInfo extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSubscribeButton() {
+    if (_isResolvingIdentity) {
+      return const SizedBox(width: 96, height: 32);
+    }
+
+    if (!(_identityResolution?.shouldShowSubscribeButton ?? false)) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      height: 32,
+      child: SubscribeButton(
+        userId: widget.userId,
+        username: widget.username,
+        initialIsSubscribed: widget.initialIsSubscribed,
+        subscribeController: widget.subscribeController,
       ),
     );
   }
@@ -93,43 +187,33 @@ class VideoUserInfo extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const UserProfileScreen(),
-                    ),
-                  );
-                },
+                onTap: () => _openProfile(context),
                 child: Container(
                   width: 35,
                   height: 35,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(shape: BoxShape.circle),
                   clipBehavior: Clip.antiAlias,
-                  child: (profilePicture != null && profilePicture!.isNotEmpty && profilePicture!.startsWith('http'))
-                      ? Image.network(
-                          profilePicture!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(AppAssets.user, fit: BoxFit.cover);
-                          },
-                        )
-                      : Image.asset(AppAssets.user, fit: BoxFit.cover),
+                  child:
+                      (widget.profilePicture != null &&
+                              widget.profilePicture!.isNotEmpty &&
+                              widget.profilePicture!.startsWith('http'))
+                          ? Image.network(
+                              widget.profilePicture!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  AppAssets.user,
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Image.asset(AppAssets.user, fit: BoxFit.cover),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const UserProfileScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () => _openProfile(context),
                   child: Text(
                     displayUsername,
                     maxLines: 1,
@@ -143,20 +227,13 @@ class VideoUserInfo extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 15),
-              SizedBox(
-                height: 32,
-                child: SubscribeButton(
-                  userId: userId,
-                  username: username,
-                  subscribeController: subscribeController,
-                ),
-              ),
+              _buildSubscribeButton(),
             ],
           ),
           const SizedBox(height: 12),
-          if (caption.isNotEmpty)
+          if (widget.caption.isNotEmpty)
             Text(
-              caption,
+              widget.caption,
               style: const TextStyle(color: Colors.white, fontSize: 14),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -185,7 +262,7 @@ class VideoUserInfo extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () => _navigateToMusicScreen(context),
                           child: Text(
-                            musicTitle,
+                            widget.musicTitle,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,

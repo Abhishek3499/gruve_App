@@ -5,6 +5,7 @@ class TokenStorage {
   static const String _accessTokenKey = "access_token";
   static const String _refreshTokenKey = "refresh_token";
   static const String _resetTokenKey = "reset_token";
+  static const String _currentUserIdKey = "current_user_id";
 
   /// ✅ Save both tokens
   static Future<void> saveTokens({
@@ -13,6 +14,7 @@ class TokenStorage {
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
+    await prefs.remove(_currentUserIdKey);
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
 
@@ -40,6 +42,19 @@ class TokenStorage {
     return token;
   }
 
+  static Future<void> saveCurrentUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_currentUserIdKey, userId);
+    debugPrint("💾 CURRENT USER ID SAVED: $userId");
+  }
+
+  static Future<String?> getCurrentUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString(_currentUserIdKey);
+    debugPrint("📤 GET CURRENT USER ID: ${userId ?? "EMPTY ❌"}");
+    return userId;
+  }
+
   /// 🆕 DEBUG: Check both tokens together
   static Future<void> debugCheckTokens() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,6 +74,7 @@ class TokenStorage {
 
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_currentUserIdKey);
 
     debugPrint("🗑️ TOKENS CLEARED");
   }

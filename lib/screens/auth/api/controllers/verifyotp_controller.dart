@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 
 import '../services/verify_otp_service.dart';
@@ -51,6 +52,14 @@ class VerifyotpController {
               accessToken: response.data!.accessToken,
               refreshToken: response.data!.refreshToken,
             );
+            ProfileIdentityService.instance.clearCachedLoggedInUserId();
+
+            if (response.data!.userId.trim().isNotEmpty) {
+              await TokenStorage.saveCurrentUserId(response.data!.userId);
+              ProfileIdentityService.instance.primeLoggedInUserId(
+                response.data!.userId,
+              );
+            }
 
             debugPrint("✅ TOKENS SAVED");
           }

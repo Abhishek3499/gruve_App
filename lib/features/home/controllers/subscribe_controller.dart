@@ -8,6 +8,11 @@ class SubscribeController extends ChangeNotifier {
 
   // Get subscription status for a user
   bool isUserSubscribed(String userId) {
+    final localUser = _users[userId];
+    if (localUser != null) {
+      return localUser.isSubscribed;
+    }
+
     return _subscribeService.isUserSubscribed(userId);
   }
 
@@ -19,6 +24,7 @@ class SubscribeController extends ChangeNotifier {
   // Add or update user
   void addOrUpdateUser(SubscribeModel user) {
     _users[user.userId] = user;
+    _subscribeService.setSubscriptionStatus(user.userId, user.isSubscribed);
     notifyListeners();
   }
 
@@ -126,16 +132,22 @@ class SubscribeController extends ChangeNotifier {
   }
 
   // Initialize users from video data
-  void initializeUsers(List<Map<String, String>> videoData) {
+  void initializeUsers(List<Map<String, dynamic>> videoData) {
     for (final data in videoData) {
-      final userId = data['userId'] ?? data['username'] ?? '';
-      final username = data['username'] ?? '';
+      final userId = (data['userId'] ?? data['username'] ?? '').toString();
+      final username = (data['username'] ?? '').toString();
+      final initialIsSubscribed = data['isSubscribed'] == true;
       
       if (userId.isNotEmpty && username.isNotEmpty) {
         _users[userId] = SubscribeModel(
           userId: userId,
           username: username,
-          isSubscribed: _subscribeService.isUserSubscribed(userId),
+          isSubscribed:
+              _subscribeService.isUserSubscribed(userId) || initialIsSubscribed,
+        );
+        _subscribeService.setSubscriptionStatus(
+          userId,
+          _users[userId]!.isSubscribed,
         );
       }
     }

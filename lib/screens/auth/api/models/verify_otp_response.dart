@@ -15,17 +15,19 @@ class VerifyOtpResponse {
     );
   }
 
-  String? get resetToken => data?.reset_token; // ✅ FIXED
+  String? get resetToken => data?.reset_token;
 }
 
 class OtpData {
   final String accessToken;
   final String refreshToken;
-  final String? reset_token; // ✅ ADDED
+  final String userId;
+  final String? reset_token;
 
   OtpData({
     required this.accessToken,
     required this.refreshToken,
+    required this.userId,
     this.reset_token,
   });
 
@@ -33,7 +35,9 @@ class OtpData {
     return OtpData(
       accessToken: json['access_token']?.toString() ?? "",
       refreshToken: json['refresh_token']?.toString() ?? "",
-      reset_token: json['reset_token']?.toString(), // ✅ ADDED
+      userId:
+          json['user_id']?.toString() ?? json['user']?['id']?.toString() ?? "",
+      reset_token: json['reset_token']?.toString(),
     );
   }
 }

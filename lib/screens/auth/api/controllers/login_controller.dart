@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 
 import '../models/login_model.dart';
 import '../services/login_services.dart';
@@ -35,6 +36,12 @@ class EmailSignInController {
           accessToken: accessToken,
           refreshToken: refreshToken,
         );
+        ProfileIdentityService.instance.clearCachedLoggedInUserId();
+
+        if (res.data!.userId.trim().isNotEmpty) {
+          await TokenStorage.saveCurrentUserId(res.data!.userId);
+          ProfileIdentityService.instance.primeLoggedInUserId(res.data!.userId);
+        }
 
         debugPrint("✅ TOKENS SAVED SUCCESSFULLY");
       } else {

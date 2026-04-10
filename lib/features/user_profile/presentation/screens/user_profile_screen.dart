@@ -1,19 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_filter_tabs.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_story_list.dart';
 
-class UserProfileScreen extends StatelessWidget {
-  const UserProfileScreen({super.key});
+class UserProfileScreen extends StatefulWidget {
+  final String profileUserId;
+  final String userName;
+  final String? profileImageUrl;
+
+  const UserProfileScreen({
+    super.key,
+    required this.profileUserId,
+    required this.userName,
+    this.profileImageUrl,
+  });
+
+  @override
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  ProfileIdentityResolution? _identityResolution;
+  bool _isResolvingIdentity = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveIdentity();
+  }
+
+  Future<void> _resolveIdentity() async {
+    final resolution = await ProfileIdentityService.instance
+        .resolveProfileIdentity(widget.profileUserId);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _identityResolution = resolution;
+      _isResolvingIdentity = false;
+    });
+  }
+
+  String get _normalizedUsername {
+    final trimmed = widget.userName.trim();
+    if (trimmed.isEmpty) {
+      return 'unknown';
+    }
+
+    return trimmed.toLowerCase().replaceAll(' ', '');
+  }
 
   @override
   Widget build(BuildContext context) {
+    final showSubscribeButton =
+        !_isResolvingIdentity &&
+        (_identityResolution?.shouldShowSubscribeButton ?? false);
+
     return Scaffold(
       extendBody: true,
-      // backgroundColor: AppColors.profileGradientBottom,
-      // endDrawer: const ProfileMenuDrawer(),
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -32,12 +81,10 @@ class UserProfileScreen extends StatelessWidget {
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Stack(
                     children: [
-                      /// 🔥 BODY CONTENT
                       Padding(
                         padding: const EdgeInsets.only(top: 130),
                         child: Stack(
                           children: [
-                            /// 🔥 CURVED CONTAINER
                             Container(
                               height: constraints.maxHeight,
                               width: double.infinity,
@@ -71,9 +118,7 @@ class UserProfileScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-
-                            /// 🔥 CONTENT ABOVE CURVE
-                            Column(
+                            const Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 SizedBox(height: 120),
@@ -88,10 +133,17 @@ class UserProfileScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-
-                      /// 🔥 HEADER
-                      const Column(
-                        children: [SizedBox(height: 20), UserProfileHeader()],
+                      Column(
+                        children: [
+                          const SizedBox(height: 20),
+                          UserProfileHeader(
+                            displayName: widget.userName,
+                            username: _normalizedUsername,
+                            profileImageUrl: widget.profileImageUrl,
+                            showSubscribeButton: showSubscribeButton,
+                            reserveSubscribeSpace: _isResolvingIdentity,
+                          ),
+                        ],
                       ),
                     ],
                   ),

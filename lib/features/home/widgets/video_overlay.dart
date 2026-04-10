@@ -45,14 +45,20 @@ class _VideoOverlayState extends State<VideoOverlay> {
     // Initialize with posts data when available
     if (widget.controller.posts.isNotEmpty) {
       final usersData = widget.controller.posts
-          .map((post) => {'userId': post.userId, 'username': post.username})
+          .map(
+            (post) => {
+              'userId': post.userId,
+              'username': post.username,
+              'isSubscribed': post.isSubscribed,
+            },
+          )
           .toList();
 
       print("📊 INITIALIZING WITH ${usersData.length} USERS FROM POSTS");
       _subscribeController.initializeUsers(usersData);
     } else {
       // Fallback dummy data
-      final dummyUsers = [
+      final dummyUsers = <Map<String, dynamic>>[
         {'userId': 'user1', 'username': 'jenny_m'},
         {'userId': 'user2', 'username': 'alex_d'},
         {'userId': 'user3', 'username': 'sarah_k'},
@@ -86,6 +92,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 musicTitle: "Original Audio - ${post.username}",
                 userId: post.userId,
                 profilePicture: post.profilePicture,
+                initialIsSubscribed: post.isSubscribed,
                 subscribeController: _subscribeController,
               );
             },
