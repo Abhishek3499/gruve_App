@@ -175,20 +175,39 @@ class ProfileController {
       debugPrint(
         '📦 [ProfileController] raw profile API keys: ${userData.keys.toList()}',
       );
+      debugPrint(
+        '📦 [ProfileController] raw profile API data: $userData',
+      );
 
       final userPayload = _extractUserPayload(userData);
       debugPrint(
         '📦 [ProfileController] extracted user payload keys: ${userPayload.keys.toList()}',
       );
+      debugPrint(
+        '📦 [ProfileController] extracted user payload data: $userPayload',
+      );
 
       final profile = ProfileModel.fromJson(
         userPayload.isNotEmpty ? userPayload : userData,
       );
+      debugPrint(
+        '📦 [ProfileController] parsed profile: username=${profile.username}, fullName=${profile.fullName}',
+      );
+      
+      debugPrint(
+        '📦 [ProfileController] creating ProfileStatsModel from userData...',
+      );
       final stats = ProfileStatsModel.fromJson(userData);
+      debugPrint(
+        '📦 [ProfileController] parsed stats: subscribers=${stats.subscribersCount}, likes=${stats.likesCount}, videos=${stats.videosCount}',
+      );
 
       if (_disposed) return;
       user = profile;
       statsNotifier.value = stats;
+      debugPrint(
+        '📦 [ProfileController] updated user and statsNotifier',
+      );
 
       await _hydratePostsAfterProfileLoad(userData, profile);
       if (_disposed) return;
@@ -251,33 +270,64 @@ class ProfileController {
     Map<String, dynamic> root,
     List<String> candidateKeys,
   ) {
+    debugPrint('ð [ProfileController] _tryParsePostLists searching for: $candidateKeys');
+    debugPrint('ð [ProfileController] _tryParsePostLists root keys: ${root.keys.toList()}');
+    
     final layers = <Map<String, dynamic>>[
       root,
       if (root['data'] is Map)
         Map<String, dynamic>.from(root['data'] as Map),
     ];
-    for (final map in layers) {
+    
+    for (int layerIndex = 0; layerIndex < layers.length; layerIndex++) {
+      final map = layers[layerIndex];
+      final layerName = layerIndex == 0 ? 'root' : 'data';
+      debugPrint('ð [ProfileController] checking $layerName layer with keys: ${map.keys.toList()}');
+      
       for (final key in candidateKeys) {
-        if (!map.containsKey(key)) continue;
+        debugPrint('ð [ProfileController] looking for key: "$key" in $layerName');
+        if (!map.containsKey(key)) {
+          debugPrint('ð [ProfileController] key "$key" not found in $layerName');
+          continue;
+        }
+        
         final raw = map[key];
-        if (raw is! List) continue;
+        debugPrint('ð [ProfileController] found key "$key" with type: ${raw.runtimeType} and value: $raw');
+        
+        if (raw is! List) {
+          debugPrint('ð [ProfileController] key "$key" is not a List, skipping');
+          continue;
+        }
+        
         try {
+          debugPrint('ð [ProfileController] parsing ${raw.length} items from key "$key"');
           final parsed = raw
               .map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList();
           debugPrint(
-            '✅ [ProfileController] parsed ${parsed.length} posts from key "$key"',
+            'â [ProfileController] SUCCESS: parsed ${parsed.length} posts from key "$key"',
           );
+          
+          // Log first few posts for debugging
+          for (int i = 0; i < parsed.length && i < 3; i++) {
+            final post = parsed[i];
+            debugPrint('ð [ProfileController] Post $i: id=${post.id}, userId=${post.userId}, username=${post.username}, media=${post.media}');
+          }
+          
           return parsed;
         } catch (e) {
-          debugPrint('⚠️ [ProfileController] parse list "$key": $e');
+          debugPrint('â [ProfileController] ERROR parsing list "$key": $e');
         }
       }
     }
+    
+    debugPrint('â [ProfileController] NO POSTS FOUND in any candidate keys');
     return null;
   }
 
   void _seedTabFromProfilePayload(int tabIndex, List<Post> posts, bool hasNext) {
+    if (_disposed) return;
+    
     final cleared = _getTabState(tabIndex).reset();
     final nextPage = posts.isEmpty ? 1 : (hasNext ? 2 : 1);
     _updateTabState(
@@ -290,6 +340,8 @@ class ProfileController {
         clearError: true,
       ),
     );
+    
+    debugPrint('â [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext');
   }
 
   Future<void> _hydratePostsAfterProfileLoad(
@@ -365,6 +417,9 @@ class ProfileController {
     postsNotifier.value = List<Post>.from(_getTabState(0).posts);
     debugPrint(
       '📊 [ProfileController] postsNotifier (All) count: ${postsNotifier.value.length}',
+    );
+    debugPrint(
+      '📊 [ProfileController] FINAL STATE - User: ${user?.username}, Stats: subscribers=${statsNotifier.value.subscribersCount}, likes=${statsNotifier.value.likesCount}, videos=${statsNotifier.value.videosCount}',
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/api_calls/profile/Controller/profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_filter_tabs.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
@@ -25,11 +26,20 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
+  late final ProfileController _profileController;
 
   @override
   void initState() {
     super.initState();
+    _profileController = ProfileController();
     _resolveIdentity();
+    _profileController.fetchUser();
+  }
+
+  @override
+  void dispose() {
+    _profileController.dispose();
+    super.dispose();
   }
 
   Future<void> _resolveIdentity() async {
@@ -118,14 +128,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 ],
                               ),
                             ),
-                            const Column(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                SizedBox(height: 120),
-                                UserStatsRow(),
-                                SizedBox(height: 20),
+                                const SizedBox(height: 120),
+                                ValueListenableBuilder(
+                                  valueListenable: _profileController.statsNotifier,
+                                  builder: (context, stats, child) {
+                                    return UserStatsRow(stats: stats);
+                                  },
+                                ),
+                                const SizedBox(height: 20),
                                 UserStoryList(),
-                                SizedBox(height: 20),
+                                const SizedBox(height: 20),
                                 UserFilterTabs(),
                                 UserProfileGrid(),
                               ],

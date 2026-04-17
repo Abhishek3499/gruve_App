@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
+import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 
@@ -29,12 +30,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    // So [PostShareFlowBridge] / home can refresh stats + "All" grid after a new post.
+    ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
     controller.fetchUser();
     _scrollController.addListener(_onProfileScroll);
   }
 
+  Future<void> _onBridgeRefreshRequested(String reason) async {
+    if (!mounted) return;
+    try {
+      await controller.refreshCounts(reason: reason);
+    } catch (e, st) {
+      debugPrint('❌ Profile bridge refresh failed: $e\n$st');
+    }
+  }
+
   @override
   void dispose() {
+    ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
     controller.dispose();

@@ -9,6 +9,9 @@ class LogoutService {
     BaseOptions(
       baseUrl: dotenv.env['BASE_URL']!,
       headers: {"Content-Type": "application/json"},
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 8),
+      sendTimeout: const Duration(seconds: 5),
     ),
   );
 

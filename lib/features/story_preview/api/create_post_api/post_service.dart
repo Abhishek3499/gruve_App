@@ -22,7 +22,12 @@ class PostService {
     if (!base.endsWith('/')) {
       base = '$base/';
     }
-    _dio = Dio(BaseOptions(baseUrl: base));
+    _dio = Dio(BaseOptions(
+      baseUrl: base,
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 20),
+      sendTimeout: const Duration(seconds: 8),
+    ));
   }
 
   // ✅ CREATE POST
@@ -43,10 +48,15 @@ class PostService {
         ),
       });
 
+      // Large video uploads need much longer than default [BaseOptions] timeouts.
       final res = await _dio.post(
         "posts/create-post/",
         data: formData,
-        options: Options(headers: {"Authorization": "Bearer $token"}),
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+          sendTimeout: const Duration(minutes: 10),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
       );
       print("✅ CREATE RESPONSE: ${res.data}");
 
@@ -117,7 +127,7 @@ class PostService {
 
       // Handle both nested data structure and direct response structure
       final responseData = res.data['data'] ?? res.data;
-      
+
       final posts =
           (responseData['posts'] as List<dynamic>?)
               ?.map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
@@ -125,7 +135,9 @@ class PostService {
           [];
 
       final nextCursor = responseData['next_cursor'] != null
-          ? CursorModel.fromJson(responseData['next_cursor'] as Map<String, dynamic>)
+          ? CursorModel.fromJson(
+              responseData['next_cursor'] as Map<String, dynamic>,
+            )
           : null;
 
       final hasMore = responseData['has_more'] as bool? ?? true;

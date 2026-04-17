@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/constants/app_colors.dart';
+import '../../../../../api_calls/profile/model/profile_stats_model.dart';
 
 class UserStatsRow extends StatelessWidget {
-  const UserStatsRow({super.key});
+  const UserStatsRow({super.key, required this.stats});
+
+  final ProfileStatsModel stats;
 
   Widget buildStat(String number, String label) {
     return Column(
@@ -47,11 +50,11 @@ class UserStatsRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          buildStat("1615", "Followers"),
+          buildStat(stats.subscribersCount.toString(), "subscribers"),
           buildDivider(),
-          buildStat("12412", "Likes"),
+          buildStat(stats.likesCount.toString(), "Likes"),
           buildDivider(),
-          buildStat("300", "Videos"),
+          buildStat(stats.videosCount.toString(), "Videos"),
         ],
       ),
     );

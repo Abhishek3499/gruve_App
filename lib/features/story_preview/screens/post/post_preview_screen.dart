@@ -147,11 +147,12 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                               );
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) => SharePostScreen(
-                                    mediaPath: widget.mediaPath,
-                                  ),
+                              MaterialPageRoute(
+                                builder: (context) => SharePostScreen(
+                                  mediaPath: widget.mediaPath,
+                                  popPostPreviewRouteAfterShare: true,
                                 ),
+                              ),
                               );
                             } catch (e) {
                               debugPrint('Navigation error: $e');

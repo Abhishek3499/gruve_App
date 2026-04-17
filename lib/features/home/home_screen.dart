@@ -34,6 +34,10 @@ class _HomeScreenState extends State<HomeScreen>
   int? _lastHomeTapTime;
   static const int _doubleTapThreshold = 400; // milliseconds
   bool _isScrollingToTop = false;
+  bool _cameraFlowInProgress = false;
+  bool _videoProcessingDismissScheduled = false;
+  /// True once the share processing [showGeneralDialog] route is on the stack.
+  bool _shareProcessingOverlayVisible = false;
 
   static final RouteObserver<PageRoute> _routeObserver =
       RouteObserver<PageRoute>();
@@ -51,13 +55,35 @@ class _HomeScreenState extends State<HomeScreen>
       if (!mounted || _isDisposed) return;
       _currentVideoService?.dispose();
       _currentVideoService = null;
-      final nav = Navigator.of(context, rootNavigator: true);
-      if (nav.canPop()) {
-        nav.pop();
+      // Only dismiss our processing dialog. [Navigator.maybePop] without a dialog
+      // on top pops [HomeScreen] (auth stack below looks like logout).
+      if (_shareProcessingOverlayVisible) {
+        _shareProcessingOverlayVisible = false;
+        Navigator.of(context).pop();
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Upload failed. Check your connection or try a smaller video.',
+          ),
+        ),
+      );
     };
 
+    PostShareFlowBridge.onRequestShowHomeFeed = _ensureHomeFeedTab;
+
     _setupLifecycleObservers();
+  }
+
+  /// Video feed is tab index 0; opening + or finishing a share must show this tab,
+  /// not Profile (4) or Search (1) left selected under the route stack.
+  void _ensureHomeFeedTab() {
+    if (!mounted || _isDisposed || _currentIndex == 0) return;
+    setState(() {
+      _previousIndex = _currentIndex;
+      _currentIndex = 0;
+    });
+    _handleTabChange(0);
   }
 
   void _setupLifecycleObservers() {
@@ -91,23 +117,32 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _startVideoProcessing() {
+    _videoProcessingDismissScheduled = false;
+    _shareProcessingOverlayVisible = false;
     _currentVideoService = VideoService();
     PostShareFlowBridge.setVideoService(_currentVideoService!);
-    showGeneralDialog(
+
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final dialogFuture = showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.transparent,
       barrierLabel: "Processing",
-      pageBuilder: (context, anim1, anim2) {
+      pageBuilder: (dialogRouteContext, anim1, anim2) {
         return StreamBuilder<double>(
           stream: _currentVideoService!.getProcessingProgress(),
           initialData: 0.0,
           builder: (context, snapshot) {
             final progress = snapshot.data ?? 0.0;
-            if (progress >= 100) {
+            // Stream keeps emitting at 100%; only dismiss once or we pop past the dialog.
+            if (progress >= 100 && !_videoProcessingDismissScheduled) {
+              _videoProcessingDismissScheduled = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (Navigator.canPop(context)) Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                if (nav.canPop()) nav.pop();
+                messenger.showSnackBar(
                   const SnackBar(content: Text("Video Shared Successfully!")),
                 );
               });
@@ -117,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen>
               onCancel: () {
                 _currentVideoService?.dispose();
                 _currentVideoService = null;
-                Navigator.pop(context);
+                Navigator.of(dialogRouteContext).pop();
               },
             );
           },
@@ -127,6 +162,16 @@ class _HomeScreenState extends State<HomeScreen>
       transitionBuilder: (context, anim1, anim2, child) =>
           FadeTransition(opacity: anim1, child: child),
     );
+
+    dialogFuture.whenComplete(() {
+      if (!mounted || _isDisposed) return;
+      _shareProcessingOverlayVisible = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _isDisposed) return;
+      _shareProcessingOverlayVisible = true;
+    });
   }
 
   void _onItemTapped(int index) async {
@@ -165,6 +210,8 @@ class _HomeScreenState extends State<HomeScreen>
     if (index == _currentIndex) return;
 
     if (index == 2) {
+      if (_cameraFlowInProgress) return;
+
       // Check if user is authenticated before opening camera
       final token = await TokenStorage.getAccessToken();
       if (token == null || token.isEmpty) {
@@ -175,10 +222,17 @@ class _HomeScreenState extends State<HomeScreen>
         );
         return;
       }
-      
-      final result = await CameraHandler.openCamera(context);
-      if (result == 'start_processing') {
-        _startVideoProcessing();
+
+      _ensureHomeFeedTab();
+
+      _cameraFlowInProgress = true;
+      try {
+        final result = await CameraHandler.openCamera(context);
+        if (result == 'start_processing') {
+          _startVideoProcessing();
+        }
+      } finally {
+        _cameraFlowInProgress = false;
       }
       return;
     }
@@ -207,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen>
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           if (_videoController != null) {
-            _videoController!.initVideos();
+            _videoController!.initVideos(refresh: true);
             print("✅ Home Screen: Video feed refreshed on tab change");
           } else {
             print("🔄 Home Screen: Video controller not available, but refresh triggered");
@@ -311,7 +365,9 @@ class _HomeScreenState extends State<HomeScreen>
     PostShareFlowBridge.clearCallbacks();
     _isDisposed = true;
     _currentVideoService?.dispose();
-    _videoController?.dispose();
+    // [VideoFeedController] is owned and disposed by [VideoFeed]; do not dispose here
+    // or ValueNotifiers are disposed twice when IndexedStack children unmount.
+    _videoController = null;
     WidgetsBinding.instance.removeObserver(this);
     _routeObserver.unsubscribe(this);
     super.dispose();

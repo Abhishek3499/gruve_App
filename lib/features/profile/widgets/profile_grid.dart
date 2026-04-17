@@ -115,7 +115,7 @@ class ProfileGrid extends StatelessWidget {
 
     final filteredPosts = posts;
 
-    if (selectedTab == 0 && filteredPosts.isNotEmpty) {
+    if (selectedTab == 0) {
       return _withPagingFooter(
         GridView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),

@@ -17,7 +17,8 @@ class ProfileStatsModel {
         videosCount = 0;
 
   factory ProfileStatsModel.fromJson(Map<String, dynamic> json) {
-    debugPrint("[ProfileStatsModel] parsing stats from: $json");
+    debugPrint("🔍 [ProfileStatsModel] parsing stats from: $json");
+    debugPrint("🔍 [ProfileStatsModel] JSON KEYS: ${json.keys.toList()}");
 
     final subscribersCount = _findCount(
       json,
@@ -37,7 +38,24 @@ class ProfileStatsModel {
         'total_followers',
         'fans_count',
         'fan_count',
+        'data.user.stats.subscribers_count',
+        'data.user.stats.subscriber_count',
+        'data.user.stats.subscribers',
+        'data.user.stats.subscriber',
+        'data.user.stats.followers_count',
+        'data.user.stats.follower_count',
+        'data.user.stats.followers',
+        'data.user.stats.follower',
+        'user.stats.subscribers_count',
+        'user.stats.subscriber_count',
+        'user.stats.subscribers',
+        'user.stats.subscriber',
+        'user.stats.followers_count',
+        'user.stats.follower_count',
+        'user.stats.followers',
+        'user.stats.follower',
       ],
+      'subscribers',
     );
     final likesCount = _findCount(
       json,
@@ -46,7 +64,16 @@ class ProfileStatsModel {
         'like_count',
         'likes',
         'total_likes',
+        'data.user.stats.likes_count',
+        'data.user.stats.like_count',
+        'data.user.stats.likes',
+        'data.user.stats.total_likes',
+        'user.stats.likes_count',
+        'user.stats.like_count',
+        'user.stats.likes',
+        'user.stats.total_likes',
       ],
+      'likes',
     );
     final videosCount = _findCount(
       json,
@@ -57,11 +84,24 @@ class ProfileStatsModel {
         'posts_count',
         'post_count',
         'posts',
+        'data.user.stats.videos_count',
+        'data.user.stats.video_count',
+        'data.user.stats.videos',
+        'data.user.stats.posts_count',
+        'data.user.stats.post_count',
+        'data.user.stats.posts',
+        'user.stats.videos_count',
+        'user.stats.video_count',
+        'user.stats.videos',
+        'user.stats.posts_count',
+        'user.stats.post_count',
+        'user.stats.posts',
       ],
+      'videos',
     );
 
     debugPrint(
-      "[ProfileStatsModel] resolved -> subscribers: $subscribersCount, likes: $likesCount, videos: $videosCount",
+      "🔍 [ProfileStatsModel] FINAL RESULT -> subscribers: $subscribersCount, likes: $likesCount, videos: $videosCount",
     );
 
     return ProfileStatsModel(
@@ -71,11 +111,12 @@ class ProfileStatsModel {
     );
   }
 
-  static int _findCount(dynamic source, List<String> keys) {
+  static int _findCount(dynamic source, List<String> keys, String fieldName) {
+    debugPrint("🔍 [ProfileStatsModel] Searching for $fieldName count in ${keys.length} possible keys");
     final normalizedKeys = keys.map(_normalizeKey).toSet();
     final visited = <Object>{};
 
-    int? search(dynamic value) {
+    int? search(dynamic value, [String path = '']) {
       if (value == null) {
         return null;
       }
@@ -86,6 +127,8 @@ class ProfileStatsModel {
         }
 
         final map = Map<String, dynamic>.from(value);
+        final currentPath = path.isEmpty ? 'root' : path;
+        debugPrint("🔍 [ProfileStatsModel] Searching in map at $currentPath with keys: ${map.keys.toList()}");
 
         for (final entry in map.entries) {
           final normalizedKey = _normalizeKey(entry.key);
@@ -93,15 +136,18 @@ class ProfileStatsModel {
             final parsed = _toCount(entry.value);
             if (parsed != null) {
               debugPrint(
-                "[ProfileStatsModel] matched key `${entry.key}` with value `${entry.value}` -> $parsed",
+                "✅ [ProfileStatsModel] $fieldName MATCHED key `${entry.key}` at $currentPath with value `${entry.value}` -> $parsed",
               );
               return parsed;
+            } else {
+              debugPrint("⚠️ [ProfileStatsModel] $fieldName found key `${entry.key}` but couldn't parse value: ${entry.value}");
             }
           }
         }
 
         for (final entry in map.entries) {
-          final parsed = search(entry.value);
+          final nestedPath = path.isEmpty ? entry.key : '$path.${entry.key}';
+          final parsed = search(entry.value, nestedPath);
           if (parsed != null) {
             return parsed;
           }
@@ -111,8 +157,11 @@ class ProfileStatsModel {
       }
 
       if (value is List) {
-        for (final item in value) {
-          final parsed = search(item);
+        debugPrint("🔍 [ProfileStatsModel] Searching in list at $path with ${value.length} items");
+        for (int i = 0; i < value.length; i++) {
+          final item = value[i];
+          final nestedPath = '$path[$i]';
+          final parsed = search(item, nestedPath);
           if (parsed != null) {
             return parsed;
           }
@@ -122,7 +171,9 @@ class ProfileStatsModel {
       return null;
     }
 
-    return search(source) ?? 0;
+    final result = search(source) ?? 0;
+    debugPrint("🔍 [ProfileStatsModel] $fieldName final result: $result");
+    return result;
   }
 
   static int? _toCount(dynamic value) {

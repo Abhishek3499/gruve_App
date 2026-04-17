@@ -14,7 +14,17 @@ class SharePostScreen extends StatefulWidget {
   final String mediaPath;
   final List<ChatUser>? taggedUsers;
 
-  const SharePostScreen({super.key, required this.mediaPath, this.taggedUsers});
+  /// When [SharePostScreen] was pushed from [PostPreviewScreen], pop that route
+  /// after share so the user returns to the home feed (camera flow is already gone).
+  /// When opened from a sheet or with PostPreview already popped, keep `false`.
+  final bool popPostPreviewRouteAfterShare;
+
+  const SharePostScreen({
+    super.key,
+    required this.mediaPath,
+    this.taggedUsers,
+    this.popPostPreviewRouteAfterShare = false,
+  });
 
   @override
   State<SharePostScreen> createState() => _SharePostScreenState();
@@ -247,7 +257,12 @@ class _SharePostScreenState extends State<SharePostScreen> {
                             final caption = captionController.text;
                             final mediaPath = widget.mediaPath;
 
-                            Navigator.of(context).pop();
+                            final navigator = Navigator.of(context);
+                            navigator.pop();
+                            if (widget.popPostPreviewRouteAfterShare &&
+                                navigator.canPop()) {
+                              navigator.pop();
+                            }
                             PostShareFlowBridge.scheduleShareUploadAfterReturningHome(
                               caption: caption,
                               mediaPath: mediaPath,

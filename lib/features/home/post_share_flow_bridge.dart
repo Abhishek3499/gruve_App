@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
@@ -10,12 +12,17 @@ class PostShareFlowBridge {
   /// Home registers: dismiss overlay + cleanup [VideoService] if upload fails.
   static Function()? onShareUploadError;
 
+  /// Home registers: switch [IndexedStack] to the video feed tab (index 0) so
+  /// share / processing never leaves the user on Profile or another tab.
+  static VoidCallback? onRequestShowHomeFeed;
+
   static dynamic _videoControllerRef;
   static VideoService? _currentVideoService;
 
   static bool _needsRefresh = false;
 
   static void notifyShareStartProcessing() {
+    onRequestShowHomeFeed?.call();
     onShareStartProcessing?.call();
   }
 
@@ -48,12 +55,24 @@ class PostShareFlowBridge {
     });
   }
 
+  /// Ensures the processing overlay route is committed before [createPost] runs.
+  /// Otherwise a fast failure could call [onShareUploadError] while the dialog
+  /// is not on the stack yet, and a stray [Navigator.pop] would remove [HomeScreen].
+  static Future<void> _waitForProcessingOverlayFrame() async {
+    final completer = Completer<void>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!completer.isCompleted) completer.complete();
+    });
+    await completer.future;
+  }
+
   static Future<void> _runShareUploadChain(
     String caption,
     String mediaPath,
   ) async {
     try {
       notifyShareStartProcessing();
+      await _waitForProcessingOverlayFrame();
       await PostService().createPost(caption: caption, mediaPath: mediaPath);
       print("✅ API call completed successfully");
       await notifyPostCreated();
@@ -72,7 +91,7 @@ class PostShareFlowBridge {
 
     if (_videoControllerRef != null) {
       print("🔔 Bridge: Refreshing video feed (awaiting GET)...");
-      final result = await _videoControllerRef!.initVideos();
+      final result = await _videoControllerRef!.initVideos(refresh: true);
       if (result == true) {
         print("✅ Bridge: Video feed refreshed successfully");
         _needsRefresh = false;
@@ -106,6 +125,7 @@ class PostShareFlowBridge {
   static void clearCallbacks() {
     onShareStartProcessing = null;
     onShareUploadError = null;
+    onRequestShowHomeFeed = null;
     _videoControllerRef = null;
     _currentVideoService = null;
     _needsRefresh = false;

@@ -7,6 +7,8 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_mode
 import 'package:video_player/video_player.dart';
 
 class VideoFeedController {
+  bool _disposed = false;
+
   List<String> _mediaUrls = [];
   List<String> get mediaUrls => _mediaUrls;
 
@@ -245,6 +247,9 @@ class VideoFeedController {
   }
 
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+
     for (final controller in _controllers) {
       controller.dispose();
     }
