@@ -6,14 +6,20 @@ class ForgotPasswordService {
   final Dio _dio = Dio(BaseOptions(baseUrl: dotenv.env['BASE_URL']!));
   Future<String> sendResetLink({required String email}) async {
     try {
-      final response = await _dio.post(
-        'auth/forgot-password/',
-        data: {"email": email},
-      );
+      const endpoint = 'auth/forgot-password/';
+      final requestData = {"email": email};
+      
+      debugPrint("=== FORGOT PASSWORD REQUEST ===");
+      debugPrint("URL: ${_dio.options.baseUrl}$endpoint");
+      debugPrint("METHOD: POST");
+      debugPrint("HEADERS: ${_dio.options.headers}");
+      debugPrint("BODY: $requestData");
 
-      debugPrint("📤 REQUEST EMAIL: $email");
-      debugPrint("📥 STATUS CODE: ${response.statusCode}");
-      debugPrint("📥 RESPONSE DATA: ${response.data}");
+      final response = await _dio.post(endpoint, data: requestData);
+
+      debugPrint("=== FORGOT PASSWORD RESPONSE ===");
+      debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RESPONSE BODY: ${response.data}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data["message"] ?? "Reset link sent";
@@ -21,11 +27,19 @@ class ForgotPasswordService {
         throw Exception("Failed to send reset link");
       }
     } on DioException catch (e) {
-      debugPrint("❌ ERROR STATUS: ${e.response?.statusCode}");
-      debugPrint("❌ ERROR DATA: ${e.response?.data}");
-      debugPrint("❌ ERROR MESSAGE: ${e.message}");
+      debugPrint("=== FORGOT PASSWORD DIO ERROR ===");
+      debugPrint("STATUS CODE: ${e.response?.statusCode}");
+      debugPrint("ERROR DATA: ${e.response?.data}");
+      debugPrint("ERROR MESSAGE: ${e.message}");
+      debugPrint("ERROR TYPE: ${e.type}");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
 
       throw Exception(e.response?.data["message"] ?? "Something went wrong");
+    } catch (e) {
+      debugPrint("=== FORGOT PASSWORD UNKNOWN ERROR ===");
+      debugPrint("ERROR: $e");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
+      rethrow;
     }
   }
 }

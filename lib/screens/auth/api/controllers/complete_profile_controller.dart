@@ -15,6 +15,7 @@ class CompleteProfileController {
   }) async {
     isLoading = true;
     errorMessage = null;
+    response = null;
 
     try {
       final result = await _service.completeProfile(
@@ -24,6 +25,7 @@ class CompleteProfileController {
 
       response = result;
     } catch (e) {
+      response = null;
       errorMessage = e.toString();
     }
 

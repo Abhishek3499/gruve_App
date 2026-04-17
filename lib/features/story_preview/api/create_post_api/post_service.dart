@@ -1,13 +1,21 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/paginated_response_model.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
 class PostService {
   /// Same pattern as [ProfileService] / auth services: normalized base + relative paths.
   late final Dio _dio;
+
+  // Pagination state
+  bool _isLoading = false;
+  CursorModel? _nextCursor;
+  String? _lastRequestKey;
 
   PostService() {
     var base = dotenv.env['BASE_URL']!.trim();
@@ -65,6 +73,97 @@ class PostService {
     throw FormatException("Invalid response format");
   }
 
+  // ✅ GET POSTS WITH CURSOR PAGINATION
+  Future<PaginatedPostsResponse> getPaginatedPosts({
+    CursorModel? cursor,
+    int limit = 10,
+    bool refresh = false,
+  }) async {
+    final isInitialLoad = cursor == null || !cursor!.isValid;
+
+    // Prevent duplicate requests
+    final requestKey = '${cursor?.toString() ?? 'first'}_$limit';
+    if (_isLoading && !refresh && _lastRequestKey == requestKey) {
+      debugPrint('🔄 PostService: Skipping duplicate request');
+      return PaginatedPostsResponse(
+        posts: [],
+        nextCursor: null,
+        hasMore: false,
+      );
+    }
+
+    _isLoading = true;
+    _lastRequestKey = requestKey;
+
+    try {
+      debugPrint('📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit');
+
+      final token = await TokenStorage.getAccessToken();
+      final queryParams = <String, dynamic>{'limit': limit.clamp(1, 10)};
+
+      // Add cursor parameters if available
+      if (cursor?.isValid == true) {
+        queryParams.addAll(cursor!.toJson());
+        debugPrint(
+          '📍 Next Cursor: {created_at: ${cursor!.createdAt}, id: ${cursor!.id}}',
+        );
+      }
+
+      final res = await _dio.get(
+        "posts/get-post/",
+        queryParameters: queryParams,
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      // Handle both nested data structure and direct response structure
+      final responseData = res.data['data'] ?? res.data;
+      
+      final posts =
+          (responseData['posts'] as List<dynamic>?)
+              ?.map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          [];
+
+      final nextCursor = responseData['next_cursor'] != null
+          ? CursorModel.fromJson(responseData['next_cursor'] as Map<String, dynamic>)
+          : null;
+
+      final hasMore = responseData['has_more'] as bool? ?? true;
+
+      // Update cursor for next request
+      if (!refresh) {
+        _nextCursor = nextCursor;
+      }
+
+      debugPrint('📊 Has More: $hasMore');
+      debugPrint('📊 API Posts Count: ${posts.length}');
+
+      return PaginatedPostsResponse(
+        posts: posts,
+        nextCursor: nextCursor,
+        hasMore: hasMore,
+      );
+    } catch (e) {
+      debugPrint("❌ GET PAGINATED POSTS ERROR: $e");
+      if (e is DioException) {
+        if (e.response?.statusCode == 401) {
+          debugPrint("Unauthorized error");
+          return PaginatedPostsResponse(
+            posts: [],
+            nextCursor: null,
+            hasMore: false,
+          );
+        } else {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+    } finally {
+      _isLoading = false;
+    }
+  }
+
   // ✅ GET POSTS — same relative-path style as initial load; try alternates on 404.
   Future<List<Post>> getPosts() async {
     final token = await TokenStorage.getAccessToken();
@@ -77,12 +176,21 @@ class PostService {
 
       final data = res.data['data'];
 
-      if (data == null || data['results'] == null) {
-        print("❌ Invalid response structure");
+      if (data == null) {
+        print("❌ Invalid response structure - no data field");
         return [];
       }
 
-      final List list = data['results'];
+      // Handle both direct posts array and nested structure
+      List list;
+      if (data['posts'] != null) {
+        list = data['posts'];
+      } else if (data['results'] != null) {
+        list = data['results'];
+      } else {
+        print("❌ Invalid response structure - no posts or results field");
+        return [];
+      }
 
       print("📊 TOTAL POSTS FROM API: ${list.length}");
 
@@ -102,25 +210,54 @@ class PostService {
       }).toList();
     } catch (e) {
       print("❌ GET POSTS ERROR: $e");
-      rethrow;
+      if (e is DioError) {
+        if (e.response?.statusCode == 401) {
+          // Handle unauthorized error
+          print("Unauthorized error");
+          return []; // Return empty list instead of null
+        } else {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
     }
   }
 
-  Future<void> likePost(String postId) async {
+  // Reset pagination state
+  void resetPagination() {
+    _nextCursor = null;
+    _lastRequestKey = null;
+    _isLoading = false;
+  }
+
+  Future<bool> likePost(String postId) async {
     final token = await TokenStorage.getAccessToken();
 
     try {
       final res = await _dio.post(
-        "posts/like/toggle/", // ✅ endpoint
+        "posts/like/toggle/", // endpoint
         data: {
-          "post_id": postId, // ✅ body me bhejna hai
+          "post_id": postId, // body me bhejna hai
         },
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      print("❤️ LIKE SUCCESS: ${res.data}");
+      debugPrint("✅ LIKE SUCCESS: ${res.data}");
+      return true;
     } catch (e) {
-      print("❌ LIKE ERROR: $e");
+      debugPrint("❌ LIKE ERROR: $e");
+      if (e is DioException) {
+        if (e.response?.statusCode == 401) {
+          // Handle unauthorized error
+          debugPrint("Unauthorized error");
+        } else {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+      return false;
     }
   }
 
@@ -128,7 +265,7 @@ class PostService {
     final token = await TokenStorage.getAccessToken();
 
     try {
-      print("💬 ADD COMMENT → $text");
+      debugPrint("💬 ADD COMMENT → $text");
 
       final res = await _dio.post(
         "posts/get-post/", // ⚠️ endpoint check kar lena
@@ -136,13 +273,13 @@ class PostService {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      print("✅ COMMENT RESPONSE: ${res.data}");
+      debugPrint("✅ COMMENT RESPONSE: ${res.data}");
     } catch (e) {
       if (e is DioException) {
-        print("❌ STATUS CODE: ${e.response?.statusCode}");
-        print("❌ RESPONSE: ${e.response?.data}");
+        debugPrint("❌ STATUS CODE: ${e.response?.statusCode}");
+        debugPrint("❌ RESPONSE: ${e.response?.data}");
       } else {
-        print("❌ ERROR: $e");
+        debugPrint("❌ ERROR: $e");
       }
     }
   }

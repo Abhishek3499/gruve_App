@@ -35,7 +35,6 @@ class _VideoFeedState extends State<VideoFeed> {
 
     _controller = VideoFeedController();
     _pageController = PageController(viewportFraction: 1.0);
-
     _controllers = _controller.controllers;
 
     _controller.initVideos();
@@ -55,6 +54,12 @@ class _VideoFeedState extends State<VideoFeed> {
   void _onPageChanged(int page) {
     _controller.playVideo(page);
     HapticFeedback.lightImpact();
+
+    // Pre-fetch data when user reaches 60% of current posts for seamless UX
+    final triggerIndex = (_controller.mediaUrls.length * 0.5).floor();
+    if (page >= triggerIndex && _controller.hasMore && !_controller.isLoadingMore) {
+      _controller.loadMorePosts();
+    }
   }
 
   void _onVideoTap() {
@@ -65,6 +70,119 @@ class _VideoFeedState extends State<VideoFeed> {
     setState(() {
       selectedContentTab = tab;
     });
+  }
+
+  bool _isNetworkMediaUrl(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null) {
+      return false;
+    }
+
+    return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
+  Widget _buildVideoPlayer(int index) {
+    final url = _controller.mediaUrls[index].trim();
+
+    print("UI URL: $url");
+
+    final isVideo = url.toLowerCase().contains(".mp4");
+    final isValidNetworkUrl = _isNetworkMediaUrl(url);
+
+    int videoIndex = 0;
+    for (int i = 0; i < index; i++) {
+      if (_controller.mediaUrls[i].toLowerCase().contains(
+        ".mp4",
+      )) {
+        videoIndex++;
+      }
+    }
+
+    return GestureDetector(
+      onTap: _onVideoTap,
+      child: Stack(
+        children: [
+          Container(
+            color: Colors.black,
+            child: isVideo
+                ? (_controllers.isNotEmpty &&
+                      videoIndex < _controllers.length &&
+                      _controllers[videoIndex]
+                          .value
+                          .isInitialized)
+                    ? SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: _controllers[videoIndex]
+                                .value
+                                .size
+                                .width,
+                            height: _controllers[videoIndex]
+                                .value
+                                .size
+                                .height,
+                            child: VideoPlayer(
+                              _controllers[videoIndex],
+                            ),
+                          ),
+                        ),
+                      )
+                    : const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      )
+                : isValidNetworkUrl
+                ? Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    loadingBuilder: (
+                      context,
+                      child,
+                      progress,
+                    ) {
+                      print("Rendering image: $url");
+                      if (progress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                    errorBuilder: (
+                      context,
+                      error,
+                      stackTrace,
+                    ) {
+                      print("Image load error: $error");
+                      return const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: Colors.white,
+                          size: 50,
+                        ),
+                      );
+                    },
+                  )
+                : const Center(
+                    child: Icon(
+                      Icons.broken_image,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+          ),
+          VideoOverlay(
+            selectedTab: selectedContentTab,
+            onTabChanged: _onTabChanged,
+            controller: _controller,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -78,11 +196,11 @@ class _VideoFeedState extends State<VideoFeed> {
             return Stack(
               children: [
                 RefreshIndicator(
-                  color: Colors.white,
-                  backgroundColor: Colors.black54,
                   onRefresh: () async {
-                    await _controller.initVideos();
+                    await _controller.initVideos(refresh: true);
                   },
+                  color: Colors.white,
+                  backgroundColor: Colors.grey[800],
                   child: PageView.builder(
                     controller: _pageController,
                     scrollDirection: Axis.vertical,
@@ -91,13 +209,13 @@ class _VideoFeedState extends State<VideoFeed> {
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
-
                     itemBuilder: (context, index) {
-                      final url = _controller.mediaUrls[index];
+                      final url = _controller.mediaUrls[index].trim();
 
-                      print("🎬 UI URL: $url");
+                      print("UI URL: $url");
 
                       final isVideo = url.toLowerCase().contains(".mp4");
+                      final isValidNetworkUrl = _isNetworkMediaUrl(url);
 
                       int videoIndex = 0;
                       for (int i = 0; i < index; i++) {
@@ -143,13 +261,18 @@ class _VideoFeedState extends State<VideoFeed> {
                                               color: Colors.white,
                                             ),
                                           )
-                                  : Image.network(
+                                  : isValidNetworkUrl
+                                  ? Image.network(
                                       url,
                                       fit: BoxFit.cover,
                                       width: double.infinity,
                                       height: double.infinity,
-                                      loadingBuilder: (context, child, progress) {
-                                        print("🖼️ Rendering image: $url");
+                                      loadingBuilder: (
+                                        context,
+                                        child,
+                                        progress,
+                                      ) {
+                                        print("Rendering image: $url");
                                         if (progress == null) return child;
                                         return const Center(
                                           child: CircularProgressIndicator(
@@ -157,8 +280,12 @@ class _VideoFeedState extends State<VideoFeed> {
                                           ),
                                         );
                                       },
-                                      errorBuilder: (context, error, stackTrace) {
-                                        print("❌ IMAGE LOAD ERROR: $error");
+                                      errorBuilder: (
+                                        context,
+                                        error,
+                                        stackTrace,
+                                      ) {
+                                        print("Image load error: $error");
                                         return const Center(
                                           child: Icon(
                                             Icons.broken_image,
@@ -167,9 +294,15 @@ class _VideoFeedState extends State<VideoFeed> {
                                           ),
                                         );
                                       },
+                                    )
+                                  : const Center(
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: Colors.white,
+                                        size: 50,
+                                      ),
                                     ),
                             ),
-
                             VideoOverlay(
                               selectedTab: selectedContentTab,
                               onTabChanged: _onTabChanged,
@@ -181,7 +314,6 @@ class _VideoFeedState extends State<VideoFeed> {
                     },
                   ),
                 ),
-
                 VideoTopBar(
                   selectedTab: selectedContentTab,
                   onTabChanged: _onTabChanged,

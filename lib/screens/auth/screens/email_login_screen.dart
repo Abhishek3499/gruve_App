@@ -116,17 +116,18 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     // Check real-time validation errors instead of form validation
     if (_emailError != null || _passwordError != null) {
       // Show specific error if any
-      String errorMessage = _emailError ?? _passwordError ?? 'Please fill all fields';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      String errorMessage =
+          _emailError ?? _passwordError ?? 'Please fill all fields';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
       return false;
     }
 
     setState(() => isLoading = true);
 
     await _controller.signIn(
-      email: _emailController.text.trim(),
+      identifier: _emailController.text.trim(),
 
       password: _passwordController.text.trim(),
     );

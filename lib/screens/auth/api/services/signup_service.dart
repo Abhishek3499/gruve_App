@@ -23,14 +23,17 @@ class SignupService {
     final payload = request.toJson();
 
     try {
-      debugPrint("📤 SIGNUP REQUEST:");
-      debugPrint(payload.toString());
-      debugPrint("🌐 SIGNUP URL: ${dio.options.baseUrl}$endpoint");
+      debugPrint("=== SIGNUP REQUEST ===");
+      debugPrint("URL: ${dio.options.baseUrl}$endpoint");
+      debugPrint("METHOD: POST");
+      debugPrint("HEADERS: ${dio.options.headers}");
+      debugPrint("BODY: $payload");
 
       final response = await dio.post(endpoint, data: payload);
 
-      debugPrint("✅ RESPONSE:");
-      debugPrint(response.data.toString());
+      debugPrint("=== SIGNUP RESPONSE ===");
+      debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RESPONSE BODY: ${response.data}");
 
       final result = SignupResponse.fromJson(response.data);
 
@@ -40,27 +43,42 @@ class SignupService {
         throw result.message;
       }
     } on DioException catch (e) {
-      debugPrint("❌ STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("❌ ERROR DATA: ${e.response?.data}");
+      debugPrint("=== SIGNUP DIO ERROR ===");
+      debugPrint("STATUS CODE: ${e.response?.statusCode}");
+      debugPrint("ERROR DATA: ${e.response?.data}");
+      debugPrint("ERROR MESSAGE: ${e.message}");
+      debugPrint("ERROR TYPE: ${e.type}");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
 
       // Retry once when no response is received (timeout / connection issue).
       if (_shouldRetry(e)) {
         try {
-          debugPrint("🔁 Retrying signup request once...");
+          debugPrint("=== SIGNUP RETRY ATTEMPT ===");
           final retryResponse = await dio.post(endpoint, data: payload);
+          debugPrint("=== SIGNUP RETRY RESPONSE ===");
+          debugPrint("STATUS CODE: ${retryResponse.statusCode}");
+          debugPrint("RESPONSE BODY: ${retryResponse.data}");
           final retryResult = SignupResponse.fromJson(retryResponse.data);
           if (retryResult.success == true) return retryResult;
           throw retryResult.message;
         } on DioException catch (retryError) {
+          debugPrint("=== SIGNUP RETRY ERROR ===");
+          debugPrint("RETRY ERROR: ${retryError.response?.data}");
+          debugPrint("RETRY STACK TRACE: ${StackTrace.current}");
           throw _extractErrorMessage(retryError);
         } catch (retryError) {
+          debugPrint("=== SIGNUP RETRY UNKNOWN ERROR ===");
+          debugPrint("RETRY ERROR: $retryError");
+          debugPrint("RETRY STACK TRACE: ${StackTrace.current}");
           throw retryError.toString();
         }
       }
 
       throw _extractErrorMessage(e);
     } catch (e) {
-      debugPrint("❌ UNKNOWN SIGNUP ERROR: $e");
+      debugPrint("=== SIGNUP UNKNOWN ERROR ===");
+      debugPrint("ERROR: $e");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
       throw "Signup failed. Please try again.";
     }
   }

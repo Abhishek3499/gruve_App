@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/api_calls/profile/Controller/profile_controller.dart';
+
+import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
+
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 
 import '../widgets/filter_tabs.dart';
@@ -17,26 +19,50 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   int selectedTab = 0;
+
   final ProfileController controller = ProfileController();
+
+  final ScrollController _scrollController = ScrollController();
+
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
     controller.fetchUser();
+    _scrollController.addListener(_onProfileScroll);
   }
 
   @override
   void dispose() {
-    controller.isLoading.dispose();
+    _scrollController.removeListener(_onProfileScroll);
+    _scrollController.dispose();
+    controller.dispose();
     super.dispose();
+  }
+
+  void _onProfileScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (!pos.hasPixels || !pos.hasContentDimensions) return;
+    final threshold = 360.0;
+    if (pos.pixels < pos.maxScrollExtent - threshold) return;
+    controller.requestLoadMoreThrottled(selectedTab);
+  }
+
+  String _displayUsername(String? raw) {
+    final t = (raw ?? '').trim();
+    if (t.isEmpty) return '';
+    return t.startsWith('@') ? t : '@$t';
   }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: controller.isLoading,
-      builder: (context, isLoading, child) {
-        if (isLoading) {
+      builder: (context, loading, _) {
+        final showBlockingLoader = loading && !controller.hasLoadedOnce;
+        if (showBlockingLoader) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -60,57 +86,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: SafeArea(
               bottom: false,
-              child: SingleChildScrollView(
-                child: Stack(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 130),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7D63D1).withValues(alpha: 0.12),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(100),
-                          topRight: Radius.circular(30),
-                        ),
-                      ),
-                      child: Column(
+              child: RefreshIndicator(
+                onRefresh: _handleRefresh,
+                color: Colors.white,
+                backgroundColor: const Color(0xFF42174C),
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: AnimatedBuilder(
+                    animation: controller.contentListenable,
+                    builder: (context, _) {
+                      return Stack(
                         children: [
-                          const SizedBox(height: 110),
-                          StatsRow(
-                            subscribersCount: controller.stats?.subscribersCount ?? 0,
-                            likesCount: controller.stats?.likesCount ?? 0,
-                            videosCount: controller.stats?.videosCount ?? 0,
+                          Container(
+                            margin: const EdgeInsets.only(top: 130),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF7D63D1)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(100),
+                                topRight: Radius.circular(30),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 110),
+                                StatsRow(
+                                  subscribersCount:
+                                      controller.stats.subscribersCount,
+                                  likesCount: controller.stats.likesCount,
+                                  videosCount: controller.stats.videosCount,
+                                ),
+                                const SizedBox(height: 25),
+                                const StoryList(),
+                                const SizedBox(height: 20),
+                                FilterTabs(
+                                  selectedIndex: selectedTab,
+                                  onTabSelected: (index) {
+                                    setState(() {
+                                      selectedTab = index;
+                                    });
+                                    if (_scrollController.hasClients) {
+                                      _scrollController.jumpTo(0);
+                                    }
+                                    controller.ensureTabLoaded(index);
+                                  },
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  child: ProfileGrid(
+                                    selectedTab: selectedTab,
+                                    controller: controller,
+                                  ),
+                                ),
+                                const SizedBox(height: 100),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 25),
-                          const StoryList(),
-                          const SizedBox(height: 20),
-                          FilterTabs(
-                            selectedIndex: selectedTab,
-                            onTabSelected: (index) {
-                              setState(() {
-                                selectedTab = index;
-                              });
-                            },
+                          Positioned(
+                            top: 30,
+                            left: 0,
+                            right: 0,
+                            child: ProfileHeader(
+                              fullName: (user?.fullName ?? '').trim(),
+                              username: () {
+                                final u = _displayUsername(user?.username);
+                                return u.isEmpty ? '@username' : u;
+                              }(),
+                              profileImage: user?.profileImage ?? "",
+                            ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: ProfileGrid(selectedTab: selectedTab),
-                          ),
-                          SizedBox(height: 100),
                         ],
-                      ),
-                    ),
-                    Positioned(
-                      top: 30,
-                      left: 0,
-                      right: 0,
-                      child: ProfileHeader(
-                        fullName: user?.fullName ?? "",
-                        username: user?.username ?? "@username",
-                        profileImage: user?.profileImage ?? "",
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -118,5 +170,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+
+    _isRefreshing = true;
+
+    try {
+      await controller.refreshCounts(reason: 'pull_to_refresh');
+    } catch (e) {
+      debugPrint('❌ Profile pull-to-refresh failed: $e');
+    } finally {
+      _isRefreshing = false;
+    }
   }
 }

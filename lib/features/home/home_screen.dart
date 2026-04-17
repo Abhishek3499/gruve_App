@@ -9,6 +9,9 @@ import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
+import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +29,11 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isDisposed = false;
   VideoFeedController? _videoController;
   VideoService? _currentVideoService;
+
+  // Double tap detection for Home tab with smooth animations
+  int? _lastHomeTapTime;
+  static const int _doubleTapThreshold = 400; // milliseconds
+  bool _isScrollingToTop = false;
 
   static final RouteObserver<PageRoute> _routeObserver =
       RouteObserver<PageRoute>();
@@ -122,9 +130,52 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _onItemTapped(int index) async {
-    if (index == _currentIndex || _isDisposed) return;
+    if (_isDisposed) return;
+
+    // Handle Home tab double tap logic with smooth animations
+    if (index == 0) {
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      
+      if (_currentIndex == 0) {
+        // Already on Home tab - check for double tap
+        if (_lastHomeTapTime != null && 
+            currentTime - _lastHomeTapTime! < _doubleTapThreshold) {
+          // Double tap detected - refresh feed smoothly
+          _lastHomeTapTime = null; // Reset to prevent triple taps
+          await _handleHomeTabDoubleTap();
+          return;
+        } else {
+          // Single tap on Home tab - scroll to top smoothly
+          _lastHomeTapTime = currentTime;
+          await _scrollToTop();
+          return;
+        }
+      } else {
+        // Navigating to Home tab from another tab
+        _lastHomeTapTime = currentTime;
+        setState(() {
+          _previousIndex = _currentIndex;
+          _currentIndex = index;
+        });
+        _handleTabChange(index);
+        return;
+      }
+    }
+
+    if (index == _currentIndex) return;
 
     if (index == 2) {
+      // Check if user is authenticated before opening camera
+      final token = await TokenStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        // Navigate to sign in screen instead of just showing snackbar
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SignInScreen()),
+        );
+        return;
+      }
+      
       final result = await CameraHandler.openCamera(context);
       if (result == 'start_processing') {
         _startVideoProcessing();
@@ -171,6 +222,10 @@ class _HomeScreenState extends State<HomeScreen>
       if (!_isInBackground && !_isNavigatingAway) {
         _resumeVideo('Tab changed to Home');
       }
+    } else if (newIndex == 4) {
+      ProfileCountRefreshBridge.notifyCountsChanged(
+        reason: 'profile_tab_opened',
+      );
     } else if (_previousIndex == 0) {
       _pauseVideo('Tab changed from Home');
     }
@@ -179,6 +234,41 @@ class _HomeScreenState extends State<HomeScreen>
   void _pauseVideo(String reason) => _videoController?.pauseCurrentVideo();
   void _resumeVideo(String reason) =>
       _videoController?.playVideo(_videoController!.currentIndex.value);
+
+  // Smooth scroll to top functionality
+  Future<void> _scrollToTop() async {
+    if (_isScrollingToTop || _videoController == null) return;
+    
+    _isScrollingToTop = true;
+    
+    try {
+      if (_videoController!.controllers.isNotEmpty) {
+        // Smooth animation to first video
+        for (int i = _videoController!.currentIndex.value; i >= 0; i--) {
+          _videoController!.playVideo(i);
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      }
+    } finally {
+      _isScrollingToTop = false;
+    }
+  }
+
+  // Handle double tap refresh with smooth animation
+  Future<void> _handleHomeTabDoubleTap() async {
+    if (_isScrollingToTop) return;
+    
+    // First scroll to top smoothly
+    await _scrollToTop();
+    
+    // Small delay to ensure scroll completes
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    // Then refresh feed
+    if (_videoController != null) {
+      await _videoController!.initVideos(refresh: true);
+    }
+  }
 
   List<Widget> _getScreens() {
     print("🏠 Home Screen: _getScreens called, _currentIndex: $_currentIndex");

@@ -27,6 +27,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final TextEditingController _usernameController =
       TextEditingController(); // ✅ FIX
 
+  bool _submitting = false;
+
   @override
   void dispose() {
     _usernameController.dispose(); // ✅ FIX
@@ -95,11 +97,33 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   // 🔥 BUTTON
                   GetStartedButton(
                     text: 'Complete',
+                    isLoading: _submitting,
                     onComplete: () async {
-                      await controller.completeProfile(
-                        username: _usernameController.text.trim(),
-                        imagePath: _selectedImage?.path,
-                      );
+                      final username = _usernameController.text.trim();
+                      final imagePath = _selectedImage?.path;
+
+                      if (username.isEmpty &&
+                          (imagePath == null || imagePath.trim().isEmpty)) {
+                        if (!context.mounted) return false;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please enter a username or choose a profile photo.',
+                            ),
+                          ),
+                        );
+                        return false;
+                      }
+
+                      setState(() => _submitting = true);
+                      try {
+                        await controller.completeProfile(
+                          username: username,
+                          imagePath: imagePath,
+                        );
+                      } finally {
+                        if (mounted) setState(() => _submitting = false);
+                      }
 
                       if (!context.mounted) return false;
 
@@ -110,9 +134,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         return false;
                       }
 
-                      Navigator.push(
-                        context,
+                      if (controller.response == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Profile could not be saved. Please try again.',
+                            ),
+                          ),
+                        );
+                        return false;
+                      }
+
+                      Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        (route) => false,
                       );
                       return true;
                     },

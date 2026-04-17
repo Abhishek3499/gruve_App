@@ -12,12 +12,18 @@ class EmailSignInController {
   String? errorMessage;
   EmailSignInResponse? response;
 
-  Future<void> signIn({required String email, required String password}) async {
+  Future<void> signIn({
+    required String identifier,
+    required String password,
+  }) async {
     isLoading = true;
     errorMessage = null;
 
     try {
-      final res = await _service.signIn(email: email, password: password);
+      final res = await _service.signIn(
+        identifier: identifier,
+        password: password,
+      );
 
       response = res;
 

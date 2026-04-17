@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 
 import 'video_user_info.dart';
@@ -133,8 +134,6 @@ class _VideoOverlayState extends State<VideoOverlay> {
                   final postId = post.id;
 
                   if (postId.isNotEmpty) {
-                    PostService().likePost(postId);
-
                     setState(() {
                       post.isLiked = !post.isLiked;
 
@@ -142,6 +141,14 @@ class _VideoOverlayState extends State<VideoOverlay> {
                         post.likesCount++;
                       } else {
                         post.likesCount--;
+                      }
+                    });
+
+                    PostService().likePost(postId).then((success) async {
+                      if (success) {
+                        await ProfileCountRefreshBridge.notifyCountsChanged(
+                          reason: 'post_like_toggled',
+                        );
                       }
                     });
                   }

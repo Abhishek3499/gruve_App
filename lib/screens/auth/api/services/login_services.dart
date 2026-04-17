@@ -15,7 +15,7 @@ class EmailSignInService {
   );
 
   Future<EmailSignInResponse> signIn({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     if (_dio.options.baseUrl.isEmpty) {
@@ -23,20 +23,35 @@ class EmailSignInService {
     }
 
     try {
-      final response = await _dio.post(
-        "auth/login/",
-        data: {
-          "email": email,
-          "password": password,
-        },
-      );
+      const endpoint = "auth/login/";
+      final requestData = {"identifier": identifier, "password": password};
+      
+      debugPrint("=== EMAIL LOGIN REQUEST ===");
+      debugPrint("URL: ${_dio.options.baseUrl}$endpoint");
+      debugPrint("METHOD: POST");
+      debugPrint("HEADERS: ${_dio.options.headers}");
+      debugPrint("BODY: $requestData");
+      
+      final response = await _dio.post(endpoint, data: requestData);
 
-      debugPrint("EMAIL LOGIN RESPONSE: ${response.data}");
+      debugPrint("=== EMAIL LOGIN RESPONSE ===");
+      debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RESPONSE BODY: ${response.data}");
 
       return EmailSignInResponse.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint("API ERROR: ${e.response?.data}");
+      debugPrint("=== EMAIL LOGIN ERROR ===");
+      debugPrint("STATUS CODE: ${e.response?.statusCode}");
+      debugPrint("ERROR DATA: ${e.response?.data}");
+      debugPrint("ERROR MESSAGE: ${e.message}");
+      debugPrint("ERROR TYPE: ${e.type}");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
       throw _extractErrorMessage(e);
+    } catch (e) {
+      debugPrint("=== EMAIL LOGIN UNKNOWN ERROR ===");
+      debugPrint("ERROR: $e");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
+      rethrow;
     }
   }
 

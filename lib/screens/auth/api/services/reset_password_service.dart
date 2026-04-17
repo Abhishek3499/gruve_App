@@ -17,33 +17,41 @@ class ResetPasswordService {
     required String password,
   }) async {
     try {
-      debugPrint("📤 RESET PASSWORD REQUEST");
-      debugPrint("🔐 TOKEN: $token");
-      debugPrint("🔑 PASSWORD: $password");
+      const endpoint = "auth/password/reset/confirm/";
+      final requestData = {
+        "reset_token": token,
+        "password": password,
+      };
 
-      final response = await _dio.post(
-        "auth/password/reset/confirm/",
-        data: {
-          "reset_token": token, // ✅ CORRECT KEY
-          "password": password,
-        },
-      );
+      debugPrint("=== RESET PASSWORD REQUEST ===");
+      debugPrint("URL: ${_dio.options.baseUrl}$endpoint");
+      debugPrint("METHOD: POST");
+      debugPrint("HEADERS: ${_dio.options.headers}");
+      debugPrint("BODY: $requestData");
 
-      debugPrint("📥 STATUS CODE: ${response.statusCode}");
-      debugPrint("📥 RESPONSE: ${response.data}");
+      final response = await _dio.post(endpoint, data: requestData);
+
+      debugPrint("=== RESET PASSWORD RESPONSE ===");
+      debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RESPONSE BODY: ${response.data}");
 
       return ResetPasswordResponse.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint("❌ ERROR STATUS: ${e.response?.statusCode}");
-      debugPrint("❌ ERROR DATA: ${e.response?.data}");
-      debugPrint("❌ ERROR MESSAGE: ${e.message}");
+      debugPrint("=== RESET PASSWORD DIO ERROR ===");
+      debugPrint("STATUS CODE: ${e.response?.statusCode}");
+      debugPrint("ERROR DATA: ${e.response?.data}");
+      debugPrint("ERROR MESSAGE: ${e.message}");
+      debugPrint("ERROR TYPE: ${e.type}");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
 
       return ResetPasswordResponse(
         message: e.response?.data?['message'] ?? "Server error",
         success: false,
       );
     } catch (e) {
-      debugPrint("❌ UNKNOWN ERROR: $e");
+      debugPrint("=== RESET PASSWORD UNKNOWN ERROR ===");
+      debugPrint("ERROR: $e");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
 
       return ResetPasswordResponse(
         message: "Something went wrong",

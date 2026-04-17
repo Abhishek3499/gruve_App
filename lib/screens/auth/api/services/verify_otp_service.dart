@@ -21,17 +21,17 @@ class VerifyOtpService {
     bool isForgot = false, // ✅ ADD THIS
   }) async {
     try {
-      debugPrint("🚀 SERVICE HIT");
-      debugPrint("👉 isForgot: $isForgot");
-      debugPrint("👉 isLogin: $isLogin");
-      debugPrint("👉 type: $type");
-      debugPrint("👉 email: $email");
-      debugPrint("👉 phone: $phone_number");
+      debugPrint("=== VERIFY OTP REQUEST ===");
+      debugPrint("isForgot: $isForgot");
+      debugPrint("isLogin: $isLogin");
+      debugPrint("type: $type");
+      debugPrint("email: $email");
+      debugPrint("phone: $phone_number");
 
       Map<String, dynamic> body;
       String endpoint;
 
-      // ✅ Decide endpoint
+      // Decide endpoint
       if (isForgot) {
         endpoint = "auth/password-reset/verify-otp/";
         body = {"email": email, "otp": otp};
@@ -41,7 +41,7 @@ class VerifyOtpService {
       } else {
         endpoint = "auth/verify-otp/";
 
-        // ✅ Signup (email OR phone)
+        // Signup (email OR phone)
         if (type == "phone") {
           body = {"identifier": identifier, "otp": otp};
         } else {
@@ -49,12 +49,17 @@ class VerifyOtpService {
         }
       }
 
-      debugPrint("📤 ENDPOINT: $endpoint");
-      debugPrint("📤 BODY: $body");
+      debugPrint("=== VERIFY OTP REQUEST DETAILS ===");
+      debugPrint("URL: ${dio.options.baseUrl}$endpoint");
+      debugPrint("METHOD: POST");
+      debugPrint("HEADERS: ${dio.options.headers}");
+      debugPrint("BODY: $body");
 
       final response = await dio.post(endpoint, data: body);
 
-      debugPrint("📥 RESPONSE: ${response.data}");
+      debugPrint("=== VERIFY OTP RESPONSE ===");
+      debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RESPONSE BODY: ${response.data}");
 
       final result = VerifyOtpResponse.fromJson(response.data);
 
@@ -64,8 +69,18 @@ class VerifyOtpService {
         throw result.message;
       }
     } on DioException catch (e) {
-      debugPrint("❌ ERROR: ${e.response?.data}");
+      debugPrint("=== VERIFY OTP DIO ERROR ===");
+      debugPrint("STATUS CODE: ${e.response?.statusCode}");
+      debugPrint("ERROR DATA: ${e.response?.data}");
+      debugPrint("ERROR MESSAGE: ${e.message}");
+      debugPrint("ERROR TYPE: ${e.type}");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
       throw e.response?.data["message"] ?? "Something went wrong";
+    } catch (e) {
+      debugPrint("=== VERIFY OTP UNKNOWN ERROR ===");
+      debugPrint("ERROR: $e");
+      debugPrint("STACK TRACE: ${StackTrace.current}");
+      rethrow;
     }
   }
 }

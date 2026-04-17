@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import '../models/subscribe_model.dart';
 import '../services/subscribe_service.dart';
 
@@ -59,6 +60,9 @@ class SubscribeController extends ChangeNotifier {
       }
       
       notifyListeners();
+      await ProfileCountRefreshBridge.notifyCountsChanged(
+        reason: 'subscription_toggled',
+      );
       return isSubscribed;
     } catch (e) {
       print("❌ CONTROLLER ERROR TOGGLING SUBSCRIPTION FOR $userId: $e");
@@ -89,6 +93,9 @@ class SubscribeController extends ChangeNotifier {
       
       notifyListeners();
       print("📢 NOTIFIED LISTENERS ABOUT SUBSCRIPTION");
+      await ProfileCountRefreshBridge.notifyCountsChanged(
+        reason: 'user_subscribed',
+      );
       return isSubscribed;
     } catch (e) {
       print("❌ CONTROLLER ERROR SUBSCRIBING TO $userId: $e");
@@ -114,6 +121,9 @@ class SubscribeController extends ChangeNotifier {
       
       notifyListeners();
       print("📢 NOTIFIED LISTENERS ABOUT UNSUBSCRIPTION");
+      await ProfileCountRefreshBridge.notifyCountsChanged(
+        reason: 'user_unsubscribed',
+      );
       return isSubscribed;
     } catch (e) {
       print("❌ CONTROLLER ERROR UNSUBSCRIBING FROM $userId: $e");

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/story_preview/widgets/post/api/video_service.dart';
 
@@ -87,6 +88,9 @@ class PostShareFlowBridge {
       _needsRefresh = true;
     }
 
+    await ProfileCountRefreshBridge.notifyCountsChanged(
+      reason: 'post_created',
+    );
     markProcessingCompleted();
   }
 
