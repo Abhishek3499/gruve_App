@@ -60,6 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!pos.hasPixels || !pos.hasContentDimensions) return;
     final threshold = 360.0;
     if (pos.pixels < pos.maxScrollExtent - threshold) return;
+    if (!controller.canLoadMoreForTab(selectedTab)) return;
     controller.requestLoadMoreThrottled(selectedTab);
   }
 

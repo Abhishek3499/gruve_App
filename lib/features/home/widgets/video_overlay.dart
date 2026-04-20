@@ -16,12 +16,14 @@ class VideoOverlay extends StatefulWidget {
   final String selectedTab;
   final Function(String) onTabChanged;
   final VideoFeedController controller;
+  final VoidCallback onOwnProfileTap;
 
   const VideoOverlay({
     super.key,
     required this.selectedTab,
     required this.onTabChanged,
     required this.controller,
+    required this.onOwnProfileTap,
   });
 
   @override
@@ -95,6 +97,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 profilePicture: post.profilePicture,
                 initialIsSubscribed: post.isSubscribed,
                 subscribeController: _subscribeController,
+                onOwnProfileTap: widget.onOwnProfileTap,
               );
             },
           ),

@@ -18,9 +18,9 @@ class _TabPaginationState {
   bool hasNext = true;
   bool isLoading = false;
   String? error;
-  
+
   _TabPaginationState();
-  
+
   _TabPaginationState copyWith({
     int? page,
     int? limit,
@@ -39,7 +39,7 @@ class _TabPaginationState {
     newState.error = clearError ? null : (error ?? this.error);
     return newState;
   }
-  
+
   _TabPaginationState reset() {
     final newState = _TabPaginationState();
     newState.page = 1;
@@ -50,7 +50,7 @@ class _TabPaginationState {
     newState.error = null;
     return newState;
   }
-  
+
   bool get canLoadMore => hasNext && !isLoading;
 }
 
@@ -62,7 +62,7 @@ class ProfileController {
   final _TabPaginationState _allTabState = _TabPaginationState();
   final _TabPaginationState _trendingTabState = _TabPaginationState();
   final _TabPaginationState _likedTabState = _TabPaginationState();
-  
+
   /// Bumped when tab post lists / paging state change so the grid can rebuild
   /// without tying pagination to the full-screen loading flag.
   final ValueNotifier<int> gridRevision = ValueNotifier(0);
@@ -72,15 +72,14 @@ class ProfileController {
   /// After gateway/timeouts, block rapid re-fetch (scroll spam).
   DateTime? _profileFetchBackoffUntil;
 
-  ProfileController({
-    ProfileRepository? repository,
-    PostService? postService,
-  })  : _repository = repository ?? ProfileRepository(),
-        _postService = postService ?? PostService();
+  ProfileController({ProfileRepository? repository, PostService? postService})
+    : _repository = repository ?? ProfileRepository(),
+      _postService = postService ?? PostService();
 
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
-  final ValueNotifier<ProfileStatsModel> statsNotifier =
-      ValueNotifier(const ProfileStatsModel.empty());
+  final ValueNotifier<ProfileStatsModel> statsNotifier = ValueNotifier(
+    const ProfileStatsModel.empty(),
+  );
   final ValueNotifier<List<Post>> postsNotifier = ValueNotifier(const []);
 
   /// Rebuild scrollable profile content (stats + grid). Omits [isLoading] so
@@ -113,17 +112,13 @@ class ProfileController {
     if (_lastLoadMoreRequestAt != null &&
         now.difference(_lastLoadMoreRequestAt!) <
             const Duration(milliseconds: 550)) {
-      debugPrint(
-        '⏳ [ProfileController] loadMore throttled tab=$tabIndex',
-      );
+      debugPrint('⏳ [ProfileController] loadMore throttled tab=$tabIndex');
       return;
     }
     _lastLoadMoreRequestAt = now;
     if (_profileFetchBackoffUntil != null &&
         now.isBefore(_profileFetchBackoffUntil!)) {
-      debugPrint(
-        '⏳ [ProfileController] loadMore skipped (backoff after 5xx)',
-      );
+      debugPrint('⏳ [ProfileController] loadMore skipped (backoff after 5xx)');
       return;
     }
     debugPrint(
@@ -136,17 +131,11 @@ class ProfileController {
     bool showLoading = true,
     String reason = 'initial_load',
   }) {
-    return _refreshProfileData(
-      showLoading: showLoading,
-      reason: reason,
-    );
+    return _refreshProfileData(showLoading: showLoading, reason: reason);
   }
 
   Future<void> refreshCounts({String reason = 'manual_refresh'}) {
-    return _refreshProfileData(
-      showLoading: false,
-      reason: reason,
-    );
+    return _refreshProfileData(showLoading: false, reason: reason);
   }
 
   Future<void> _refreshProfileData({
@@ -175,9 +164,7 @@ class ProfileController {
       debugPrint(
         '📦 [ProfileController] raw profile API keys: ${userData.keys.toList()}',
       );
-      debugPrint(
-        '📦 [ProfileController] raw profile API data: $userData',
-      );
+      debugPrint('📦 [ProfileController] raw profile API data: $userData');
 
       final userPayload = _extractUserPayload(userData);
       debugPrint(
@@ -193,7 +180,7 @@ class ProfileController {
       debugPrint(
         '📦 [ProfileController] parsed profile: username=${profile.username}, fullName=${profile.fullName}',
       );
-      
+
       debugPrint(
         '📦 [ProfileController] creating ProfileStatsModel from userData...',
       );
@@ -205,9 +192,7 @@ class ProfileController {
       if (_disposed) return;
       user = profile;
       statsNotifier.value = stats;
-      debugPrint(
-        '📦 [ProfileController] updated user and statsNotifier',
-      );
+      debugPrint('📦 [ProfileController] updated user and statsNotifier');
 
       await _hydratePostsAfterProfileLoad(userData, profile);
       if (_disposed) return;
@@ -229,10 +214,7 @@ class ProfileController {
     if (queued != null && !_disposed) {
       _pendingRefreshReason = null;
       debugPrint('🔄 Processing queued refresh: $queued');
-      await _refreshProfileData(
-        showLoading: false,
-        reason: queued,
-      );
+      await _refreshProfileData(showLoading: false, reason: queued);
     }
   }
 
@@ -266,68 +248,14 @@ class ProfileController {
   }
 
   /// Reads post arrays from the profile payload (root or `data`) when present.
-  List<Post>? _tryParsePostLists(
-    Map<String, dynamic> root,
-    List<String> candidateKeys,
-  ) {
-    debugPrint('ð [ProfileController] _tryParsePostLists searching for: $candidateKeys');
-    debugPrint('ð [ProfileController] _tryParsePostLists root keys: ${root.keys.toList()}');
-    
-    final layers = <Map<String, dynamic>>[
-      root,
-      if (root['data'] is Map)
-        Map<String, dynamic>.from(root['data'] as Map),
-    ];
-    
-    for (int layerIndex = 0; layerIndex < layers.length; layerIndex++) {
-      final map = layers[layerIndex];
-      final layerName = layerIndex == 0 ? 'root' : 'data';
-      debugPrint('ð [ProfileController] checking $layerName layer with keys: ${map.keys.toList()}');
-      
-      for (final key in candidateKeys) {
-        debugPrint('ð [ProfileController] looking for key: "$key" in $layerName');
-        if (!map.containsKey(key)) {
-          debugPrint('ð [ProfileController] key "$key" not found in $layerName');
-          continue;
-        }
-        
-        final raw = map[key];
-        debugPrint('ð [ProfileController] found key "$key" with type: ${raw.runtimeType} and value: $raw');
-        
-        if (raw is! List) {
-          debugPrint('ð [ProfileController] key "$key" is not a List, skipping');
-          continue;
-        }
-        
-        try {
-          debugPrint('ð [ProfileController] parsing ${raw.length} items from key "$key"');
-          final parsed = raw
-              .map((e) => Post.fromJson(Map<String, dynamic>.from(e as Map)))
-              .toList();
-          debugPrint(
-            'â [ProfileController] SUCCESS: parsed ${parsed.length} posts from key "$key"',
-          );
-          
-          // Log first few posts for debugging
-          for (int i = 0; i < parsed.length && i < 3; i++) {
-            final post = parsed[i];
-            debugPrint('ð [ProfileController] Post $i: id=${post.id}, userId=${post.userId}, username=${post.username}, media=${post.media}');
-          }
-          
-          return parsed;
-        } catch (e) {
-          debugPrint('â [ProfileController] ERROR parsing list "$key": $e');
-        }
-      }
-    }
-    
-    debugPrint('â [ProfileController] NO POSTS FOUND in any candidate keys');
-    return null;
-  }
 
-  void _seedTabFromProfilePayload(int tabIndex, List<Post> posts, bool hasNext) {
+  void _seedTabFromProfilePayload(
+    int tabIndex,
+    List<Post> posts,
+    bool hasNext,
+  ) {
     if (_disposed) return;
-    
+
     final cleared = _getTabState(tabIndex).reset();
     final nextPage = posts.isEmpty ? 1 : (hasNext ? 2 : 1);
     _updateTabState(
@@ -340,8 +268,10 @@ class ProfileController {
         clearError: true,
       ),
     );
-    
-    debugPrint('â [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext');
+
+    debugPrint(
+      'â [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext',
+    );
   }
 
   Future<void> _hydratePostsAfterProfileLoad(
@@ -349,77 +279,70 @@ class ProfileController {
     ProfileModel profile,
   ) async {
     if (_disposed) return;
-    debugPrint(
-      '🔄 [ProfileController] hydrate posts (profile API + feed fallback)',
-    );
 
-    final tab0 = _tryParsePostLists(raw, const [
-      'all_posts',
-      'allPosts',
-      'posts',
-      'user_posts',
-      'userPosts',
-    ]);
-    final tab1 = _tryParsePostLists(raw, const [
-      'trending_posts',
-      'trendingPosts',
-    ]);
-    final tab2 = _tryParsePostLists(raw, const [
-      'liked_posts',
-      'likedPosts',
-    ]);
+    debugPrint('🔄 [ProfileController] hydrate posts (FIXED API PARSING)');
 
-    if (tab0 != null) {
-      _seedTabFromProfilePayload(
-        0,
-        tab0,
-        _parseHasNextFromResponse(raw, 0),
-      );
+    final postsData = raw['data']?['posts'] ?? raw['posts'];
+
+    bool apiParsed = false;
+
+    if (postsData != null && postsData is Map) {
+      try {
+        // ✅ ALL
+        final allList = postsData['all']?['results'] ?? [];
+        _seedTabFromProfilePayload(
+          0,
+          (allList as List).map((e) => Post.fromJson(e)).toList(),
+          postsData['all']?['has_next'] ?? false,
+        );
+
+        // ✅ TRENDING
+        final trendingList = postsData['trending']?['results'] ?? [];
+        _seedTabFromProfilePayload(
+          1,
+          (trendingList as List).map((e) => Post.fromJson(e)).toList(),
+          postsData['trending']?['has_next'] ?? false,
+        );
+
+        // ✅ LIKED
+        final likedList = postsData['liked']?['results'] ?? [];
+        _seedTabFromProfilePayload(
+          2,
+          (likedList as List).map((e) => Post.fromJson(e)).toList(),
+          postsData['liked']?['has_next'] ?? false,
+        );
+
+        apiParsed = true;
+        debugPrint('✅ [ProfileController] API posts parsed correctly');
+      } catch (e) {
+        debugPrint('❌ API parsing failed: $e');
+      }
     }
 
-    if (tab1 != null) {
-      _seedTabFromProfilePayload(
-        1,
-        tab1,
-        _parseHasNextFromResponse(raw, 1),
-      );
-    }
-
-    if (tab2 != null) {
-      _seedTabFromProfilePayload(
-        2,
-        tab2,
-        _parseHasNextFromResponse(raw, 2),
-      );
-    }
-
-    if (tab0 == null) {
+    // ❗ fallback only if API failed
+    if (!apiParsed) {
+      debugPrint('⚠️ Using fallback (own posts)');
       final own = await _fetchOwnPosts(profile);
       if (_disposed) return;
       _seedTabFromProfilePayload(0, own, false);
-      debugPrint(
-        '📌 [ProfileController] All tab: no API list keys, used feed -> ${own.length}',
-      );
     }
 
+    // ensure other tabs load if empty
     for (final i in [1, 2]) {
       if (_disposed) return;
       if (_getTabState(i).posts.isEmpty) {
-        try {
-          await loadPostsForTab(i, isRefresh: true);
-        } catch (e) {
-          debugPrint('⚠️ [ProfileController] tab $i API load skipped: $e');
-        }
+        await loadPostsForTab(i, isRefresh: true);
       }
     }
 
     if (_disposed) return;
+
     postsNotifier.value = List<Post>.from(_getTabState(0).posts);
+
     debugPrint(
-      '📊 [ProfileController] postsNotifier (All) count: ${postsNotifier.value.length}',
-    );
-    debugPrint(
-      '📊 [ProfileController] FINAL STATE - User: ${user?.username}, Stats: subscribers=${statsNotifier.value.subscribersCount}, likes=${statsNotifier.value.likesCount}, videos=${statsNotifier.value.videosCount}',
+      '📊 FINAL: All=${_allTabState.posts.length}, '
+      'Trending=${_trendingTabState.posts.length}, '
+      'Liked=${_likedTabState.posts.length}',
     );
   }
 
@@ -435,10 +358,14 @@ class ProfileController {
   /// Get pagination state for specific tab
   _TabPaginationState _getTabState(int tabIndex) {
     switch (tabIndex) {
-      case 0: return _allTabState;
-      case 1: return _trendingTabState;
-      case 2: return _likedTabState;
-      default: return _allTabState;
+      case 0:
+        return _allTabState;
+      case 1:
+        return _trendingTabState;
+      case 2:
+        return _likedTabState;
+      default:
+        return _allTabState;
     }
   }
 
@@ -446,7 +373,7 @@ class ProfileController {
   Future<void> loadPostsForTab(int tabIndex, {bool isRefresh = false}) async {
     if (_disposed) return;
     final currentState = _getTabState(tabIndex);
-    
+
     // Prevent duplicate calls
     if (currentState.isLoading && !isRefresh) {
       debugPrint('⏳ Tab $tabIndex already loading, skipping request');
@@ -459,10 +386,9 @@ class ProfileController {
       _updateTabState(tabIndex, resetState);
     }
 
-    final updatedState = _getTabState(tabIndex).copyWith(
-      isLoading: true,
-      clearError: true,
-    );
+    final updatedState = _getTabState(
+      tabIndex,
+    ).copyWith(isLoading: true, clearError: true);
     _updateTabState(tabIndex, updatedState);
 
     try {
@@ -475,7 +401,7 @@ class ProfileController {
 
       // Build query parameters based on tab
       final queryParams = _buildQueryParams(tabIndex, updatedState);
-      
+
       // Call API with pagination
       final response = await _repository.fetchProfileData(
         allPage: queryParams['allPage'],
@@ -522,18 +448,19 @@ class ProfileController {
       );
 
       _profileFetchBackoffUntil = null;
-
     } catch (e) {
       if (e is DioException) {
         final code = e.response?.statusCode;
-        final transient = (code != null && {408, 502, 503, 504}.contains(code)) ||
+        final transient =
+            (code != null && {408, 502, 503, 504}.contains(code)) ||
             e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
             e.type == DioExceptionType.sendTimeout ||
             e.type == DioExceptionType.connectionError;
         if (transient) {
-          _profileFetchBackoffUntil =
-              DateTime.now().add(const Duration(seconds: 12));
+          _profileFetchBackoffUntil = DateTime.now().add(
+            const Duration(seconds: 12),
+          );
           debugPrint(
             '⚠️ [ProfileController] tab=$tabIndex profile_data '
             'transient failure (HTTP $code / ${e.type}). '
@@ -596,9 +523,11 @@ class ProfileController {
   /// Load more posts for current tab (infinite scroll)
   Future<void> loadMorePosts(int tabIndex) async {
     final currentState = _getTabState(tabIndex);
-    
+
     if (!currentState.canLoadMore) {
-      debugPrint('🚫 Cannot load more posts for tab $tabIndex: hasNext=${currentState.hasNext}, isLoading=${currentState.isLoading}');
+      debugPrint(
+        '🚫 Cannot load more posts for tab $tabIndex: hasNext=${currentState.hasNext}, isLoading=${currentState.isLoading}',
+      );
       return;
     }
 
@@ -614,28 +543,28 @@ class ProfileController {
   Map<String, int?> _buildQueryParams(int tabIndex, _TabPaginationState state) {
     switch (tabIndex) {
       case 0: // All tab
-        return {
-          'allPage': state.page,
-          'allLimit': state.limit,
-        };
+        return {'allPage': state.page, 'allLimit': state.limit};
       case 1: // Trending tab
-        return {
-          'trendingPage': state.page,
-          'trendingLimit': state.limit,
-        };
+        return {'trendingPage': state.page, 'trendingLimit': state.limit};
       case 2: // Liked tab
-        return {
-          'likedPage': state.page,
-          'likedLimit': state.limit,
-        };
+        return {'likedPage': state.page, 'likedLimit': state.limit};
       default:
         return {};
     }
   }
 
   /// Parse posts from API response based on tab
-  List<Post> _parsePostsFromResponse(Map<String, dynamic> response, int tabIndex) {
+  List<Post> _parsePostsFromResponse(
+    Map<String, dynamic> response,
+    int tabIndex,
+  ) {
     try {
+      final tabEnvelope = _postsEnvelopeForTab(response, tabIndex);
+      final tabResults = tabEnvelope?['results'];
+      if (tabResults is List) {
+        return _parsePostList(tabResults);
+      }
+
       final keys = <String>[
         _getPostsKeyForTab(tabIndex),
         ..._alternatePostsKeys(tabIndex),
@@ -649,17 +578,11 @@ class ProfileController {
         for (final postsKey in keys) {
           final postsData = map[postsKey];
           if (postsData is List) {
-            return (postsData)
-                .map((item) =>
-                    Post.fromJson(Map<String, dynamic>.from(item as Map)))
-                .toList();
+            return _parsePostList(postsData);
           }
         }
         if (tabIndex == 0 && map['posts'] is List) {
-          return (map['posts'] as List)
-              .map((item) =>
-                  Post.fromJson(Map<String, dynamic>.from(item as Map)))
-              .toList();
+          return _parsePostList(map['posts'] as List);
         }
       }
       return [];
@@ -667,6 +590,40 @@ class ProfileController {
       debugPrint('❌ Error parsing posts for tab $tabIndex: $e');
       return [];
     }
+  }
+
+  List<Post> _parsePostList(List<dynamic> rawPosts) {
+    return rawPosts
+        .whereType<Map>()
+        .map((item) => Post.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  Map<String, dynamic>? _postsEnvelopeForTab(
+    Map<String, dynamic> response,
+    int tabIndex,
+  ) {
+    final tabKey = switch (tabIndex) {
+      0 => 'all',
+      1 => 'trending',
+      2 => 'liked',
+      _ => '',
+    };
+    if (tabKey.isEmpty) return null;
+
+    final data = _nestedMap(response['data']);
+    final postRoots = <Map<String, dynamic>?>[
+      _nestedMap(response['posts']),
+      _nestedMap(data?['posts']),
+    ];
+
+    for (final postsRoot in postRoots) {
+      if (postsRoot == null) continue;
+      final envelope = _nestedMap(postsRoot[tabKey]);
+      if (envelope != null) return envelope;
+    }
+
+    return null;
   }
 
   List<String> _alternatePostsKeys(int tabIndex) {
@@ -685,6 +642,18 @@ class ProfileController {
   /// Parse has_next from API response based on tab
   bool _parseHasNextFromResponse(Map<String, dynamic> response, int tabIndex) {
     try {
+      final tabEnvelope = _postsEnvelopeForTab(response, tabIndex);
+      final envelopeHasNext =
+          tabEnvelope?['has_next'] ?? tabEnvelope?['hasNext'];
+      if (envelopeHasNext is bool) return envelopeHasNext;
+      if (envelopeHasNext is int) return envelopeHasNext == 1;
+      if (envelopeHasNext is String) {
+        return envelopeHasNext.toLowerCase() == 'true';
+      }
+      if (tabEnvelope != null && tabEnvelope.containsKey('next')) {
+        return tabEnvelope['next'] != null;
+      }
+
       bool? read(Map<String, dynamic> map) {
         final hasNextKey = _getHasNextKeyForTab(tabIndex);
         final keys = <String>[
@@ -722,20 +691,28 @@ class ProfileController {
   /// Get posts key for specific tab
   String _getPostsKeyForTab(int tabIndex) {
     switch (tabIndex) {
-      case 0: return 'all_posts';
-      case 1: return 'trending_posts';
-      case 2: return 'liked_posts';
-      default: return 'posts';
+      case 0:
+        return 'all_posts';
+      case 1:
+        return 'trending_posts';
+      case 2:
+        return 'liked_posts';
+      default:
+        return 'posts';
     }
   }
 
   /// Get has_next key for specific tab
   String _getHasNextKeyForTab(int tabIndex) {
     switch (tabIndex) {
-      case 0: return 'all_has_next';
-      case 1: return 'trending_has_next';
-      case 2: return 'liked_has_next';
-      default: return 'has_next';
+      case 0:
+        return 'all_has_next';
+      case 1:
+        return 'trending_has_next';
+      case 2:
+        return 'liked_has_next';
+      default:
+        return 'has_next';
     }
   }
 
@@ -788,7 +765,7 @@ class ProfileController {
 
   /// Check if tab can load more posts
   bool canLoadMoreForTab(int tabIndex) {
-    return _getTabState(tabIndex).canLoadMore;
+    return _getTabState(tabIndex).hasNext;
   }
 
   /// Get current page for tab

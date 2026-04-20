@@ -17,22 +17,13 @@ class ProfileGrid extends StatelessWidget {
 
   List<Post> _postsForTab() {
     final fromApi = controller.getPostsForTab(selectedTab);
-    if (selectedTab == 0) {
-      return fromApi;
-    }
-    if (selectedTab == 1) {
-      if (fromApi.isNotEmpty) return fromApi;
-      final all = controller.getPostsForTab(0);
-      final hot = all.where((p) => p.likesCount > 10).toList();
-      return hot.isNotEmpty ? hot : all;
-    }
-    if (fromApi.isNotEmpty) return fromApi;
-    return controller.getPostsForTab(0).where((p) => p.isLiked).toList();
+    return fromApi;
   }
 
   /// Small bottom spinner while the next page loads (non-blocking).
   Widget? _pagingFooter() {
     if (!controller.isLoadingTab(selectedTab)) return null;
+    if (!controller.canLoadMoreForTab(selectedTab)) return null;
     final n = _postsForTab().length;
     if (n == 0) return null;
     return Padding(

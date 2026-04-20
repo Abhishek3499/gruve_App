@@ -5,14 +5,14 @@ import 'package:gruve_app/screens/auth/token_storage.dart';
 
 class ProfileService {
   ProfileService()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: dotenv.env['BASE_URL']!,
-            connectTimeout: const Duration(seconds: 10),
-            receiveTimeout: const Duration(seconds: 25),
-            sendTimeout: const Duration(seconds: 10),
-          ),
-        );
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: dotenv.env['BASE_URL']!,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 25),
+          sendTimeout: const Duration(seconds: 10),
+        ),
+      );
 
   final Dio _dio;
 
@@ -36,7 +36,7 @@ class ProfileService {
     int? likedLimit,
   }) async {
     debugPrint(" Profile Count API Called");
-    debugPrint(" Endpoint: /api/v1/user/profile_data/");
+    debugPrint(" Endpoint: user/profile_data/");
 
     final baseUrl = dotenv.env['BASE_URL']!;
     debugPrint("[ProfileService] baseUrl: $baseUrl");
@@ -64,7 +64,9 @@ class ProfileService {
     const maxAttempts = 2;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        debugPrint("[ProfileService] Attempt $attempt/$maxAttempts - Making API call...");
+        debugPrint(
+          "[ProfileService] Attempt $attempt/$maxAttempts - Making API call...",
+        );
 
         final response = await _dio.get(
           "user/profile_data/",
@@ -74,30 +76,39 @@ class ProfileService {
 
         debugPrint(" Status Code: ${response.statusCode}");
         debugPrint(" Response received successfully");
-        
+
         // Enhanced response logging
-        debugPrint("🔍 [ProfileService] RAW RESPONSE TYPE: ${response.data.runtimeType}");
+        debugPrint(
+          "🔍 [ProfileService] RAW RESPONSE TYPE: ${response.data.runtimeType}",
+        );
         if (response.data != null) {
           if (response.data is Map) {
             final responseMap = Map<String, dynamic>.from(response.data as Map);
-            debugPrint("🔍 [ProfileService] RESPONSE KEYS: ${responseMap.keys.toList()}");
+            debugPrint(
+              "🔍 [ProfileService] RESPONSE KEYS: ${responseMap.keys.toList()}",
+            );
             debugPrint("🔍 [ProfileService] FULL RESPONSE: $responseMap");
-            
+
             // Log specific count-related fields
-            final countFields = responseMap.keys.where((key) => 
-              key.toLowerCase().contains('count') ||
-              key.toLowerCase().contains('subscriber') ||
-              key.toLowerCase().contains('follower') ||
-              key.toLowerCase().contains('like') ||
-              key.toLowerCase().contains('video') ||
-              key.toLowerCase().contains('post')
-            ).toList();
-            debugPrint("🔍 [ProfileService] COUNT-RELATED FIELDS: $countFields");
-            
+            final countFields = responseMap.keys
+                .where(
+                  (key) =>
+                      key.toLowerCase().contains('count') ||
+                      key.toLowerCase().contains('subscriber') ||
+                      key.toLowerCase().contains('follower') ||
+                      key.toLowerCase().contains('like') ||
+                      key.toLowerCase().contains('video') ||
+                      key.toLowerCase().contains('post'),
+                )
+                .toList();
+            debugPrint(
+              "🔍 [ProfileService] COUNT-RELATED FIELDS: $countFields",
+            );
+
             for (final field in countFields) {
               debugPrint("🔍 [ProfileService] $field: ${responseMap[field]}");
             }
-            
+
             return responseMap;
           } else {
             debugPrint("🔍 [ProfileService] RESPONSE DATA: ${response.data}");
@@ -133,13 +144,19 @@ class ProfileService {
         if (e.type == DioExceptionType.connectionError) {
           debugPrint("[ProfileService] CONNECTION ERROR DETAILS:");
           debugPrint("  - Base URL: $baseUrl");
-          debugPrint("  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}");
+          debugPrint(
+            "  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}",
+          );
           debugPrint("  - Network available: Checking...");
 
           // Check if it's a host lookup issue
           if (e.message?.contains('Failed host lookup') == true) {
-            debugPrint("[ProfileService] HOST LOOKUP FAILED - Server may be down or URL incorrect");
-            debugPrint("[ProfileService] Please check: 1) Server is running 2) URL is correct 3) Internet connection");
+            debugPrint(
+              "[ProfileService] HOST LOOKUP FAILED - Server may be down or URL incorrect",
+            );
+            debugPrint(
+              "[ProfileService] Please check: 1) Server is running 2) URL is correct 3) Internet connection",
+            );
           }
         }
 

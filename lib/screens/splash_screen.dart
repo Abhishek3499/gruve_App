@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/intro/intro_screen.dart';
+import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -33,30 +35,61 @@ class _SplashScreenState extends State<SplashScreen> {
           ..play();
       });
 
-    Timer(const Duration(seconds: 3), () {
+    Timer(const Duration(seconds: 3), () async {
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          opaque: false,
-          transitionDuration: const Duration(milliseconds: 280),
-          reverseTransitionDuration: const Duration(milliseconds: 280),
-          pageBuilder: (_, _, _) => const IntroScreen(),
-          transitionsBuilder: (_, animation, _, child) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1.0, 0.0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOut,
-              )),
-              child: child,
-            );
-          },
-        ),
-      );
+      // Check if user is already logged in
+      final accessToken = await TokenStorage.getAccessToken();
+      
+      if (accessToken != null && accessToken.isNotEmpty) {
+        // User is logged in, navigate to Home screen
+        debugPrint("🔑 Token found, navigating to Home screen");
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            opaque: false,
+            transitionDuration: const Duration(milliseconds: 280),
+            reverseTransitionDuration: const Duration(milliseconds: 280),
+            pageBuilder: (_, _, _) => const HomeScreen(),
+            transitionsBuilder: (_, animation, _, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOut,
+                )),
+                child: child,
+              );
+            },
+          ),
+        );
+      } else {
+        // No token found, navigate to Intro screen
+        debugPrint("🔑 No token found, navigating to Intro screen");
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            opaque: false,
+            transitionDuration: const Duration(milliseconds: 280),
+            reverseTransitionDuration: const Duration(milliseconds: 280),
+            pageBuilder: (_, _, _) => const IntroScreen(),
+            transitionsBuilder: (_, animation, _, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOut,
+                )),
+                child: child,
+              );
+            },
+          ),
+        );
+      }
     });
   }
 

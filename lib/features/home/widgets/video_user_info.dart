@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music_screen/music_screen.dart';
-import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 
 import '../controllers/subscribe_controller.dart';
@@ -19,6 +18,7 @@ class VideoUserInfo extends StatefulWidget {
   final String? profilePicture;
   final bool initialIsSubscribed;
   final SubscribeController subscribeController;
+  final VoidCallback onOwnProfileTap;
 
   const VideoUserInfo({
     super.key,
@@ -30,6 +30,7 @@ class VideoUserInfo extends StatefulWidget {
     this.profilePicture,
     this.initialIsSubscribed = false,
     required this.subscribeController,
+    required this.onOwnProfileTap,
   });
 
   @override
@@ -83,10 +84,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
     }
 
     if (resolution.isOwnProfile) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-      );
+      widget.onOwnProfileTap();
       return;
     }
 
