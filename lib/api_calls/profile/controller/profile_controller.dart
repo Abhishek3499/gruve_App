@@ -158,20 +158,12 @@ class ProfileController {
 
     try {
       debugPrint('🔄 Profile refresh started. reason=$reason');
-
       final userData = await _repository.fetchProfileData();
       if (_disposed) return;
-      debugPrint(
-        '📦 [ProfileController] raw profile API keys: ${userData.keys.toList()}',
-      );
-      debugPrint('📦 [ProfileController] raw profile API data: $userData');
 
       final userPayload = _extractUserPayload(userData);
       debugPrint(
         '📦 [ProfileController] extracted user payload keys: ${userPayload.keys.toList()}',
-      );
-      debugPrint(
-        '📦 [ProfileController] extracted user payload data: $userPayload',
       );
 
       final profile = ProfileModel.fromJson(
@@ -182,9 +174,12 @@ class ProfileController {
       );
 
       debugPrint(
-        '📦 [ProfileController] creating ProfileStatsModel from userData...',
+        '📦 [ProfileController] creating ProfileStatsModel...',
       );
-      final stats = ProfileStatsModel.fromJson(userData);
+      final statsPayload = _nestedMap(userPayload['stats']) ?? userPayload;
+      final stats = ProfileStatsModel.fromJson(
+        statsPayload.isNotEmpty ? statsPayload : userData,
+      );
       debugPrint(
         '📦 [ProfileController] parsed stats: subscribers=${stats.subscribersCount}, likes=${stats.likesCount}, videos=${stats.videosCount}',
       );
@@ -193,6 +188,9 @@ class ProfileController {
       user = profile;
       statsNotifier.value = stats;
       debugPrint('📦 [ProfileController] updated user and statsNotifier');
+
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+      if (_disposed) return;
 
       await _hydratePostsAfterProfileLoad(userData, profile);
       if (_disposed) return;
@@ -305,11 +303,12 @@ class ProfileController {
         );
 
         // ✅ LIKED
-        final likedList = postsData['liked']?['results'] ?? [];
+        final likedPosts = postsData['liked'] ?? postsData['likes'];
+        final likedList = likedPosts?['results'] ?? [];
         _seedTabFromProfilePayload(
           2,
           (likedList as List).map((e) => Post.fromJson(e)).toList(),
-          postsData['liked']?['has_next'] ?? false,
+          likedPosts?['has_next'] ?? false,
         );
 
         apiParsed = true;
@@ -603,13 +602,13 @@ class ProfileController {
     Map<String, dynamic> response,
     int tabIndex,
   ) {
-    final tabKey = switch (tabIndex) {
-      0 => 'all',
-      1 => 'trending',
-      2 => 'liked',
-      _ => '',
+    final tabKeys = switch (tabIndex) {
+      0 => const ['all'],
+      1 => const ['trending'],
+      2 => const ['liked', 'likes'],
+      _ => const <String>[],
     };
-    if (tabKey.isEmpty) return null;
+    if (tabKeys.isEmpty) return null;
 
     final data = _nestedMap(response['data']);
     final postRoots = <Map<String, dynamic>?>[
@@ -619,8 +618,10 @@ class ProfileController {
 
     for (final postsRoot in postRoots) {
       if (postsRoot == null) continue;
-      final envelope = _nestedMap(postsRoot[tabKey]);
-      if (envelope != null) return envelope;
+      for (final tabKey in tabKeys) {
+        final envelope = _nestedMap(postsRoot[tabKey]);
+        if (envelope != null) return envelope;
+      }
     }
 
     return null;

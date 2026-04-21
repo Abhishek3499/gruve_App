@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 
-class UserFilterTabs extends StatefulWidget {
-  const UserFilterTabs({super.key});
+class UserFilterTabs extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onTabSelected;
 
-  @override
-  State<UserFilterTabs> createState() => _UserFilterTabsState();
-}
-
-class _UserFilterTabsState extends State<UserFilterTabs> {
-  int selectedIndex = 0;
+  const UserFilterTabs({
+    super.key,
+    required this.selectedIndex,
+    required this.onTabSelected,
+  });
 
   Widget buildTab(String text, int index) {
     bool isSelected = selectedIndex == index;
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          selectedIndex = index;
-        });
+        onTabSelected(index);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
