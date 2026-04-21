@@ -2,22 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';
+import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/subscribe_button.dart';
 
 class UserProfileHeader extends StatelessWidget {
   final String displayName;
   final String username;
+  final String profileUserId;
   final String? profileImageUrl;
   final bool showSubscribeButton;
   final bool reserveSubscribeSpace;
+  final SubscribeController subscribeController;
+  final bool initialIsSubscribed;
 
   const UserProfileHeader({
     super.key,
     required this.displayName,
     required this.username,
+    required this.profileUserId,
     this.profileImageUrl,
     required this.showSubscribeButton,
+    required this.subscribeController,
+    this.initialIsSubscribed = false,
     this.reserveSubscribeSpace = false,
   });
 
@@ -112,7 +119,12 @@ class UserProfileHeader extends StatelessWidget {
                     Row(
                       children: [
                         if (showSubscribeButton) ...[
-                          const SubscribeButton(),
+                          SubscribeButton(
+                            userId: profileUserId,
+                            username: username,
+                            subscribeController: subscribeController,
+                            initialIsSubscribed: initialIsSubscribed,
+                          ),
                           const SizedBox(width: 21),
                         ] else if (reserveSubscribeSpace) ...[
                           const SizedBox(width: 132, height: 42),

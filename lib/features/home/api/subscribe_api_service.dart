@@ -13,6 +13,53 @@ class SubscribeApiService {
     _dio = Dio(BaseOptions(baseUrl: base));
   }
 
+  bool _extractSubscriptionState(
+    dynamic payload, {
+    required bool fallback,
+  }) {
+    return _findSubscriptionState(payload) ?? fallback;
+  }
+
+  bool? _findSubscriptionState(dynamic payload) {
+    if (payload is! Map) {
+      return null;
+    }
+
+    final map = Map<String, dynamic>.from(payload);
+    final directValue =
+        _asBool(map['is_subscribed']) ??
+        _asBool(map['is_following']) ??
+        _asBool(map['subscribed']) ??
+        _asBool(map['following']);
+    if (directValue != null) {
+      return directValue;
+    }
+
+    return _findSubscriptionState(map['data']);
+  }
+
+  bool? _asBool(dynamic value) {
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0') {
+        return false;
+      }
+    }
+
+    return null;
+  }
+
   /// Toggle subscription (subscribe/unsubscribe)
   /// Toggle subscription (subscribe/unsubscribe)
   Future<bool> toggleSubscription(String userId, bool isCurrentlySubscribed) async {
@@ -37,8 +84,10 @@ class SubscribeApiService {
       print("SUBSCRIBE API RESPONSE: ${response.data}");
       print("STATUS CODE: ${response.statusCode}");
 
-      // The new status should be !isCurrentlySubscribed if it succeeds, but we read the response
-      final isSubscribed = response.data['is_subscribed'] ?? !isCurrentlySubscribed;
+      final isSubscribed = _extractSubscriptionState(
+        response.data,
+        fallback: !isCurrentlySubscribed,
+      );
       print("SUBSCRIPTION STATUS: $isSubscribed");
 
       return isSubscribed;
@@ -83,7 +132,10 @@ class SubscribeApiService {
       print("SUBSCRIBE API RESPONSE: ${response.data}");
       print("STATUS CODE: ${response.statusCode}");
 
-      final isSubscribed = response.data['is_subscribed'] ?? false;
+      final isSubscribed = _extractSubscriptionState(
+        response.data,
+        fallback: false,
+      );
       print("SUBSCRIPTION STATUS: $isSubscribed");
 
       return isSubscribed;
@@ -115,7 +167,10 @@ class SubscribeApiService {
       print("UNSUBSCRIBE API RESPONSE: ${response.data}");
       print("STATUS CODE: ${response.statusCode}");
 
-      final isSubscribed = response.data['is_subscribed'] ?? false;
+      final isSubscribed = _extractSubscriptionState(
+        response.data,
+        fallback: false,
+      );
       print("SUBSCRIPTION STATUS: $isSubscribed");
 
       return isSubscribed;

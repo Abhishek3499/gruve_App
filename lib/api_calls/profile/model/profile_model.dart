@@ -5,12 +5,14 @@ class ProfileModel {
   final String fullName;
   final String username;
   final String profileImage;
+  final bool isFollowing;
 
   ProfileModel({
     required this.id,
     required this.fullName,
     required this.username,
     required this.profileImage,
+    this.isFollowing = false,
   });
 
   /// Overlays nested `data` / `user` / `profile` fields so top-level keys resolve.
@@ -78,16 +80,23 @@ class ProfileModel {
         flat['user_id']?.toString() ??
         flat['pk']?.toString() ??
         "";
+    final isFollowing = _pickBool(flat, const [
+      'is_following',
+      'is_subscribed',
+      'following',
+      'subscribed',
+    ]);
 
     final model = ProfileModel(
       id: id,
       fullName: fullName,
       username: username,
       profileImage: profileImage,
+      isFollowing: isFollowing,
     );
 
     debugPrint(
-      "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}",
+      "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}, isFollowing: ${model.isFollowing}",
     );
 
     return model;
@@ -103,5 +112,37 @@ class ProfileModel {
       }
     }
     return '';
+  }
+
+  static bool _pickBool(Map<String, dynamic> map, List<String> keys) {
+    for (final k in keys) {
+      final value = _toBool(map[k]);
+      if (value != null) {
+        return value;
+      }
+    }
+    return false;
+  }
+
+  static bool? _toBool(dynamic value) {
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0') {
+        return false;
+      }
+    }
+
+    return null;
   }
 }

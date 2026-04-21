@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/api_calls/user_profile/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
+import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/models/subscribe_model.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_filter_tabs.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
@@ -28,19 +30,55 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _isResolvingIdentity = true;
   int _selectedTab = 0;
   late final UserProfileController _profileController;
+  late final SubscribeController _subscribeController;
+  bool _didSeedSubscribeState = false;
 
   @override
   void initState() {
     super.initState();
     _profileController = UserProfileController(userId: widget.profileUserId);
+    _subscribeController = SubscribeController();
+    _profileController.contentListenable.addListener(_syncSubscribeState);
     _resolveIdentity();
     _profileController.fetchUser();
   }
 
   @override
   void dispose() {
+    _profileController.contentListenable.removeListener(_syncSubscribeState);
     _profileController.dispose();
     super.dispose();
+  }
+
+  void _syncSubscribeState() {
+    if (_didSeedSubscribeState) {
+      return;
+    }
+
+    final profile = _profileController.user;
+    if (profile == null) {
+      return;
+    }
+
+    final resolvedUserId = profile.id.isNotEmpty
+        ? profile.id
+        : widget.profileUserId;
+    final resolvedUsername = profile.username.isNotEmpty
+        ? profile.username
+        : _normalizedUsername;
+    if (resolvedUserId.isEmpty || resolvedUsername.isEmpty) {
+      return;
+    }
+
+    _subscribeController.addOrUpdateUser(
+      SubscribeModel(
+        userId: resolvedUserId,
+        username: resolvedUsername,
+        isSubscribed: profile.isFollowing,
+        subscribedAt: profile.isFollowing ? DateTime.now() : null,
+      ),
+    );
+    _didSeedSubscribeState = true;
   }
 
   Future<void> _resolveIdentity() async {
@@ -164,17 +202,41 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ],
                         ),
                       ),
-                      Column(
-                        children: [
-                          const SizedBox(height: 20),
-                          UserProfileHeader(
-                            displayName: widget.userName,
-                            username: _normalizedUsername,
-                            profileImageUrl: widget.profileImageUrl,
-                            showSubscribeButton: showSubscribeButton,
-                            reserveSubscribeSpace: _isResolvingIdentity,
-                          ),
-                        ],
+                      AnimatedBuilder(
+                        animation: _profileController.contentListenable,
+                        builder: (context, child) {
+                          final profile = _profileController.user;
+                          final resolvedUserId =
+                              (profile?.id.isNotEmpty ?? false)
+                              ? profile!.id
+                              : widget.profileUserId;
+                          final resolvedUsername =
+                              (profile?.username.isNotEmpty ?? false)
+                              ? profile!.username
+                              : _normalizedUsername;
+                          final initialIsSubscribed =
+                              _subscribeController
+                                  .getUserSubscribeModel(resolvedUserId)
+                                  ?.isSubscribed ??
+                              profile?.isFollowing ??
+                              false;
+
+                          return Column(
+                            children: [
+                              const SizedBox(height: 20),
+                              UserProfileHeader(
+                                displayName: widget.userName,
+                                username: resolvedUsername,
+                                profileUserId: resolvedUserId,
+                                profileImageUrl: widget.profileImageUrl,
+                                showSubscribeButton: showSubscribeButton,
+                                reserveSubscribeSpace: _isResolvingIdentity,
+                                subscribeController: _subscribeController,
+                                initialIsSubscribed: initialIsSubscribed,
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),

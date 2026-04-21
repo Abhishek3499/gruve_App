@@ -24,7 +24,6 @@ class _SubscribeButtonState extends State<SubscribeButton> {
   @override
   void initState() {
     super.initState();
-    // Initialize user if not already done
     if (widget.subscribeController.getUserSubscribeModel(widget.userId) == null) {
       widget.subscribeController.addOrUpdateUser(
         SubscribeModel(
@@ -36,13 +35,32 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     }
   }
 
+  void _showSubscriptionSnackBar(bool isSubscribed) {
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isSubscribed
+              ? 'Subscribed to ${widget.username}'
+              : 'Unsubscribed from ${widget.username}',
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: widget.subscribeController,
       builder: (context, child) {
-        final isSubscribed = widget.subscribeController.isUserSubscribed(widget.userId);
-        
+        final isSubscribed = widget.subscribeController.isUserSubscribed(
+          widget.userId,
+        );
+
         return SizedBox(
           height: 32,
           child: OutlinedButton(
@@ -55,35 +73,29 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
             onPressed: () async {
+              final optimisticStatus = !isSubscribed;
+              _showSubscriptionSnackBar(optimisticStatus);
+
               try {
-                final newSubscriptionStatus = await widget.subscribeController.toggleSubscription(widget.userId);
-                
-                // Securely check context mounted state to prevent deactivated widget lookup crash
-                if (!context.mounted) return;
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      newSubscriptionStatus ? 'Subscribed to ${widget.username}' 
-                                         : 'Unsubscribed from ${widget.username}',
-                    ),
-                    duration: const Duration(seconds: 2),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                await widget.subscribeController.toggleSubscription(
+                  widget.userId,
                 );
               } catch (e) {
-                print("❌ SUBSCRIPTION BUTTON ERROR: $e");
-                
+                print("âŒ SUBSCRIPTION BUTTON ERROR: $e");
+
                 if (!context.mounted) return;
 
-                String errorMessage = 'Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} ${widget.username}';
-                
+                String errorMessage =
+                    'Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} ${widget.username}';
+
                 if (e.toString().contains('subscribe to yourself')) {
                   errorMessage = 'You cannot subscribe to yourself';
-                } else if (e.toString().contains('405') || e.toString().contains('Method Not Allowed')) {
-                  errorMessage = 'Subscription service unavailable. Please try again later.';
+                } else if (e.toString().contains('405') ||
+                    e.toString().contains('Method Not Allowed')) {
+                  errorMessage =
+                      'Subscription service unavailable. Please try again later.';
                 }
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(errorMessage),

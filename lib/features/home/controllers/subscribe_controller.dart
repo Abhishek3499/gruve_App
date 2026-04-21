@@ -1,13 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
+
 import '../models/subscribe_model.dart';
 import '../services/subscribe_service.dart';
 
 class SubscribeController extends ChangeNotifier {
+  static final SubscribeController _instance = SubscribeController._internal();
+  factory SubscribeController() => _instance;
+  SubscribeController._internal();
+
   final SubscribeService _subscribeService = SubscribeService();
   final Map<String, SubscribeModel> _users = {};
+  final Map<String, bool> _pendingDesiredStates = {};
+  final Set<String> _syncingUsers = <String>{};
 
-  // Get subscription status for a user
   bool isUserSubscribed(String userId) {
     final localUser = _users[userId];
     if (localUser != null) {
@@ -17,150 +25,136 @@ class SubscribeController extends ChangeNotifier {
     return _subscribeService.isUserSubscribed(userId);
   }
 
-  // Get subscribe model for a user
   SubscribeModel? getUserSubscribeModel(String userId) {
     return _users[userId];
   }
 
-  // Add or update user
   void addOrUpdateUser(SubscribeModel user) {
-    _users[user.userId] = user;
-    _subscribeService.setSubscriptionStatus(user.userId, user.isSubscribed);
+    final existing = _users[user.userId];
+    final cachedStatus = _subscribeService.isUserSubscribed(user.userId);
+    final resolvedStatus =
+        existing?.isSubscribed ?? (cachedStatus || user.isSubscribed);
+    final resolvedUser = user.copyWith(
+      username: user.username.isNotEmpty
+          ? user.username
+          : (existing?.username ?? user.userId),
+      isSubscribed: resolvedStatus,
+      subscribedAt: resolvedStatus
+          ? (existing?.subscribedAt ?? user.subscribedAt ?? DateTime.now())
+          : null,
+    );
+
+    _users[user.userId] = resolvedUser;
+    _subscribeService.setSubscriptionStatus(user.userId, resolvedStatus);
     notifyListeners();
   }
 
-  // Toggle subscription (async)
+  void _applyLocalState(
+    String userId,
+    bool isSubscribed, {
+    String? username,
+    bool notify = true,
+  }) {
+    final existing = _users[userId];
+    final resolvedUsername = (username != null && username.isNotEmpty)
+        ? username
+        : (existing?.username ?? userId);
+
+    _users[userId] = SubscribeModel(
+      userId: userId,
+      username: resolvedUsername,
+      isSubscribed: isSubscribed,
+      subscribedAt: isSubscribed
+          ? (existing?.subscribedAt ?? DateTime.now())
+          : null,
+    );
+    _subscribeService.setSubscriptionStatus(userId, isSubscribed);
+
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _syncPendingState(String userId) async {
+    if (_syncingUsers.contains(userId)) {
+      return;
+    }
+
+    _syncingUsers.add(userId);
+
+    try {
+      while (true) {
+        final desiredState = _pendingDesiredStates.remove(userId);
+        if (desiredState == null) {
+          break;
+        }
+
+        try {
+          final serverState = desiredState
+              ? await _subscribeService.subscribeToUser(userId)
+              : await _subscribeService.unsubscribeFromUser(userId);
+
+          _applyLocalState(userId, serverState);
+          await ProfileCountRefreshBridge.notifyCountsChanged(
+            reason: desiredState ? 'user_subscribed' : 'user_unsubscribed',
+          );
+        } catch (e) {
+          print("ERROR SYNCING SUBSCRIPTION FOR $userId: $e");
+        }
+      }
+    } finally {
+      _syncingUsers.remove(userId);
+      if (_pendingDesiredStates.containsKey(userId)) {
+        unawaited(_syncPendingState(userId));
+      }
+    }
+  }
+
   Future<bool> toggleSubscription(String userId) async {
-    print("🔄 CONTROLLER TOGGLING SUBSCRIPTION FOR USER: $userId");
-    
-    // 1️⃣ OPTIMISTIC UI UPDATE
-    final wasSubscribed = isUserSubscribed(userId);
-    final optimisticStatus = !wasSubscribed;
-
-    if (_users.containsKey(userId)) {
-      final currentUser = _users[userId]!;
-      _users[userId] = currentUser.copyWith(
-        isSubscribed: optimisticStatus,
-        subscribedAt: optimisticStatus ? DateTime.now() : null,
-      );
-    }
-    notifyListeners(); // Force UI to rebuild immediately!
-    
-    try {
-      // 2️⃣ API CALL
-      final isSubscribed = await _subscribeService.toggleSubscription(userId);
-      
-      // 3️⃣ SERVER TRUTH UPDATE
-      if (_users.containsKey(userId)) {
-        final currentUser = _users[userId]!;
-        _users[userId] = currentUser.copyWith(
-          isSubscribed: isSubscribed,
-          subscribedAt: isSubscribed ? DateTime.now() : null,
-        );
-      }
-      
-      notifyListeners();
-      await ProfileCountRefreshBridge.notifyCountsChanged(
-        reason: 'subscription_toggled',
-      );
-      return isSubscribed;
-    } catch (e) {
-      print("❌ CONTROLLER ERROR TOGGLING SUBSCRIPTION FOR $userId: $e");
-      
-      // Removed automatic revert to keep the UI "optimistically successful" during demo
-      // or while backend endpoint is still being fully implemented.
-      
-      // Return the optimistic status so the UI thinks it succeeded
-      return optimisticStatus;
-    }
+    final optimisticStatus = !isUserSubscribed(userId);
+    _applyLocalState(userId, optimisticStatus);
+    _pendingDesiredStates[userId] = optimisticStatus;
+    unawaited(_syncPendingState(userId));
+    return optimisticStatus;
   }
 
-  // Subscribe to user (async)
   Future<bool> subscribeToUser(String userId) async {
-    print("📡 CONTROLLER SUBSCRIBING TO USER: $userId");
-    
-    try {
-      final isSubscribed = await _subscribeService.subscribeToUser(userId);
-      
-      if (_users.containsKey(userId)) {
-        final currentUser = _users[userId]!;
-        _users[userId] = currentUser.copyWith(
-          isSubscribed: true,
-          subscribedAt: DateTime.now(),
-        );
-        print("✅ UPDATED USER MODEL FOR $userId: subscribed=true");
-      }
-      
-      notifyListeners();
-      print("📢 NOTIFIED LISTENERS ABOUT SUBSCRIPTION");
-      await ProfileCountRefreshBridge.notifyCountsChanged(
-        reason: 'user_subscribed',
-      );
-      return isSubscribed;
-    } catch (e) {
-      print("❌ CONTROLLER ERROR SUBSCRIBING TO $userId: $e");
-      rethrow;
-    }
+    _applyLocalState(userId, true);
+    _pendingDesiredStates[userId] = true;
+    unawaited(_syncPendingState(userId));
+    return true;
   }
 
-  // Unsubscribe from user (async)
   Future<bool> unsubscribeFromUser(String userId) async {
-    print("🚫 CONTROLLER UNSUBSCRIBING FROM USER: $userId");
-    
-    try {
-      final isSubscribed = await _subscribeService.unsubscribeFromUser(userId);
-      
-      if (_users.containsKey(userId)) {
-        final currentUser = _users[userId]!;
-        _users[userId] = currentUser.copyWith(
-          isSubscribed: false,
-          subscribedAt: null,
-        );
-        print("✅ UPDATED USER MODEL FOR $userId: subscribed=false");
-      }
-      
-      notifyListeners();
-      print("📢 NOTIFIED LISTENERS ABOUT UNSUBSCRIPTION");
-      await ProfileCountRefreshBridge.notifyCountsChanged(
-        reason: 'user_unsubscribed',
-      );
-      return isSubscribed;
-    } catch (e) {
-      print("❌ CONTROLLER ERROR UNSUBSCRIBING FROM $userId: $e");
-      rethrow;
-    }
+    _applyLocalState(userId, false);
+    _pendingDesiredStates[userId] = false;
+    unawaited(_syncPendingState(userId));
+    return false;
   }
 
-  // Get all subscribed users
   Set<String> getSubscribedUsers() {
     return _subscribeService.getSubscribedUsers();
   }
 
-  // Get subscription count
   int getSubscriptionCount() {
     return _subscribeService.getSubscriptionCount();
   }
 
-  // Initialize users from video data
   void initializeUsers(List<Map<String, dynamic>> videoData) {
     for (final data in videoData) {
       final userId = (data['userId'] ?? data['username'] ?? '').toString();
       final username = (data['username'] ?? '').toString();
       final initialIsSubscribed = data['isSubscribed'] == true;
-      
+
       if (userId.isNotEmpty && username.isNotEmpty) {
-        _users[userId] = SubscribeModel(
-          userId: userId,
-          username: username,
-          isSubscribed:
-              _subscribeService.isUserSubscribed(userId) || initialIsSubscribed,
-        );
-        _subscribeService.setSubscriptionStatus(
-          userId,
-          _users[userId]!.isSubscribed,
+        addOrUpdateUser(
+          SubscribeModel(
+            userId: userId,
+            username: username,
+            isSubscribed: initialIsSubscribed,
+          ),
         );
       }
     }
-    notifyListeners();
   }
 }
