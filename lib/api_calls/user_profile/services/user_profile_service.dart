@@ -8,9 +8,9 @@ class UserProfileService {
     : _dio = Dio(
         BaseOptions(
           baseUrl: dotenv.env['BASE_URL']!,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 25),
-          sendTimeout: const Duration(seconds: 10),
+          connectTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 20),
         ),
       );
 
@@ -63,7 +63,7 @@ class UserProfileService {
     debugPrint("[UserProfileService] Query params: $queryParams");
     debugPrint("[UserProfileService] Full URL: $baseUrl/$endpoint");
 
-    const maxAttempts = 2;
+    const maxAttempts = 3;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         debugPrint(
@@ -103,7 +103,7 @@ class UserProfileService {
         debugPrint("  - Attempt: $attempt/$maxAttempts");
 
         if (transient && attempt < maxAttempts) {
-          final waitMs = 200 * attempt;
+          final waitMs = 500 * attempt;
           debugPrint(
             " [UserProfileService] Transient failure - retry in ${waitMs}ms",
           );

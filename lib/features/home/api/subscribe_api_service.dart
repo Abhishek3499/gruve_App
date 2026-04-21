@@ -3,21 +3,80 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
 class SubscribeApiService {
+  static const String _toggleEndpoint = 'profile/subscribe/toggle';
+
   late final Dio _dio;
+
+  void _log(String message) {
+    print('🌐 [SubscribeApiService] $message');
+  }
 
   SubscribeApiService() {
     var base = dotenv.env['BASE_URL']!.trim();
     if (!base.endsWith('/')) {
       base = '$base/';
     }
-    _dio = Dio(BaseOptions(baseUrl: base));
+
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: base,
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 45),
+        sendTimeout: const Duration(seconds: 20),
+      ),
+    );
+    _log('Initialized with baseUrl=$base');
   }
 
-  bool _extractSubscriptionState(
-    dynamic payload, {
-    required bool fallback,
-  }) {
-    return _findSubscriptionState(payload) ?? fallback;
+  Future<bool> toggleSubscription(String userId) async {
+    try {
+      _log('🚀 toggleSubscription start for userId=$userId');
+      final token = await TokenStorage.getAccessToken();
+      final tokenPreview = token == null || token.isEmpty
+          ? 'null_or_empty'
+          : '${token.substring(0, token.length > 12 ? 12 : token.length)}...';
+      _log('🔐 token preview=$tokenPreview');
+      _log('📡 POST $_toggleEndpoint');
+      _log('📦 request body={user_id: $userId}');
+
+      final response = await _dio.post(
+        _toggleEndpoint,
+        data: {'user_id': userId},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+        ),
+      );
+
+      _log('✅ response status=${response.statusCode}');
+      _log('🧾 response data=${response.data}');
+      final isFollowing = _extractSubscriptionState(response.data);
+      _log('🎯 parsed subscription state=$isFollowing');
+      return isFollowing;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      final responseData = e.response?.data;
+      _log('❌ DioException type=${e.type}');
+      _log('❌ statusCode=$statusCode');
+      _log('❌ responseData=$responseData');
+      _log('❌ message=${e.message}');
+
+      if (statusCode == 400 &&
+          responseData is Map &&
+          responseData['message']?.toString().contains(
+                'subscribe to yourself',
+              ) ==
+              true) {
+        throw Exception('You cannot subscribe to yourself');
+      }
+
+      rethrow;
+    }
+  }
+
+  bool _extractSubscriptionState(dynamic payload) {
+    final result = _findSubscriptionState(payload) ?? false;
+    _log('🧠 _extractSubscriptionState result=$result');
+    return result;
   }
 
   bool? _findSubscriptionState(dynamic payload) {
@@ -27,14 +86,16 @@ class SubscribeApiService {
 
     final map = Map<String, dynamic>.from(payload);
     final directValue =
-        _asBool(map['is_subscribed']) ??
         _asBool(map['is_following']) ??
-        _asBool(map['subscribed']) ??
-        _asBool(map['following']);
+        _asBool(map['is_subscribed']) ??
+        _asBool(map['following']) ??
+        _asBool(map['subscribed']);
     if (directValue != null) {
+      _log('🔎 direct subscription key matched value=$directValue');
       return directValue;
     }
 
+    _log('🪆 no direct key matched, checking nested data');
     return _findSubscriptionState(map['data']);
   }
 
@@ -58,130 +119,5 @@ class SubscribeApiService {
     }
 
     return null;
-  }
-
-  /// Toggle subscription (subscribe/unsubscribe)
-  /// Toggle subscription (subscribe/unsubscribe)
-  Future<bool> toggleSubscription(String userId, bool isCurrentlySubscribed) async {
-    try {
-      print(" TOGGLE SUBSCRIBE API CALL START");
-      print("USER ID: $userId, CURRENTLY: $isCurrentlySubscribed");
-
-      final token = await TokenStorage.getAccessToken();
-
-      // If currently subscribed, action is unsubscribe, else subscribe
-      final action = isCurrentlySubscribed ? "unsubscribe" : "subscribe";
-
-      final response = await _dio.get(
-        "posts/get-post/", // Or the correct endpoint
-        queryParameters: {
-          "user_id": userId, 
-          "action": action,
-        },
-        options: Options(headers: {"Authorization": "Bearer $token"}),
-      );
-
-      print("SUBSCRIBE API RESPONSE: ${response.data}");
-      print("STATUS CODE: ${response.statusCode}");
-
-      final isSubscribed = _extractSubscriptionState(
-        response.data,
-        fallback: !isCurrentlySubscribed,
-      );
-      print("SUBSCRIPTION STATUS: $isSubscribed");
-
-      return isSubscribed;
-    } catch (e) {
-      print("SUBSCRIBE API ERROR: $e");
-      if (e is DioException) {
-        print("STATUS CODE: ${e.response?.statusCode}");
-        print("RESPONSE DATA: ${e.response?.data}");
-        print("ERROR MESSAGE: ${e.message}");
-
-        // Handle specific error cases
-        final statusCode = e.response?.statusCode;
-        final responseData = e.response?.data;
-
-        if (statusCode == 400 &&
-            responseData?['message']?.toString().contains(
-                  'subscribe to yourself',
-                ) ==
-                true) {
-          print("USER TRIED TO SUBSCRIBE TO THEMSELVES");
-          throw Exception("You cannot subscribe to yourself");
-        }
-      }
-      rethrow;
-    }
-  }
-
-  /// Subscribe to user
-  Future<bool> subscribeToUser(String userId) async {
-    try {
-      print("SUBSCRIBE API CALL START");
-      print("USER ID: $userId");
-
-      final token = await TokenStorage.getAccessToken();
-
-      final response = await _dio.post(
-        "posts/get-post/",
-        data: {"user_id": userId, "action": "subscribe"},
-        options: Options(headers: {"Authorization": "Bearer $token"}),
-      );
-
-      print("SUBSCRIBE API RESPONSE: ${response.data}");
-      print("STATUS CODE: ${response.statusCode}");
-
-      final isSubscribed = _extractSubscriptionState(
-        response.data,
-        fallback: false,
-      );
-      print("SUBSCRIPTION STATUS: $isSubscribed");
-
-      return isSubscribed;
-    } catch (e) {
-      print("SUBSCRIBE API ERROR: $e");
-      if (e is DioException) {
-        print("STATUS CODE: ${e.response?.statusCode}");
-        print("RESPONSE DATA: ${e.response?.data}");
-        print("ERROR MESSAGE: ${e.message}");
-      }
-      rethrow;
-    }
-  }
-
-  /// Unsubscribe from user
-  Future<bool> unsubscribeFromUser(String userId) async {
-    try {
-      print("UNSUBSCRIBE API CALL START");
-      print("USER ID: $userId");
-
-      final token = await TokenStorage.getAccessToken();
-
-      final response = await _dio.post(
-        "posts/get-post/",
-        data: {"user_id": userId, "action": "unsubscribe"},
-        options: Options(headers: {"Authorization": "Bearer $token"}),
-      );
-
-      print("UNSUBSCRIBE API RESPONSE: ${response.data}");
-      print("STATUS CODE: ${response.statusCode}");
-
-      final isSubscribed = _extractSubscriptionState(
-        response.data,
-        fallback: false,
-      );
-      print("SUBSCRIPTION STATUS: $isSubscribed");
-
-      return isSubscribed;
-    } catch (e) {
-      print("UNSUBSCRIBE API ERROR: $e");
-      if (e is DioException) {
-        print("STATUS CODE: ${e.response?.statusCode}");
-        print("RESPONSE DATA: ${e.response?.data}");
-        print("ERROR MESSAGE: ${e.message}");
-      }
-      rethrow;
-    }
   }
 }

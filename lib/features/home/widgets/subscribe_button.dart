@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../controllers/subscribe_controller.dart';
 import '../models/subscribe_model.dart';
 
@@ -21,10 +22,18 @@ class SubscribeButton extends StatefulWidget {
 }
 
 class _SubscribeButtonState extends State<SubscribeButton> {
+  void _log(String message) {
+    print('🎬 [HomeSubscribeButton] $message');
+  }
+
   @override
   void initState() {
     super.initState();
+    _log(
+      '🛠️ initState userId=${widget.userId} username=${widget.username} initial=${widget.initialIsSubscribed}',
+    );
     if (widget.subscribeController.getUserSubscribeModel(widget.userId) == null) {
+      _log('🧱 no local model found, seeding initial state');
       widget.subscribeController.addOrUpdateUser(
         SubscribeModel(
           userId: widget.userId,
@@ -32,10 +41,13 @@ class _SubscribeButtonState extends State<SubscribeButton> {
           isSubscribed: widget.initialIsSubscribed,
         ),
       );
+    } else {
+      _log('📦 existing local model already present for userId=${widget.userId}');
     }
   }
 
   void _showSubscriptionSnackBar(bool isSubscribed) {
+    _log('🍞 show snackbar state=$isSubscribed userId=${widget.userId}');
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
@@ -60,6 +72,9 @@ class _SubscribeButtonState extends State<SubscribeButton> {
         final isSubscribed = widget.subscribeController.isUserSubscribed(
           widget.userId,
         );
+        _log(
+          '🎨 rebuild userId=${widget.userId} username=${widget.username} isSubscribed=$isSubscribed',
+        );
 
         return SizedBox(
           height: 32,
@@ -74,14 +89,20 @@ class _SubscribeButtonState extends State<SubscribeButton> {
             ),
             onPressed: () async {
               final optimisticStatus = !isSubscribed;
+              _log(
+                '👆 tap userId=${widget.userId} current=$isSubscribed optimistic=$optimisticStatus',
+              );
               _showSubscriptionSnackBar(optimisticStatus);
 
               try {
-                await widget.subscribeController.toggleSubscription(
+                final result = await widget.subscribeController.toggleSubscription(
                   widget.userId,
                 );
+                _log(
+                  '✅ toggleSubscription future resolved userId=${widget.userId} result=$result',
+                );
               } catch (e) {
-                print("âŒ SUBSCRIPTION BUTTON ERROR: $e");
+                _log('❌ button error userId=${widget.userId} error=$e');
 
                 if (!context.mounted) return;
 
@@ -104,10 +125,11 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
+                _log('🚨 error snackbar shown userId=${widget.userId}');
               }
             },
             child: Text(
-              isSubscribed ? "Subscribed" : "Subscribe",
+              isSubscribed ? 'Subscribed' : 'Subscribe',
               style: TextStyle(
                 color: isSubscribed ? Colors.black : Colors.white,
                 fontSize: 12,
