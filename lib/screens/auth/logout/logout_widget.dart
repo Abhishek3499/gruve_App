@@ -5,6 +5,8 @@ import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 class LogoutWidget extends StatelessWidget {
   final LogoutController _logoutController = LogoutController();
 
+  LogoutWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Dialog(

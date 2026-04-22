@@ -6,9 +6,6 @@ class UserProfileController extends ProfileController {
   UserProfileController({
     required String userId,
     UserProfileRepository? repository,
-    PostService? postService,
-  }) : super(
-         repository: repository ?? UserProfileRepository(userId: userId),
-         postService: postService,
-       );
+    super.postService,
+  }) : super(repository: repository ?? UserProfileRepository(userId: userId));
 }

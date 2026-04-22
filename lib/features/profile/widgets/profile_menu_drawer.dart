@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/auth/logout/logout_widget.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';

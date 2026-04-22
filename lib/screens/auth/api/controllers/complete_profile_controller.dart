@@ -9,10 +9,7 @@ class CompleteProfileController {
   String? errorMessage;
   CompleteProfileResponse? response;
 
-  Future<void> completeProfile({
-    required String username,
-    String? imagePath,
-  }) async {
+  Future<void> completeProfile({required String username, String? file}) async {
     isLoading = true;
     errorMessage = null;
     response = null;
@@ -20,13 +17,13 @@ class CompleteProfileController {
     try {
       final result = await _service.completeProfile(
         request: CompleteProfileRequest(username: username),
-        imagePath: imagePath,
+        file: file,
       );
 
       response = result;
     } catch (e) {
       response = null;
-      errorMessage = e.toString();
+      errorMessage = e.toString().replaceFirst('Exception: ', '');
     }
 
     isLoading = false;

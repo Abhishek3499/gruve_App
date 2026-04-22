@@ -131,6 +131,9 @@ class ProfileController {
     bool showLoading = true,
     String reason = 'initial_load',
   }) {
+    debugPrint(
+      '🚀 [ProfileController] fetchUser called - showLoading: $showLoading, reason: $reason',
+    );
     return _refreshProfileData(showLoading: showLoading, reason: reason);
   }
 
@@ -142,69 +145,189 @@ class ProfileController {
     required bool showLoading,
     required String reason,
   }) async {
+    debugPrint(
+      '🔄 [ProfileController] _refreshProfileData started - showLoading: $showLoading, reason: $reason',
+    );
+    debugPrint(
+      '📊 [ProfileController] Current state - isRefreshing: $_isRefreshing, hasLoadedOnce: $_hasLoadedOnce, disposed: $_disposed',
+    );
+
     if (_isRefreshing) {
       _pendingRefreshReason = reason;
       debugPrint(
-        '⏳ Profile refresh already running, queued another refresh. reason=$reason',
+        '⏳ [ProfileController] Refresh already running, queued another refresh. reason=$reason',
       );
       return;
     }
 
     _isRefreshing = true;
+    debugPrint('✅ [ProfileController] Set isRefreshing to true');
 
     if (showLoading && !_hasLoadedOnce && !_disposed) {
       isLoading.value = true;
+      debugPrint(
+        '🔄 [ProfileController] Set loading to true (showLoading: $showLoading, hasLoadedOnce: $_hasLoadedOnce)',
+      );
     }
 
     try {
-      debugPrint('🔄 Profile refresh started. reason=$reason');
+      debugPrint(
+        '🔄 [ProfileController] Profile refresh started. reason=$reason',
+      );
+      debugPrint(
+        '🌐 [ProfileController] Calling repository.fetchProfileData()',
+      );
+
       final userData = await _repository.fetchProfileData();
-      if (_disposed) return;
+      debugPrint(
+        '✅ [ProfileController] Repository returned data: ${userData.runtimeType}',
+      );
+      debugPrint(
+        '📊 [ProfileController] Response data keys: ${userData.keys.toList()}',
+      );
+
+      if (_disposed) {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed, aborting refresh',
+        );
+        return;
+      }
 
       final userPayload = _extractUserPayload(userData);
       debugPrint(
         '📦 [ProfileController] extracted user payload keys: ${userPayload.keys.toList()}',
       );
 
-      final profile = ProfileModel.fromJson(
-        userPayload.isNotEmpty ? userPayload : userData,
-      );
-      debugPrint(
-        '📦 [ProfileController] parsed profile: username=${profile.username}, fullName=${profile.fullName}',
-      );
+      ProfileModel profile;
+      try {
+        profile = ProfileModel.fromJson(
+          userPayload.isNotEmpty ? userPayload : userData,
+        );
+        debugPrint(
+          '📦 [ProfileController] Parsed profile - username: ${profile.username}, fullName: ${profile.fullName}, id: ${profile.id}, isFollowing: ${profile.isFollowing}',
+        );
+        debugPrint(
+          '📊 [ProfileController] ProfileModel fields - profileImage: ${profile.profileImage.isNotEmpty ? "present" : "empty"}',
+        );
 
-      debugPrint(
-        '📦 [ProfileController] creating ProfileStatsModel...',
-      );
+        // Additional validation
+        if (profile.id.isEmpty) {
+          debugPrint(
+            '❌ [ProfileController] VALIDATION ERROR: Profile ID is empty after parsing',
+          );
+        }
+        if (profile.username.isEmpty) {
+          debugPrint(
+            '❌ [ProfileController] VALIDATION ERROR: Profile username is empty after parsing',
+          );
+        }
+        if (profile.fullName.isEmpty) {
+          debugPrint(
+            '❌ [ProfileController] VALIDATION ERROR: Profile fullName is empty after parsing',
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ [ProfileController] ProfileModel parsing failed: $e');
+        debugPrint(
+          '❌ [ProfileController] Parsing error type: ${e.runtimeType}',
+        );
+        rethrow;
+      }
+
+      debugPrint('📦 [ProfileController] creating ProfileStatsModel...');
       final statsPayload = _nestedMap(userPayload['stats']) ?? userPayload;
-      final stats = ProfileStatsModel.fromJson(
-        statsPayload.isNotEmpty ? statsPayload : userData,
-      );
-      debugPrint(
-        '📦 [ProfileController] parsed stats: subscribers=${stats.subscribersCount}, likes=${stats.likesCount}, videos=${stats.videosCount}',
-      );
+      debugPrint('📊 [ProfileController] Stats payload: $statsPayload');
 
-      if (_disposed) return;
+      ProfileStatsModel stats;
+      try {
+        stats = ProfileStatsModel.fromJson(
+          statsPayload.isNotEmpty ? statsPayload : userData,
+        );
+        debugPrint(
+          '📊 [ProfileController] Parsed stats - subscribers: ${stats.subscribersCount}, likes: ${stats.likesCount}, videos: ${stats.videosCount}',
+        );
+
+        // Additional validation
+        if (stats.subscribersCount < 0) {
+          debugPrint(
+            '❌ [ProfileController] VALIDATION ERROR: Negative subscribers count: ${stats.subscribersCount}',
+          );
+        }
+        if (stats.likesCount < 0) {
+          debugPrint(
+            '❌ [ProfileController] VALIDATION ERROR: Negative likes count: ${stats.likesCount}',
+          );
+        }
+        if (stats.videosCount < 0) {
+          debugPrint(
+            '❌ [ProfileController] VALIDATION ERROR: Negative videos count: ${stats.videosCount}',
+          );
+        }
+      } catch (e) {
+        debugPrint(
+          '❌ [ProfileController] ProfileStatsModel parsing failed: $e',
+        );
+        debugPrint(
+          '❌ [ProfileController] Stats parsing error type: ${e.runtimeType}',
+        );
+        rethrow;
+      }
+
+      if (_disposed) {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed before updating state',
+        );
+        return;
+      }
+
       user = profile;
       statsNotifier.value = stats;
-      debugPrint('📦 [ProfileController] updated user and statsNotifier');
+      debugPrint('✅ [ProfileController] Updated user and statsNotifier');
+      debugPrint('🔄 [ProfileController] Notifying listeners of stats change');
 
       await Future<void>.delayed(const Duration(milliseconds: 16));
       if (_disposed) return;
 
+      debugPrint('🔄 [ProfileController] Starting post hydration');
       await _hydratePostsAfterProfileLoad(userData, profile);
-      if (_disposed) return;
+
+      if (_disposed) {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed during post hydration',
+        );
+        return;
+      }
 
       _profileFetchBackoffUntil = null;
       _hasLoadedOnce = true;
-      debugPrint('✅ Profile refresh completed successfully');
+      debugPrint(
+        '✅ [ProfileController] Profile refresh completed successfully',
+      );
+      debugPrint(
+        '📊 [ProfileController] Final state - hasLoadedOnce: $_hasLoadedOnce, backoffUntil: $_profileFetchBackoffUntil',
+      );
     } catch (error) {
-      debugPrint('❌ Profile refresh failed: $error');
+      debugPrint('❌ [ProfileController] Profile refresh failed: $error');
+      debugPrint('🔍 [ProfileController] Error type: ${error.runtimeType}');
+
+      if (error is Exception) {
+        debugPrint(
+          '🔍 [ProfileController] Exception details: ${error.toString()}',
+        );
+      }
+
       // Keep user data if refresh fails
     } finally {
       _isRefreshing = false;
+      debugPrint('🔄 [ProfileController] Set isRefreshing to false');
+
       if (!_disposed) {
         isLoading.value = false;
+        debugPrint('🔄 [ProfileController] Set loading to false');
+      } else {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed, not updating loading state',
+        );
       }
     }
 
@@ -252,10 +375,21 @@ class ProfileController {
     List<Post> posts,
     bool hasNext,
   ) {
-    if (_disposed) return;
+    if (_disposed) {
+      debugPrint(
+        '⚠️ [ProfileController] Controller disposed, skipping tab seeding',
+      );
+      return;
+    }
+
+    debugPrint('🌱 [ProfileController] Seeding tab $tabIndex');
+    debugPrint(
+      '📊 [ProfileController] Tab $tabIndex - posts: ${posts.length}, hasNext: $hasNext',
+    );
 
     final cleared = _getTabState(tabIndex).reset();
     final nextPage = posts.isEmpty ? 1 : (hasNext ? 2 : 1);
+
     _updateTabState(
       tabIndex,
       cleared.copyWith(
@@ -268,7 +402,7 @@ class ProfileController {
     );
 
     debugPrint(
-      'â [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext',
+      '✅ [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext, nextPage=$nextPage',
     );
   }
 
@@ -276,18 +410,40 @@ class ProfileController {
     Map<String, dynamic> raw,
     ProfileModel profile,
   ) async {
-    if (_disposed) return;
+    if (_disposed) {
+      debugPrint(
+        '⚠️ [ProfileController] Controller disposed, skipping post hydration',
+      );
+      return;
+    }
 
-    debugPrint('🔄 [ProfileController] hydrate posts (FIXED API PARSING)');
+    debugPrint('🔄 [ProfileController] Starting post hydration');
+    debugPrint('📊 [ProfileController] Raw data keys: ${raw.keys.toList()}');
 
     final postsData = raw['data']?['posts'] ?? raw['posts'];
+    debugPrint('📊 [ProfileController] Posts data found: ${postsData != null}');
+    if (postsData != null) {
+      debugPrint(
+        '📊 [ProfileController] Posts data type: ${postsData.runtimeType}',
+      );
+      if (postsData is Map) {
+        debugPrint(
+          '📊 [ProfileController] Posts data keys: ${(postsData).keys.toList()}',
+        );
+      }
+    }
 
     bool apiParsed = false;
 
     if (postsData != null && postsData is Map) {
       try {
+        debugPrint('🔄 [ProfileController] Parsing API posts structure');
+
         // ✅ ALL
         final allList = postsData['all']?['results'] ?? [];
+        debugPrint(
+          '📊 [ProfileController] ALL tab posts: ${allList.length} items',
+        );
         _seedTabFromProfilePayload(
           0,
           (allList as List).map((e) => Post.fromJson(e)).toList(),
@@ -296,6 +452,9 @@ class ProfileController {
 
         // ✅ TRENDING
         final trendingList = postsData['trending']?['results'] ?? [];
+        debugPrint(
+          '📊 [ProfileController] TRENDING tab posts: ${trendingList.length} items',
+        );
         _seedTabFromProfilePayload(
           1,
           (trendingList as List).map((e) => Post.fromJson(e)).toList(),
@@ -305,6 +464,9 @@ class ProfileController {
         // ✅ LIKED
         final likedPosts = postsData['liked'] ?? postsData['likes'];
         final likedList = likedPosts?['results'] ?? [];
+        debugPrint(
+          '📊 [ProfileController] LIKED tab posts: ${likedList.length} items',
+        );
         _seedTabFromProfilePayload(
           2,
           (likedList as List).map((e) => Post.fromJson(e)).toList(),
@@ -320,26 +482,48 @@ class ProfileController {
 
     // ❗ fallback only if API failed
     if (!apiParsed) {
-      debugPrint('⚠️ Using fallback (own posts)');
+      debugPrint(
+        '⚠️ [ProfileController] API parsing failed, using fallback (own posts)',
+      );
       final own = await _fetchOwnPosts(profile);
-      if (_disposed) return;
+
+      if (_disposed) {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed during fallback, aborting',
+        );
+        return;
+      }
+
       _seedTabFromProfilePayload(0, own, false);
+      debugPrint('✅ [ProfileController] Fallback posts seeded');
     }
 
     // ensure other tabs load if empty
     for (final i in [1, 2]) {
-      if (_disposed) return;
+      if (_disposed) {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed during tab loading',
+        );
+        return;
+      }
+
       if (_getTabState(i).posts.isEmpty) {
+        debugPrint('🔄 [ProfileController] Loading empty tab $i');
         await loadPostsForTab(i, isRefresh: true);
       }
     }
 
-    if (_disposed) return;
+    if (_disposed) {
+      debugPrint(
+        '⚠️ [ProfileController] Controller disposed before final update',
+      );
+      return;
+    }
 
     postsNotifier.value = List<Post>.from(_getTabState(0).posts);
 
     debugPrint(
-      '📊 FINAL: All=${_allTabState.posts.length}, '
+      '📊 [ProfileController] FINAL POST COUNTS - All=${_allTabState.posts.length}, '
       'Trending=${_trendingTabState.posts.length}, '
       'Liked=${_likedTabState.posts.length}',
     );
@@ -370,17 +554,35 @@ class ProfileController {
 
   /// Load posts for specific tab with pagination
   Future<void> loadPostsForTab(int tabIndex, {bool isRefresh = false}) async {
-    if (_disposed) return;
+    debugPrint(
+      '🔄 [ProfileController] loadPostsForTab called - tabIndex: $tabIndex, isRefresh: $isRefresh',
+    );
+
+    if (_disposed) {
+      debugPrint(
+        '⚠️ [ProfileController] Controller disposed, skipping tab load',
+      );
+      return;
+    }
+
     final currentState = _getTabState(tabIndex);
+    debugPrint(
+      '📊 [ProfileController] Tab $tabIndex current state - posts: ${currentState.posts.length}, isLoading: ${currentState.isLoading}, hasNext: ${currentState.hasNext}, page: ${currentState.page}',
+    );
 
     // Prevent duplicate calls
     if (currentState.isLoading && !isRefresh) {
-      debugPrint('⏳ Tab $tabIndex already loading, skipping request');
+      debugPrint(
+        '⏳ [ProfileController] Tab $tabIndex already loading, skipping request',
+      );
       return;
     }
 
     // Reset state for refresh
     if (isRefresh) {
+      debugPrint(
+        '🔄 [ProfileController] Refreshing tab $tabIndex, resetting state',
+      );
       final resetState = currentState.reset();
       _updateTabState(tabIndex, resetState);
     }
@@ -389,6 +591,7 @@ class ProfileController {
       tabIndex,
     ).copyWith(isLoading: true, clearError: true);
     _updateTabState(tabIndex, updatedState);
+    debugPrint('🔄 [ProfileController] Set tab $tabIndex loading to true');
 
     try {
       debugPrint(
@@ -400,8 +603,14 @@ class ProfileController {
 
       // Build query parameters based on tab
       final queryParams = _buildQueryParams(tabIndex, updatedState);
+      debugPrint(
+        '📊 [ProfileController] Query params for tab $tabIndex: $queryParams',
+      );
 
       // Call API with pagination
+      debugPrint(
+        '🌐 [ProfileController] Calling repository.fetchProfileData with pagination',
+      );
       final response = await _repository.fetchProfileData(
         allPage: queryParams['allPage'],
         allLimit: queryParams['allLimit'],
@@ -411,20 +620,42 @@ class ProfileController {
         likedLimit: queryParams['likedLimit'],
       );
 
-      if (_disposed) return;
+      if (_disposed) {
+        debugPrint(
+          '⚠️ [ProfileController] Controller disposed during API call, aborting',
+        );
+        return;
+      }
 
       sw.stop();
+      debugPrint(
+        '⏱️ [ProfileController] API call completed in ${sw.elapsedMilliseconds}ms',
+      );
+      debugPrint(
+        '📊 [ProfileController] Response keys: ${response.keys.toList()}',
+      );
 
       // Parse response
       final posts = _parsePostsFromResponse(response, tabIndex);
       final hasNext = _parseHasNextFromResponse(response, tabIndex);
+      debugPrint(
+        '📊 [ProfileController] Parsed tab $tabIndex - posts: ${posts.length}, hasNext: $hasNext',
+      );
 
       final existing = List<Post>.from(_getTabState(tabIndex).posts);
       final newPosts = isRefresh ? posts : [...existing, ...posts];
 
+      debugPrint(
+        '📊 [ProfileController] Tab $tabIndex - existing: ${existing.length}, new: ${posts.length}, total: ${newPosts.length}',
+      );
+
       final nextPage = isRefresh
           ? ((hasNext && posts.isNotEmpty) ? 2 : 1)
           : updatedState.page + 1;
+
+      debugPrint(
+        '📊 [ProfileController] Tab $tabIndex - nextPage: $nextPage, isRefresh: $isRefresh',
+      );
 
       final finalState = updatedState.copyWith(
         posts: newPosts,
@@ -434,10 +665,12 @@ class ProfileController {
       );
 
       _updateTabState(tabIndex, finalState);
+      debugPrint('✅ [ProfileController] Updated tab $tabIndex state');
 
       // Keep [postsNotifier] aligned with the "All" tab only (tab 0).
       if (tabIndex == 0) {
         postsNotifier.value = List<Post>.from(newPosts);
+        debugPrint('🔄 [ProfileController] Updated postsNotifier for tab 0');
       }
 
       debugPrint(

@@ -172,7 +172,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               children: [
                                 const SizedBox(height: 120),
                                 ValueListenableBuilder(
-                                  valueListenable: _profileController.statsNotifier,
+                                  valueListenable:
+                                      _profileController.statsNotifier,
                                   builder: (context, stats, child) {
                                     return UserStatsRow(stats: stats);
                                   },
@@ -189,7 +190,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   },
                                 ),
                                 AnimatedBuilder(
-                                  animation: _profileController.contentListenable,
+                                  animation:
+                                      _profileController.contentListenable,
                                   builder: (context, child) {
                                     return UserProfileGrid(
                                       controller: _profileController,

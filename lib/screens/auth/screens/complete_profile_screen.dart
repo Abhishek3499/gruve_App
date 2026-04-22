@@ -72,14 +72,30 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.purple,
-                      backgroundImage: _selectedImage != null && !(_selectedImage!.path.toLowerCase().endsWith('.mp4') || _selectedImage!.path.toLowerCase().endsWith('.mov'))
+                      backgroundImage:
+                          _selectedImage != null &&
+                              !(_selectedImage!.path.toLowerCase().endsWith(
+                                    '.mp4',
+                                  ) ||
+                                  _selectedImage!.path.toLowerCase().endsWith(
+                                    '.mov',
+                                  ))
                           ? FileImage(File(_selectedImage!.path))
                           : null,
                       child: _selectedImage == null
                           ? const Icon(Icons.camera_alt, color: Colors.white)
-                          : (_selectedImage!.path.toLowerCase().endsWith('.mp4') || _selectedImage!.path.toLowerCase().endsWith('.mov'))
-                              ? const Icon(Icons.videocam, color: Colors.white, size: 40)
-                              : null,
+                          : (_selectedImage!.path.toLowerCase().endsWith(
+                                  '.mp4',
+                                ) ||
+                                _selectedImage!.path.toLowerCase().endsWith(
+                                  '.mov',
+                                ))
+                          ? const Icon(
+                              Icons.videocam,
+                              color: Colors.white,
+                              size: 40,
+                            )
+                          : null,
                     ),
                   ),
 
@@ -100,10 +116,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     isLoading: _submitting,
                     onComplete: () async {
                       final username = _usernameController.text.trim();
-                      final imagePath = _selectedImage?.path;
+                      final file = _selectedImage?.path;
+                      debugPrint("USERNAME: '$username'");
+                      debugPrint("IMAGE PATH: '$file'");
 
                       if (username.isEmpty &&
-                          (imagePath == null || imagePath.trim().isEmpty)) {
+                          (file == null || file.trim().isEmpty)) {
                         if (!context.mounted) return false;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -119,7 +137,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       try {
                         await controller.completeProfile(
                           username: username,
-                          imagePath: imagePath,
+                          file: file,
                         );
                       } finally {
                         if (mounted) setState(() => _submitting = false);

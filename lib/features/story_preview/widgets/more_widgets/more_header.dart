@@ -9,7 +9,7 @@ class MoreHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Container(
+      child: SizedBox(
         height: 56, // Standard AppBar height
         width: double.infinity,
         child: Stack(

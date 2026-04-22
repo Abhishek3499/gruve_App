@@ -13,6 +13,9 @@ class PersonalInfoCard extends StatelessWidget {
   final bool showEditIcon;
   final bool showUpdateButton;
   final bool isReadOnly;
+  final bool showEmail;
+  final bool showPhone;
+  final bool isUpdating;
 
   const PersonalInfoCard({
     super.key,
@@ -26,6 +29,9 @@ class PersonalInfoCard extends StatelessWidget {
     this.showEditIcon = true,
     this.showUpdateButton = true,
     this.isReadOnly = false,
+    this.showEmail = true,
+    this.showPhone = true,
+    this.isUpdating = false,
   });
 
   @override
@@ -48,19 +54,25 @@ class PersonalInfoCard extends StatelessWidget {
               _buildHeader(),
               const SizedBox(height: 24),
 
-              _buildField("Name", nameController),
+              _buildField("Full Name", nameController),
               _divider(),
 
-              _buildField("Phone", phoneController),
-              _divider(),
+              // Show phone field only if showPhone is true
+              if (showPhone) ...[
+                _buildField("Phone", phoneController, forceReadOnly: true),
+                _divider(),
+              ],
 
-              _buildField("Email", emailController),
-              _divider(),
+              // Show email field only if showEmail is true
+              if (showEmail) ...[
+                _buildField("Email", emailController, forceReadOnly: true),
+                _divider(),
+              ],
 
               _buildField("Username", usernameController),
               _divider(),
 
-              _buildField("Gender", genderController),
+              _buildField("Gender", genderController, forceReadOnly: true),
               _divider(),
 
               _buildField("Bio", bioController, isBio: true),
@@ -107,7 +119,9 @@ class PersonalInfoCard extends StatelessWidget {
     String label,
     TextEditingController controller, {
     bool isBio = false,
+    bool forceReadOnly = false,
   }) {
+    final bool fieldReadOnly = isReadOnly || forceReadOnly;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,8 +136,8 @@ class PersonalInfoCard extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          enabled: !isReadOnly, // ✅ Read-only mode
-          readOnly: isReadOnly, // ✅ Read-only mode
+          enabled: !fieldReadOnly, // ✅ Read-only mode
+          readOnly: fieldReadOnly, // ✅ Read-only mode
           maxLines: isBio ? 3 : 1,
           style: const TextStyle(
             color: Colors.white,
@@ -164,16 +178,25 @@ class PersonalInfoCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
-          onTap: onSave,
-          child: const Center(
-            child: Text(
-              "Update",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          onTap: isUpdating ? null : onSave,
+          child: Center(
+            child: isUpdating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    "Update",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
         ),
       ),

@@ -7,13 +7,13 @@ import '../models/complete_profile_response.dart';
 
 class CompleteProfileService {
   CompleteProfileService()
-      : dio = Dio(
-          BaseOptions(
-            baseUrl: _normalizeBase(dotenv.env['BASE_URL'] ?? ''),
-            connectTimeout: const Duration(seconds: 20),
-            receiveTimeout: const Duration(seconds: 30),
-          ),
-        );
+    : dio = Dio(
+        BaseOptions(
+          baseUrl: _normalizeBase(dotenv.env['BASE_URL'] ?? ''),
+          connectTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
 
   final Dio dio;
 
@@ -37,13 +37,15 @@ class CompleteProfileService {
 
   Future<CompleteProfileResponse> completeProfile({
     required CompleteProfileRequest request,
-    String? imagePath,
+    String? file,
   }) async {
     try {
       final token = await TokenStorage.getAccessToken();
 
       debugPrint("=== COMPLETE PROFILE REQUEST ===");
-      debugPrint("TOKEN: ${token == null || token.isEmpty ? "missing" : "present"}");
+      debugPrint(
+        "TOKEN: ${token == null || token.isEmpty ? "missing" : "present"}",
+      );
 
       if (token == null || token.isEmpty) {
         throw Exception(
@@ -53,14 +55,13 @@ class CompleteProfileService {
 
       final formData = FormData.fromMap({
         "username": request.username,
-        if (imagePath != null && imagePath.trim().isNotEmpty)
-          "profile_image": await MultipartFile.fromFile(imagePath.trim()),
+
+        if (file != null && file.trim().isNotEmpty)
+          "file": await MultipartFile.fromFile(file.trim()),
       });
 
       const endpoint = "auth/complete-profile/";
-      final headers = <String, dynamic>{
-        "Authorization": "Bearer $token",
-      };
+      final headers = <String, dynamic>{"Authorization": "Bearer $token"};
 
       debugPrint("=== COMPLETE PROFILE REQUEST DETAILS ===");
       debugPrint("URL: ${dio.options.baseUrl}$endpoint");
@@ -68,6 +69,24 @@ class CompleteProfileService {
       debugPrint("HEADERS: $headers");
       debugPrint("FORM DATA FIELDS: ${formData.fields}");
       debugPrint("FORM DATA FILES: ${formData.files.map((f) => f.key)}");
+
+      // Debug all request fields
+      debugPrint("=== COMPLETE PROFILE DEBUG INFO ===");
+      debugPrint("Request object fields:");
+      debugPrint("  - username: ${request.username}");
+
+      debugPrint("  - file: ${file ?? 'null'}");
+
+      debugPrint("Form data being sent:");
+      final fieldList = <String>[];
+      for (int i = 0; i < formData.fields.length; i++) {
+        final entry = formData.fields[i];
+        fieldList.add('${entry.key}: ${entry.value}');
+      }
+      debugPrint("  - All form fields: $fieldList");
+      debugPrint(
+        "  - All form files: ${formData.files.map((f) => '${f.key}: ${f.value.filename}').toList()}",
+      );
 
       final response = await dio.post(
         endpoint,

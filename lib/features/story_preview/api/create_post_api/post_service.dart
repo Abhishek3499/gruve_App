@@ -217,10 +217,7 @@ class PostService {
     final opts = Options(headers: {"Authorization": "Bearer $token"});
 
     try {
-      final res = await _getWithRetry(
-        "posts/get-post/",
-        options: opts,
-      );
+      final res = await _getWithRetry("posts/get-post/", options: opts);
 
       print("📡 FULL API RESPONSE: ${res.data}");
 
@@ -259,7 +256,7 @@ class PostService {
       }).toList();
     } catch (e) {
       print("❌ GET POSTS ERROR: $e");
-      if (e is DioError) {
+      if (e is DioException) {
         if (e.response?.statusCode == 401) {
           print("Unauthorized error");
           return [];
@@ -282,9 +279,7 @@ class PostService {
     try {
       final res = await _dio.post(
         "posts/like/toggle/",
-        data: {
-          "post_id": postId,
-        },
+        data: {"post_id": postId},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
