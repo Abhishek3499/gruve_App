@@ -9,7 +9,7 @@ class ProfileService {
         BaseOptions(
           baseUrl: dotenv.env['BASE_URL']!,
           connectTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 45),
+          receiveTimeout: const Duration(seconds: 20),
           sendTimeout: const Duration(seconds: 20),
         ),
       );
@@ -59,9 +59,9 @@ class ProfileService {
 
     debugPrint("[ProfileService] GET user/profile_data/");
     debugPrint("[ProfileService] Query params: $queryParams");
-    debugPrint("[ProfileService] Full URL: $baseUrl/user/profile_data/");
+    debugPrint("[ProfileService] Full URL: $baseUrl user/profile_data/");
 
-    const maxAttempts = 3;
+    const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         debugPrint(

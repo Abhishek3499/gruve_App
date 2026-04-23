@@ -138,6 +138,12 @@ class ProfileController {
   }
 
   Future<void> refreshCounts({String reason = 'manual_refresh'}) {
+    if (reason == 'profile_tab_opened' && _hasLoadedOnce) {
+      debugPrint(
+        '[ProfileController] Skipping profile_tab_opened refresh; profile already loaded.',
+      );
+      return Future.value();
+    }
     return _refreshProfileData(showLoading: false, reason: reason);
   }
 
@@ -496,6 +502,15 @@ class ProfileController {
 
       _seedTabFromProfilePayload(0, own, false);
       debugPrint('✅ [ProfileController] Fallback posts seeded');
+    }
+
+    final shouldLazyLoadSecondaryTabs = !_disposed;
+    if (shouldLazyLoadSecondaryTabs) {
+      postsNotifier.value = List<Post>.from(_getTabState(0).posts);
+      debugPrint(
+        '[ProfileController] Deferred secondary tab loading until the user opens those tabs.',
+      );
+      return;
     }
 
     // ensure other tabs load if empty

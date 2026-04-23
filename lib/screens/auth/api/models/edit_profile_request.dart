@@ -1,30 +1,52 @@
+import 'package:flutter/material.dart';
+
 class EditProfileRequest {
-  final String fullName;
+  final String fullname;
   final String username;
   final String? bio;
-  final String? profilePicture;
+  final String? profile_picture;
 
   EditProfileRequest({
-    required this.fullName,
+    required this.fullname,
     required this.username,
     this.bio,
-    this.profilePicture,
-  });
+    this.profile_picture,
+  }) {
+    debugPrint("🏗️ [EditProfileRequest] Creating request object...");
+    debugPrint(
+      "📝 [EditProfileRequest] Data: fullname='$fullname', username='$username', bio='$bio', profile_picture='$profile_picture'",
+    );
+  }
 
   Map<String, dynamic> toJson() {
-    final data = <String, dynamic>{
-      'full_name': fullName,
-      'username': username,
-    };
+    debugPrint("🔄 [EditProfileRequest] Converting to JSON...");
+
+    final data = <String, dynamic>{'fullname': fullname, 'username': username};
 
     if (bio?.isNotEmpty == true) {
       data['bio'] = bio;
+      debugPrint("📝 [EditProfileRequest] Added bio: '$bio'");
+    } else {
+      debugPrint("📝 [EditProfileRequest] Bio omitted (null or empty)");
     }
 
-    if (profilePicture?.isNotEmpty == true) {
-      data['profile_picture'] = profilePicture;
+    if (profile_picture?.isNotEmpty == true) {
+      data['profile_picture'] = profile_picture;
+      debugPrint(
+        "🖼️ [EditProfileRequest] Added profile_picture: '$profile_picture'",
+      );
+    } else {
+      debugPrint(
+        "🖼️ [EditProfileRequest] ProfilePicture omitted (null or empty)",
+      );
     }
 
+    debugPrint("✅ [EditProfileRequest] JSON conversion completed: $data");
     return data;
+  }
+
+  @override
+  String toString() {
+    return 'EditProfileRequest(fullname: $fullname, username: $username, bio: $bio, profile_picture: $profile_picture)';
   }
 }

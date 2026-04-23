@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/assets.dart';
+import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
+
 import '../models/profile_model.dart';
 import 'edit_profile_button.dart';
 
@@ -8,12 +10,14 @@ class ProfileHeader extends StatelessWidget {
   final String fullName;
   final String username;
   final String profileImage;
+  final ValueChanged<EditProfileResponse>? onProfileUpdated;
 
   const ProfileHeader({
     super.key,
     required this.fullName,
     required this.username,
     required this.profileImage,
+    this.onProfileUpdated,
   });
   @override
   Widget build(BuildContext context) {
@@ -100,6 +104,7 @@ class ProfileHeader extends StatelessWidget {
                         email: "",
                         profileImagePath: profileImage,
                       ),
+                      onProfileUpdated: onProfileUpdated,
                     ),
                   ],
                 ),

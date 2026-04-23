@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
 import '../../../screens/auth/api/controllers/edit_profile_controller.dart';
 import '../models/profile_model.dart';
-import '../widgets/profile_image_picker.dart';
 import '../widgets/personal_info_card.dart';
+import '../widgets/profile_image_picker.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final ProfileModel? initialProfile;
@@ -16,7 +16,6 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
   late EditProfileController _controller;
 
   late TextEditingController _nameController;
@@ -33,7 +32,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _controller = EditProfileController();
     _initializeControllers();
-    // Fetch profile data when screen loads
     _fetchProfileData();
   }
 
@@ -60,14 +58,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _fetchProfileData() async {
     await _controller.fetchProfile();
-    if (_controller.profileResponse != null && mounted) {
+
+    if (!mounted) return;
+
+    if (_controller.profileResponse != null) {
       _populateFormFields();
+    } else {
+      setState(() {});
     }
   }
 
   void _populateFormFields() {
-    if (_controller.profileResponse == null) return;
-    
+    if (_controller.profileResponse == null) {
+      return;
+    }
+
     _nameController.text = _controller.fullName;
     _usernameController.text = _controller.username;
     _emailController.text = _controller.email;
@@ -75,7 +80,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _genderController.text = _controller.gender;
     _bioController.text = _controller.bio;
     _profileImagePath = _controller.currentProfilePicture;
-    
+
     setState(() {});
   }
 
@@ -96,60 +101,78 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
+  void _showSnackBar(String message, Color backgroundColor) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   Future<void> _saveProfile() async {
-    // Validate form
+    final fullname = _nameController.text.trim();
+    final username = _usernameController.text.trim();
+    final bio = _bioController.text.trim().isEmpty
+        ? null
+        : _bioController.text.trim();
+
     final validationError = _controller.validateForm(
-      fullName: _nameController.text.trim(),
-      username: _usernameController.text.trim(),
-      bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+      fullName: fullname,
+      username: username,
+      bio: bio,
     );
 
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(validationError),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      _showSnackBar(validationError, Colors.red);
       return;
     }
 
+    final currentFullName = _controller.fullName.trim();
+    final currentUsername = _controller.username.trim();
+    final currentBio = _controller.bio.trim();
+    final currentProfilePicture = _controller.currentProfilePicture.trim();
+    final hasChanges =
+        fullname != currentFullName ||
+        username != currentUsername ||
+        (bio ?? '') != currentBio ||
+        _profileImagePath.trim() != currentProfilePicture;
+
+    if (!hasChanges) {
+      _showSnackBar('No changes to update.', Colors.orange);
+      return;
+    }
+
+    final profilePicture = _profileImagePath.trim() != currentProfilePicture
+        ? _profileImagePath
+        : null;
+
+    if (!mounted) return;
+
+    setState(() {});
+
     await _controller.updateProfile(
-      fullName: _nameController.text.trim(),
-      username: _usernameController.text.trim(),
-      bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
-      profilePicture: _profileImagePath != AppAssets.profile ? _profileImagePath : null,
+      fullname: fullname,
+      username: username,
+      bio: bio,
+      profile_picture: profilePicture,
     );
 
-    if (_controller.errorMessage == null && _controller.profileResponse != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profile updated successfully!'),
-          backgroundColor: Colors.white,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+    if (!mounted) return;
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
-    } else if (_controller.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_controller.errorMessage!),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+    if (_controller.errorMessage == null &&
+        _controller.profileResponse != null) {
+      _populateFormFields();
+      Navigator.of(context).pop(_controller.profileResponse);
+      return;
+    }
+
+    if (_controller.errorMessage != null) {
+      if (mounted) _showSnackBar(_controller.errorMessage!, Colors.red);
     }
   }
 
@@ -159,7 +182,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: const Color(0xFF7A2C8F),
       body: Column(
         children: [
-          /// 🔥 TOP GRADIENT AREA
           Container(
             height: 190,
             width: double.infinity,
@@ -188,13 +210,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         splashColor: Colors.transparent,
                         highlightColor: Colors.transparent,
                         child: SizedBox(
-                          height: 60, // 👈 bigger tap area (important)
+                          height: 60,
                           width: 50,
                           child: Center(
-                            child: Container(
+                            child: SizedBox(
                               height: 30,
                               width: 30,
-                              decoration: BoxDecoration(shape: BoxShape.circle),
                               child: Image.asset(AppAssets.back),
                             ),
                           ),
@@ -207,9 +228,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     left: 0,
                     right: 0,
                     child: Text(
-                      _controller.profileResponse != null 
-                          ? "Hey, ${_controller.fullName}"
-                          : "Hey, User",
+                      _controller.profileResponse != null
+                          ? 'Hey, ${_controller.fullName}'
+                          : 'Hey, User',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -222,8 +243,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
           ),
-
-          /// DARK SECTION
           Expanded(
             child: Stack(
               clipBehavior: Clip.none,
@@ -257,8 +276,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     },
                   ),
                 ),
-
-                /// Avatar
                 Positioned(
                   top: -60,
                   left: 0,
@@ -287,23 +304,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
     }
 
-    if (_controller.errorMessage != null) {
+    if (_controller.errorMessage != null &&
+        _controller.profileResponse == null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             Text(
               'Error: ${_controller.errorMessage}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),

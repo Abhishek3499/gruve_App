@@ -1,21 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
+
 import '../screens/edit_profile_screen.dart';
 import '../models/profile_model.dart';
 
 class EditProfileButton extends StatelessWidget {
   final ProfileModel? profile;
+  final ValueChanged<EditProfileResponse>? onProfileUpdated;
 
-  const EditProfileButton({super.key, this.profile});
+  const EditProfileButton({
+    super.key,
+    this.profile,
+    this.onProfileUpdated,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final result = await Navigator.push<EditProfileResponse>(
           context,
-          MaterialPageRoute(builder: (context) => EditProfileScreen(initialProfile: profile)),
+          MaterialPageRoute(
+            builder: (context) => EditProfileScreen(initialProfile: profile),
+          ),
         );
+
+        if (result != null) {
+          onProfileUpdated?.call(result);
+        }
       },
       child: Container(
         height: 40,

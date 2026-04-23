@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
+import 'package:gruve_app/api_calls/profile/model/profile_model.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
+import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
 
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 
@@ -68,6 +70,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final t = (raw ?? '').trim();
     if (t.isEmpty) return '';
     return t.startsWith('@') ? t : '@$t';
+  }
+
+  void _applyUpdatedProfile(EditProfileResponse response) {
+    final currentUser = controller.user;
+    final updated = response.data;
+
+    if (currentUser == null) {
+      return;
+    }
+
+    setState(() {
+      controller.user = ProfileModel(
+        id: updated.userId ?? currentUser.id,
+        fullName: updated.fullName.trim().isEmpty
+            ? currentUser.fullName
+            : updated.fullName,
+        username: updated.username.trim().isEmpty
+            ? currentUser.username
+            : updated.username,
+        profileImage:
+            (updated.profile_picture ?? '').trim().isEmpty
+                ? currentUser.profileImage
+                : updated.profile_picture!,
+        isFollowing: currentUser.isFollowing,
+      );
+    });
   }
 
   @override
@@ -171,6 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 return u.isEmpty ? '@username' : u;
                               }(),
                               profileImage: user?.profileImage ?? "",
+                              onProfileUpdated: _applyUpdatedProfile,
                             ),
                           ),
                         ],

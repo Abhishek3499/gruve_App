@@ -9,7 +9,6 @@ import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
-import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 
@@ -276,10 +275,6 @@ class _HomeScreenState extends State<HomeScreen>
       if (!_isInBackground && !_isNavigatingAway) {
         _resumeVideo('Tab changed to Home');
       }
-    } else if (newIndex == 4) {
-      ProfileCountRefreshBridge.notifyCountsChanged(
-        reason: 'profile_tab_opened',
-      );
     } else if (_previousIndex == 0) {
       _pauseVideo('Tab changed from Home');
     }

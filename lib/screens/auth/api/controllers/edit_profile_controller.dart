@@ -29,27 +29,26 @@ class EditProfileController {
 
   /// Update user profile data
   Future<void> updateProfile({
-    required String fullName,
+    required String fullname,
     required String username,
     String? bio,
-    String? profilePicture,
+    // ignore: non_constant_identifier_names
+    String? profile_picture,
   }) async {
     isUpdating = true;
     errorMessage = null;
-
     try {
       final result = await _service.updateProfile(
         request: EditProfileRequest(
-          fullName: fullName,
+          fullname: fullname,
           username: username,
           bio: bio,
-          profilePicture: profilePicture,
+          profile_picture: profile_picture,
         ),
       );
 
       profileResponse = result;
     } catch (e) {
-      profileResponse = null;
       errorMessage = e.toString().replaceFirst('Exception: ', '');
     }
 
@@ -57,18 +56,25 @@ class EditProfileController {
   }
 
   /// Check if email should be shown
-  bool get showEmail => profileResponse?.data.email != null && profileResponse!.data.email!.isNotEmpty;
+  bool get showEmail =>
+      profileResponse?.data.email != null &&
+      profileResponse!.data.email!.isNotEmpty;
 
   /// Check if phone should be shown
-  bool get showPhone => profileResponse?.data.phone != null && profileResponse!.data.phone!.isNotEmpty;
+  bool get showPhone =>
+      profileResponse?.data.phone != null &&
+      profileResponse!.data.phone!.isNotEmpty;
 
   /// Check if bio should be shown
-  bool get showBio => profileResponse?.data.bio != null && profileResponse!.data.bio!.isNotEmpty;
+  bool get showBio =>
+      profileResponse?.data.bio != null &&
+      profileResponse!.data.bio!.isNotEmpty;
 
   /// Get current profile picture URL or fallback
   String get currentProfilePicture {
-    if (profileResponse?.data.profilePicture != null && profileResponse!.data.profilePicture!.isNotEmpty) {
-      return profileResponse!.data.profilePicture!;
+    if (profileResponse?.data.profile_picture != null &&
+        profileResponse!.data.profile_picture!.isNotEmpty) {
+      return profileResponse!.data.profile_picture!;
     }
     return 'assets/search_screen_images/profile.png'; // Default fallback
   }
@@ -90,19 +96,19 @@ class EditProfileController {
     if (fullName.trim().isEmpty) {
       return 'Full name is required';
     }
-    
+
     if (username.trim().isEmpty) {
       return 'Username is required';
     }
-    
+
     if (username.trim().length < 3) {
       return 'Username must be at least 3 characters';
     }
-    
+
     if (bio != null && bio.trim().length > 150) {
       return 'Bio must be less than 150 characters';
     }
-    
+
     return null;
   }
 
