@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart'
+    show StoryController;
 
 import 'package:gruve_app/features/story_preview/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_top_bar.dart';
@@ -18,6 +20,7 @@ class StoryPreviewScreen extends StatefulWidget {
 }
 
 class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
+  final StoryController _controller = StoryController();
   VideoPlayerController? _videoController;
   bool _isVideo = false;
   bool _isInitialized = false;
@@ -206,16 +209,45 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
                         /// SEND
                         GestureDetector(
-                          onTap: () {
-                            // Navigator.push ki jagah ye use karein:
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled:
-                                  true, // Zaroori hai taaki size content ke hisaab se ho
-                              backgroundColor: Colors
-                                  .transparent, // Takki rounded corners dikhein
-                              builder: (context) => const StoryShareSheet(),
+                          onTap: () async {
+                            debugPrint("\n🚀 SEND BUTTON CLICKED");
+
+                            if (_controller.isLoading) {
+                              debugPrint("⏳ Already loading...");
+                              return;
+                            }
+
+                            debugPrint("📤 Calling createStory API...");
+                            debugPrint("📁 MediaPath: ${widget.mediaPath}");
+
+                            await _controller.createStory(
+                              caption: "",
+                              mediaPath: widget.mediaPath,
                             );
+
+                            debugPrint(
+                              "📥 Response Message: ${_controller.message}",
+                            );
+                            debugPrint("📊 Success: ${_controller.isSuccess}");
+
+                            if (!mounted) return;
+
+                            if (_controller.isSuccess) {
+                              debugPrint("✅ SUCCESS → Opening BottomSheet");
+
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => const StoryShareSheet(),
+                              );
+                            } else {
+                              debugPrint("❌ FAILED → Showing Snackbar");
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(_controller.message)),
+                              );
+                            }
                           },
                           child: Container(
                             width: 35,

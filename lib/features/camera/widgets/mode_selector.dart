@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_sheet.dart';
@@ -6,6 +7,7 @@ import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';
+import 'package:provider/provider.dart';
 import '../utils/camera_logger.dart';
 import '../services/mode_service.dart';
 
@@ -27,8 +29,7 @@ class _ModeSelectorState extends State<ModeSelector> {
   @override
   void initState() {
     super.initState();
-    _selectedModeIndex =
-        _modeService.selectedMode == CameraMode.story ? 0 : 1;
+    _selectedModeIndex = _modeService.selectedMode == CameraMode.story ? 0 : 1;
     // Keep singleton in sync with the visible tab when camera opens (capture reads ModeService).
     if (_selectedModeIndex == 0) {
       _modeService.setStoryMode();
@@ -52,8 +53,10 @@ class _ModeSelectorState extends State<ModeSelector> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  StoryPreviewScreen(mediaPath: pickedFile.path),
+              builder: (_) => ChangeNotifierProvider(
+                create: (_) => StoryController(),
+                child: StoryPreviewScreen(mediaPath: pickedFile.path),
+              ),
             ),
           );
         } else if (_modeService.selectedMode == CameraMode.groove) {
@@ -68,8 +71,9 @@ class _ModeSelectorState extends State<ModeSelector> {
           if (result is PostPreviewOpenShare) {
             Navigator.of(context).pop();
             await Future<void>.delayed(Duration.zero);
-            final shareResult =
-                await showSharePostOnHomeSheet(result.mediaPath);
+            final shareResult = await showSharePostOnHomeSheet(
+              result.mediaPath,
+            );
             if (shareResult == 'start_processing') {
               PostShareFlowBridge.notifyShareStartProcessing();
             }
