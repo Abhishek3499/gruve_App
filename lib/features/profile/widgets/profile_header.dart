@@ -12,6 +12,7 @@ class ProfileHeader extends StatelessWidget {
   final String username;
   final String profileImage;
   final ValueChanged<EditProfileResponse>? onProfileUpdated;
+  final bool hasActiveStory;
 
   const ProfileHeader({
     super.key,
@@ -19,6 +20,7 @@ class ProfileHeader extends StatelessWidget {
     required this.username,
     required this.profileImage,
     this.onProfileUpdated,
+    this.hasActiveStory = false,
   });
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,11 @@ class ProfileHeader extends StatelessWidget {
               /// Avatar with Story Indicator
               StoryAvatarIndicator(
                 profileImage: profileImage,
-                onTap: () => StoryUtils.navigateToStoryView(context),
+                hasActiveStory: hasActiveStory,
+                onTap: () async {
+                  debugPrint("🔍 [ProfileHeader] Story avatar tapped, hasActiveStory: $hasActiveStory");
+                  await StoryUtils.navigateToStoryView(context);
+                },
               ),
               const SizedBox(width: 25),
               /// Name + Username + Button

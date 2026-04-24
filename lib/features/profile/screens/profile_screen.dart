@@ -95,6 +95,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? currentUser.profileImage
                 : updated.profile_picture!,
         isFollowing: currentUser.isFollowing,
+        hasActiveStory: currentUser.hasActiveStory,
+        storyCount: currentUser.storyCount,
       );
     });
   }
@@ -200,6 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 return u.isEmpty ? '@username' : u;
                               }(),
                               profileImage: user?.profileImage ?? "",
+                              hasActiveStory: user?.hasActiveStory ?? false,
                               onProfileUpdated: _applyUpdatedProfile,
                             ),
                           ),

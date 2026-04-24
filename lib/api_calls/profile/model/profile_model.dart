@@ -6,6 +6,8 @@ class ProfileModel {
   final String username;
   final String profileImage;
   final bool isFollowing;
+  final bool hasActiveStory;
+  final int storyCount;
 
   ProfileModel({
     required this.id,
@@ -13,6 +15,8 @@ class ProfileModel {
     required this.username,
     required this.profileImage,
     this.isFollowing = false,
+    this.hasActiveStory = false,
+    this.storyCount = 0,
   });
 
   /// Overlays nested `data` / `user` / `profile` fields so top-level keys resolve.
@@ -87,16 +91,35 @@ class ProfileModel {
       'subscribed',
     ]);
 
+    final hasActiveStory = _pickBool(flat, const [
+      'has_active_story',
+      'has_story',
+      'story_active',
+    ]);
+
+    debugPrint("🔍 [ProfileModel] Checking for has_active_story in keys: ${flat.keys.toList()}");
+    debugPrint("🔍 [ProfileModel] has_active_story value: ${flat['has_active_story']}");
+    debugPrint("🔍 [ProfileModel] Parsed hasActiveStory: $hasActiveStory");
+
+    final storyCount = flat['story_count'] ??
+        flat['stories_count'] ??
+        flat['story_count'] ??
+        0;
+
+    debugPrint("🔍 [ProfileModel] Parsed storyCount: $storyCount");
+
     final model = ProfileModel(
       id: id,
       fullName: fullName,
       username: username,
       profileImage: profileImage,
       isFollowing: isFollowing,
+      hasActiveStory: hasActiveStory,
+      storyCount: storyCount,
     );
 
     debugPrint(
-      "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}, isFollowing: ${model.isFollowing}",
+      "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}, isFollowing: ${model.isFollowing}, hasActiveStory: ${model.hasActiveStory}, storyCount: ${model.storyCount}",
     );
 
     return model;

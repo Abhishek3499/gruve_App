@@ -22,6 +22,7 @@ class StoryStateController extends ChangeNotifier {
   List<StoryData> _userStories = [];
   String? _username;
   String? _avatarUrl;
+  bool _isLoadingFromStorage = true;
 
   // Storage keys
   static const String _storiesKey = 'user_stories';
@@ -29,6 +30,7 @@ class StoryStateController extends ChangeNotifier {
   static const String _avatarKey = 'story_avatar';
 
   bool get hasUserStory => _userStories.isNotEmpty;
+  bool get isLoadingFromStorage => _isLoadingFromStorage;
   List<String> get currentUserStoryMediaPaths =>
       _userStories.map((s) => s.mediaPath).toList();
   DateTime? get storyCreatedAt =>
@@ -234,9 +236,12 @@ class StoryStateController extends ChangeNotifier {
       debugPrint("✅ Stories loaded from storage successfully");
       debugPrint("🏁 ===== LOADING STORIES FROM STORAGE END =====\n");
 
+      _isLoadingFromStorage = false;
       notifyListeners();
     } catch (e) {
       debugPrint("❌ Error loading stories from storage: $e");
+      _isLoadingFromStorage = false;
+      notifyListeners();
     }
   }
 
