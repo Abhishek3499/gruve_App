@@ -202,6 +202,21 @@ class StoryStateController extends ChangeNotifier {
     debugPrint("🏁 ===== RESET CONTROLLER END =====\n");
   }
 
+  /// Clear all story data including user info (for logout)
+  Future<void> clearAllData() async {
+    debugPrint("\n🗑️ ===== CLEAR ALL DATA CALLED =====");
+    debugPrint("📊 Stories before clear: ${_userStories.length}");
+
+    _userStories = [];
+    _username = null;
+    _avatarUrl = null;
+    notifyListeners();
+    await _saveStoriesToStorage();
+
+    debugPrint("✅ All story data cleared (stories, username, avatar)");
+    debugPrint("🏁 ===== CLEAR ALL DATA END =====\n");
+  }
+
   // 💾 PERSISTENT STORAGE METHODS
 
   /// Load stories from SharedPreferences

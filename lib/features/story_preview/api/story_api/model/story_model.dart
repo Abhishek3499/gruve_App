@@ -40,12 +40,14 @@ class StoryItem {
   });
 
   factory StoryItem.fromJson(Map<String, dynamic> json) {
-    debugPrint("📦 Parsing StoryItem:");
-    debugPrint("🆔 ID: ${json['id']}");
-    debugPrint("📺 Media URL: ${json['media_url']}");
-    debugPrint("📎 MIME Type: ${json['media_mime_type']}");
-    debugPrint("🎬 Media Kind: ${json['media_kind']}");
-    debugPrint("📝 Caption: ${json['caption']}");
+    debugPrint("📦 [StoryItem] Raw Data: $json");
+    debugPrint("🆔 [StoryItem] ID: ${json['id']}");
+    debugPrint("📺 [StoryItem] Media URL: ${json['media_url']}");
+    debugPrint("📎 [StoryItem] MIME Type: ${json['media_mime_type']}");
+    debugPrint("🎬 [StoryItem] Media Kind: ${json['media_kind']}");
+    debugPrint("📝 [StoryItem] Caption: ${json['caption']}");
+    debugPrint("📅 [StoryItem] Created At: ${json['created_at']}");
+    debugPrint("⏰ [StoryItem] Expires At: ${json['expires_at']}");
 
     return StoryItem(
       id: json['id']?.toString() ?? '',
@@ -83,10 +85,11 @@ class StoriesResponse {
   });
 
   factory StoriesResponse.fromJson(Map<String, dynamic> json) {
-    debugPrint("📥 Parsing StoriesResponse:");
-    debugPrint("🔢 Code: ${json['code']}");
-    debugPrint("✅ Success: ${json['success']}");
-    debugPrint("💬 Message: ${json['message']}");
+    debugPrint("📥 [StoriesResponse] Raw Response: $json");
+    debugPrint("🔢 [StoriesResponse] Code: ${json['code']}");
+    debugPrint("✅ [StoriesResponse] Success: ${json['success']}");
+    debugPrint("💬 [StoriesResponse] Message: ${json['message']}");
+    debugPrint("📦 [StoriesResponse] Data: ${json['data']}");
 
     return StoriesResponse(
       code: json['code'] ?? 200,
@@ -114,16 +117,18 @@ class StoriesData {
   });
 
   factory StoriesData.fromJson(Map<String, dynamic> json) {
-    debugPrint("📊 Parsing StoriesData:");
-    debugPrint("🔢 Count: ${json['count']}");
-    debugPrint("📄 Page: ${json['page']}");
-    debugPrint("📏 Limit: ${json['limit']}");
-    debugPrint("➡️ Has Next: ${json['has_next']}");
+    debugPrint("📊 [StoriesData] Raw Data: $json");
+    debugPrint("🔢 [StoriesData] Count: ${json['count']}");
+    debugPrint("📄 [StoriesData] Page: ${json['page']}");
+    debugPrint("📏 [StoriesData] Limit: ${json['limit']}");
+    debugPrint("➡️ [StoriesData] Has Next: ${json['has_next']}");
 
     final storiesList = json['stories'] as List?;
-    debugPrint("📚 Stories count in list: ${storiesList?.length ?? 0}");
+    debugPrint("📚 [StoriesData] Stories count in list: ${storiesList?.length ?? 0}");
 
     final stories = storiesList?.map((item) => StoryItem.fromJson(item)).toList() ?? [];
+
+    debugPrint("✅ [StoriesData] Parsed ${stories.length} stories");
 
     return StoriesData(
       count: json['count'] ?? 0,

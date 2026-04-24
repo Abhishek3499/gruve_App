@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
-/// Reusable story avatar indicator widget
+/// Reusable Instagram-style story avatar.
+///
+/// - Shows a gradient ring when [hasActiveStory] is true
+/// - Falls back to a normal avatar when there is no active story
+/// - Supports viewed/unviewed ring states
+/// - Works with network images and local placeholder assets
 class StoryAvatarIndicator extends StatelessWidget {
   final String profileImage;
   final double radius;
   final VoidCallback? onTap;
   final bool enableNavigation;
   final bool hasActiveStory;
+  final bool isViewed;
+  final double ringWidth;
+  final double ringGap;
+  final Color innerBackgroundColor;
 
   const StoryAvatarIndicator({
     super.key,
@@ -16,96 +25,112 @@ class StoryAvatarIndicator extends StatelessWidget {
     this.onTap,
     this.enableNavigation = true,
     this.hasActiveStory = false,
+    this.isViewed = false,
+    this.ringWidth = 3.2,
+    this.ringGap = 2.4,
+    this.innerBackgroundColor = const Color(0xFF212235),
   });
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("🔍 [StoryAvatarIndicator] Building widget - hasActiveStory: $hasActiveStory, enableNavigation: $enableNavigation");
-    
-    Widget avatar = Container(
+    debugPrint(
+      '🟣 [StoryAvatarIndicator] build hasActiveStory=$hasActiveStory isViewed=$isViewed radius=$radius',
+    );
+
+    final avatar = _buildAvatarContent();
+    final child = enableNavigation
+        ? GestureDetector(
+            onTap: () {
+              debugPrint(
+                '👆 [StoryAvatarIndicator] tapped hasActiveStory=$hasActiveStory',
+              );
+              onTap?.call();
+            },
+            child: avatar,
+          )
+        : avatar;
+
+    return child;
+  }
+
+  Widget _buildAvatarContent() {
+    final avatarDiameter = radius * 2;
+    final ImageProvider imageProvider = profileImage.isNotEmpty
+        ? NetworkImage(profileImage)
+        : const AssetImage(AppAssets.profile);
+
+    final avatarCore = Container(
+      width: avatarDiameter,
+      height: avatarDiameter,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7D63D1).withValues(alpha: 0.8),
-            blurRadius: 30,
-            spreadRadius: 3,
-          ),
-          BoxShadow(
-            color: const Color(0xFF7D63D1).withValues(alpha: 0.6),
-            blurRadius: 15,
-            spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 20,
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 16,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: CircleAvatar(
-        radius: radius,
-        backgroundImage: profileImage.isNotEmpty
-            ? NetworkImage(profileImage)
-            : AssetImage(AppAssets.profile) as ImageProvider,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: innerBackgroundColor,
+          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+        ),
       ),
     );
 
-    if (!enableNavigation) return avatar;
+    if (!hasActiveStory) {
+      debugPrint('⚪ [StoryAvatarIndicator] Rendering normal avatar');
+      return avatarCore;
+    }
 
-    return GestureDetector(
-      onTap: () {
-        debugPrint("🔍 [StoryAvatarIndicator] Avatar tapped - hasActiveStory: $hasActiveStory");
-        // Temporarily allow tap regardless of hasActiveStory for testing
-        debugPrint("✅ [StoryAvatarIndicator] Calling onTap callback");
-        onTap?.call();
-      },
+    debugPrint(
+      '🟠 [StoryAvatarIndicator] Rendering story ring style=${isViewed ? "viewed" : "active"}',
+    );
+
+    return Container(
+      padding: EdgeInsets.all(ringWidth),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: isViewed
+              ? const [
+                  Color(0xFF9E9E9E),
+                  Color(0xFF757575),
+                  Color(0xFFBDBDBD),
+                ]
+              : const [
+                  Color(0xFFFEDA75),
+                  Color(0xFFFA7E1E),
+                  Color(0xFFD62976),
+                  Color(0xFF962FBF),
+                ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isViewed ? Colors.grey : const Color(0xFFD62976))
+                .withValues(alpha: 0.35),
+            blurRadius: 18,
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Container(
+        padding: EdgeInsets.all(ringGap),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF7D63D1).withValues(alpha: 0.8),
-              blurRadius: 30,
-              spreadRadius: 3,
-            ),
-            BoxShadow(
-              color: const Color(0xFF7D63D1).withValues(alpha: 0.6),
-              blurRadius: 15,
-              spreadRadius: 1,
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: innerBackgroundColor,
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Story indicator ring
-            if (hasActiveStory)
-              Container(
-                width: (radius * 2) + 10,
-                height: (radius * 2) + 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFE91E63),
-                    width: 3,
-                  ),
-                ),
-              ),
-            // Profile picture
-            CircleAvatar(
-              radius: radius,
-              backgroundImage: profileImage.isNotEmpty
-                  ? NetworkImage(profileImage)
-                  : AssetImage(AppAssets.profile) as ImageProvider,
-            ),
-          ],
-        ),
+        child: avatarCore,
       ),
     );
   }

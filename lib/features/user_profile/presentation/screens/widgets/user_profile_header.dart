@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/profile/widgets/story_avatar_indicator.dart';
+import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/subscribe_button.dart';
 
@@ -11,6 +12,9 @@ class UserProfileHeader extends StatelessWidget {
   final String username;
   final String profileUserId;
   final String? profileImageUrl;
+  final bool hasActiveStory;
+  final List<String> storyMediaPaths;
+  final List<DateTime> storyTimestamps;
   final bool showSubscribeButton;
   final bool reserveSubscribeSpace;
   final SubscribeController subscribeController;
@@ -22,20 +26,31 @@ class UserProfileHeader extends StatelessWidget {
     required this.username,
     required this.profileUserId,
     this.profileImageUrl,
+    this.hasActiveStory = false,
+    this.storyMediaPaths = const <String>[],
+    this.storyTimestamps = const <DateTime>[],
     required this.showSubscribeButton,
     required this.subscribeController,
     this.initialIsSubscribed = false,
     this.reserveSubscribeSpace = false,
   });
 
-  ImageProvider _profileImageProvider() {
-    if (profileImageUrl != null &&
-        profileImageUrl!.isNotEmpty &&
-        profileImageUrl!.startsWith('http')) {
-      return NetworkImage(profileImageUrl!);
+  void _openStoryView(BuildContext context) {
+    if (storyMediaPaths.isEmpty) {
+      return;
     }
 
-    return AssetImage(AppAssets.profile);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StoryViewScreen(
+          mediaPaths: storyMediaPaths,
+          username: username,
+          avatarUrl: profileImageUrl,
+          timestamps: storyTimestamps,
+        ),
+      ),
+    );
   }
 
   @override
@@ -50,12 +65,7 @@ class UserProfileHeader extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                icon: Image.asset(
-                  AppAssets.back,
-                  width: 22,
-                  height: 22,
-                  color: Colors.white,
-                ),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
               const Spacer(),
             ],
@@ -67,31 +77,10 @@ class UserProfileHeader extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF7D63D1).withValues(alpha: 0.8),
-                      blurRadius: 30,
-                      spreadRadius: 3,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF7D63D1).withValues(alpha: 0.6),
-                      blurRadius: 15,
-                      spreadRadius: 1,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _profileImageProvider(),
-                ),
+              StoryAvatarIndicator(
+                profileImage: profileImageUrl ?? '',
+                hasActiveStory: hasActiveStory,
+                onTap: () => _openStoryView(context),
               ),
               const SizedBox(width: 25),
               Expanded(

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class CreateStoryResponse {
   final bool success;
   final String message;
@@ -5,7 +7,9 @@ class CreateStoryResponse {
   CreateStoryResponse({required this.success, required this.message});
 
   factory CreateStoryResponse.fromJson(Map<String, dynamic> json) {
-    print("📥 Raw Response: $json");
+    debugPrint("📥 [CreateStoryResponse] Raw Response: $json");
+    debugPrint("✅ [CreateStoryResponse] Success: ${json['success']}");
+    debugPrint("💬 [CreateStoryResponse] Message: ${json['message']}");
 
     return CreateStoryResponse(
       success: json['success'] ?? false,

@@ -24,7 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int selectedTab = 0;
 
   final ProfileController controller = ProfileController();
-
   final ScrollController _scrollController = ScrollController();
 
   bool _isRefreshing = false;
@@ -113,12 +112,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        final user = controller.user;
-
         return Scaffold(
           extendBody: true,
           backgroundColor: const Color(0xFF42174C),
-          endDrawer: ProfileMenuDrawer(profileImage: user?.profileImage),
+          endDrawer: ProfileMenuDrawer(profileImage: controller.user?.profileImage),
           body: Container(
             width: double.infinity,
             height: double.infinity,
@@ -139,8 +136,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: AnimatedBuilder(
-                    animation: controller.contentListenable,
+                    animation: Listenable.merge([
+                      controller.contentListenable,
+                    ]),
                     builder: (context, _) {
+                      final user = controller.user;
                       return Stack(
                         children: [
                           Container(
@@ -195,15 +195,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             top: 30,
                             left: 0,
                             right: 0,
-                            child: ProfileHeader(
-                              fullName: (user?.fullName ?? '').trim(),
-                              username: () {
-                                final u = _displayUsername(user?.username);
-                                return u.isEmpty ? '@username' : u;
-                              }(),
-                              profileImage: user?.profileImage ?? "",
-                              hasActiveStory: user?.hasActiveStory ?? false,
-                              onProfileUpdated: _applyUpdatedProfile,
+                            child: Builder(
+                              builder: (context) {
+                                final hasStory =
+                                    user?.hasActiveStory ?? false;
+                                debugPrint("🔍 [ProfileScreen] hasActiveStory check:");
+                                debugPrint("  - user?.hasActiveStory: ${user?.hasActiveStory}");
+                                debugPrint("  - Final hasActiveStory: $hasStory");
+                                return ProfileHeader(
+                                  fullName: (user?.fullName ?? '').trim(),
+                                  username: () {
+                                    final u = _displayUsername(user?.username);
+                                    return u.isEmpty ? '@username' : u;
+                                  }(),
+                                  profileImage: user?.profileImage ?? "",
+                                  hasActiveStory: hasStory,
+                                  onProfileUpdated: _applyUpdatedProfile,
+                                );
+                              },
                             ),
                           ),
                         ],

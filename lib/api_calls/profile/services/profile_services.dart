@@ -74,13 +74,13 @@ class ProfileService {
           options: Options(headers: {"Authorization": "Bearer $token"}),
         );
 
+        debugPrint(" Status Code: ${response.data}");
+
         debugPrint(" Status Code: ${response.statusCode}");
         debugPrint(" Response received successfully");
 
         // Enhanced response logging
-        debugPrint(
-          "🔍 [ProfileService] RAW RESPONSE TYPE: ${response.data.runtimeType}",
-        );
+        debugPrint("🔍  RAW RESPONSE TYPE: ${response.data.runtimeType}");
         if (response.data != null) {
           if (response.data is Map) {
             final responseMap = Map<String, dynamic>.from(response.data as Map);

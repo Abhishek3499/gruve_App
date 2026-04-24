@@ -96,6 +96,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 userId: post.userId,
                 profilePicture: post.profilePicture,
                 initialIsSubscribed: post.isSubscribed,
+                hasActiveStory: post.hasActiveStory,
                 subscribeController: _subscribeController,
                 onOwnProfileTap: widget.onOwnProfileTap,
               );

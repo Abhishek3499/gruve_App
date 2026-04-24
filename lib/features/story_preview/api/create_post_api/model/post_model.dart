@@ -29,6 +29,7 @@ class Post {
   String username;
   bool isSubscribed;
   String profilePicture;
+  bool hasActiveStory;
 
   Post({
     required this.id,
@@ -41,6 +42,7 @@ class Post {
     required this.username,
     required this.isSubscribed,
     required this.profilePicture,
+    this.hasActiveStory = false,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -66,6 +68,7 @@ class Post {
       profilePicture: _normalizeUrl(
         json['user']?['profile_picture'] ?? json['profile_picture'] ?? "",
       ),
+      hasActiveStory: json['user']?['has_active_story'] ?? json['has_active_story'] ?? false,
     );
   }
 

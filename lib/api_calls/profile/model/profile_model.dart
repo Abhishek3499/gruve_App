@@ -53,6 +53,7 @@ class ProfileModel {
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     final flat = flattenUserJson(json);
     debugPrint("[ProfileModel] fromJson (flattened keys): ${flat.keys.toList()}");
+    debugPrint("[ProfileModel] Full flattened JSON: $flat");
 
     final fullName = _pickString(flat, const [
       'full_name',
@@ -91,22 +92,31 @@ class ProfileModel {
       'subscribed',
     ]);
 
-    final hasActiveStory = _pickBool(flat, const [
+    final parsedHasActiveStory = _pickBool(flat, const [
       'has_active_story',
       'has_story',
       'story_active',
+      'has_stories',
     ]);
+    final storyCount = _pickInt(flat, const [
+      'story_count',
+      'stories_count',
+      'storyCount',
+      'storiesCount',
+    ]);
+    final hasActiveStory = parsedHasActiveStory;
 
-    debugPrint("🔍 [ProfileModel] Checking for has_active_story in keys: ${flat.keys.toList()}");
-    debugPrint("🔍 [ProfileModel] has_active_story value: ${flat['has_active_story']}");
-    debugPrint("🔍 [ProfileModel] Parsed hasActiveStory: $hasActiveStory");
-
-    final storyCount = flat['story_count'] ??
-        flat['stories_count'] ??
-        flat['story_count'] ??
-        0;
-
-    debugPrint("🔍 [ProfileModel] Parsed storyCount: $storyCount");
+    debugPrint(
+      "[ProfileModel] Checking for has_active_story in keys: ${flat.keys.toList()}",
+    );
+    debugPrint(
+      "[ProfileModel] has_active_story value: ${flat['has_active_story']}",
+    );
+    debugPrint(
+      "[ProfileModel] Parsed hasActiveStory flag: $parsedHasActiveStory",
+    );
+    debugPrint("[ProfileModel] Final hasActiveStory: $hasActiveStory");
+    debugPrint("[ProfileModel] Parsed storyCount: $storyCount");
 
     final model = ProfileModel(
       id: id,
@@ -164,6 +174,32 @@ class ProfileModel {
       if (normalized == 'false' || normalized == '0') {
         return false;
       }
+    }
+
+    return null;
+  }
+
+  static int _pickInt(Map<String, dynamic> map, List<String> keys) {
+    for (final k in keys) {
+      final value = _toInt(map[k]);
+      if (value != null) {
+        return value;
+      }
+    }
+    return 0;
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    if (value is String) {
+      return int.tryParse(value.trim());
     }
 
     return null;

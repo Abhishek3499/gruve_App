@@ -17,6 +17,7 @@ class VideoUserInfo extends StatefulWidget {
   final int userCount;
   final String? profilePicture;
   final bool initialIsSubscribed;
+  final bool hasActiveStory;
   final SubscribeController subscribeController;
   final VoidCallback onOwnProfileTap;
 
@@ -29,6 +30,7 @@ class VideoUserInfo extends StatefulWidget {
     this.userCount = 2,
     this.profilePicture,
     this.initialIsSubscribed = false,
+    this.hasActiveStory = false,
     required this.subscribeController,
     required this.onOwnProfileTap,
   });
@@ -95,6 +97,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
           profileUserId: widget.userId,
           userName: widget.username,
           profileImageUrl: widget.profilePicture,
+          initialHasActiveStory: widget.hasActiveStory,
         ),
       ),
     );
