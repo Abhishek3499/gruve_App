@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -27,7 +28,6 @@ class StoryService {
     );
   }
 
-  // 🚀 CREATE STORY API
   Future<CreateStoryResponse> createStory({
     required String caption,
     required String mediaPath,
@@ -58,10 +58,8 @@ class StoryService {
         "file": await MultipartFile.fromFile(file.path, filename: fileName),
       });
 
-      // 🔍 Deep Debug
       debugPrint("🔍 FormData Fields: ${formData.fields}");
       debugPrint("📎 FormData Files: ${formData.files}");
-
       debugPrint("🌐 Hitting API: POST stories/");
 
       final res = await _dio.post(
@@ -97,67 +95,6 @@ class StoryService {
       debugPrint("🚫 =========================\n");
 
       rethrow;
-    }
-  }
-
-  // 📥 FETCH STORIES API
-  Future<List<String>> fetchStories() async {
-    try {
-      debugPrint("\n🚀 ===== FETCH STORIES START =====");
-
-      final token = await TokenStorage.getAccessToken();
-      debugPrint("🔑 Token: $token");
-
-      debugPrint("🌐 Hitting API: GET stories/");
-
-      final res = await _dio.get(
-        "stories/",
-        options: Options(headers: {"Authorization": "Bearer $token"}),
-      );
-
-      debugPrint("✅ ===== SUCCESS RESPONSE =====");
-      debugPrint("📊 Status Code: ${res.statusCode}");
-      debugPrint("📥 Response Data: ${res.data}");
-
-      if (res.statusCode == 200 && res.data != null) {
-        // Parse response - assuming API returns list of story objects with mediaPath
-        List<String> storyPaths = [];
-
-        if (res.data is List) {
-          final stories = res.data as List;
-          for (var story in stories) {
-            if (story is Map && story['media_path'] != null) {
-              storyPaths.add(story['media_path'].toString());
-            } else if (story is String) {
-              storyPaths.add(story);
-            }
-          }
-        }
-
-        debugPrint("📚 Found ${storyPaths.length} stories");
-        debugPrint("🏁 ===== FETCH STORIES END =====\n");
-
-        return storyPaths;
-      } else {
-        debugPrint("❌ No stories found");
-        debugPrint("🏁 ===== FETCH STORIES END =====\n");
-        return [];
-      }
-    } on DioException catch (e) {
-      debugPrint("\n❌ ===== DIO ERROR =====");
-      debugPrint("⚠️ Type: ${e.type}");
-      debugPrint("📊 Status Code: ${e.response?.statusCode}");
-      debugPrint("📥 Response Data: ${e.response?.data}");
-      debugPrint("🔗 Request Path: ${e.requestOptions.path}");
-      debugPrint("🚫 ===== ERROR END =====\n");
-
-      return [];
-    } catch (e) {
-      debugPrint("\n💥 ===== UNKNOWN ERROR =====");
-      debugPrint("❌ Error: $e");
-      debugPrint("🚫 =========================\n");
-
-      return [];
     }
   }
 }

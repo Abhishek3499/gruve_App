@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/api_calls/profile/repository/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 
 import '../model/profile_model.dart';
 import '../model/profile_stats_model.dart';
@@ -81,6 +82,9 @@ class ProfileController {
     const ProfileStatsModel.empty(),
   );
   final ValueNotifier<List<Post>> postsNotifier = ValueNotifier(const []);
+  final ValueNotifier<List<String>> storiesNotifier = ValueNotifier(
+    const <String>[],
+  );
 
   /// Rebuild scrollable profile content (stats + grid). Omits [isLoading] so
   /// tab pagination does not replace the whole screen with a blocking loader.
@@ -290,6 +294,86 @@ class ProfileController {
       statsNotifier.value = stats;
       debugPrint('✅ [ProfileController] Updated user and statsNotifier');
       debugPrint('🔄 [ProfileController] Notifying listeners of stats change');
+
+      final storyStateController = StoryStateController();
+      await storyStateController.setUserInfo(
+        username: profile.username,
+        avatarUrl: profile.profileImage,
+      );
+
+      try {
+        debugPrint('📚 [ProfileController] Parsing stories from profile API');
+        final storiesData = userData['data']?['stories'];
+
+        if (storiesData != null && storiesData is Map<String, dynamic>) {
+          final results = storiesData['results'] as List<dynamic>?;
+
+          if (results != null && results.isNotEmpty) {
+            final List<String> storyMediaUrls = [];
+            final List<DateTime> storyCreatedAts = [];
+
+            for (final story in results) {
+              if (story is! Map<String, dynamic>) continue;
+
+              final mediaUrl = story['media_url']?.toString() ?? '';
+              if (mediaUrl.isEmpty) continue;
+
+              storyMediaUrls.add(mediaUrl);
+              storyCreatedAts.add(
+                _parseStoryCreatedAt(story['created_at']) ?? DateTime.now(),
+              );
+
+              debugPrint(
+                '🖼️ [ProfileController] Story parsed -> mediaUrl=$mediaUrl, createdAt=${story['created_at']}',
+              );
+            }
+
+            storiesNotifier.value = storyMediaUrls;
+            debugPrint(
+              '📚 [ProfileController] storiesNotifier updated with ${storyMediaUrls.length} stories',
+            );
+
+            await storyStateController.setStoriesFromAPI(
+              storyMediaUrls,
+              createdAts: storyCreatedAts,
+              username: profile.username,
+              avatarUrl: profile.profileImage,
+            );
+
+            debugPrint(
+              '✅ [ProfileController] StoryStateController synced with ${storyMediaUrls.length} profile stories',
+            );
+          } else {
+            debugPrint(
+              '📭 [ProfileController] Profile API returned no story results',
+            );
+            storiesNotifier.value = const <String>[];
+            await storyStateController.setStoriesFromAPI(
+              const <String>[],
+              username: profile.username,
+              avatarUrl: profile.profileImage,
+            );
+          }
+        } else {
+          debugPrint(
+            '📭 [ProfileController] No `data.stories` map found in profile response',
+          );
+          storiesNotifier.value = const <String>[];
+          await storyStateController.setStoriesFromAPI(
+            const <String>[],
+            username: profile.username,
+            avatarUrl: profile.profileImage,
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ [ProfileController] STORY PARSE ERROR: $e');
+        storiesNotifier.value = const <String>[];
+        await storyStateController.setStoriesFromAPI(
+          const <String>[],
+          username: profile.username,
+          avatarUrl: profile.profileImage,
+        );
+      }
 
       await Future<void>.delayed(const Duration(milliseconds: 16));
       if (_disposed) return;
@@ -1032,6 +1116,7 @@ class ProfileController {
     isLoading.dispose();
     statsNotifier.dispose();
     postsNotifier.dispose();
+    storiesNotifier.dispose();
     gridRevision.dispose();
   }
 
@@ -1074,5 +1159,10 @@ class ProfileController {
         value.containsKey('profile_picture') ||
         value.containsKey('id') ||
         value.containsKey('user_id');
+  }
+
+  DateTime? _parseStoryCreatedAt(dynamic rawValue) {
+    if (rawValue == null) return null;
+    return DateTime.tryParse(rawValue.toString());
   }
 }

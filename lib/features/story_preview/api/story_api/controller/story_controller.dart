@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/service/story_service.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 
 class StoryController extends ChangeNotifier {
   final StoryService _service = StoryService();
@@ -10,7 +9,6 @@ class StoryController extends ChangeNotifier {
   String message = "";
   bool isSuccess = false;
 
-  // 🔥 Reset state (useful after success)
   void reset() {
     message = "";
     isSuccess = false;
@@ -44,12 +42,12 @@ class StoryController extends ChangeNotifier {
       isSuccess = response.success;
 
       if (isSuccess) {
-        debugPrint("✅ Story Created Successfully 🎉");
+        debugPrint("✅ Story created successfully 🎉");
       } else {
-        debugPrint("❌ Story Failed: ${response.message}");
+        debugPrint("❌ Story failed: ${response.message}");
       }
     } catch (e) {
-      debugPrint("💥 Controller Error: $e");
+      debugPrint("💥 Controller error: $e");
 
       message = "Something went wrong 😓";
       isSuccess = false;
@@ -58,36 +56,6 @@ class StoryController extends ChangeNotifier {
       notifyListeners();
 
       debugPrint("🏁 ===== CONTROLLER END =====\n");
-    }
-  }
-
-  // 👤 SET USER INFO METHOD
-  Future<void> setUserInfo({String? username, String? avatarUrl}) async {
-    final storyStateController = StoryStateController();
-    await storyStateController.setUserInfo(username: username, avatarUrl: avatarUrl);
-  }
-
-  // 📥 FETCH STORIES METHOD
-  Future<void> fetchStories() async {
-    try {
-      debugPrint("\n🎬 ===== FETCH CONTROLLER START =====");
-
-      isLoading = true;
-      notifyListeners();
-
-      final storyPaths = await _service.fetchStories();
-      
-      // Update the state controller with fetched stories
-      final storyStateController = StoryStateController();
-      await storyStateController.setStoriesFromAPI(storyPaths);
-
-      debugPrint("📚 Fetched ${storyPaths.length} stories");
-      debugPrint("🏁 ===== FETCH CONTROLLER END =====\n");
-    } catch (e) {
-      debugPrint("💥 Fetch Controller Error: $e");
-    } finally {
-      isLoading = false;
-      notifyListeners();
     }
   }
 }

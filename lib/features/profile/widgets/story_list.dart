@@ -1,30 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
-
-import '../../../core/assets.dart';
+import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 
 class StoryList extends StatelessWidget {
-  const StoryList({super.key});
+  final ProfileController controller;
+
+  const StoryList({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 30),
-        children: [
-          _buildAddStory(context),
-          _buildStory(AppAssets.frame1, 'Admin...'),
-          _buildStory(AppAssets.frame2, 'Admin...'),
-          _buildStory(AppAssets.frame3, 'Admin...'),
-          _buildStory(AppAssets.frame2, 'Admin...'),
-          _buildStory(AppAssets.frame3, 'Admin...'),
-          _buildStory(AppAssets.frame2, 'Admin...'),
-          _buildStory(AppAssets.frame1, 'Admin...'),
-        ],
-      ),
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: controller.storiesNotifier,
+      builder: (context, stories, _) {
+        debugPrint(
+          '🎞️ [StoryList] Rebuilding horizontal stories list with ${stories.length} stories',
+        );
+
+        return SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(left: 30),
+            itemCount: stories.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildAddStory(context);
+              }
+
+              final storyUrl = stories[index - 1];
+              return _buildStory(
+                context,
+                imageUrl: storyUrl,
+                title: index == 1 ? 'Your Story' : 'Story $index',
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -33,6 +47,7 @@ class StoryList extends StatelessWidget {
       padding: const EdgeInsets.only(right: 18),
       child: GestureDetector(
         onTap: () async {
+          debugPrint('➕ [StoryList] Add Story tapped');
           final result = await CameraHandler.openCamera(context);
           if (result == 'start_processing' && context.mounted) {
             PostShareFlowBridge.notifyShareStartProcessing();
@@ -74,33 +89,44 @@ class StoryList extends StatelessWidget {
     );
   }
 
-  Widget _buildStory(String imagePath, String title) {
+  Widget _buildStory(
+    BuildContext context, {
+    required String imageUrl,
+    required String title,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 18),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
+      child: GestureDetector(
+        onTap: () {
+          debugPrint('👆 [StoryList] Story tapped -> $imageUrl');
+          StoryUtils.navigateToStoryView(context);
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFF212235),
+                backgroundImage: NetworkImage(imageUrl),
               ),
             ),
-            child: CircleAvatar(
-              radius: 28,
-              backgroundImage: AssetImage(imagePath),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

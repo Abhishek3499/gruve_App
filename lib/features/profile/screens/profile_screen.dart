@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
 import 'package:gruve_app/api_calls/profile/model/profile_model.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 
@@ -36,23 +34,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     // So [PostShareFlowBridge] / home can refresh stats + "All" grid after a new post.
     ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
+    debugPrint('🚀 [ProfileScreen] Initializing profile screen');
     controller.fetchUser();
     _scrollController.addListener(_onProfileScroll);
-    
-    // Fetch existing stories from backend
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final storyController = Provider.of<StoryController>(context, listen: false);
-      
-      // Pass user info to story controller
-      if (controller.user != null) {
-        await storyController.setUserInfo(
-          username: controller.user!.username,
-          avatarUrl: controller.user!.profileImage,
-        );
-      }
-      
-      storyController.fetchStories();
-    });
   }
 
   Future<void> _onBridgeRefreshRequested(String reason) async {
@@ -178,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   videosCount: controller.stats.videosCount,
                                 ),
                                 const SizedBox(height: 25),
-                                const StoryList(),
+                                StoryList(controller: controller),
                                 const SizedBox(height: 20),
                                 FilterTabs(
                                   selectedIndex: selectedTab,

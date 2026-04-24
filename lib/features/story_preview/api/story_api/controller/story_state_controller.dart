@@ -31,8 +31,6 @@ class StoryStateController extends ChangeNotifier {
   bool get hasUserStory => _userStories.isNotEmpty;
   List<String> get currentUserStoryMediaPaths =>
       _userStories.map((s) => s.mediaPath).toList();
-  String? get currentUserStoryMediaPath =>
-      _userStories.isNotEmpty ? _userStories.first.mediaPath : null;
   DateTime? get storyCreatedAt =>
       _userStories.isNotEmpty ? _userStories.first.createdAt : null;
   String? get username => _username;
