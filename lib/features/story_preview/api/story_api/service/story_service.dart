@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
+
 import 'package:gruve_app/features/story_preview/api/story_api/model/stroy_response.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
@@ -97,6 +97,67 @@ class StoryService {
       debugPrint("🚫 =========================\n");
 
       rethrow;
+    }
+  }
+
+  // 📥 FETCH STORIES API
+  Future<List<String>> fetchStories() async {
+    try {
+      debugPrint("\n🚀 ===== FETCH STORIES START =====");
+
+      final token = await TokenStorage.getAccessToken();
+      debugPrint("🔑 Token: $token");
+
+      debugPrint("🌐 Hitting API: GET stories/");
+
+      final res = await _dio.get(
+        "stories/",
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      debugPrint("✅ ===== SUCCESS RESPONSE =====");
+      debugPrint("📊 Status Code: ${res.statusCode}");
+      debugPrint("📥 Response Data: ${res.data}");
+
+      if (res.statusCode == 200 && res.data != null) {
+        // Parse response - assuming API returns list of story objects with mediaPath
+        List<String> storyPaths = [];
+
+        if (res.data is List) {
+          final stories = res.data as List;
+          for (var story in stories) {
+            if (story is Map && story['media_path'] != null) {
+              storyPaths.add(story['media_path'].toString());
+            } else if (story is String) {
+              storyPaths.add(story);
+            }
+          }
+        }
+
+        debugPrint("📚 Found ${storyPaths.length} stories");
+        debugPrint("🏁 ===== FETCH STORIES END =====\n");
+
+        return storyPaths;
+      } else {
+        debugPrint("❌ No stories found");
+        debugPrint("🏁 ===== FETCH STORIES END =====\n");
+        return [];
+      }
+    } on DioException catch (e) {
+      debugPrint("\n❌ ===== DIO ERROR =====");
+      debugPrint("⚠️ Type: ${e.type}");
+      debugPrint("📊 Status Code: ${e.response?.statusCode}");
+      debugPrint("📥 Response Data: ${e.response?.data}");
+      debugPrint("🔗 Request Path: ${e.requestOptions.path}");
+      debugPrint("🚫 ===== ERROR END =====\n");
+
+      return [];
+    } catch (e) {
+      debugPrint("\n💥 ===== UNKNOWN ERROR =====");
+      debugPrint("❌ Error: $e");
+      debugPrint("🚫 =========================\n");
+
+      return [];
     }
   }
 }

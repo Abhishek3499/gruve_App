@@ -70,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen>
     };
 
     PostShareFlowBridge.onRequestShowHomeFeed = _ensureHomeFeedTab;
+    PostShareFlowBridge.onRequestShowProfileTab = _ensureProfileTab;
 
     _setupLifecycleObservers();
   }
@@ -83,6 +84,15 @@ class _HomeScreenState extends State<HomeScreen>
       _currentIndex = 0;
     });
     _handleTabChange(0);
+  }
+
+  void _ensureProfileTab() {
+    if (!mounted || _isDisposed || _currentIndex == 4) return;
+    setState(() {
+      _previousIndex = _currentIndex;
+      _currentIndex = 4;
+    });
+    _handleTabChange(4);
   }
 
   void _setupLifecycleObservers() {

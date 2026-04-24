@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/widgets/also_share_sheet.dart';
+import 'package:provider/provider.dart';
 
 class AppColors {
   static const sheetBackground = Color.fromARGB(238, 66, 19, 73);
@@ -11,15 +15,21 @@ class AppColors {
 }
 
 class StoryShareSheet extends StatefulWidget {
-  const StoryShareSheet({super.key});
+  final String? mediaPath;
 
-  // ✅ FIX 2: viewInsets sirf yahan ek jagah handle karo
-  static void show(BuildContext context) {
+  const StoryShareSheet({super.key, this.mediaPath});
+
+  static void show(BuildContext context, {String? mediaPath}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const StoryShareSheet(),
+      builder: (bottomSheetContext) {
+        return ChangeNotifierProvider.value(
+          value: Provider.of<StoryController>(context, listen: false),
+          child: StoryShareSheet(mediaPath: mediaPath),
+        );
+      },
     );
   }
 
@@ -31,10 +41,64 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
   bool _yourStorySelected = true;
   bool _closeFriendsSelected = false;
 
+  Future<void> _handleShareAction() async {
+    if (!_yourStorySelected || widget.mediaPath == null) {
+      Navigator.pop(context);
+      return;
+    }
+
+    debugPrint('\n[StoryShareSheet] Share tapped');
+    debugPrint('[StoryShareSheet] MediaPath: ${widget.mediaPath}');
+
+    try {
+      final storyController = Provider.of<StoryController>(
+        context,
+        listen: false,
+      );
+
+      await storyController.createStory(
+        caption: '',
+        mediaPath: widget.mediaPath!,
+      );
+
+      debugPrint('[StoryShareSheet] Response: ${storyController.message}');
+      debugPrint('[StoryShareSheet] Success: ${storyController.isSuccess}');
+
+      if (!mounted) return;
+
+      if (storyController.isSuccess) {
+        StoryStateController().markStoryAsShared(widget.mediaPath!);
+
+        final navigator = Navigator.of(context);
+        PostShareFlowBridge.notifyStorySharedNavigateToProfile();
+
+        navigator.pop();
+        if (navigator.canPop()) {
+          navigator.pop();
+        }
+      } else {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(storyController.message)),
+        );
+      }
+    } catch (e) {
+      debugPrint('[StoryShareSheet] Error: $e');
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong while sharing story'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // ✅ FIX 2: viewInsets yahan ek baar — duplicate mat karo
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
@@ -48,7 +112,6 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle Bar
             Container(
               width: 40,
               height: 4,
@@ -58,7 +121,6 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-
             _ShareOptionTile(
               leading: const CircleAvatar(
                 radius: 24,
@@ -70,9 +132,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
               onTap: () =>
                   setState(() => _yourStorySelected = !_yourStorySelected),
             ),
-
             const SizedBox(height: 12),
-
             _ShareOptionTile(
               leading: _buildCircularIcon(
                 Image.asset(AppAssets.stars, height: 25, width: 25),
@@ -84,9 +144,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
                 () => _closeFriendsSelected = !_closeFriendsSelected,
               ),
             ),
-
             const SizedBox(height: 12),
-
             _ShareOptionTile(
               leading: _buildCircularIcon(
                 Image.asset(AppAssets.sendbutton, height: 26, width: 26),
@@ -96,9 +154,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
               title: 'Message',
               trailing: const Icon(Icons.chevron_right, color: Colors.white54),
               onTap: () {
-                Navigator.pop(context); // Purana popup band karega
-
-                // Naya popup khulega
+                Navigator.pop(context);
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
@@ -106,18 +162,9 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
                   builder: (context) => const AlsoShareSheet(),
                 );
               },
-
-              // Action for message
             ),
-
             const SizedBox(height: 24),
-
-            _buildGradientButton(
-              text: 'Share',
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
+            _buildGradientButton(text: 'Share', onPressed: _handleShareAction),
           ],
         ),
       ),
@@ -125,7 +172,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
   }
 
   Widget _buildCircularIcon(
-    Widget child, // 👈 IconData → Widget
+    Widget child,
     Color bgColor, {
     bool showBorder = false,
   }) {
@@ -212,9 +259,8 @@ class _ShareOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ FIX 1: Material wrap kiya — InkWell ko Material ancestor chahiye
     return Material(
-      color: Colors.transparent, // Background change nahi hogi
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),

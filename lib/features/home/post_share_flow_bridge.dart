@@ -16,6 +16,10 @@ class PostShareFlowBridge {
   /// share / processing never leaves the user on Profile or another tab.
   static VoidCallback? onRequestShowHomeFeed;
 
+  /// Home registers: switch [IndexedStack] to the profile tab (index 4)
+  /// without pushing a new standalone screen.
+  static VoidCallback? onRequestShowProfileTab;
+
   static dynamic _videoControllerRef;
   static VideoService? _currentVideoService;
 
@@ -24,6 +28,10 @@ class PostShareFlowBridge {
   static void notifyShareStartProcessing() {
     onRequestShowHomeFeed?.call();
     onShareStartProcessing?.call();
+  }
+
+  static void notifyStorySharedNavigateToProfile() {
+    onRequestShowProfileTab?.call();
   }
 
   static void setVideoController(dynamic controller) {
@@ -126,6 +134,7 @@ class PostShareFlowBridge {
     onShareStartProcessing = null;
     onShareUploadError = null;
     onRequestShowHomeFeed = null;
+    onRequestShowProfileTab = null;
     _videoControllerRef = null;
     _currentVideoService = null;
     _needsRefresh = false;

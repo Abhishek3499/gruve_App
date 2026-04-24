@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/splash_screen.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -39,25 +41,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Gruve',
-      debugShowCheckedModeBanner: false,
-      navigatorKey: rootNavigatorKey,
+    return ChangeNotifierProvider(
+      create: (context) => StoryController(),
+      child: MaterialApp(
+        title: 'Gruve',
+        debugShowCheckedModeBanner: false,
+        navigatorKey: rootNavigatorKey,
 
-      // 🔥 IMPORTANT: Prevent white flashes during navigation
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.black,
-        brightness: Brightness.dark,
-        pageTransitionsTheme: PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: _SlideRightTransition(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
+        // 🔥 IMPORTANT: Prevent white flashes during navigation
+        theme: ThemeData(
+          scaffoldBackgroundColor: Colors.black,
+          brightness: Brightness.dark,
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: _SlideRightTransition(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
         ),
-      ),
 
-      navigatorObservers: [routeObserver],
-      home: SplashScreen(),
+        navigatorObservers: [routeObserver],
+        home: SplashScreen(),
+      ),
     );
   }
 }

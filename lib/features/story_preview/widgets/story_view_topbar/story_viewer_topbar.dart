@@ -7,6 +7,7 @@ class StoryViewerTopBar extends StatelessWidget {
   final int storyCount;
   final int currentIndex;
   final VoidCallback onClose;
+  final double progress;
 
   const StoryViewerTopBar({
     super.key,
@@ -16,6 +17,7 @@ class StoryViewerTopBar extends StatelessWidget {
     required this.storyCount,
     required this.currentIndex,
     required this.onClose,
+    required this.progress,
   });
 
   @override
@@ -33,12 +35,16 @@ class StoryViewerTopBar extends StatelessWidget {
                 return Expanded(
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 2),
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: index <= currentIndex
-                          ? Colors.white
-                          : Color(0x4DFFFFFF),
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        minHeight: 3,
+                        value: index == currentIndex
+                            ? progress
+                            : (index < currentIndex ? 1 : 0),
+                        backgroundColor: const Color(0x4DFFFFFF),
+                        valueColor: const AlwaysStoppedAnimation(Colors.white),
+                      ),
                     ),
                   ),
                 );
