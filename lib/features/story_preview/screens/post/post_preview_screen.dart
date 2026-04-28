@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
 
-import 'package:gruve_app/features/story_preview/widgets/post/post_action_buttons.dart';
+import 'package:gruve_app/features/story_preview/api/post/post_action_buttons.dart';
 
 import 'package:video_player/video_player.dart';
 
@@ -147,12 +147,12 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                               );
                               Navigator.push(
                                 context,
-                              MaterialPageRoute(
-                                builder: (context) => SharePostScreen(
-                                  mediaPath: widget.mediaPath,
-                                  popPostPreviewRouteAfterShare: true,
+                                MaterialPageRoute(
+                                  builder: (context) => SharePostScreen(
+                                    mediaPath: widget.mediaPath,
+                                    popPostPreviewRouteAfterShare: true,
+                                  ),
                                 ),
-                              ),
                               );
                             } catch (e) {
                               debugPrint('Navigation error: $e');

@@ -7,7 +7,7 @@ import 'package:gruve_app/features/story_preview/screens/audience/audience_scree
 import 'package:gruve_app/features/story_preview/screens/post/more_option_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_people_screen.dart';
 
-import 'package:gruve_app/features/story_preview/widgets/post/menu_row.dart';
+import 'package:gruve_app/features/story_preview/api/post/menu_row.dart';
 
 class SharePostScreen extends StatefulWidget {
   final String mediaPath;

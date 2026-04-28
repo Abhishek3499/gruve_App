@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/more_screen.dart';
+import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/highlight_sheet.dart';
 
 class StoryViewBottom extends StatelessWidget {
   const StoryViewBottom({super.key});
@@ -18,18 +19,23 @@ class StoryViewBottom extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end, // 👈 right side
         children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                AppAssets.hightlight,
-                width: 24,
-                height: 24,
-                color: Colors.white, // optional agar icon white chahiye
-              ),
-              SizedBox(height: 4),
-              Text("Highlight", style: TextStyle(color: Colors.white)),
-            ],
+          GestureDetector(
+            onTap: () {
+              showInstagramHighlightSheet(context);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  AppAssets.hightlight,
+                  width: 24,
+                  height: 24,
+                  color: Colors.white,
+                ),
+                SizedBox(height: 4),
+                Text("Highlight", style: TextStyle(color: Colors.white)),
+              ],
+            ),
           ),
 
           const SizedBox(width: 30),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/screen/message_screen.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
-import 'package:gruve_app/features/story_preview/widgets/post/api/video_service.dart';
-import 'package:gruve_app/features/story_preview/widgets/post/processing_dialog.dart';
+import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
+import 'package:gruve_app/features/story_preview/api/post/processing_dialog.dart';
 import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';

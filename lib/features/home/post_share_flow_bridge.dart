@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
-import 'package:gruve_app/features/story_preview/widgets/post/api/video_service.dart';
+import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
 
 class PostShareFlowBridge {
   /// Home registers: show the existing processing overlay (same as camera flow).
@@ -111,13 +111,13 @@ class PostShareFlowBridge {
       }
     } else {
       print("❌ Bridge: No refresh method available, setting flag");
-      print("🔄 Bridge: Refresh flag set, will refresh when home tab is accessed");
+      print(
+        "🔄 Bridge: Refresh flag set, will refresh when home tab is accessed",
+      );
       _needsRefresh = true;
     }
 
-    await ProfileCountRefreshBridge.notifyCountsChanged(
-      reason: 'post_created',
-    );
+    await ProfileCountRefreshBridge.notifyCountsChanged(reason: 'post_created');
     markProcessingCompleted();
   }
 

@@ -236,6 +236,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     (profile?.profileImage.isNotEmpty ?? false)
                                     ? profile!.profileImage
                                     : widget.profileImageUrl,
+                                hasActiveStory: profile?.hasActiveStory ?? widget.initialHasActiveStory,
                                 showSubscribeButton: showSubscribeButton,
                                 reserveSubscribeSpace: _isResolvingIdentity,
                                 subscribeController: _subscribeController,
