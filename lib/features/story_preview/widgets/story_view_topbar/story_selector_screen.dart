@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 
@@ -12,6 +13,18 @@ class StorySelectorScreen extends StatefulWidget {
 
 class _StorySelectorScreenState extends State<StorySelectorScreen> {
   int selectedIndex = -1;
+
+  Widget _buildImage(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(path, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
+        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+      });
+    } else {
+      return Image.file(File(path), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
+        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +73,7 @@ class _StorySelectorScreenState extends State<StorySelectorScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(widget.mediaPaths[index], fit: BoxFit.cover),
+                _buildImage(widget.mediaPaths[index]),
                 if (isSelected)
                   Container(
                     color: Colors.black26,
@@ -91,49 +104,46 @@ class CreateHighlightSheet extends StatefulWidget {
 class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
   final TextEditingController _nameController = TextEditingController();
 
+  Widget _buildImage(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(path, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
+        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+      });
+    } else {
+      return Image.file(File(path), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
+        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(top: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'New Highlight',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black),
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      body: Column(
         children: [
-          // Drag handle
-          Container(
-            height: 4,
-            width: 40,
-            margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-
-          const Text(
-            'New Highlight',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
 
           // Image with small preview size
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: SizedBox(
-                  height: 170,
-                  width: 110,
-                  child: Image.network(
-                    widget.storyImageUrl,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                height: 170,
+                width: 110,
+                child: _buildImage(widget.storyImageUrl),
               ),
             ),
           ),
@@ -145,11 +155,20 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: TextField(
               controller: _nameController,
-              decoration: const InputDecoration(hintText: 'Highlights'),
+              decoration: InputDecoration(
+                hintText: 'Highlights',
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                hintStyle: const TextStyle(color: Colors.grey),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
           ),
 
-          const SizedBox(height: 20),
+          const Spacer(),
 
           // Button
           Padding(

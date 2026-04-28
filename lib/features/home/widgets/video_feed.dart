@@ -111,6 +111,8 @@ class _VideoFeedState extends State<VideoFeed> {
                     ? Image.network(
                         url,
                         fit: BoxFit.cover,
+                        cacheWidth: 400,
+                        cacheHeight: 800,
                         width: double.infinity,
                         height: double.infinity,
                         loadingBuilder: (context, child, progress) {

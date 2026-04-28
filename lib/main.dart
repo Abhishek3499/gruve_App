@@ -48,20 +48,16 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         navigatorKey: rootNavigatorKey,
 
-        // 🔥 IMPORTANT: Prevent white flashes during navigation
         theme: ThemeData(
           scaffoldBackgroundColor: Colors.black,
-          brightness: Brightness.dark,
-          pageTransitionsTheme: PageTransitionsTheme(
-            builders: {
-              TargetPlatform.android: _SlideRightTransition(),
-              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            },
+          colorScheme: const ColorScheme.dark(
+            primary: Colors.white,
+            secondary: Colors.white,
           ),
         ),
 
+        home: const SplashScreen(),
         navigatorObservers: [routeObserver],
-        home: SplashScreen(),
       ),
     );
   }

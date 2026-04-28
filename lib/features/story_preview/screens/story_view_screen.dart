@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_view_bottom.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_viewer_topbar.dart';
+import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
 
 class StoryViewScreen extends StatefulWidget {
   final String? userId;
@@ -33,31 +34,56 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   int currentIndex = 0;
   VideoPlayerController? _videoController;
   bool _isVideo = false;
+  bool _isDisposed = false;
+  AnimationStatusListener? _animationListener;
+  
+  // Global playback controller
+  final StoryPlaybackController _playbackController = StoryPlaybackController();
 
   @override
   void initState() {
     super.initState();
 
-    print("🎬 STORY SCREEN INIT:");
-    print("➡️ userId: ${widget.userId ?? 'me (own profile)'}");
-    print("➡️ displayName: ${widget.displayName}");
-    print("➡️ username: ${widget.username}");
-    print("➡️ avatar: ${widget.avatarUrl}");
+    // Initialize global playback controller
+    _playbackController.initialize();
 
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
     );
 
-    _animationController.addListener(() {
-      setState(() {});
-    });
+    // Add status listener once
+    _animationListener = (status) {
+      if (status == AnimationStatus.completed && !_isDisposed && !_playbackController.isPaused) {
+        nextStory();
+      }
+    };
+    _animationController.addStatusListener(_animationListener!);
 
-    _initializeMedia();
+    // Listen to playback controller changes
+    _playbackController.addListener(_onPlaybackStateChanged);
+
+    // Initialize media immediately without blocking
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeMedia();
+    });
+  }
+
+  // Handle playback state changes from global controller
+  void _onPlaybackStateChanged() {
+    if (_isDisposed) return;
+    
+    if (_playbackController.isPaused) {
+      _pauseAnimationAndVideo();
+    } else {
+      _resumeAnimationAndVideo();
+    }
   }
 
   // ✅ MEDIA INIT
   Future<void> _initializeMedia() async {
+    if (_isDisposed) return;
+    
     _videoController?.dispose();
     _videoController = null;
 
@@ -79,6 +105,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
       await _videoController!.initialize();
 
+      if (_isDisposed) {
+        _videoController?.dispose();
+        return;
+      }
+
       _videoController!.play();
       _videoController!.setLooping(true);
 
@@ -88,29 +119,35 @@ class _StoryViewScreenState extends State<StoryViewScreen>
       _animationController.duration = const Duration(seconds: 5);
     }
 
-    _animationController.forward(from: 0);
+    // Only start animation if not paused
+    if (!_playbackController.isPaused) {
+      _animationController.forward(from: 0);
+    }
 
-    _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        nextStory();
-      }
-    });
-
-    setState(() {});
+    if (mounted && !_isDisposed) {
+      setState(() {});
+    }
   }
 
   // ✅ NEXT
   void nextStory() {
+    if (_isDisposed) return;
+    
     if (currentIndex < widget.mediaPaths.length - 1) {
       setState(() => currentIndex++);
       _initializeMedia();
     } else {
-      Navigator.pop(context);
+      // Navigate back when last story ends
+      if (mounted && !_isDisposed) {
+        Navigator.pop(context);
+      }
     }
   }
 
   // ✅ PREVIOUS
   void previousStory() {
+    if (_isDisposed) return;
+    
     if (currentIndex > 0) {
       setState(() => currentIndex--);
       _initializeMedia();
@@ -130,12 +167,22 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
   // ✅ HOLD PAUSE
   void _pauseStory() {
-    _animationController.stop();
-    _videoController?.pause();
+    _playbackController.pauseStory(reason: "Long Press");
   }
 
   // ✅ RESUME
   void _resumeStory() {
+    _playbackController.resumeStory(reason: "Long Press Release");
+  }
+
+  // Internal pause for animation and video
+  void _pauseAnimationAndVideo() {
+    _animationController.stop();
+    _videoController?.pause();
+  }
+
+  // Internal resume for animation and video
+  void _resumeAnimationAndVideo() {
     _animationController.forward();
     _videoController?.play();
   }
@@ -165,7 +212,13 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _playbackController.removeListener(_onPlaybackStateChanged);
+    _playbackController.reset();
     _videoController?.dispose();
+    if (_animationListener != null) {
+      _animationController.removeStatusListener(_animationListener!);
+    }
     _animationController.dispose();
     super.dispose();
   }
@@ -176,7 +229,9 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     // VIDEO
     if (_isVideo && _videoController != null) {
       if (!_videoController!.value.isInitialized) {
-        return const Center(child: CircularProgressIndicator());
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
       }
 
       return FittedBox(
@@ -191,25 +246,48 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
     // IMAGE
     if (path.startsWith("http")) {
-      return Image.network(path, fit: BoxFit.cover);
+      return Image.network(
+        path, 
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
     } else {
-      return Image.file(File(path), fit: BoxFit.cover);
+      return Image.file(
+        File(path), 
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("👤 UI DATA:");
-    print("➡️ DisplayName: ${widget.displayName}");
-    print("➡️ Username: ${widget.username}");
-    print("➡️ Avatar: ${widget.avatarUrl}");
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
         onTapUp: _handleTap,
-        onLongPress: _pauseStory,
-        onLongPressUp: _resumeStory,
+        onLongPressStart: (details) {
+          debugPrint("👆 [StoryViewScreen] Long Press Detected");
+          _pauseStory();
+        },
+        onLongPressEnd: (details) {
+          debugPrint("👆 [StoryViewScreen] Long Press Released");
+          _resumeStory();
+        },
         onHorizontalDragEnd: _handleSwipe,
         behavior: HitTestBehavior.opaque,
         child: Stack(

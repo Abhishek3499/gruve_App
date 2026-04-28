@@ -12,7 +12,9 @@ class StoryService {
   late final Dio _dio;
 
   StoryService() {
-    debugPrint("🌍 StoryService initialized with shared Dio client");
+    if (kDebugMode) {
+      debugPrint("🌍 StoryService initialized with shared Dio client");
+    }
     _dio = AppDio.create(
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 45),
@@ -25,34 +27,41 @@ class StoryService {
     required String mediaPath,
   }) async {
     try {
-      debugPrint("\n🚀 ===== CREATE STORY START =====");
+      if (kDebugMode) {
+        debugPrint("\n🚀 ===== CREATE STORY START =====");
+        debugPrint("🔑 Token: [REDACTED]");
+        debugPrint("📝 Caption: $caption");
+        debugPrint("📁 File Path: $mediaPath");
+      }
 
       final token = await TokenStorage.getAccessToken();
-
-      debugPrint("🔑 Token: $token");
-      debugPrint("📝 Caption: $caption");
-      debugPrint("📁 File Path: $mediaPath");
 
       final file = File(mediaPath);
 
       if (!file.existsSync()) {
-        debugPrint("❌ File does not exist at path!");
+        if (kDebugMode) {
+          debugPrint("❌ File does not exist at path!");
+        }
         throw Exception("File not found");
       }
 
       final fileName = file.path.replaceAll(r'\', '/').split('/').last;
 
-      debugPrint("📦 Preparing FormData...");
-      debugPrint("📄 File Name: $fileName");
+      if (kDebugMode) {
+        debugPrint("📦 Preparing FormData...");
+        debugPrint("📄 File Name: $fileName");
+      }
 
       final formData = FormData.fromMap({
         "caption": caption,
         "file": await MultipartFile.fromFile(file.path, filename: fileName),
       });
 
-      debugPrint("🔍 FormData Fields: ${formData.fields}");
-      debugPrint("📎 FormData Files: ${formData.files}");
-      debugPrint("🌐 Hitting API: POST stories/");
+      if (kDebugMode) {
+        debugPrint("🔍 FormData Fields: ${formData.fields}");
+        debugPrint("📎 FormData Files: ${formData.files}");
+        debugPrint("🌐 Hitting API: POST stories/");
+      }
 
       final res = await _dio.post(
         "stories/",
@@ -64,27 +73,33 @@ class StoryService {
         ),
       );
 
-      debugPrint("✅ ===== SUCCESS RESPONSE =====");
-      debugPrint("📊 Status Code: ${res.statusCode}");
-      debugPrint("📥 Response Data: ${res.data}");
-      debugPrint("🏁 ===== CREATE STORY END =====\n");
+      if (kDebugMode) {
+        debugPrint("✅ ===== SUCCESS RESPONSE =====");
+        debugPrint("📊 Status Code: ${res.statusCode}");
+        debugPrint("📥 Response Data: ${res.data}");
+        debugPrint("🏁 ===== CREATE STORY END =====\n");
+      }
 
       return CreateStoryResponse.fromJson(res.data);
     } on DioException catch (e) {
-      debugPrint("\n❌ ===== DIO ERROR =====");
-      debugPrint("⚠️ Type: ${e.type}");
-      debugPrint("📊 Status Code: ${e.response?.statusCode}");
-      debugPrint("📥 Response Data: ${e.response?.data}");
-      debugPrint("🧾 Headers: ${e.response?.headers}");
-      debugPrint("🔗 Request Path: ${e.requestOptions.path}");
-      debugPrint("📦 Request Data: ${e.requestOptions.data}");
-      debugPrint("🚫 ===== ERROR END =====\n");
+      if (kDebugMode) {
+        debugPrint("\n❌ ===== DIO ERROR =====");
+        debugPrint("⚠️ Type: ${e.type}");
+        debugPrint("📊 Status Code: ${e.response?.statusCode}");
+        debugPrint("📥 Response Data: ${e.response?.data}");
+        debugPrint("🧾 Headers: ${e.response?.headers}");
+        debugPrint("🔗 Request Path: ${e.requestOptions.path}");
+        debugPrint("📦 Request Data: ${e.requestOptions.data}");
+        debugPrint("🚫 ===== ERROR END =====\n");
+      }
 
       rethrow;
     } catch (e) {
-      debugPrint("\n💥 ===== UNKNOWN ERROR =====");
-      debugPrint("❌ Error: $e");
-      debugPrint("🚫 =========================\n");
+      if (kDebugMode) {
+        debugPrint("\n💥 ===== UNKNOWN ERROR =====");
+        debugPrint("❌ Error: $e");
+        debugPrint("🚫 =========================\n");
+      }
 
       rethrow;
     }
@@ -92,24 +107,26 @@ class StoryService {
 
   Future<StoriesResponse> fetchStories({String? userId, int page = 1, int limit = 5}) async {
     try {
-      debugPrint("\n🚀 ===== FETCH STORIES START =====");
+      if (kDebugMode) {
+        debugPrint("\n🚀 ===== FETCH STORIES START =====");
+        debugPrint("🔑 Token: [REDACTED]");
+        debugPrint("📄 Page: $page");
+        debugPrint("📏 Limit: $limit");
+      }
 
       final token = await TokenStorage.getAccessToken();
-
-      debugPrint("🔑 Token: $token");
-      debugPrint("📄 Page: $page");
-      debugPrint("📏 Limit: $limit");
 
       // Dynamic endpoint selection
       final endpoint = userId == null ? "stories/me/" : "stories/user/$userId/";
       final isMe = userId == null;
 
-      print("🌐 API CALL:");
-      print("➡️ Endpoint: $endpoint");
-      print("➡️ userId: ${userId ?? 'me (own stories)'}");
-      print("➡️ isMe: $isMe");
-
-      debugPrint("🌐 Hitting API: GET $endpoint");
+      if (kDebugMode) {
+        print("🌐 API CALL:");
+        print("➡️ Endpoint: $endpoint");
+        print("➡️ userId: ${userId ?? 'me (own stories)'}");
+        print("➡️ isMe: $isMe");
+        debugPrint("🌐 Hitting API: GET $endpoint");
+      }
 
       final res = await _dio.get(
         endpoint,
@@ -122,34 +139,40 @@ class StoryService {
         ),
       );
 
-      debugPrint("✅ ===== SUCCESS RESPONSE =====");
-      debugPrint("📊 Status Code: ${res.statusCode}");
-      debugPrint("📥 Response Data: ${res.data}");
+      if (kDebugMode) {
+        debugPrint("✅ ===== SUCCESS RESPONSE =====");
+        debugPrint("📊 Status Code: ${res.statusCode}");
+        debugPrint("📥 Response Data: ${res.data}");
 
-      print("📥 API RESPONSE:");
-      if (res.data['data'] != null && res.data['data']['stories'] != null) {
-        print("➡️ Stories count: ${res.data['data']['stories'].length}");
-      } else {
-        print("➡️ Stories count: 0 (no stories in response)");
+        print("📥 API RESPONSE:");
+        if (res.data['data'] != null && res.data['data']['stories'] != null) {
+          print("➡️ Stories count: ${res.data['data']['stories'].length}");
+        } else {
+          print("➡️ Stories count: 0 (no stories in response)");
+        }
+
+        debugPrint("🏁 ===== FETCH STORIES END =====\n");
       }
-
-      debugPrint("🏁 ===== FETCH STORIES END =====\n");
 
       return StoriesResponse.fromJson(res.data);
     } on DioException catch (e) {
-      debugPrint("\n❌ ===== DIO ERROR =====");
-      debugPrint("⚠️ Type: ${e.type}");
-      debugPrint("📊 Status Code: ${e.response?.statusCode}");
-      debugPrint("📥 Response Data: ${e.response?.data}");
-      debugPrint("🧾 Headers: ${e.response?.headers}");
-      debugPrint("🔗 Request Path: ${e.requestOptions.path}");
-      debugPrint("🚫 ===== ERROR END =====\n");
+      if (kDebugMode) {
+        debugPrint("\n❌ ===== DIO ERROR =====");
+        debugPrint("⚠️ Type: ${e.type}");
+        debugPrint("📊 Status Code: ${e.response?.statusCode}");
+        debugPrint("📥 Response Data: ${e.response?.data}");
+        debugPrint("🧾 Headers: ${e.response?.headers}");
+        debugPrint("🔗 Request Path: ${e.requestOptions.path}");
+        debugPrint("🚫 ===== ERROR END =====\n");
+      }
 
       rethrow;
     } catch (e) {
-      debugPrint("\n💥 ===== UNKNOWN ERROR =====");
-      debugPrint("❌ Error: $e");
-      debugPrint("🚫 =========================\n");
+      if (kDebugMode) {
+        debugPrint("\n💥 ===== UNKNOWN ERROR =====");
+        debugPrint("❌ Error: $e");
+        debugPrint("🚫 =========================\n");
+      }
 
       rethrow;
     }

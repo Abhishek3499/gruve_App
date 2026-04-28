@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
@@ -13,62 +14,143 @@ class StoryUtils {
     required String username,
     required String avatar,
   }) async {
-    debugPrint("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
+    if (kDebugMode) {
+      debugPrint("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
+      debugPrint("🧭 userId: ${userId ?? 'me'} | displayName: $displayName");
+    }
 
-    print("🧭 NAVIGATION DATA:");
-    print("➡️ userId: ${userId ?? 'me (own profile)'}");
-    print("➡️ displayName: $displayName");
-    print("➡️ username: $username");
-    print("➡️ avatar: $avatar");
+    // Show loading dialog immediately
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
 
-    final storyStateController = StoryStateController();
-    debugPrint("📊 Has User Story (local): ${storyStateController.hasUserStory}");
+    try {
+      final storyStateController = StoryStateController();
+      final storyController = StoryController();
 
-    // Fetch stories from API
-    debugPrint("🌐 Fetching stories from API...");
-    final storyController = StoryController();
-    await storyController.fetchStories(userId: userId);
-
-    if (storyController.isSuccess && storyController.stories.isNotEmpty) {
-      debugPrint("✅ Stories fetched from API successfully");
-      debugPrint(" Total stories: ${storyController.stories.length}");
-
-      // Convert API stories to StoryMediaModel format
-      final mediaPaths = storyController.stories.map((story) => story.mediaUrl).toList();
-      final timestamps = storyController.stories.map((story) => story.createdAt).toList();
-
-      debugPrint("📱 Media Paths: ${mediaPaths.length} items");
-      debugPrint("⏰ Timestamps: ${timestamps.length} items");
-
-      // Update local state controller with API data
-      await storyStateController.setStoriesFromAPI(
-        mediaPaths,
-        createdAts: timestamps,
-        username: username,
-        avatarUrl: avatar,
-      );
-
-      debugPrint("🚀 Navigating to StoryViewScreen...");
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StoryViewScreen(
+      // Check cache first for instant response
+      await storyStateController.loadStoriesFromStorage(userId);
+      
+      // If we have cached stories, navigate immediately and refresh in background
+      if (storyStateController.hasUserStory && !storyStateController.isLoadingFromStorage) {
+        Navigator.pop(context); // Close loading dialog
+        
+        final mediaPaths = storyStateController.currentUserStoryMediaPaths;
+        final timestamps = storyStateController.storyTimestamps;
+        
+        _navigateToStoryScreen(
+          context,
+          userId: userId,
+          mediaPaths: mediaPaths,
+          displayName: displayName,
+          username: username,
+          avatar: avatar,
+          timestamps: timestamps,
+        );
+        
+        // Refresh stories in background
+        _refreshStoriesInBackground(storyController, storyStateController, userId, username, avatar);
+      } else {
+        // No cache, fetch from API
+        await storyController.fetchStories(userId: userId);
+        
+        if (storyController.isSuccess && storyController.stories.isNotEmpty) {
+          Navigator.pop(context); // Close loading dialog
+          
+          final mediaPaths = storyController.stories.map((story) => story.mediaUrl).toList();
+          final timestamps = storyController.stories.map((story) => story.createdAt).toList();
+          
+          await storyStateController.setStoriesFromAPI(
+            mediaPaths,
+            createdAts: timestamps,
+            username: username,
+            avatarUrl: avatar,
+            userId: userId,
+          );
+          
+          _navigateToStoryScreen(
+            context,
             userId: userId,
             mediaPaths: mediaPaths,
             displayName: displayName,
             username: username,
-            avatarUrl: avatar,
+            avatar: avatar,
             timestamps: timestamps,
-          ),
-        ),
-      );
-      debugPrint("✅ Navigation successful");
-    } else {
-      debugPrint("⚠️ No stories found from API or fetch failed");
-      debugPrint("💬 Message: ${storyController.message}");
+          );
+        } else {
+          Navigator.pop(context); // Close loading dialog
+          if (kDebugMode) {
+            debugPrint("⚠️ No stories found");
+          }
+        }
+      }
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+      if (kDebugMode) {
+        debugPrint("❌ Error navigating to story: $e");
+      }
     }
 
-    debugPrint("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
+    if (kDebugMode) {
+      debugPrint("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
+    }
+  }
+
+  static void _navigateToStoryScreen(
+    BuildContext context, {
+    String? userId,
+    required List<String> mediaPaths,
+    required String displayName,
+    required String username,
+    required String avatar,
+    required List<DateTime> timestamps,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StoryViewScreen(
+          userId: userId,
+          mediaPaths: mediaPaths,
+          displayName: displayName,
+          username: username,
+          avatarUrl: avatar,
+          timestamps: timestamps,
+        ),
+      ),
+    );
+  }
+
+  static Future<void> _refreshStoriesInBackground(
+    StoryController storyController,
+    StoryStateController storyStateController,
+    String? userId,
+    String username,
+    String avatar,
+  ) async {
+    try {
+      await storyController.fetchStories(userId: userId);
+      
+      if (storyController.isSuccess && storyController.stories.isNotEmpty) {
+        final mediaPaths = storyController.stories.map((story) => story.mediaUrl).toList();
+        final timestamps = storyController.stories.map((story) => story.createdAt).toList();
+        
+        await storyStateController.setStoriesFromAPI(
+          mediaPaths,
+          createdAts: timestamps,
+          username: username,
+          avatarUrl: avatar,
+          userId: userId,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("⚠️ Background refresh failed: $e");
+      }
+    }
   }
 
   /// Check if file is a video based on extension

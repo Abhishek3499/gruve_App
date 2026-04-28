@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/screen/message_screen.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
+import 'package:gruve_app/features/search/screens/search_screen.dart';
 import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
 import 'package:gruve_app/features/story_preview/api/post/processing_dialog.dart';
 import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
-import 'package:gruve_app/features/home/widgets/video_feed.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
-import 'package:gruve_app/features/search/screens/search_screen.dart';
-import 'package:gruve_app/features/camera/camera_handler.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
+import 'package:gruve_app/features/camera/camera_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,9 +47,13 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    print("🏠 Home Screen initState called");
+    if (kDebugMode) {
+      debugPrint("🏠 Home Screen initState called");
+    }
     PostShareFlowBridge.onShareStartProcessing = () {
-      print("🏠 Home Screen: Share start processing callback triggered");
+      if (kDebugMode) {
+        debugPrint("🏠 Home Screen: Share start processing callback triggered");
+      }
       if (mounted && !_isDisposed) _startVideoProcessing();
     };
 
@@ -110,6 +116,9 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_isDisposed) return;
+    if (kDebugMode) {
+      debugPrint("📱 App lifecycle state: $state");
+    }
     if (state == AppLifecycleState.paused) _handleAppBackgrounded();
     if (state == AppLifecycleState.resumed) _handleAppResumed();
   }
@@ -265,22 +274,30 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _handleTabChange(int newIndex) {
-    print(
-      "🏠 Home Screen: Tab changed to $newIndex, previous: $_previousIndex",
-    );
+    if (kDebugMode) {
+      debugPrint(
+        "🏠 Home Screen: Tab changed to $newIndex, previous: $_previousIndex",
+      );
+    }
 
     // Check if we're switching back to home tab and need refresh
     if (newIndex == 0 && PostShareFlowBridge.checkAndClearRefreshNeeded()) {
-      print("🔄 Home Screen: Refreshing due to new post");
+      if (kDebugMode) {
+        debugPrint("🔄 Home Screen: Refreshing due to new post");
+      }
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           if (_videoController != null) {
             _videoController!.initVideos(refresh: true);
-            print("✅ Home Screen: Video feed refreshed on tab change");
+            if (kDebugMode) {
+              debugPrint("✅ Home Screen: Video feed refreshed on tab change");
+            }
           } else {
-            print(
-              "🔄 Home Screen: Video controller not available, but refresh triggered",
-            );
+            if (kDebugMode) {
+              debugPrint(
+                "🔄 Home Screen: Video controller not available, but refresh triggered",
+              );
+            }
             // Force refresh by reinitializing the entire home screen
             setState(() {});
           }
@@ -337,19 +354,29 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   List<Widget> _getScreens() {
-    print("🏠 Home Screen: _getScreens called, _currentIndex: $_currentIndex");
+    if (kDebugMode) {
+      debugPrint(
+        "🏠 Home Screen: _getScreens called, _currentIndex: $_currentIndex",
+      );
+    }
     return [
       VideoFeed(
         selectedIndex: _currentIndex,
         onTabChanged: _onItemTapped,
         onControllerReady: (controller) {
-          print("🏠 Home Screen: VideoFeed onControllerReady called!");
+          if (kDebugMode) {
+            debugPrint("🏠 Home Screen: VideoFeed onControllerReady called!");
+          }
           _videoController = controller;
           PostShareFlowBridge.setVideoController(controller);
-          print("🏠 Home Screen: Video controller ready and set to bridge");
+          if (kDebugMode) {
+            debugPrint(
+              "🏠 Home Screen: Video controller ready and set to bridge",
+            );
+          }
         },
       ),
-      const SearchScreen(),
+      SearchScreen(),
       const SizedBox.shrink(),
       const SizedBox.shrink(),
       const ProfileScreen(),
@@ -358,7 +385,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    print("🏠 Home Screen build called, _isDisposed: $_isDisposed");
+    if (kDebugMode) {
+      debugPrint("🏠 Home Screen build called, _isDisposed: $_isDisposed");
+    }
     if (_isDisposed) return const SizedBox.shrink();
     return Scaffold(
       extendBody: true,
@@ -373,7 +402,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    print("🏠 Home Screen: Disposing, clearing callbacks");
+    if (kDebugMode) {
+      debugPrint("🏠 Home Screen: Disposing, clearing callbacks");
+    }
     PostShareFlowBridge.clearCallbacks();
     _isDisposed = true;
     _currentVideoService?.dispose();

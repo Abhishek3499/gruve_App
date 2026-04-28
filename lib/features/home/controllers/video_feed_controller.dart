@@ -29,7 +29,9 @@ class VideoFeedController {
   CursorModel? _nextCursor;
 
   VideoFeedController() {
-    debugPrint("VideoFeedController initialized");
+    if (kDebugMode) {
+      debugPrint("VideoFeedController initialized");
+    }
   }
 
   ValueNotifier<int> get currentIndex => _currentIndex;
@@ -49,7 +51,9 @@ class VideoFeedController {
     _isLoadingMore = true;
 
     try {
-      debugPrint("Load More Triggered");
+      if (kDebugMode) {
+        debugPrint("Load More Triggered");
+      }
 
       final response = await _postService.getPaginatedPosts(cursor: _nextCursor);
       final posts = response.posts
@@ -62,15 +66,21 @@ class VideoFeedController {
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
         await _ensureControllersAroundIndex(_currentIndex.value, gen);
-        debugPrint('Total Posts Count: ${_posts.length}');
+        if (kDebugMode) {
+          debugPrint('Total Posts Count: ${_posts.length}');
+        }
       }
 
-      debugPrint('Loaded ${posts.length} more posts');
+      if (kDebugMode) {
+        debugPrint('Loaded ${posts.length} more posts');
+      }
 
       if (gen != _feedLoadGeneration) return null;
       return true;
     } catch (e) {
-      debugPrint("LOAD MORE ERROR: $e");
+      if (kDebugMode) {
+        debugPrint("LOAD MORE ERROR: $e");
+      }
       return null;
     } finally {
       _isLoadingMore = false;
@@ -81,7 +91,9 @@ class VideoFeedController {
     final gen = ++_feedLoadGeneration;
 
     try {
-      debugPrint("${refresh ? "Refresh" : "Initial Load"} API Hit");
+      if (kDebugMode) {
+        debugPrint("${refresh ? "Refresh" : "Initial Load"} API Hit");
+      }
 
       if (refresh) {
         _nextCursor = null;
@@ -100,12 +112,16 @@ class VideoFeedController {
           .toList();
 
       if (response.posts.isEmpty) {
-        debugPrint("API returned no posts");
+        if (kDebugMode) {
+          debugPrint("API returned no posts");
+        }
         _posts = [];
         _mediaUrls = [];
         _hasMore = false;
       } else if (posts.isEmpty) {
-        debugPrint("Posts received, but media URLs were empty or invalid");
+        if (kDebugMode) {
+          debugPrint("Posts received, but media URLs were empty or invalid");
+        }
         _posts = [];
         _mediaUrls = [];
       } else {
@@ -113,7 +129,9 @@ class VideoFeedController {
         _mediaUrls = _posts.map((e) => e.media).toList();
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
-        debugPrint('Total Posts Count: ${_posts.length}');
+        if (kDebugMode) {
+          debugPrint('Total Posts Count: ${_posts.length}');
+        }
       }
 
       if (gen != _feedLoadGeneration) return null;
@@ -127,7 +145,9 @@ class VideoFeedController {
 
       return true;
     } catch (e) {
-      debugPrint("Video load error: $e");
+      if (kDebugMode) {
+        debugPrint("Video load error: $e");
+      }
       return false;
     }
   }
@@ -221,6 +241,9 @@ class VideoFeedController {
   }
 
   Future<void> _disposeAllControllers() async {
+    if (kDebugMode) {
+      debugPrint('🗑️ Disposing all controllers');
+    }
     for (final controller in _controllers.values) {
       await controller.dispose();
     }
@@ -287,6 +310,9 @@ class VideoFeedController {
       if (controller.value.isPlaying) {
         controller.pause();
       }
+    }
+    if (kDebugMode) {
+      debugPrint('⏸️ All videos paused');
     }
   }
 }

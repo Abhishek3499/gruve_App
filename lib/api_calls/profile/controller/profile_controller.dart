@@ -82,12 +82,18 @@ class ProfileController {
   );
   final ValueNotifier<List<Post>> postsNotifier = ValueNotifier(const []);
 
+  // Local in-memory story and highlight storage
+  final ValueNotifier<List<Map<String, dynamic>>> storyList = ValueNotifier([]);
+  final ValueNotifier<List<Map<String, dynamic>>> highlightList = ValueNotifier([]);
+
   /// Rebuild scrollable profile content (stats + grid). Omits [isLoading] so
   /// tab pagination does not replace the whole screen with a blocking loader.
   late final Listenable contentListenable = Listenable.merge([
     statsNotifier,
     postsNotifier,
     gridRevision,
+    storyList,
+    highlightList,
   ]);
 
   ProfileModel? user;
@@ -1034,6 +1040,8 @@ class ProfileController {
     statsNotifier.dispose();
     postsNotifier.dispose();
     gridRevision.dispose();
+    storyList.dispose();
+    highlightList.dispose();
   }
 
   Map<String, dynamic> _extractUserPayload(Map<String, dynamic> source) {
@@ -1079,4 +1087,107 @@ class ProfileController {
 
   // Story-related methods removed - now handled by unified Story API system
   // _extractStoriesData, _handleMissingStoriesFromProfile, _isCurrentProfileSyncedWithStoryState, _parseStoryCreatedAt
+
+  // ========== LOCAL STORY & HIGHLIGHT LOGIC ==========
+  
+  /// Add a new story to the local storyList
+  void addStory({
+    required String imageUrl,
+    String? username,
+  }) {
+    if (_disposed) return;
+    
+    final story = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'imageUrl': imageUrl,
+      'username': username ?? user?.username ?? 'User',
+      'hasSeen': false,
+    };
+    
+    debugPrint('📸 [ProfileController] Adding story: $story');
+    
+    final currentStories = List<Map<String, dynamic>>.from(storyList.value);
+    currentStories.add(story);
+    storyList.value = currentStories;
+    
+    debugPrint('✅ [ProfileController] Story added. Total stories: ${storyList.value.length}');
+  }
+  
+  /// Mark a story as seen
+  void markStoryAsSeen(String storyId) {
+    if (_disposed) return;
+    
+    final currentStories = List<Map<String, dynamic>>.from(storyList.value);
+    final index = currentStories.indexWhere((s) => s['id'] == storyId);
+    
+    if (index != -1) {
+      currentStories[index]['hasSeen'] = true;
+      storyList.value = currentStories;
+      debugPrint('👀 [ProfileController] Story marked as seen: $storyId');
+    }
+  }
+  
+  /// Create a highlight from a story
+  void addToHighlight({
+    required String storyId,
+    required String title,
+  }) {
+    if (_disposed) return;
+    
+    final currentStories = storyList.value;
+    final story = currentStories.firstWhere(
+      (s) => s['id'] == storyId,
+      orElse: () => {},
+    );
+    
+    if (story.isEmpty) {
+      debugPrint('❌ [ProfileController] Story not found: $storyId');
+      return;
+    }
+    
+    final highlight = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'coverUrl': story['imageUrl'],
+      'title': title,
+      'stories': [story],
+    };
+    
+    debugPrint('🌟 [ProfileController] Creating highlight: $highlight');
+    
+    final currentHighlights = List<Map<String, dynamic>>.from(highlightList.value);
+    currentHighlights.add(highlight);
+    highlightList.value = currentHighlights;
+    
+    debugPrint('✅ [ProfileController] Highlight created. Total highlights: ${highlightList.value.length}');
+  }
+  
+  /// Add a story to an existing highlight
+  void addStoryToHighlight({
+    required String highlightId,
+    required String storyId,
+  }) {
+    if (_disposed) return;
+    
+    final currentStories = storyList.value;
+    final story = currentStories.firstWhere(
+      (s) => s['id'] == storyId,
+      orElse: () => {},
+    );
+    
+    if (story.isEmpty) {
+      debugPrint('❌ [ProfileController] Story not found: $storyId');
+      return;
+    }
+    
+    final currentHighlights = List<Map<String, dynamic>>.from(highlightList.value);
+    final index = currentHighlights.indexWhere((h) => h['id'] == highlightId);
+    
+    if (index != -1) {
+      final stories = List<Map<String, dynamic>>.from(currentHighlights[index]['stories']);
+      stories.add(story);
+      currentHighlights[index]['stories'] = stories;
+      highlightList.value = currentHighlights;
+      debugPrint('✅ [ProfileController] Story added to highlight: $highlightId');
+    }
+  }
 }

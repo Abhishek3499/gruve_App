@@ -252,6 +252,8 @@ class ProfileGrid extends StatelessWidget {
                 : Image.network(
                     post.media,
                     fit: BoxFit.cover,
+                    cacheWidth: 300,
+                    cacheHeight: 400,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(

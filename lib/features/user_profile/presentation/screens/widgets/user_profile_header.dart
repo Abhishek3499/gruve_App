@@ -36,12 +36,6 @@ class UserProfileHeader extends StatelessWidget {
   });
 
   void _openStoryView(BuildContext context) {
-    print("🧭 NAVIGATION DATA:");
-    print("➡️ userId: $profileUserId");
-    print("➡️ displayName: $displayName");
-    print("➡️ username: $username");
-    print("➡️ avatar: $profileImageUrl");
-
     // Use unified StoryUtils navigation with userId
     StoryUtils.navigateToStoryView(
       context,

@@ -53,12 +53,6 @@ class ProfileHeader extends StatelessWidget {
                 profileImage: profileImage,
                 hasActiveStory: hasActiveStory,
                 onTap: () async {
-                  print("🧭 NAVIGATION DATA:");
-                  print("➡️ userId: me (own profile)");
-                  print("➡️ displayName: $fullName");
-                  print("➡️ username: $username");
-                  print("➡️ avatar: $profileImage");
-                  debugPrint("🔍 [ProfileHeader] Story avatar tapped, hasActiveStory: $hasActiveStory");
                   await StoryUtils.navigateToStoryView(
                     context,
                     userId: null,

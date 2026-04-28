@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
@@ -31,34 +32,41 @@ class StoryController extends ChangeNotifier {
     required String mediaPath,
   }) async {
     try {
-      debugPrint("\n🎬 ===== CONTROLLER START =====");
+      if (kDebugMode) {
+        debugPrint("\n🎬 ===== CONTROLLER START =====");
+        debugPrint("⏳ Loading started...");
+        debugPrint("📝 Caption: $caption");
+        debugPrint("📁 Media Path: $mediaPath");
+      }
 
       isLoading = true;
       isSuccess = false;
       message = "";
       notifyListeners();
 
-      debugPrint("⏳ Loading started...");
-      debugPrint("📝 Caption: $caption");
-      debugPrint("📁 Media Path: $mediaPath");
-
       final response = await _service.createStory(
         caption: caption,
         mediaPath: mediaPath,
       );
 
-      debugPrint("📥 API Response: ${response.message}");
+      if (kDebugMode) {
+        debugPrint("📥 API Response: ${response.message}");
+      }
 
       message = response.message;
       isSuccess = response.success;
 
-      if (isSuccess) {
-        debugPrint("✅ Story created successfully 🎉");
-      } else {
-        debugPrint("❌ Story failed: ${response.message}");
+      if (kDebugMode) {
+        if (isSuccess) {
+          debugPrint("✅ Story created successfully 🎉");
+        } else {
+          debugPrint("❌ Story failed: ${response.message}");
+        }
       }
     } catch (e) {
-      debugPrint("💥 Controller error: $e");
+      if (kDebugMode) {
+        debugPrint("💥 Controller error: $e");
+      }
 
       message = "Something went wrong 😓";
       isSuccess = false;
@@ -66,25 +74,27 @@ class StoryController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
 
-      debugPrint("🏁 ===== CONTROLLER END =====\n");
+      if (kDebugMode) {
+        debugPrint("🏁 ===== CONTROLLER END =====\n");
+      }
     }
   }
 
   Future<void> fetchStories({String? userId, int page = 1, int limit = 5}) async {
     try {
-      debugPrint("\n🎬 ===== FETCH STORIES CONTROLLER START =====");
-
-      print("🧠 FetchStories:");
-      print("➡️ userId: ${userId ?? 'me (own stories)'}");
+      if (kDebugMode) {
+        debugPrint("\n🎬 ===== FETCH STORIES CONTROLLER START =====");
+        print("🧠 FetchStories:");
+        print("➡️ userId: ${userId ?? 'me (own stories)'}");
+        debugPrint("⏳ Loading started...");
+        debugPrint("📄 Page: $page");
+        debugPrint("📏 Limit: $limit");
+      }
 
       isLoading = true;
       isSuccess = false;
       message = "";
       notifyListeners();
-
-      debugPrint("⏳ Loading started...");
-      debugPrint("📄 Page: $page");
-      debugPrint("📏 Limit: $limit");
 
       final response = await _service.fetchStories(
         userId: userId,
@@ -92,28 +102,38 @@ class StoryController extends ChangeNotifier {
         limit: limit,
       );
 
-      debugPrint("📥 API Response: ${response.message}");
+      if (kDebugMode) {
+        debugPrint("📥 API Response: ${response.message}");
+      }
 
       message = response.message;
       isSuccess = response.success;
 
       if (isSuccess) {
-        debugPrint("✅ Stories fetched successfully 🎉");
+        if (kDebugMode) {
+          debugPrint("✅ Stories fetched successfully 🎉");
+        }
 
         stories = response.data.stories;
         totalCount = response.data.count;
         currentPage = response.data.page;
         hasNext = response.data.hasNext;
 
-        debugPrint("📚 Total stories: ${stories.length}");
-        debugPrint("🔢 Total count: $totalCount");
-        debugPrint("📄 Current page: $currentPage");
-        debugPrint("➡️ Has next: $hasNext");
+        if (kDebugMode) {
+          debugPrint("📚 Total stories: ${stories.length}");
+          debugPrint("🔢 Total count: $totalCount");
+          debugPrint("📄 Current page: $currentPage");
+          debugPrint("➡️ Has next: $hasNext");
+        }
       } else {
-        debugPrint("❌ Stories fetch failed: ${response.message}");
+        if (kDebugMode) {
+          debugPrint("❌ Stories fetch failed: ${response.message}");
+        }
       }
     } catch (e) {
-      debugPrint("💥 Controller error: $e");
+      if (kDebugMode) {
+        debugPrint("💥 Controller error: $e");
+      }
 
       message = "Something went wrong 😓";
       isSuccess = false;
@@ -121,7 +141,9 @@ class StoryController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
 
-      debugPrint("🏁 ===== FETCH STORIES CONTROLLER END =====\n");
+      if (kDebugMode) {
+        debugPrint("🏁 ===== FETCH STORIES CONTROLLER END =====\n");
+      }
     }
   }
 }

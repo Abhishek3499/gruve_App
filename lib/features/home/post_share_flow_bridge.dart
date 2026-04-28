@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
@@ -36,17 +37,23 @@ class PostShareFlowBridge {
 
   static void setVideoController(dynamic controller) {
     _videoControllerRef = controller;
-    print("🔔 Bridge: Video controller reference set");
+    if (kDebugMode) {
+      print("🔔 Bridge: Video controller reference set");
+    }
   }
 
   static void setVideoService(VideoService service) {
     _currentVideoService = service;
-    print("🔔 Bridge: Video service reference set");
+    if (kDebugMode) {
+      print("🔔 Bridge: Video service reference set");
+    }
   }
 
   static void markProcessingCompleted() {
     if (_currentVideoService != null) {
-      print("🔔 Bridge: Marking processing as completed");
+      if (kDebugMode) {
+        print("🔔 Bridge: Marking processing as completed");
+      }
       _currentVideoService!.markCompleted();
     }
   }
@@ -82,11 +89,17 @@ class PostShareFlowBridge {
       notifyShareStartProcessing();
       await _waitForProcessingOverlayFrame();
       await PostService().createPost(caption: caption, mediaPath: mediaPath);
-      print("✅ API call completed successfully");
+      if (kDebugMode) {
+        print("✅ API call completed successfully");
+      }
       await notifyPostCreated();
-      print("🔔 Post created notification finished");
+      if (kDebugMode) {
+        print("🔔 Post created notification finished");
+      }
     } catch (e) {
-      print("❌ POST ERROR: $e");
+      if (kDebugMode) {
+        print("❌ POST ERROR: $e");
+      }
       onShareUploadError?.call();
     }
   }
@@ -95,25 +108,36 @@ class PostShareFlowBridge {
   /// Logs success only after GET completes successfully. Calls [markProcessingCompleted]
   /// after refresh so the overlay can close after the feed is updated.
   static Future<void> notifyPostCreated() async {
-    print("🔔 Bridge: notifyPostCreated called");
+    if (kDebugMode) {
+      print("🔔 Bridge: notifyPostCreated called");
+    }
 
     if (_videoControllerRef != null) {
-      print("🔔 Bridge: Refreshing video feed (awaiting GET)...");
+      if (kDebugMode) {
+        print("🔔 Bridge: Refreshing video feed (awaiting GET)...");
+      }
       final result = await _videoControllerRef!.initVideos(refresh: true);
+      if (kDebugMode) {
+        if (result == true) {
+          print("✅ Bridge: Video feed refreshed successfully");
+        } else if (result == false) {
+          print("❌ Bridge: Video feed refresh failed");
+        } else {
+          print("🔔 Bridge: Video feed refresh superseded by newer load");
+        }
+      }
       if (result == true) {
-        print("✅ Bridge: Video feed refreshed successfully");
         _needsRefresh = false;
       } else if (result == false) {
-        print("❌ Bridge: Video feed refresh failed");
         _needsRefresh = true;
-      } else {
-        print("🔔 Bridge: Video feed refresh superseded by newer load");
       }
     } else {
-      print("❌ Bridge: No refresh method available, setting flag");
-      print(
-        "🔄 Bridge: Refresh flag set, will refresh when home tab is accessed",
-      );
+      if (kDebugMode) {
+        print("❌ Bridge: No refresh method available, setting flag");
+        print(
+          "🔄 Bridge: Refresh flag set, will refresh when home tab is accessed",
+        );
+      }
       _needsRefresh = true;
     }
 
@@ -124,7 +148,9 @@ class PostShareFlowBridge {
   static bool checkAndClearRefreshNeeded() {
     bool needed = _needsRefresh;
     if (needed) {
-      print("🔄 Bridge: Refresh needed, clearing flag");
+      if (kDebugMode) {
+        print("🔄 Bridge: Refresh needed, clearing flag");
+      }
       _needsRefresh = false;
     }
     return needed;
@@ -138,6 +164,8 @@ class PostShareFlowBridge {
     _videoControllerRef = null;
     _currentVideoService = null;
     _needsRefresh = false;
-    print("🔔 Bridge: All callbacks cleared");
+    if (kDebugMode) {
+      print("🔔 Bridge: All callbacks cleared");
+    }
   }
 }

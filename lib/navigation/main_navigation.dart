@@ -31,10 +31,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _getScreens(),
-      ),
+      body: IndexedStack(index: _currentIndex, children: _getScreens()),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -45,12 +42,9 @@ class _MainNavigationState extends State<MainNavigation> {
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: _onItemTapped,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
+      items: [
+        const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        const BottomNavigationBarItem(
           icon: Icon(Icons.search),
           label: 'Search',
         ),
