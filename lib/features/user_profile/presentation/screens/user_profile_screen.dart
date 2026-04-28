@@ -224,9 +224,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   ?.isSubscribed ??
                               profile?.isFollowing ??
                               false;
-                          final hasActiveStory = profile != null
-                              ? profile.hasActiveStory
-                              : widget.initialHasActiveStory;
 
                           return Column(
                             children: [
@@ -239,11 +236,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     (profile?.profileImage.isNotEmpty ?? false)
                                     ? profile!.profileImage
                                     : widget.profileImageUrl,
-                                hasActiveStory: hasActiveStory,
-                                storyMediaPaths:
-                                    _profileController.storiesNotifier.value,
-                                storyTimestamps:
-                                    _profileController.storyTimestampsNotifier.value,
                                 showSubscribeButton: showSubscribeButton,
                                 reserveSubscribeSpace: _isResolvingIdentity,
                                 subscribeController: _subscribeController,

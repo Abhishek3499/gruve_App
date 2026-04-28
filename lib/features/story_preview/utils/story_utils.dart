@@ -6,42 +6,58 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 /// Utility class for story-related operations
 class StoryUtils {
   /// Navigate to story view screen if user has a story
-  static Future<void> navigateToStoryView(BuildContext context) async {
+  static Future<void> navigateToStoryView(
+    BuildContext context, {
+    String? userId,
+    required String displayName,
+    required String username,
+    required String avatar,
+  }) async {
     debugPrint("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
-    
+
+    print("🧭 NAVIGATION DATA:");
+    print("➡️ userId: ${userId ?? 'me (own profile)'}");
+    print("➡️ displayName: $displayName");
+    print("➡️ username: $username");
+    print("➡️ avatar: $avatar");
+
     final storyStateController = StoryStateController();
     debugPrint("📊 Has User Story (local): ${storyStateController.hasUserStory}");
-    
+
     // Fetch stories from API
     debugPrint("🌐 Fetching stories from API...");
     final storyController = StoryController();
-    await storyController.fetchStories();
-    
+    await storyController.fetchStories(userId: userId);
+
     if (storyController.isSuccess && storyController.stories.isNotEmpty) {
       debugPrint("✅ Stories fetched from API successfully");
-      debugPrint("� Total stories: ${storyController.stories.length}");
-      
+      debugPrint(" Total stories: ${storyController.stories.length}");
+
       // Convert API stories to StoryMediaModel format
       final mediaPaths = storyController.stories.map((story) => story.mediaUrl).toList();
       final timestamps = storyController.stories.map((story) => story.createdAt).toList();
-      
+
       debugPrint("📱 Media Paths: ${mediaPaths.length} items");
       debugPrint("⏰ Timestamps: ${timestamps.length} items");
-      
+
       // Update local state controller with API data
       await storyStateController.setStoriesFromAPI(
         mediaPaths,
         createdAts: timestamps,
+        username: username,
+        avatarUrl: avatar,
       );
-      
+
       debugPrint("🚀 Navigating to StoryViewScreen...");
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => StoryViewScreen(
+            userId: userId,
             mediaPaths: mediaPaths,
-            username: storyStateController.username,
-            avatarUrl: storyStateController.avatarUrl,
+            displayName: displayName,
+            username: username,
+            avatarUrl: avatar,
             timestamps: timestamps,
           ),
         ),
@@ -51,7 +67,7 @@ class StoryUtils {
       debugPrint("⚠️ No stories found from API or fetch failed");
       debugPrint("💬 Message: ${storyController.message}");
     }
-    
+
     debugPrint("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
   }
 

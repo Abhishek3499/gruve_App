@@ -90,7 +90,7 @@ class StoryService {
     }
   }
 
-  Future<StoriesResponse> fetchStories({int page = 1, int limit = 5}) async {
+  Future<StoriesResponse> fetchStories({String? userId, int page = 1, int limit = 5}) async {
     try {
       debugPrint("\n🚀 ===== FETCH STORIES START =====");
 
@@ -99,10 +99,20 @@ class StoryService {
       debugPrint("🔑 Token: $token");
       debugPrint("📄 Page: $page");
       debugPrint("📏 Limit: $limit");
-      debugPrint("🌐 Hitting API: GET stories/me/");
+
+      // Dynamic endpoint selection
+      final endpoint = userId == null ? "stories/me/" : "stories/user/$userId/";
+      final isMe = userId == null;
+
+      print("🌐 API CALL:");
+      print("➡️ Endpoint: $endpoint");
+      print("➡️ userId: ${userId ?? 'me (own stories)'}");
+      print("➡️ isMe: $isMe");
+
+      debugPrint("🌐 Hitting API: GET $endpoint");
 
       final res = await _dio.get(
-        "stories/me/",
+        endpoint,
         queryParameters: {
           "page": page,
           "limit": limit,
@@ -115,6 +125,14 @@ class StoryService {
       debugPrint("✅ ===== SUCCESS RESPONSE =====");
       debugPrint("📊 Status Code: ${res.statusCode}");
       debugPrint("📥 Response Data: ${res.data}");
+
+      print("📥 API RESPONSE:");
+      if (res.data['data'] != null && res.data['data']['stories'] != null) {
+        print("➡️ Stories count: ${res.data['data']['stories'].length}");
+      } else {
+        print("➡️ Stories count: 0 (no stories in response)");
+      }
+
       debugPrint("🏁 ===== FETCH STORIES END =====\n");
 
       return StoriesResponse.fromJson(res.data);

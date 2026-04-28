@@ -6,16 +6,20 @@ import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_viewer_topbar.dart';
 
 class StoryViewScreen extends StatefulWidget {
+  final String? userId;
   final List<String> mediaPaths;
-  final String? username;
-  final String? avatarUrl;
+  final String displayName;
+  final String username;
+  final String avatarUrl;
   final List<DateTime>? timestamps;
 
   const StoryViewScreen({
     super.key,
+    this.userId,
     required this.mediaPaths,
-    this.username,
-    this.avatarUrl,
+    required this.displayName,
+    required this.username,
+    required this.avatarUrl,
     this.timestamps,
   });
 
@@ -33,6 +37,12 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   @override
   void initState() {
     super.initState();
+
+    print("🎬 STORY SCREEN INIT:");
+    print("➡️ userId: ${widget.userId ?? 'me (own profile)'}");
+    print("➡️ displayName: ${widget.displayName}");
+    print("➡️ username: ${widget.username}");
+    print("➡️ avatar: ${widget.avatarUrl}");
 
     _animationController = AnimationController(
       vsync: this,
@@ -189,6 +199,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    print("👤 UI DATA:");
+    print("➡️ DisplayName: ${widget.displayName}");
+    print("➡️ Username: ${widget.username}");
+    print("➡️ Avatar: ${widget.avatarUrl}");
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
@@ -202,9 +217,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
             Positioned.fill(child: _buildMedia()),
 
             StoryViewerTopBar(
-              username: widget.username ?? "Username",
+              username: widget.displayName.isNotEmpty ? widget.displayName : "User",
               time: _getCurrentStoryTime(),
-              avatarUrl: widget.avatarUrl ?? "https://i.pravatar.cc/150?img=3",
+              avatarUrl: widget.avatarUrl.isNotEmpty
+                  ? widget.avatarUrl
+                  : "https://i.pravatar.cc/150?img=3",
               storyCount: widget.mediaPaths.length,
               currentIndex: currentIndex,
               progress: _animationController.value,

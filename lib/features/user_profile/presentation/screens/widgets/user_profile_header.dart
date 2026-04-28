@@ -3,7 +3,7 @@ import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/profile/widgets/story_avatar_indicator.dart';
-import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
+import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/subscribe_button.dart';
 
@@ -36,20 +36,19 @@ class UserProfileHeader extends StatelessWidget {
   });
 
   void _openStoryView(BuildContext context) {
-    if (storyMediaPaths.isEmpty) {
-      return;
-    }
+    print("🧭 NAVIGATION DATA:");
+    print("➡️ userId: $profileUserId");
+    print("➡️ displayName: $displayName");
+    print("➡️ username: $username");
+    print("➡️ avatar: $profileImageUrl");
 
-    Navigator.push(
+    // Use unified StoryUtils navigation with userId
+    StoryUtils.navigateToStoryView(
       context,
-      MaterialPageRoute(
-        builder: (context) => StoryViewScreen(
-          mediaPaths: storyMediaPaths,
-          username: username,
-          avatarUrl: profileImageUrl,
-          timestamps: storyTimestamps,
-        ),
-      ),
+      userId: profileUserId,
+      displayName: displayName,
+      username: username,
+      avatar: profileImageUrl ?? '',
     );
   }
 

@@ -28,6 +28,10 @@ class StoryItem {
   final String? caption;
   final DateTime createdAt;
   final DateTime expiresAt;
+  // User context fields
+  final String userId;
+  final String username;
+  final String? avatarUrl;
 
   StoryItem({
     required this.id,
@@ -37,6 +41,9 @@ class StoryItem {
     this.caption,
     required this.createdAt,
     required this.expiresAt,
+    required this.userId,
+    required this.username,
+    this.avatarUrl,
   });
 
   factory StoryItem.fromJson(Map<String, dynamic> json) {
@@ -48,6 +55,9 @@ class StoryItem {
     debugPrint("📝 [StoryItem] Caption: ${json['caption']}");
     debugPrint("📅 [StoryItem] Created At: ${json['created_at']}");
     debugPrint("⏰ [StoryItem] Expires At: ${json['expires_at']}");
+    debugPrint("👤 [StoryItem] User ID: ${json['user_id']}");
+    debugPrint("👤 [StoryItem] Username: ${json['username']}");
+    debugPrint("🖼️ [StoryItem] Avatar URL: ${json['avatar_url']}");
 
     return StoryItem(
       id: json['id']?.toString() ?? '',
@@ -57,6 +67,9 @@ class StoryItem {
       caption: json['caption']?.toString(),
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
       expiresAt: DateTime.parse(json['expires_at'] ?? DateTime.now().toIso8601String()),
+      userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      avatarUrl: json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
     );
   }
 

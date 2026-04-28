@@ -70,9 +70,12 @@ class StoryController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchStories({int page = 1, int limit = 5}) async {
+  Future<void> fetchStories({String? userId, int page = 1, int limit = 5}) async {
     try {
       debugPrint("\n🎬 ===== FETCH STORIES CONTROLLER START =====");
+
+      print("🧠 FetchStories:");
+      print("➡️ userId: ${userId ?? 'me (own stories)'}");
 
       isLoading = true;
       isSuccess = false;
@@ -84,6 +87,7 @@ class StoryController extends ChangeNotifier {
       debugPrint("📏 Limit: $limit");
 
       final response = await _service.fetchStories(
+        userId: userId,
         page: page,
         limit: limit,
       );
@@ -95,7 +99,7 @@ class StoryController extends ChangeNotifier {
 
       if (isSuccess) {
         debugPrint("✅ Stories fetched successfully 🎉");
-        
+
         stories = response.data.stories;
         totalCount = response.data.count;
         currentPage = response.data.page;

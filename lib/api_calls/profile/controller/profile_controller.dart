@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/api_calls/profile/repository/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 
 import '../model/profile_model.dart';
 import '../model/profile_stats_model.dart';
@@ -82,20 +81,12 @@ class ProfileController {
     const ProfileStatsModel.empty(),
   );
   final ValueNotifier<List<Post>> postsNotifier = ValueNotifier(const []);
-  final ValueNotifier<List<String>> storiesNotifier = ValueNotifier(
-    const <String>[],
-  );
-  final ValueNotifier<List<DateTime>> storyTimestampsNotifier = ValueNotifier(
-    const <DateTime>[],
-  );
 
   /// Rebuild scrollable profile content (stats + grid). Omits [isLoading] so
   /// tab pagination does not replace the whole screen with a blocking loader.
   late final Listenable contentListenable = Listenable.merge([
     statsNotifier,
     postsNotifier,
-    storiesNotifier,
-    storyTimestampsNotifier,
     gridRevision,
   ]);
 
@@ -298,83 +289,8 @@ class ProfileController {
       debugPrint('✅ [ProfileController] Updated user and statsNotifier');
       debugPrint('🔄 [ProfileController] Notifying listeners of stats change');
 
-      final storyStateController = StoryStateController();
-      await storyStateController.setUserInfo(
-        username: profile.username,
-        avatarUrl: profile.profileImage,
-      );
-
-      try {
-        debugPrint('📚 [ProfileController] Parsing stories from profile API');
-        final storiesData = _extractStoriesData(userData, userPayload);
-
-        if (storiesData != null && storiesData is Map<String, dynamic>) {
-          final results = storiesData['results'] as List<dynamic>?;
-
-          if (results != null && results.isNotEmpty) {
-            final List<String> storyMediaUrls = [];
-            final List<DateTime> storyCreatedAts = [];
-
-            for (final story in results) {
-              if (story is! Map<String, dynamic>) continue;
-
-              final mediaUrl = story['media_url']?.toString() ?? '';
-              if (mediaUrl.isEmpty) continue;
-
-              storyMediaUrls.add(mediaUrl);
-              storyCreatedAts.add(
-                _parseStoryCreatedAt(story['created_at']) ?? DateTime.now(),
-              );
-
-              debugPrint(
-                '🖼️ [ProfileController] Story parsed -> mediaUrl=$mediaUrl, createdAt=${story['created_at']}',
-              );
-            }
-
-            storiesNotifier.value = storyMediaUrls;
-            storyTimestampsNotifier.value = storyCreatedAts;
-            debugPrint(
-              '📚 [ProfileController] storiesNotifier updated with ${storyMediaUrls.length} stories',
-            );
-
-            await storyStateController.setStoriesFromAPI(
-              storyMediaUrls,
-              createdAts: storyCreatedAts,
-              username: profile.username,
-              avatarUrl: profile.profileImage,
-            );
-
-            debugPrint(
-              '✅ [ProfileController] StoryStateController synced with ${storyMediaUrls.length} profile stories',
-            );
-          } else {
-            debugPrint(
-              '📭 [ProfileController] Profile API returned no story results',
-            );
-            await _handleMissingStoriesFromProfile(
-              profile: profile,
-              storyStateController: storyStateController,
-              reason: 'Profile API returned no story results',
-            );
-          }
-        } else {
-          debugPrint(
-            '📭 [ProfileController] No `data.stories` map found in profile response',
-          );
-          await _handleMissingStoriesFromProfile(
-            profile: profile,
-            storyStateController: storyStateController,
-            reason: 'No story map found in profile response',
-          );
-        }
-      } catch (e) {
-        debugPrint('❌ [ProfileController] STORY PARSE ERROR: $e');
-        await _handleMissingStoriesFromProfile(
-          profile: profile,
-          storyStateController: storyStateController,
-          reason: 'Story parse error: $e',
-        );
-      }
+      // Stories are now handled by unified Story API system, not Profile API
+      // Removed story parsing from ProfileController to eliminate dual-system
 
       await Future<void>.delayed(const Duration(milliseconds: 16));
       if (_disposed) return;
@@ -1117,8 +1033,6 @@ class ProfileController {
     isLoading.dispose();
     statsNotifier.dispose();
     postsNotifier.dispose();
-    storiesNotifier.dispose();
-    storyTimestampsNotifier.dispose();
     gridRevision.dispose();
   }
 
@@ -1163,75 +1077,6 @@ class ProfileController {
         value.containsKey('user_id');
   }
 
-  dynamic _extractStoriesData(
-    Map<String, dynamic> source,
-    Map<String, dynamic> userPayload,
-  ) {
-    final data = _nestedMap(source['data']);
-    final candidates = <dynamic>[
-      source['stories'],
-      data?['stories'],
-      userPayload['stories'],
-      _nestedMap(userPayload['data'])?['stories'],
-      _nestedMap(userPayload['user'])?['stories'],
-      _nestedMap(userPayload['profile'])?['stories'],
-    ];
-
-    for (final candidate in candidates) {
-      if (candidate is Map<String, dynamic>) {
-        return candidate;
-      }
-      if (candidate is Map) {
-        return Map<String, dynamic>.from(candidate);
-      }
-      if (candidate is List) {
-        return <String, dynamic>{'results': candidate};
-      }
-    }
-
-    return null;
-  }
-
-  Future<void> _handleMissingStoriesFromProfile({
-    required ProfileModel profile,
-    required StoryStateController storyStateController,
-    required String reason,
-  }) async {
-    debugPrint('[ProfileController] Story fallback triggered: $reason');
-
-    // When API returns no stories, clear all cached data
-    debugPrint(
-      '[ProfileController] API returned no stories, clearing cached data',
-    );
-    storiesNotifier.value = const <String>[];
-    storyTimestampsNotifier.value = const <DateTime>[];
-
-    if (_isCurrentProfileSyncedWithStoryState(profile, storyStateController)) {
-      await storyStateController.setStoriesFromAPI(
-        const <String>[],
-        username: profile.username,
-        avatarUrl: profile.profileImage,
-      );
-      debugPrint('[ProfileController] Cleared StoryStateController data');
-    }
-  }
-
-  bool _isCurrentProfileSyncedWithStoryState(
-    ProfileModel profile,
-    StoryStateController storyStateController,
-  ) {
-    final profileUsername = _normalizeHandle(profile.username);
-    final storyUsername = _normalizeHandle(storyStateController.username ?? '');
-
-    if (profileUsername.isEmpty || storyUsername.isEmpty) {
-      return false;
-    }
-
-    return profileUsername == storyUsername;
-  }
-
-  DateTime? _parseStoryCreatedAt(dynamic rawValue) {
-    if (rawValue == null) return null;
-    return DateTime.tryParse(rawValue.toString());
-  }
+  // Story-related methods removed - now handled by unified Story API system
+  // _extractStoriesData, _handleMissingStoriesFromProfile, _isCurrentProfileSyncedWithStoryState, _parseStoryCreatedAt
 }

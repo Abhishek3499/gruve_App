@@ -16,18 +16,24 @@ class StoryStateController extends ChangeNotifier {
       StoryStateController._internal();
   factory StoryStateController() => _instance;
   StoryStateController._internal() {
-    _loadStoriesFromStorage();
+    _currentUserId = null; // Will be set when needed
+    _isLoadingFromStorage = false; // Don't auto-load on init
   }
 
   List<StoryData> _userStories = [];
   String? _username;
   String? _avatarUrl;
-  bool _isLoadingFromStorage = true;
+  bool _isLoadingFromStorage = false;
+  String? _currentUserId; // Track current user for cache isolation
 
-  // Storage keys
-  static const String _storiesKey = 'user_stories';
-  static const String _usernameKey = 'story_username';
-  static const String _avatarKey = 'story_avatar';
+  // Cache expiry duration (5 minutes)
+  static const Duration _cacheExpiry = Duration(minutes: 5);
+
+  // Storage key helpers (per-user)
+  String _getStoriesKey(String? userId) => 'stories_${userId ?? 'me'}';
+  String _getUsernameKey(String? userId) => 'story_username_${userId ?? 'me'}';
+  String _getAvatarKey(String? userId) => 'story_avatar_${userId ?? 'me'}';
+  String _getTimestampKey(String? userId) => 'story_timestamp_${userId ?? 'me'}';
 
   bool get hasUserStory => _userStories.isNotEmpty;
   bool get isLoadingFromStorage => _isLoadingFromStorage;
@@ -75,7 +81,7 @@ class StoryStateController extends ChangeNotifier {
 
     debugPrint("📊 Total stories now: ${_userStories.length}");
     notifyListeners();
-    await _saveStoriesToStorage();
+    await _saveStoriesToStorage(_currentUserId);
     debugPrint("✅ Story updated successfully");
     debugPrint("🏁 ===== UPDATE STORY END =====\n");
   }
@@ -94,7 +100,7 @@ class StoryStateController extends ChangeNotifier {
       _sortStoriesByTime();
       debugPrint("📊 Stories after sort: ${_userStories.length}");
       notifyListeners();
-      await _saveStoriesToStorage();
+      await _saveStoriesToStorage(_currentUserId);
       debugPrint("✅ Story added successfully");
     } else {
       debugPrint("⚠️ Empty media path, story not added");
@@ -111,7 +117,7 @@ class StoryStateController extends ChangeNotifier {
     _username = username;
     _avatarUrl = avatarUrl;
     notifyListeners();
-    await _saveStoriesToStorage();
+    await _saveStoriesToStorage(_currentUserId);
 
     debugPrint("✅ User info updated");
     debugPrint("🏁 ===== SET USER INFO END =====\n");
@@ -123,13 +129,23 @@ class StoryStateController extends ChangeNotifier {
     List<DateTime>? createdAts,
     String? username,
     String? avatarUrl,
+    String? userId,
   }) async {
     debugPrint("\n🌐 ===== SET STORIES FROM API CALLED =====");
     debugPrint("📱 Media Paths: ${mediaPaths.length} items");
     debugPrint("⏰ Timestamps: ${createdAts?.length ?? 0} items");
     debugPrint("👤 Username: $username");
     debugPrint("🖼️ Avatar: $avatarUrl");
+    debugPrint("🆔 UserId: $userId");
 
+    // Clear previous user's data if switching users
+    if (userId != null && _currentUserId != null && userId != _currentUserId) {
+      print("🔄 USER SWITCH:");
+      print("➡️ Old: $_currentUserId → New: $userId");
+      await _clearUserCache(_currentUserId);
+    }
+
+    _currentUserId = userId;
     _userStories.clear();
     debugPrint("🗑️ Cleared existing stories");
 
@@ -155,7 +171,7 @@ class StoryStateController extends ChangeNotifier {
     _sortStoriesByTime();
     debugPrint("📊 Total stories set: ${_userStories.length}");
     notifyListeners();
-    await _saveStoriesToStorage();
+    await _saveStoriesToStorage(userId);
     debugPrint("✅ Stories set from API successfully");
     debugPrint("🏁 ===== SET STORIES FROM API END =====\n");
   }
@@ -188,7 +204,7 @@ class StoryStateController extends ChangeNotifier {
 
     _userStories = [];
     notifyListeners();
-    await _saveStoriesToStorage();
+    await _saveStoriesToStorage(_currentUserId);
 
     debugPrint("✅ All stories cleared");
     debugPrint("🏁 ===== CLEAR STORY END =====\n");
@@ -210,24 +226,85 @@ class StoryStateController extends ChangeNotifier {
     _userStories = [];
     _username = null;
     _avatarUrl = null;
+    _currentUserId = null;
     notifyListeners();
-    await _saveStoriesToStorage();
+    await _clearAllCache();
 
     debugPrint("✅ All story data cleared (stories, username, avatar)");
     debugPrint("🏁 ===== CLEAR ALL DATA END =====\n");
   }
 
+  /// Clear cache for a specific user
+  Future<void> _clearUserCache(String? userId) async {
+    if (userId == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_getStoriesKey(userId));
+    await prefs.remove(_getUsernameKey(userId));
+    await prefs.remove(_getAvatarKey(userId));
+    await prefs.remove(_getTimestampKey(userId));
+
+    debugPrint("🗑️ Cleared cache for user: $userId");
+  }
+
+  /// Clear all story cache (for logout)
+  Future<void> _clearAllCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys();
+
+    for (final key in keys) {
+      if (key.startsWith('stories_') ||
+          key.startsWith('story_username_') ||
+          key.startsWith('story_avatar_') ||
+          key.startsWith('story_timestamp_')) {
+        await prefs.remove(key);
+      }
+    }
+
+    debugPrint("🗑️ Cleared all story cache");
+  }
+
+  /// Check if cache is expired
+  Future<bool> _isCacheExpired(String? userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestampStr = prefs.getString(_getTimestampKey(userId));
+
+    if (timestampStr == null) return true;
+
+    final timestamp = DateTime.tryParse(timestampStr);
+    if (timestamp == null) return true;
+
+    final isExpired = DateTime.now().difference(timestamp) > _cacheExpiry;
+    if (isExpired) {
+      debugPrint("⏰ Cache expired for user: ${userId ?? 'me'}");
+    }
+
+    return isExpired;
+  }
+
   // 💾 PERSISTENT STORAGE METHODS
 
   /// Load stories from SharedPreferences
-  Future<void> _loadStoriesFromStorage() async {
+  Future<void> _loadStoriesFromStorage(String? userId) async {
     try {
       debugPrint("\n💾 ===== LOADING STORIES FROM STORAGE =====");
 
+      print("� LOAD CACHE:");
+      print("➡️ Key: stories_${userId ?? 'me'}");
+
       final prefs = await SharedPreferences.getInstance();
 
+      // Check if cache is expired
+      if (await _isCacheExpired(userId)) {
+        debugPrint("⏰ Cache expired, skipping load");
+        await _clearUserCache(userId);
+        _isLoadingFromStorage = false;
+        notifyListeners();
+        return;
+      }
+
       // Load stories
-      final storiesJson = prefs.getString(_storiesKey);
+      final storiesJson = prefs.getString(_getStoriesKey(userId));
       if (storiesJson != null) {
         final List<dynamic> storiesList = jsonDecode(storiesJson);
         _userStories = storiesList.map((storyJson) {
@@ -243,8 +320,8 @@ class StoryStateController extends ChangeNotifier {
       }
 
       // Load user info
-      _username = prefs.getString(_usernameKey);
-      _avatarUrl = prefs.getString(_avatarKey);
+      _username = prefs.getString(_getUsernameKey(userId));
+      _avatarUrl = prefs.getString(_getAvatarKey(userId));
 
       debugPrint("👤 Loaded user: $_username");
       debugPrint("🖼️ Loaded avatar: $_avatarUrl");
@@ -261,9 +338,12 @@ class StoryStateController extends ChangeNotifier {
   }
 
   /// Save stories to SharedPreferences
-  Future<void> _saveStoriesToStorage() async {
+  Future<void> _saveStoriesToStorage(String? userId) async {
     try {
       debugPrint("\n💾 ===== SAVING STORIES TO STORAGE =====");
+
+      print("💾 SAVE CACHE:");
+      print("➡️ Key: stories_${userId ?? 'me'}");
 
       final prefs = await SharedPreferences.getInstance();
 
@@ -279,17 +359,24 @@ class StoryStateController extends ChangeNotifier {
             .toList(),
       );
 
-      await prefs.setString(_storiesKey, storiesJson);
+      await prefs.setString(_getStoriesKey(userId), storiesJson);
       debugPrint("💾 Saved ${_userStories.length} stories to storage");
+
+      // Save timestamp for expiry
+      await prefs.setString(
+        _getTimestampKey(userId),
+        DateTime.now().toIso8601String(),
+      );
+      debugPrint("⏰ Saved cache timestamp");
 
       // Save user info
       if (_username != null) {
-        await prefs.setString(_usernameKey, _username!);
+        await prefs.setString(_getUsernameKey(userId), _username!);
         debugPrint("👤 Saved username: $_username");
       }
 
       if (_avatarUrl != null) {
-        await prefs.setString(_avatarKey, _avatarUrl!);
+        await prefs.setString(_getAvatarKey(userId), _avatarUrl!);
         debugPrint("🖼️ Saved avatar: $_avatarUrl");
       }
 
