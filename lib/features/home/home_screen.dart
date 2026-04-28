@@ -35,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isScrollingToTop = false;
   bool _cameraFlowInProgress = false;
   bool _videoProcessingDismissScheduled = false;
+
   /// True once the share processing [showGeneralDialog] route is on the stack.
   bool _shareProcessingOverlayVisible = false;
 
@@ -189,10 +190,10 @@ class _HomeScreenState extends State<HomeScreen>
     // Handle Home tab double tap logic with smooth animations
     if (index == 0) {
       final currentTime = DateTime.now().millisecondsSinceEpoch;
-      
+
       if (_currentIndex == 0) {
         // Already on Home tab - check for double tap
-        if (_lastHomeTapTime != null && 
+        if (_lastHomeTapTime != null &&
             currentTime - _lastHomeTapTime! < _doubleTapThreshold) {
           // Double tap detected - refresh feed smoothly
           _lastHomeTapTime = null; // Reset to prevent triple taps
@@ -223,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen>
 
       // Check if user is authenticated before opening camera
       final token = await TokenStorage.getAccessToken();
+      if (!mounted || _isDisposed) return;
       if (token == null || token.isEmpty) {
         // Navigate to sign in screen instead of just showing snackbar
         Navigator.push(
@@ -237,6 +239,7 @@ class _HomeScreenState extends State<HomeScreen>
       _cameraFlowInProgress = true;
       try {
         final result = await CameraHandler.openCamera(context);
+        if (!mounted || _isDisposed) return;
         if (result == 'start_processing') {
           _startVideoProcessing();
         }
@@ -262,8 +265,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _handleTabChange(int newIndex) {
-    print("🏠 Home Screen: Tab changed to $newIndex, previous: $_previousIndex");
-    
+    print(
+      "🏠 Home Screen: Tab changed to $newIndex, previous: $_previousIndex",
+    );
+
     // Check if we're switching back to home tab and need refresh
     if (newIndex == 0 && PostShareFlowBridge.checkAndClearRefreshNeeded()) {
       print("🔄 Home Screen: Refreshing due to new post");
@@ -273,14 +278,16 @@ class _HomeScreenState extends State<HomeScreen>
             _videoController!.initVideos(refresh: true);
             print("✅ Home Screen: Video feed refreshed on tab change");
           } else {
-            print("🔄 Home Screen: Video controller not available, but refresh triggered");
+            print(
+              "🔄 Home Screen: Video controller not available, but refresh triggered",
+            );
             // Force refresh by reinitializing the entire home screen
             setState(() {});
           }
         }
       });
     }
-    
+
     if (newIndex == 0) {
       if (!_isInBackground && !_isNavigatingAway) {
         _resumeVideo('Tab changed to Home');
@@ -297,11 +304,11 @@ class _HomeScreenState extends State<HomeScreen>
   // Smooth scroll to top functionality
   Future<void> _scrollToTop() async {
     if (_isScrollingToTop || _videoController == null) return;
-    
+
     _isScrollingToTop = true;
-    
+
     try {
-      if (_videoController!.controllers.isNotEmpty) {
+      if (_videoController!.posts.isNotEmpty) {
         // Smooth animation to first video
         for (int i = _videoController!.currentIndex.value; i >= 0; i--) {
           _videoController!.playVideo(i);
@@ -316,13 +323,13 @@ class _HomeScreenState extends State<HomeScreen>
   // Handle double tap refresh with smooth animation
   Future<void> _handleHomeTabDoubleTap() async {
     if (_isScrollingToTop) return;
-    
+
     // First scroll to top smoothly
     await _scrollToTop();
-    
+
     // Small delay to ensure scroll completes
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     // Then refresh feed
     if (_videoController != null) {
       await _videoController!.initVideos(refresh: true);

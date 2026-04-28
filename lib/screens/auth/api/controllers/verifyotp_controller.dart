@@ -70,7 +70,7 @@ class VerifyotpController {
 
             await TokenStorage.saveResetToken(resetToken!);
 
-            debugPrint("🔐 RESET TOKEN SAVED: $resetToken");
+            debugPrint("🔐 RESET TOKEN SAVED");
           }
         }
       } else {

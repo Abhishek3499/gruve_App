@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import '../models/phone_login_model.dart';
 
 class PhoneSiginServices {
-  final Dio _dio = Dio(BaseOptions(baseUrl: dotenv.env['BASE_URL']!));
+  final Dio _dio = AppDio.create();
   Future<PhoneloginResponse> signIn({required String phone_number}) async {
     try {
       const endpoint = "auth/phone-login/";

@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 
 class ForgotPasswordService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: dotenv.env['BASE_URL']!));
+  final Dio _dio = AppDio.create();
   Future<String> sendResetLink({required String email}) async {
     try {
       const endpoint = 'auth/forgot-password/';

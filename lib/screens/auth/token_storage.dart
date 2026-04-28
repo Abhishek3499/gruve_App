@@ -1,5 +1,5 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenStorage {
   static const String _accessTokenKey = "access_token";
@@ -7,95 +7,75 @@ class TokenStorage {
   static const String _resetTokenKey = "reset_token";
   static const String _currentUserIdKey = "current_user_id";
 
-  /// ✅ Save both tokens
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  static Future<void> _writeSecure(String key, String value) {
+    return _secureStorage.write(key: key, value: value);
+  }
+
+  static Future<String?> _readSecure(String key) async {
+    final secureValue = await _secureStorage.read(key: key);
+    if (secureValue != null && secureValue.isNotEmpty) {
+      return secureValue;
+    }
+
+    return null;
+  }
+
+  static Future<void> _deleteSecure(String key) {
+    return _secureStorage.delete(key: key);
+  }
+
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.remove(_currentUserIdKey);
-    await prefs.setString(_accessTokenKey, accessToken);
-    await prefs.setString(_refreshTokenKey, refreshToken);
-
-    debugPrint("💾 ACCESS TOKEN SAVED: $accessToken");
-    debugPrint("💾 REFRESH TOKEN SAVED: $refreshToken");
+    await _deleteSecure(_currentUserIdKey);
+    await _writeSecure(_accessTokenKey, accessToken);
+    await _writeSecure(_refreshTokenKey, refreshToken);
   }
 
-  /// ✅ Get access token
   static Future<String?> getAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_accessTokenKey);
-
-    debugPrint("📤 GET ACCESS TOKEN: ${token ?? "EMPTY ❌"}");
-
-    return token;
+    return _readSecure(_accessTokenKey);
   }
 
-  /// ✅ Get refresh token
   static Future<String?> getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_refreshTokenKey);
-
-    debugPrint("📤 GET REFRESH TOKEN: ${token ?? "EMPTY ❌"}");
-
-    return token;
+    return _readSecure(_refreshTokenKey);
   }
 
   static Future<void> saveCurrentUserId(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_currentUserIdKey, userId);
-    debugPrint("💾 CURRENT USER ID SAVED: $userId");
+    await _writeSecure(_currentUserIdKey, userId);
   }
 
   static Future<String?> getCurrentUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString(_currentUserIdKey);
-    debugPrint("📤 GET CURRENT USER ID: ${userId ?? "EMPTY ❌"}");
-    return userId;
+    return _readSecure(_currentUserIdKey);
   }
 
-  /// 🆕 DEBUG: Check both tokens together
   static Future<void> debugCheckTokens() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final access = prefs.getString(_accessTokenKey);
-    final refresh = prefs.getString(_refreshTokenKey);
-
-    debugPrint("========== TOKEN DEBUG ==========");
-    debugPrint("Access Token  : ${access ?? "EMPTY ❌"}");
-    debugPrint("Refresh Token : ${refresh ?? "EMPTY ❌"}");
-    debugPrint("=================================");
+    final access = await getAccessToken();
+    final refresh = await getRefreshToken();
+    debugPrint(
+      "[TokenStorage] accessTokenPresent=${access != null && access.isNotEmpty} refreshTokenPresent=${refresh != null && refresh.isNotEmpty}",
+    );
   }
 
-  /// ✅ Clear all tokens (logout)
   static Future<void> clearTokens() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.remove(_accessTokenKey);
-    await prefs.remove(_refreshTokenKey);
-    await prefs.remove(_currentUserIdKey);
-
-    debugPrint("🗑️ TOKENS CLEARED");
+    await _deleteSecure(_accessTokenKey);
+    await _deleteSecure(_refreshTokenKey);
+    await _deleteSecure(_currentUserIdKey);
   }
 
-  /// ✅ Save Reset Token
   static Future<void> saveResetToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_resetTokenKey, token);
-
-    debugPrint("💾 RESET TOKEN SAVED: $token");
+    await _writeSecure(_resetTokenKey, token);
   }
 
-  /// ✅ Get Reset Token
   static Future<String?> getResetToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_resetTokenKey);
+    return _readSecure(_resetTokenKey);
   }
 
-  /// ✅ Clear Reset Token (optional)
   static Future<void> clearResetToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_resetTokenKey);
+    await _deleteSecure(_resetTokenKey);
   }
 }

@@ -1,18 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
 class ProfileService {
   ProfileService()
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: dotenv.env['BASE_URL']!,
-          connectTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 20),
-          sendTimeout: const Duration(seconds: 20),
-        ),
-      );
+    : _dio = AppDio.create();
 
   final Dio _dio;
 
@@ -38,15 +31,7 @@ class ProfileService {
     debugPrint(" Profile Count API Called");
     debugPrint(" Endpoint: user/profile_data/");
 
-    final baseUrl = dotenv.env['BASE_URL']!;
-    debugPrint("[ProfileService] baseUrl: $baseUrl");
-    debugPrint("[ProfileService] Checking network connectivity...");
-
     final token = await TokenStorage.getAccessToken();
-    final tokenPreview = token == null || token.isEmpty
-        ? "null_or_empty"
-        : "${token.substring(0, token.length > 12 ? 12 : token.length)}...";
-    debugPrint("[ProfileService] token preview: $tokenPreview");
 
     // Build query parameters
     final queryParams = <String, dynamic>{};
@@ -59,8 +44,6 @@ class ProfileService {
 
     debugPrint("[ProfileService] GET user/profile_data/");
     debugPrint("[ProfileService] Query params: $queryParams");
-    debugPrint("[ProfileService] Full URL: $baseUrl user/profile_data/");
-
     const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -142,11 +125,10 @@ class ProfileService {
 
         // Enhanced debugging for connection errors
         if (e.type == DioExceptionType.connectionError) {
-          debugPrint("[ProfileService] CONNECTION ERROR DETAILS:");
-          debugPrint("  - Base URL: $baseUrl");
-          debugPrint(
-            "  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}",
-          );
+            debugPrint("[ProfileService] CONNECTION ERROR DETAILS:");
+            debugPrint(
+              "  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}",
+            );
           debugPrint("  - Network available: Checking...");
 
           // Check if it's a host lookup issue

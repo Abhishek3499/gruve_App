@@ -1,15 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show debugPrint;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import '../models/verify_otp_response.dart';
 
 class VerifyOtpService {
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: dotenv.env['BASE_URL']!, // 🔥
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ),
+  final Dio dio = AppDio.create(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
   );
   Future<VerifyOtpResponse> verifyOtp({
     required String identifier,

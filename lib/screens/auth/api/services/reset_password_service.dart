@@ -1,15 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show debugPrint;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import '../models/reset_password_model.dart';
 
 class ResetPasswordService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: dotenv.env['BASE_URL']!,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ),
+  final Dio _dio = AppDio.create(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
   );
 
   Future<ResetPasswordResponse> resetPassword({

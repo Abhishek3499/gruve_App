@@ -16,6 +16,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
   bool _isReady = false;
+  Timer? _navigationTimer;
 
   @override
   void initState() {
@@ -35,11 +36,12 @@ class _SplashScreenState extends State<SplashScreen> {
           ..play();
       });
 
-    Timer(const Duration(seconds: 3), () async {
+    _navigationTimer = Timer(const Duration(seconds: 3), () async {
       if (!mounted) return;
 
       // Check if user is already logged in
       final accessToken = await TokenStorage.getAccessToken();
+      if (!mounted) return;
       
       if (accessToken != null && accessToken.isNotEmpty) {
         // User is logged in, navigate to Home screen
@@ -95,6 +97,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void dispose() {
+    _navigationTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

@@ -69,7 +69,6 @@ class SubscribeController extends ChangeNotifier {
     );
     notifyListeners();
     _log('📣 listeners notified after addOrUpdateUser userId=${user.userId}');
-    unawaited(_syncWithServer(user.userId));
   }
 
   void _applyLocalState(

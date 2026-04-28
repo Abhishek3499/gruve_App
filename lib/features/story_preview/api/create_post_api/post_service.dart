@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/paginated_response_model.dart';
@@ -16,19 +16,7 @@ class PostService {
   String? _lastRequestKey;
 
   PostService() {
-    var base = dotenv.env['BASE_URL']!.trim();
-    if (!base.endsWith('/')) {
-      base = '$base/';
-    }
-
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: base,
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 45),
-        sendTimeout: const Duration(seconds: 20),
-      ),
-    );
+    _dio = AppDio.create(receiveTimeout: const Duration(seconds: 45));
   }
 
   bool _isTransientDioFailure(DioException e) {

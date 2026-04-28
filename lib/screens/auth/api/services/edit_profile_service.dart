@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 
 import '../models/edit_profile_request.dart';
@@ -10,22 +10,13 @@ import '../models/edit_profile_response.dart';
 
 class EditProfileService {
   EditProfileService()
-    : dio = Dio(
-        BaseOptions(
-          baseUrl: _normalizeBase(dotenv.env['BASE_URL'] ?? ''),
-          connectTimeout: const Duration(minutes: 5),
-          receiveTimeout: const Duration(minutes: 5),
-          sendTimeout: const Duration(minutes: 5),
-        ),
+    : dio = AppDio.create(
+        connectTimeout: const Duration(minutes: 5),
+        receiveTimeout: const Duration(minutes: 5),
+        sendTimeout: const Duration(minutes: 5),
       );
 
   final Dio dio;
-
-  static String _normalizeBase(String raw) {
-    final t = raw.trim();
-    if (t.isEmpty) return t;
-    return t.endsWith('/') ? t : '$t/';
-  }
 
   static Map<String, dynamic> _asJsonMap(dynamic data) {
     if (data is Map<String, dynamic>) {

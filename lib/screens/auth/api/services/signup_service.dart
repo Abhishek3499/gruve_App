@@ -1,23 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart' show debugPrint;
+import 'package:gruve_app/core/network/app_dio.dart';
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SignupService {
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: (dotenv.env['BASE_URL'] ?? "").trim(),
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 20),
-      sendTimeout: const Duration(seconds: 20),
-    ),
+  final Dio dio = AppDio.create(
+    connectTimeout: const Duration(seconds: 20),
+    receiveTimeout: const Duration(seconds: 20),
+    sendTimeout: const Duration(seconds: 20),
   );
 
   Future<SignupResponse> signup(SignupRequest request) async {
-    if (dio.options.baseUrl.isEmpty) {
-      throw "BASE_URL is missing in .env";
-    }
 
     const endpoint = "auth/signup/";
     final payload = request.toJson();

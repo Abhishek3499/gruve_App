@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
 class SubscribeApiService {
@@ -12,30 +12,14 @@ class SubscribeApiService {
   }
 
   SubscribeApiService() {
-    var base = dotenv.env['BASE_URL']!.trim();
-    if (!base.endsWith('/')) {
-      base = '$base/';
-    }
-
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: base,
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 45),
-        sendTimeout: const Duration(seconds: 20),
-      ),
-    );
-    _log('Initialized with baseUrl=$base');
+    _dio = AppDio.create(receiveTimeout: const Duration(seconds: 45));
+    _log('Initialized shared Dio client');
   }
 
   Future<bool> toggleSubscription(String userId) async {
     try {
       _log('🚀 toggleSubscription start for userId=$userId');
       final token = await TokenStorage.getAccessToken();
-      final tokenPreview = token == null || token.isEmpty
-          ? 'null_or_empty'
-          : '${token.substring(0, token.length > 12 ? 12 : token.length)}...';
-      _log('🔐 token preview=$tokenPreview');
       _log('📡 POST $_toggleEndpoint');
       _log('📦 request body={user_id: $userId}');
 

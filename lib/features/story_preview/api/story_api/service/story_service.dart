@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/model/stroy_response.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
@@ -12,20 +12,11 @@ class StoryService {
   late final Dio _dio;
 
   StoryService() {
-    var base = dotenv.env['BASE_URL']!.trim();
-    if (!base.endsWith('/')) {
-      base = '$base/';
-    }
-
-    debugPrint("🌍 BASE URL: $base");
-
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: base,
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 45),
-        sendTimeout: const Duration(seconds: 20),
-      ),
+    debugPrint("🌍 StoryService initialized with shared Dio client");
+    _dio = AppDio.create(
+      connectTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 45),
+      sendTimeout: const Duration(seconds: 20),
     );
   }
 

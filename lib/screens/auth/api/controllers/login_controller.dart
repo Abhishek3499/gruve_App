@@ -35,9 +35,6 @@ class EmailSignInController {
         final accessToken = res.data!.accessToken;
         final refreshToken = res.data!.refreshToken;
 
-        debugPrint("🔑 ACCESS TOKEN: $accessToken");
-        debugPrint("🔄 REFRESH TOKEN: $refreshToken");
-
         await TokenStorage.saveTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,

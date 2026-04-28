@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import '../models/comment_model.dart';
 
@@ -8,11 +8,7 @@ class CommentService {
   late final Dio _dio;
 
   CommentService() {
-    var base = dotenv.env['BASE_URL']!.trim();
-    if (!base.endsWith('/')) {
-      base = '$base/';
-    }
-    _dio = Dio(BaseOptions(baseUrl: base));
+    _dio = AppDio.create();
   }
 
   Future<List<Comment>> getComments(String postId) async {

@@ -1,18 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import '../models/logout_model.dart';
 
 class LogoutService {
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: dotenv.env['BASE_URL']!,
-      headers: {"Content-Type": "application/json"},
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 8),
-      sendTimeout: const Duration(seconds: 5),
-    ),
+  final Dio dio = AppDio.create(
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 8),
+    sendTimeout: const Duration(seconds: 5),
   );
 
   Future<LogoutResponse> logout() async {

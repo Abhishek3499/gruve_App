@@ -1,27 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
 
 class CompleteProfileService {
   CompleteProfileService()
-    : dio = Dio(
-        BaseOptions(
-          baseUrl: _normalizeBase(dotenv.env['BASE_URL'] ?? ''),
-          connectTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 30),
-        ),
+    : dio = AppDio.create(
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 30),
       );
 
   final Dio dio;
-
-  static String _normalizeBase(String raw) {
-    final t = raw.trim();
-    if (t.isEmpty) return t;
-    return t.endsWith('/') ? t : '$t/';
-  }
 
   static Map<String, dynamic> _asJsonMap(dynamic data) {
     if (data is Map<String, dynamic>) {

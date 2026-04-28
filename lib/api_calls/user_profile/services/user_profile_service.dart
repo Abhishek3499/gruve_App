@@ -1,18 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
 class UserProfileService {
   UserProfileService()
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: dotenv.env['BASE_URL']!,
-          connectTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 45),
-          sendTimeout: const Duration(seconds: 20),
-        ),
-      );
+    : _dio = AppDio.create(receiveTimeout: const Duration(seconds: 45));
 
   final Dio _dio;
 
@@ -41,15 +34,7 @@ class UserProfileService {
     debugPrint(" Endpoint: $endpoint");
     debugPrint(" Fetching user profile for userId: $userId");
 
-    final baseUrl = dotenv.env['BASE_URL']!;
-    debugPrint("[UserProfileService] baseUrl: $baseUrl");
-    debugPrint("[UserProfileService] Checking network connectivity...");
-
     final token = await TokenStorage.getAccessToken();
-    final tokenPreview = token == null || token.isEmpty
-        ? "null_or_empty"
-        : "${token.substring(0, token.length > 12 ? 12 : token.length)}...";
-    debugPrint("[UserProfileService] token preview: $tokenPreview");
 
     final queryParams = <String, dynamic>{};
     if (allPage != null) queryParams['all_page'] = allPage;
@@ -61,8 +46,6 @@ class UserProfileService {
 
     debugPrint("[UserProfileService] GET $endpoint");
     debugPrint("[UserProfileService] Query params: $queryParams");
-    debugPrint("[UserProfileService] Full URL: $baseUrl/$endpoint");
-
     const maxAttempts = 3;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {

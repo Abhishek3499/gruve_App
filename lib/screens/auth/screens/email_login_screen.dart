@@ -151,7 +151,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     if (_controller.response?.success == true) {
       debugPrint("LOGIN SUCCESS -> GO TO HOME");
 
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
 
         MaterialPageRoute(builder: (_) => const HomeScreen()),
