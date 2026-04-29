@@ -114,24 +114,50 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     return Scaffold(
       extendBody: true,
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF42174C), Color(0xFF9544A7)],
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Stack(
+      body: AnimatedBuilder(
+        animation: _profileController.contentListenable,
+        builder: (context, _) {
+          return Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Stack(
                     children: [
+                      /// 🔹 MAIN UI (only if data exists)
+                      if (_profileController.user != null) _buildMainContent(constraints),
+
+                      /// 🔹 SKELETON (first load only)
+                      if (_profileController.user == null) _buildSkeleton(constraints),
+                    ],
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMainContent(BoxConstraints constraints) {
+    final showSubscribeButton =
+        !_isResolvingIdentity &&
+        (_identityResolution?.shouldShowSubscribeButton ?? false);
+
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+        child: Stack(
+          children: [
                       Padding(
                         padding: const EdgeInsets.only(top: 130),
                         child: Stack(
@@ -250,7 +276,103 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ),
                 ),
               );
-            },
+  }
+
+  Widget _buildSkeleton(BoxConstraints constraints) {
+    return Container(
+      height: constraints.maxHeight,
+      width: double.infinity,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+
+              /// Profile image
+              const CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white12,
+              ),
+
+              const SizedBox(height: 10),
+
+              Container(
+                height: 14,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              Container(
+                height: 12,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// Stats
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(3, (_) {
+                  return Column(
+                    children: [
+                      Container(
+                        height: 14,
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white12,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 12,
+                        width: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.white12,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// Grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(10),
+                itemCount: 9,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 6,
+                  mainAxisSpacing: 6,
+                ),
+                itemBuilder: (_, __) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white12,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ),

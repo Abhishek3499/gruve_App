@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
@@ -10,11 +11,17 @@ class StoryList extends StatelessWidget {
 
   const StoryList({super.key, required this.provider});
 
+  void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final highlights = provider.highlights;
 
-    debugPrint('[Profile] Highlights row count: ${highlights.length}');
+    _log('[Profile] Highlights row count: ${highlights.length}');
 
     return SizedBox(
       height: 102,
@@ -38,10 +45,10 @@ class StoryList extends StatelessWidget {
       padding: const EdgeInsets.only(right: 18),
       child: GestureDetector(
         onTap: () async {
-          debugPrint('[StoryList] Add Story tapped');
+          _log('[StoryList] Add Story tapped');
 
           final result = await CameraHandler.openCamera(context);
-          debugPrint('[StoryList] Camera result: $result');
+          _log('[StoryList] Camera result: $result');
 
           if (result != null && result is String && result.isNotEmpty) {
             provider.controller.addStory(imageUrl: result);
@@ -81,11 +88,11 @@ class StoryList extends StatelessWidget {
       padding: const EdgeInsets.only(right: 18),
       child: GestureDetector(
         onTap: () {
-          debugPrint('[StoryList] Highlight item tapped: ${highlight.title}');
-          debugPrint('[StoryList] Highlight ID: ${highlight.id}');
-          debugPrint('[StoryList] Stories count: ${highlight.stories.length}');
-          debugPrint('[HighlightTap] Navigating to viewer');
-          
+          _log('[StoryList] Highlight item tapped: ${highlight.title}');
+          _log('[StoryList] Highlight ID: ${highlight.id}');
+          _log('[StoryList] Stories count: ${highlight.stories.length}');
+          _log('[HighlightTap] Navigating to viewer');
+
           Navigator.push(
             context,
             MaterialPageRoute(

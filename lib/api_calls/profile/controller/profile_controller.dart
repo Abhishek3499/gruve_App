@@ -87,9 +87,12 @@ class ProfileController {
   final ValueNotifier<List<Map<String, dynamic>>> storyList = ValueNotifier([]);
   final ValueNotifier<List<Map<String, dynamic>>> highlightList = ValueNotifier([]);
 
+  final ValueNotifier<ProfileModel?> userNotifier = ValueNotifier(null);
+
   /// Rebuild scrollable profile content (stats + grid). Omits [isLoading] so
   /// tab pagination does not replace the whole screen with a blocking loader.
   late final Listenable contentListenable = Listenable.merge([
+    userNotifier,
     statsNotifier,
     postsNotifier,
     gridRevision,
@@ -97,7 +100,8 @@ class ProfileController {
     highlightList,
   ]);
 
-  ProfileModel? user;
+  ProfileModel? get user => userNotifier.value;
+  set user(ProfileModel? value) => userNotifier.value = value;
 
   bool _disposed = false;
 
@@ -1038,6 +1042,7 @@ class ProfileController {
   void dispose() {
     _disposed = true;
     isLoading.dispose();
+    userNotifier.dispose();
     statsNotifier.dispose();
     postsNotifier.dispose();
     gridRevision.dispose();

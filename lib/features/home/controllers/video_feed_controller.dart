@@ -21,11 +21,15 @@ class VideoFeedController {
   final PostService _postService = PostService();
   final Map<int, VideoPlayerController> _controllers =
       <int, VideoPlayerController>{};
+  final Set<int> _failedVideoIndexes = <int>{};
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
+  final ValueNotifier<int> _feedRevision = ValueNotifier(0);
 
+  bool _isInitialLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  String? _loadError;
   CursorModel? _nextCursor;
 
   VideoFeedController() {
@@ -36,12 +40,24 @@ class VideoFeedController {
 
   ValueNotifier<int> get currentIndex => _currentIndex;
   ValueNotifier<bool> get isPlaying => _isPlaying;
+  ValueNotifier<int> get feedRevision => _feedRevision;
   List<VideoPlayerController> get controllers => _controllers.values.toList();
+  bool get isInitialLoading => _isInitialLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMore => _hasMore;
+  String? get loadError => _loadError;
+
+  void _notifyFeedChanged() {
+    if (_disposed) return;
+    _feedRevision.value++;
+  }
 
   VideoPlayerController? controllerForMediaIndex(int mediaIndex) {
     return _controllers[mediaIndex];
+  }
+
+  bool hasVideoLoadFailed(int mediaIndex) {
+    return _failedVideoIndexes.contains(mediaIndex);
   }
 
   Future<bool?> loadMorePosts() async {
@@ -49,6 +65,8 @@ class VideoFeedController {
 
     final gen = ++_feedLoadGeneration;
     _isLoadingMore = true;
+    _loadError = null;
+    _notifyFeedChanged();
 
     try {
       if (kDebugMode) {
@@ -65,10 +83,14 @@ class VideoFeedController {
         _mediaUrls.addAll(posts.map((e) => e.media));
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
+        _notifyFeedChanged();
         await _ensureControllersAroundIndex(_currentIndex.value, gen);
         if (kDebugMode) {
           debugPrint('Total Posts Count: ${_posts.length}');
         }
+      } else {
+        _nextCursor = response.nextCursor;
+        _hasMore = response.hasMore;
       }
 
       if (kDebugMode) {
@@ -81,14 +103,19 @@ class VideoFeedController {
       if (kDebugMode) {
         debugPrint("LOAD MORE ERROR: $e");
       }
+      _loadError = 'Failed to load more posts';
       return null;
     } finally {
       _isLoadingMore = false;
+      _notifyFeedChanged();
     }
   }
 
   Future<bool?> initVideos({bool refresh = false}) async {
     final gen = ++_feedLoadGeneration;
+    _isInitialLoading = _mediaUrls.isEmpty;
+    _loadError = null;
+    _notifyFeedChanged();
 
     try {
       if (kDebugMode) {
@@ -100,6 +127,7 @@ class VideoFeedController {
         _hasMore = true;
         _isLoadingMore = false;
         _postService.resetPagination();
+        _notifyFeedChanged();
       }
 
       final response = await _postService.getPaginatedPosts(
@@ -118,17 +146,22 @@ class VideoFeedController {
         _posts = [];
         _mediaUrls = [];
         _hasMore = false;
+        _notifyFeedChanged();
       } else if (posts.isEmpty) {
         if (kDebugMode) {
           debugPrint("Posts received, but media URLs were empty or invalid");
         }
         _posts = [];
         _mediaUrls = [];
+        _hasMore = response.hasMore;
+        _nextCursor = response.nextCursor;
+        _notifyFeedChanged();
       } else {
         _posts = posts;
         _mediaUrls = _posts.map((e) => e.media).toList();
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
+        _notifyFeedChanged();
         if (kDebugMode) {
           debugPrint('Total Posts Count: ${_posts.length}');
         }
@@ -137,6 +170,7 @@ class VideoFeedController {
       if (gen != _feedLoadGeneration) return null;
 
       await _disposeAllControllers();
+      _failedVideoIndexes.clear();
 
       _currentIndex.value = 0;
       _isPlaying.value = false;
@@ -148,7 +182,11 @@ class VideoFeedController {
       if (kDebugMode) {
         debugPrint("Video load error: $e");
       }
+      _loadError = 'Failed to load feed';
       return false;
+    } finally {
+      _isInitialLoading = false;
+      _notifyFeedChanged();
     }
   }
 
@@ -224,6 +262,7 @@ class VideoFeedController {
     _controllers.clear();
     _currentIndex.dispose();
     _isPlaying.dispose();
+    _feedRevision.dispose();
   }
 
   bool _isSupportedMediaUrl(String url) {
@@ -289,7 +328,17 @@ class VideoFeedController {
       }
 
       final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-      await controller.initialize();
+      try {
+        await controller.initialize();
+      } catch (e) {
+        await controller.dispose();
+        _failedVideoIndexes.add(mediaIndex);
+        _notifyFeedChanged();
+        if (kDebugMode) {
+          debugPrint('Video initialize failed at index $mediaIndex: $e');
+        }
+        continue;
+      }
 
       if (_disposed || generation != _feedLoadGeneration) {
         await controller.dispose();
@@ -297,11 +346,9 @@ class VideoFeedController {
       }
 
       controller.setLooping(true);
+      _failedVideoIndexes.remove(mediaIndex);
       _controllers[mediaIndex] = controller;
-    }
-
-    if (_currentIndex.value == index) {
-      _currentIndex.value = _currentIndex.value;
+      _notifyFeedChanged();
     }
   }
 

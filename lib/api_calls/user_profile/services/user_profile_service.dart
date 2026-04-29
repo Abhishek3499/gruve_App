@@ -46,7 +46,7 @@ class UserProfileService {
 
     debugPrint("[UserProfileService] GET $endpoint");
     debugPrint("[UserProfileService] Query params: $queryParams");
-    const maxAttempts = 3;
+    const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         debugPrint(

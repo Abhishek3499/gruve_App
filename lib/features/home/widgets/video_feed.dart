@@ -53,8 +53,8 @@ class _VideoFeedState extends State<VideoFeed> {
     _controller.playVideo(page);
     HapticFeedback.lightImpact();
 
-    final triggerIndex = (_controller.mediaUrls.length * 0.5).floor();
-    if (page >= triggerIndex &&
+    final remainingItems = _controller.mediaUrls.length - page - 1;
+    if (remainingItems <= 3 &&
         _controller.hasMore &&
         !_controller.isLoadingMore) {
       _controller.loadMorePosts();
@@ -71,6 +71,12 @@ class _VideoFeedState extends State<VideoFeed> {
     });
   }
 
+  Future<void> _refreshFeed() async {
+    await _controller.initVideos(refresh: true);
+    if (!mounted || !_pageController.hasClients) return;
+    _pageController.jumpToPage(0);
+  }
+
   bool _isNetworkMediaUrl(String url) {
     final uri = Uri.tryParse(url.trim());
     if (uri == null) {
@@ -85,6 +91,7 @@ class _VideoFeedState extends State<VideoFeed> {
     final isVideo = url.toLowerCase().contains(".mp4");
     final isValidNetworkUrl = _isNetworkMediaUrl(url);
     final videoController = _controller.controllerForMediaIndex(index);
+    final hasVideoLoadFailed = _controller.hasVideoLoadFailed(index);
 
     return GestureDetector(
       onTap: _onVideoTap,
@@ -92,52 +99,13 @@ class _VideoFeedState extends State<VideoFeed> {
         children: [
           Container(
             color: Colors.black,
-            child: isVideo
-                ? (videoController != null && videoController.value.isInitialized)
-                    ? SizedBox.expand(
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: videoController.value.size.width,
-                            height: videoController.value.size.height,
-                            child: VideoPlayer(videoController),
-                          ),
-                        ),
-                      )
-                    : const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      )
-                : isValidNetworkUrl
-                    ? Image.network(
-                        url,
-                        fit: BoxFit.cover,
-                        cacheWidth: 400,
-                        cacheHeight: 800,
-                        width: double.infinity,
-                        height: double.infinity,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              color: Colors.white,
-                              size: 50,
-                            ),
-                          );
-                        },
-                      )
-                    : const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.white,
-                          size: 50,
-                        ),
-                      ),
+            child: _buildMediaContent(
+              url: url,
+              isVideo: isVideo,
+              isValidNetworkUrl: isValidNetworkUrl,
+              videoController: videoController,
+              hasVideoLoadFailed: hasVideoLoadFailed,
+            ),
           ),
           VideoOverlay(
             selectedTab: selectedContentTab,
@@ -150,40 +118,179 @@ class _VideoFeedState extends State<VideoFeed> {
     );
   }
 
+  Widget _buildMediaContent({
+    required String url,
+    required bool isVideo,
+    required bool isValidNetworkUrl,
+    required VideoPlayerController? videoController,
+    required bool hasVideoLoadFailed,
+  }) {
+    if (isVideo) {
+      if (hasVideoLoadFailed) return _brokenMediaIcon();
+
+      if (videoController != null && videoController.value.isInitialized) {
+        return SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: videoController.value.size.width,
+              height: videoController.value.size.height,
+              child: VideoPlayer(videoController),
+            ),
+          ),
+        );
+      }
+
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+
+    if (!isValidNetworkUrl) return _brokenMediaIcon();
+
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      cacheWidth: 400,
+      cacheHeight: 800,
+      width: double.infinity,
+      height: double.infinity,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => _brokenMediaIcon(),
+    );
+  }
+
+  Widget _brokenMediaIcon() {
+    return const Center(
+      child: Icon(
+        Icons.broken_image,
+        color: Colors.white,
+        size: 50,
+      ),
+    );
+  }
+
+  Widget _buildInitialLoader() {
+    return const ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final hasError = _controller.loadError != null;
+
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasError ? Icons.wifi_off_rounded : Icons.video_library_outlined,
+                color: Colors.white70,
+                size: 42,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                hasError ? _controller.loadError! : 'No posts yet',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (hasError) ...[
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: _refreshFeed,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPagingLoader() {
+    if (!_controller.isLoadingMore) return const SizedBox.shrink();
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 96,
+      child: IgnorePointer(
+        child: Center(
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(8),
+            child: const CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller.currentIndex,
+      animation: Listenable.merge([
+        _controller.feedRevision,
+        _controller.currentIndex,
+        _controller.isPlaying,
+      ]),
       builder: (context, _) {
-        return AnimatedBuilder(
-          animation: _controller.isPlaying,
-          builder: (context, _) {
-            return Stack(
-              children: [
-                RefreshIndicator(
-                  onRefresh: () async {
-                    await _controller.initVideos(refresh: true);
-                  },
-                  color: Colors.white,
-                  backgroundColor: Colors.grey[800],
-                  child: PageView.builder(
-                    controller: _pageController,
-                    scrollDirection: Axis.vertical,
-                    onPageChanged: _onPageChanged,
-                    itemCount: _controller.mediaUrls.length,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    itemBuilder: (context, index) => _buildFeedItem(index),
+        final showInitialLoader =
+            _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
+        final showEmptyState =
+            !_controller.isInitialLoading && _controller.mediaUrls.isEmpty;
+
+        return Stack(
+          children: [
+            if (showInitialLoader)
+              _buildInitialLoader()
+            else if (showEmptyState)
+              _buildEmptyState()
+            else
+              RefreshIndicator(
+                onRefresh: _refreshFeed,
+                color: Colors.white,
+                backgroundColor: Colors.grey[800],
+                child: PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  onPageChanged: _onPageChanged,
+                  itemCount: _controller.mediaUrls.length,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
+                  itemBuilder: (context, index) => _buildFeedItem(index),
                 ),
-                VideoTopBar(
-                  selectedTab: selectedContentTab,
-                  onTabChanged: _onTabChanged,
-                ),
-              ],
-            );
-          },
+              ),
+            _buildPagingLoader(),
+            VideoTopBar(
+              selectedTab: selectedContentTab,
+              onTabChanged: _onTabChanged,
+            ),
+          ],
         );
       },
     );

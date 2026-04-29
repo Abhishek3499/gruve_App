@@ -14,6 +14,12 @@ class HighlightController extends GetxController {
   final RxList<HighlightModel> highlights = <HighlightModel>[].obs;
   final RxInt totalCount = 0.obs;
 
+  void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
+
   Future<void> reset() async {
     message.value = '';
     isSuccess.value = false;
@@ -25,7 +31,7 @@ class HighlightController extends GetxController {
 
   Future<void> fetchMyHighlights() async {
     try {
-      print('[HighlightController] fetchMyHighlights START');
+      _log('[HighlightController] fetchMyHighlights start');
 
       isLoading.value = true;
       isSuccess.value = false;
@@ -33,8 +39,8 @@ class HighlightController extends GetxController {
 
       final response = await _service.fetchMyHighlights();
 
-      print('[HighlightController] API success: ${response.success}');
-      print(
+      _log('[HighlightController] API success: ${response.success}');
+      _log(
         '[HighlightController] Highlights total: '
         '${response.data.highlights.length}',
       );
@@ -51,7 +57,7 @@ class HighlightController extends GetxController {
         totalCount.value = response.data.highlights.length;
 
         for (final highlight in highlights) {
-          print(
+          _log(
             '[HighlightController] Highlight: ${highlight.title}, '
             'stories=${highlight.stories.map((story) => story.id).toList()}',
           );
@@ -60,36 +66,42 @@ class HighlightController extends GetxController {
         HighlightStateManager.ensureRegistered();
       }
     } catch (e) {
-      print('[HighlightController] ERROR: $e');
+      _log('[HighlightController] error: $e');
       message.value = 'Something went wrong';
       isSuccess.value = false;
     } finally {
       isLoading.value = false;
-      print('[HighlightController] fetchMyHighlights END');
+      _log('[HighlightController] fetchMyHighlights end');
     }
   }
 
   Future<HighlightModel?> fetchHighlightStories(String highlightId) async {
     try {
-      debugPrint('[Controller] fetchHighlightStories CALLED with ID: $highlightId');
-      
+      _log(
+        '[HighlightController] fetchHighlightStories called with ID: '
+        '$highlightId',
+      );
+
       // Validate highlightId before API call
       if (highlightId.isEmpty) {
-        debugPrint('[Controller] ERROR: Empty highlightId provided');
+        _log('[HighlightController] empty highlightId provided');
         return null;
       }
-      
+
       final response = await _service.fetchHighlightStories(highlightId);
-      
+
       if (response.success) {
-        debugPrint('[Controller] API success - Stories count: ${response.data.stories.length}');
+        _log(
+          '[HighlightController] API success - stories count: '
+          '${response.data.stories.length}',
+        );
         return response.data;
       } else {
-        debugPrint('[Controller] API failed: ${response.message}');
+        _log('[HighlightController] API failed: ${response.message}');
         return null;
       }
     } catch (e) {
-      debugPrint('[Controller] ERROR: $e');
+      _log('[HighlightController] error: $e');
       return null;
     }
   }

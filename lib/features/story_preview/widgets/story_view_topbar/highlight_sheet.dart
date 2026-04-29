@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
@@ -10,28 +11,34 @@ import 'package:gruve_app/features/story_preview/controllers/story_playback_cont
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_selector_screen.dart';
 import 'package:provider/provider.dart';
 
+void _log(String message) {
+  if (kDebugMode) {
+    debugPrint(message);
+  }
+}
+
 void showInstagramHighlightSheet(BuildContext context) {
   final playbackController = StoryPlaybackController();
   StoryStateController.ensureRegistered();
   final storyStateController = Get.find<StoryStateController>();
 
-  debugPrint('[HighlightSheet] Opening sheet -> Pause Story');
+  _log('[HighlightSheet] Opening sheet -> Pause Story');
 
   final currentStory = storyStateController.currentStory;
-  debugPrint(
+  _log(
     '[HighlightSheet] Current story when opening sheet: '
     '${currentStory?.id ?? 'NULL'}',
   );
 
   if (currentStory == null) {
-    debugPrint(
+    _log(
       '[HighlightSheet] ERROR: cannot open sheet without currentStory',
     );
     return;
   }
 
   if (currentStory.id.isEmpty) {
-    debugPrint('[HighlightSheet] ERROR: cannot open sheet with empty story id');
+    _log('[HighlightSheet] ERROR: cannot open sheet with empty story id');
     return;
   }
 
@@ -43,7 +50,7 @@ void showInstagramHighlightSheet(BuildContext context) {
     backgroundColor: Colors.transparent,
     builder: (context) => const HighlightSheetContent(),
   ).then((_) {
-    debugPrint('[HighlightSheet] Sheet closed -> Resume Story');
+    _log('[HighlightSheet] Sheet closed -> Resume Story');
     playbackController.resumeStory(reason: 'Highlight Sheet Closed');
 
     final highlightController = Get.find<HighlightController>();
@@ -79,10 +86,10 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
     StoryStateController.ensureRegistered();
     HighlightStateManager.ensureRegistered();
     _storyStateController = Get.find<StoryStateController>();
-    debugPrint('[HighlightSheet] initState - Fetching highlights');
+    _log('[HighlightSheet] initState - Fetching highlights');
 
     final currentStory = _storyStateController.currentStory;
-    debugPrint(
+    _log(
       '[HighlightSheet] Current story on init: ${currentStory?.id ?? 'NULL'}',
     );
 
@@ -131,23 +138,23 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         ? _highlightController.highlights[selectedIndex]
         : null;
 
-    debugPrint('[Flow] Start Add to Highlight');
-    debugPrint('[Flow] Story ID: ${currentStory?.id}');
-    debugPrint('[Flow] Highlight ID: ${highlight?.id}');
+    _log('[Flow] Start Add to Highlight');
+    _log('[Flow] Story ID: ${currentStory?.id}');
+    _log('[Flow] Highlight ID: ${highlight?.id}');
 
     try {
       if (currentStory == null) {
-        debugPrint('[Flow] ERROR: currentStory is null');
+        _log('[Flow] ERROR: currentStory is null');
         return;
       }
 
       if (currentStory.id.isEmpty) {
-        debugPrint('[HighlightSheet] ERROR: currentStory.id is empty');
+        _log('[HighlightSheet] ERROR: currentStory.id is empty');
         return;
       }
 
       if (highlight == null) {
-        debugPrint(
+        _log(
           '[HighlightSheet] Invalid index: $selectedIndex, highlights count: '
           '${_highlightController.highlights.length}',
         );
@@ -160,7 +167,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
       );
 
       if (_createController.isSuccess.value) {
-        debugPrint('[Flow] API SUCCESS');
+        _log('[Flow] API SUCCESS');
 
         await HighlightStateManager.instance.addHighlightedStory(
           currentStory.id,
@@ -168,10 +175,10 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
 
         sheetNavigator.pop();
 
-        debugPrint('[Flow] Navigation triggered');
+        _log('[Flow] Navigation triggered');
         rootNavigator.pushReplacementNamed('/profile');
       } else {
-        debugPrint('[Flow] API FAILED');
+        _log('[Flow] API FAILED');
         if (mounted && _createController.message.value.isNotEmpty) {
           scaffoldMessenger.showSnackBar(
             SnackBar(content: Text(_createController.message.value)),
@@ -280,7 +287,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         return GestureDetector(
           onTap: () {
             if (isAlreadyAdded) {
-              debugPrint(
+              _log(
                 '[HighlightSheet] Duplicate detected: '
                 'highlight_id=${highlight.id}, '
                 'story_id=${_storyStateController.currentStory?.id}',
@@ -290,7 +297,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
               ).showSnackBar(const SnackBar(content: Text('Already added')));
             }
 
-            debugPrint('[HighlightSheet] Highlight tapped - selection only');
+            _log('[HighlightSheet] Highlight tapped - selection only');
             setState(() {
               selectedIndex = isSelected ? -1 : highlightIndex;
             });
@@ -308,17 +315,17 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         children: [
           InkWell(
             onTap: () async {
-              debugPrint('[HighlightSheet] Navigating to CreateHighlightSheet');
+              _log('[HighlightSheet] Navigating to CreateHighlightSheet');
 
               final currentStory = _storyStateController.currentStory;
 
               if (currentStory == null) {
-                debugPrint('[HighlightSheet] ERROR: No story selected');
+                _log('[HighlightSheet] ERROR: No story selected');
                 return;
               }
 
               if (currentStory.id.isEmpty) {
-                debugPrint('[HighlightSheet] ERROR: currentStory.id is empty');
+                _log('[HighlightSheet] ERROR: currentStory.id is empty');
                 return;
               }
 

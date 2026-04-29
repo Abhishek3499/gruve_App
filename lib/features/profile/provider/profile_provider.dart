@@ -27,13 +27,18 @@ class ProfileProvider extends ChangeNotifier {
 
   Listenable get contentListenable => controller.contentListenable;
 
+  void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
+
   Future<void> fetchProfileData() async {
-    debugPrint('[Profile] Fetch start');
+    _log('[Profile] Fetch start');
 
     isLoading = true;
     errorMessage = null;
     notifyListeners();
-
     try {
       final results = await Future.wait([
         controller.fetchUser(reason: 'profile_provider_opened'),
@@ -51,13 +56,13 @@ class ProfileProvider extends ChangeNotifier {
             : const [],
       );
 
-      debugPrint('[Profile] API success');
-      debugPrint('[Profile] Highlights count: ${highlights.length}');
-      debugPrint('[Profile] Posts count: ${posts.length}');
+      _log('[Profile] API success');
+      _log('[Profile] Highlights count: ${highlights.length}');
+      _log('[Profile] Posts count: ${posts.length}');
     } catch (error, stackTrace) {
       errorMessage = 'Failed to load profile';
-      debugPrint('[Profile] API failed: $error');
-      debugPrint('$stackTrace');
+      _log('[Profile] API failed: $error');
+      _log('$stackTrace');
     } finally {
       isLoading = false;
       notifyListeners();
