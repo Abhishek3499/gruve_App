@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/api_calls/profile/repository/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 
 import '../model/profile_model.dart';
 import '../model/profile_stats_model.dart';
@@ -1189,5 +1190,137 @@ class ProfileController {
       highlightList.value = currentHighlights;
       debugPrint('✅ [ProfileController] Story added to highlight: $highlightId');
     }
+  }
+
+  /// Get stories from StoryController and convert to ProfileController format
+  List<Map<String, dynamic>> get storiesFromStoryController {
+    if (_disposed) return [];
+    
+    try {
+      // For now, create dummy stories from HighlightStateManager to test
+      // In a real implementation, this should get stories from StoryController
+      HighlightStateManager.ensureRegistered();
+      final highlightedStoryIds = HighlightStateManager.instance.highlightedStoryIds;
+      
+      debugPrint('🔍 [ProfileController] Creating stories from ${highlightedStoryIds.length} highlighted story IDs');
+      
+      // Create dummy stories for testing
+      final stories = highlightedStoryIds.map((storyId) => {
+        'id': storyId,
+        'imageUrl': 'https://via.placeholder.com/60x60', // Dummy image
+        'username': user?.username ?? 'User',
+        'hasSeen': false,
+        'isHighlighted': true,
+        'mediaUrl': 'https://via.placeholder.com/60x60',
+        'mediaKind': 'image',
+        'caption': null,
+      }).toList();
+      
+      debugPrint('✅ [ProfileController] Created ${stories.length} dummy stories from HighlightStateManager');
+      return stories;
+    } catch (e) {
+      debugPrint('❌ [ProfileController] Error creating stories: $e');
+      return [];
+    }
+  }
+
+  /// Get only highlighted stories from StoryController (for own profile)
+  List<Map<String, dynamic>> get highlightedStoriesOnly {
+    if (_disposed) return [];
+    
+    debugPrint('🔍 [ProfileController] Getting highlighted stories from StoryController...');
+    
+    // Get stories from StoryController
+    final allStories = storiesFromStoryController;
+    
+    if (allStories.isEmpty) {
+      debugPrint('⚠️ [ProfileController] No stories from StoryController, trying local storyList...');
+      return _getHighlightedStoriesFromLocalList();
+    }
+    
+    HighlightStateManager.ensureRegistered();
+    final highlightedStoryIds = HighlightStateManager.instance.highlightedStoryIds;
+    
+    debugPrint('🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds');
+    
+    final highlightedStories = allStories.where((story) {
+      final storyId = story['id']?.toString() ?? '';
+      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(storyId);
+      debugPrint('🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted');
+      return isHighlighted;
+    }).toList();
+    
+    debugPrint('🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories');
+    
+    // If no highlighted stories, try alternative approach
+    if (highlightedStories.isEmpty && allStories.isNotEmpty) {
+      debugPrint('🔄 [ProfileController] No highlighted stories found, trying alternative approach...');
+      final storiesFromHighlights = this.storiesFromHighlights;
+      if (storiesFromHighlights.isNotEmpty) {
+        return storiesFromHighlights;
+      }
+      debugPrint('⚠️ [ProfileController] No stories in highlights either, showing all stories as fallback');
+      return allStories;
+    }
+    
+    return highlightedStories;
+  }
+
+  /// Fallback method to get highlighted stories from local storyList
+  List<Map<String, dynamic>> _getHighlightedStoriesFromLocalList() {
+    debugPrint('🔍 [ProfileController] Total stories in local storyList: ${storyList.value.length}');
+    
+    HighlightStateManager.ensureRegistered();
+    
+    final allStories = storyList.value;
+    final highlightedStoryIds = HighlightStateManager.instance.highlightedStoryIds;
+    
+    debugPrint('🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds');
+    
+    final highlightedStories = allStories.where((story) {
+      final storyId = story['id']?.toString() ?? '';
+      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(storyId);
+      debugPrint('🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted');
+      return isHighlighted;
+    }).toList();
+    
+    debugPrint('🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories');
+    return highlightedStories;
+  }
+
+  /// Get stories from highlights directly (alternative approach)
+  List<Map<String, dynamic>> get storiesFromHighlights {
+    if (_disposed) return [];
+    
+    debugPrint('🔍 [ProfileController] Getting stories from highlights...');
+    debugPrint('🔍 [ProfileController] Total highlights: ${highlightList.value.length}');
+    
+    final allStories = <Map<String, dynamic>>[];
+    
+    for (final highlight in highlightList.value) {
+      debugPrint('🔍 [ProfileController] Processing highlight: ${highlight['title']}');
+      if (highlight['stories'] != null) {
+        final stories = List<Map<String, dynamic>>.from(highlight['stories']);
+        
+        // Add missing imageUrl field to each story
+        final processedStories = stories.map((story) {
+          final processedStory = Map<String, dynamic>.from(story);
+          // Add imageUrl field if it doesn't exist (use mediaUrl as fallback)
+          if (!processedStory.containsKey('imageUrl') && processedStory.containsKey('mediaUrl')) {
+            processedStory['imageUrl'] = processedStory['mediaUrl'];
+          }
+          // Ensure other required fields exist
+          processedStory['username'] = processedStory['username'] ?? user?.username ?? 'User';
+          processedStory['hasSeen'] = processedStory['hasSeen'] ?? false;
+          return processedStory;
+        }).toList();
+        
+        debugPrint('🔍 [ProfileController] Stories in this highlight: ${processedStories.length}');
+        allStories.addAll(processedStories);
+      }
+    }
+    
+    debugPrint('🌟 [ProfileController] Got ${allStories.length} stories from ${highlightList.value.length} highlights');
+    return allStories;
   }
 }

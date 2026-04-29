@@ -16,7 +16,7 @@ class HighlightModel {
   });
 
   factory HighlightModel.fromJson(Map<String, dynamic> json) {
-    final storiesList = json['stories'] as List?;
+    final storiesList = _extractStoriesList(json);
 
     return HighlightModel(
       id: json['id']?.toString() ?? '',
@@ -34,9 +34,25 @@ class HighlightModel {
     );
   }
 
+  static List? _extractStoriesList(Map<String, dynamic> json) {
+    final rawStories = json['stories'] ?? json['story_ids'] ?? json['storyIds'];
+
+    if (rawStories is List) return rawStories;
+
+    if (rawStories is Map<String, dynamic>) {
+      final nested = rawStories['stories'] ??
+          rawStories['items'] ??
+          rawStories['results'] ??
+          rawStories['data'];
+      if (nested is List) return nested;
+    }
+
+    return null;
+  }
+
   bool containsStory(String storyId) {
     if (storyId.isEmpty) return false;
-    return stories.any((story) => story.id == storyId);
+    return stories.any((story) => story.id.toString() == storyId.toString());
   }
 
   Map<String, dynamic> toJson() {
@@ -63,14 +79,21 @@ class HighlightStoryRef {
 
     if (json is Map<String, dynamic>) {
       final nestedStory = json['story'];
+      if (nestedStory is String || nestedStory is int) {
+        return HighlightStoryRef(id: nestedStory.toString());
+      }
+
       if (nestedStory is Map<String, dynamic>) {
         return HighlightStoryRef.fromJson(nestedStory);
       }
 
       return HighlightStoryRef(
-        id: (json['id'] ??
-                json['story_id'] ??
+        id: (json['story_id'] ??
                 json['storyId'] ??
+                json['story_uuid'] ??
+                json['storyUuid'] ??
+                json['story'] ??
+                json['id'] ??
                 json['uuid'] ??
                 '')
             .toString(),

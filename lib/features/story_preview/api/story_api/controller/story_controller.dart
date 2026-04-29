@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/service/story_service.dart';
+import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 
 class StoryController extends ChangeNotifier {
   final StoryService _service = StoryService();
@@ -118,6 +119,14 @@ class StoryController extends ChangeNotifier {
         totalCount = response.data.count;
         currentPage = response.data.page;
         hasNext = response.data.hasNext;
+
+        // BUG 1 FIX: Populate HighlightStateManager with stories that have is_highlighted == true
+        HighlightStateManager.ensureRegistered();
+        for (final story in stories) {
+          if (story.isHighlighted == true) {
+            await HighlightStateManager.instance.markStoryAsHighlighted(story.id);
+          }
+        }
 
         if (kDebugMode) {
           debugPrint("📚 Total stories: ${stories.length}");

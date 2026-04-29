@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
+import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights_create/api/highlight_create_service.dart';
 
@@ -134,6 +135,9 @@ class HighlightCreateController extends GetxController {
 
         print('[Highlight] Refreshing highlights list');
         await _highlightController.fetchMyHighlights();
+
+        HighlightStateManager.ensureRegistered();
+        await HighlightStateManager.instance.markStoryAsHighlighted(storyId);
       } else {
         if (response.message == duplicateStoryMessage ||
             response.statusCode == 400 ||

@@ -32,6 +32,7 @@ class StoryItem {
   final String userId;
   final String username;
   final String? avatarUrl;
+  final bool isHighlighted;
 
   StoryItem({
     required this.id,
@@ -44,6 +45,7 @@ class StoryItem {
     required this.userId,
     required this.username,
     this.avatarUrl,
+    this.isHighlighted = false,
   });
 
   factory StoryItem.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,7 @@ class StoryItem {
     debugPrint("👤 [StoryItem] User ID: ${json['user_id']}");
     debugPrint("👤 [StoryItem] Username: ${json['username']}");
     debugPrint("🖼️ [StoryItem] Avatar URL: ${json['avatar_url']}");
+    debugPrint("⭐ [StoryItem] Is Highlighted: ${json['is_highlighted']}");
 
     return StoryItem(
       id: json['id']?.toString() ?? '',
@@ -70,6 +73,7 @@ class StoryItem {
       userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       avatarUrl: json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
+      isHighlighted: json['is_highlighted'] == true,
     );
   }
 

@@ -15,10 +15,25 @@ class StoryList extends StatefulWidget {
 class _StoryListState extends State<StoryList> {
   @override
   Widget build(BuildContext context) {
-    final stories =
-        widget.controller.storyList.value; // 👈 IMPORTANT - using ValueNotifier
-
-    debugPrint("📦 StoryList count: ${stories.length}");
+    // 🔥 OWN PROFILE: Try multiple approaches to get highlighted stories
+    List<Map<String, dynamic>> stories = widget.controller.highlightedStoriesOnly;
+    
+    debugPrint("📦 StoryList count (highlighted only): ${stories.length}");
+    debugPrint("📦 StoryList stories: $stories");
+    
+    // If no stories from first approach, try direct highlights approach
+    if (stories.isEmpty) {
+      debugPrint("🔄 [StoryList] No stories from first approach, trying highlights...");
+      stories = widget.controller.storiesFromHighlights;
+      debugPrint("📦 StoryList count (from highlights): ${stories.length}");
+    }
+    
+    // If still no stories, show all stories as fallback
+    if (stories.isEmpty) {
+      debugPrint("⚠️ [StoryList] No stories found, showing all stories as fallback");
+      stories = widget.controller.storyList.value;
+      debugPrint("📦 StoryList count (all stories fallback): ${stories.length}");
+    }
 
     return SizedBox(
       height: 100,
@@ -98,17 +113,18 @@ class _StoryListState extends State<StoryList> {
 
   /// 🔥 STORY ITEM (DYNAMIC)
   Widget _buildStoryItem(BuildContext context, dynamic story) {
-    final imageUrl = story.imageUrl ?? "";
-    final username = story.username ?? "User";
-    final hasSeen = story.hasSeen ?? false;
+    // Handle different story formats safely
+    final imageUrl = story['imageUrl'] ?? story['mediaUrl'] ?? "";
+    final username = story['username'] ?? story['username'] ?? "User";
+    final hasSeen = story['hasSeen'] ?? false;
 
-    debugPrint("👀 Story: $username | seen: $hasSeen");
+    debugPrint("👀 Story: $username | seen: $hasSeen | imageUrl: $imageUrl");
 
     return Padding(
       padding: const EdgeInsets.only(right: 18),
       child: GestureDetector(
         onTap: () {
-          debugPrint("📖 Open Story ID: ${story.id}");
+          debugPrint("📖 Open Story ID: ${story['id']}");
 
           /// 👉 Yaha story viewer open karega
         },

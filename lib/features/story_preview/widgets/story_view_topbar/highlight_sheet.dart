@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
+import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
@@ -40,6 +41,10 @@ void showInstagramHighlightSheet(BuildContext context) {
   ).then((_) {
     debugPrint('[HighlightSheet] Sheet closed -> Resume Story');
     playbackController.resumeStory(reason: 'Highlight Sheet Closed');
+    
+    // Refresh highlights after sheet closes to get updated data
+    final highlightController = Get.find<HighlightController>();
+    highlightController.fetchMyHighlights();
   });
 }
 
@@ -53,9 +58,10 @@ class HighlightSheetContent extends StatefulWidget {
 class _HighlightSheetContentState extends State<HighlightSheetContent> {
   int selectedIndex = -1;
 
-  final HighlightController _highlightController = Get.put(
-    HighlightController(),
-  );
+  final HighlightController _highlightController =
+      Get.isRegistered<HighlightController>()
+          ? Get.find<HighlightController>()
+          : Get.put(HighlightController());
 
   final HighlightCreateController _createController = Get.put(
     HighlightCreateController(),
@@ -67,6 +73,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
   void initState() {
     super.initState();
     StoryStateController.ensureRegistered();
+    HighlightStateManager.ensureRegistered();
     _storyStateController = Get.find<StoryStateController>();
     debugPrint('[HighlightSheet] initState - Fetching highlights');
 
@@ -236,7 +243,16 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                                 debugPrint(
                                   '[HighlightSheet] API call successful',
                                 );
+                                
+                                // IMMEDIATELY update global state - this triggers UI rebuild
+                                final stateManager = HighlightStateManager.instance;
+                                stateManager.addHighlightedStory(currentStory.id);
+                                debugPrint('[HighlightSheet] State updated immediately for story: ${currentStory.id}');
+                                
                                 Navigator.pop(context);
+                                
+                                // Refresh highlights for consistency (non-blocking)
+                                _highlightController.fetchMyHighlights();
                               } else {
                                 debugPrint(
                                   '[HighlightSheet] API call failed: '
