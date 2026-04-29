@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_selector_screen.dart';
+import 'package:provider/provider.dart';
 
 void showInstagramHighlightSheet(BuildContext context) {
   final playbackController = StoryPlaybackController();
@@ -22,7 +24,9 @@ void showInstagramHighlightSheet(BuildContext context) {
   );
 
   if (currentStory == null) {
-    debugPrint('[HighlightSheet] ERROR: cannot open sheet without currentStory');
+    debugPrint(
+      '[HighlightSheet] ERROR: cannot open sheet without currentStory',
+    );
     return;
   }
 
@@ -41,8 +45,7 @@ void showInstagramHighlightSheet(BuildContext context) {
   ).then((_) {
     debugPrint('[HighlightSheet] Sheet closed -> Resume Story');
     playbackController.resumeStory(reason: 'Highlight Sheet Closed');
-    
-    // Refresh highlights after sheet closes to get updated data
+
     final highlightController = Get.find<HighlightController>();
     highlightController.fetchMyHighlights();
   });
@@ -57,11 +60,12 @@ class HighlightSheetContent extends StatefulWidget {
 
 class _HighlightSheetContentState extends State<HighlightSheetContent> {
   int selectedIndex = -1;
+  bool _isLoadingHighlights = true;
 
   final HighlightController _highlightController =
       Get.isRegistered<HighlightController>()
-          ? Get.find<HighlightController>()
-          : Get.put(HighlightController());
+      ? Get.find<HighlightController>()
+      : Get.put(HighlightController());
 
   final HighlightCreateController _createController = Get.put(
     HighlightCreateController(),
@@ -82,207 +86,22 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
       '[HighlightSheet] Current story on init: ${currentStory?.id ?? 'NULL'}',
     );
 
-    _highlightController.fetchMyHighlights();
+    _fetchHighlights();
+  }
+
+  Future<void> _fetchHighlights() async {
+    setState(() => _isLoadingHighlights = true);
+
+    await _highlightController.fetchMyHighlights();
+
+    if (!mounted) return;
+    setState(() => _isLoadingHighlights = false);
   }
 
   bool _isStoryAlreadyAdded(HighlightModel highlight) {
     final currentStory = _storyStateController.currentStory;
     if (currentStory == null || currentStory.id.isEmpty) return false;
     return highlight.containsStory(currentStory.id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            height: 4,
-            width: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'Add to highlights',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(
-            height: 250,
-            child: Obx(() {
-              if (_highlightController.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final highlights = _highlightController.highlights;
-
-              return ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: highlights.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return _buildAddButton();
-                  }
-
-                  final highlightIndex = index - 1;
-                  final highlight = highlights[highlightIndex];
-                  final isSelected = selectedIndex == highlightIndex;
-                  final isAlreadyAdded = _isStoryAlreadyAdded(highlight);
-
-                  return GestureDetector(
-                    onTap: () {
-                      if (isAlreadyAdded) {
-                        debugPrint(
-                          '[HighlightSheet] Duplicate detected: '
-                          'highlight_id=${highlight.id}, '
-                          'story_id=${_storyStateController.currentStory?.id}',
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Already added')),
-                        );
-                      }
-
-                      debugPrint(
-                        '[HighlightSheet] Highlight tapped - selection only',
-                      );
-                      setState(() {
-                        selectedIndex = isSelected ? -1 : highlightIndex;
-                      });
-                    },
-                    child: _buildHighlightThumbnail(highlight, isSelected),
-                  );
-                },
-              );
-            }),
-          ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: selectedIndex != -1 ? 80 : 30,
-            child: selectedIndex != -1
-                ? Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _isSelectedStoryAlreadyAdded()
-                          ? null
-                          : () async {
-                              debugPrint(
-                                '[HighlightSheet] Done button pressed',
-                              );
-
-                              final currentStory =
-                                  _storyStateController.currentStory;
-                              debugPrint(
-                                '[HighlightSheet] Current story on Done: '
-                                '${currentStory?.id ?? 'NULL'}',
-                              );
-
-                              if (currentStory == null) {
-                                debugPrint(
-                                  '[HighlightSheet] ERROR: currentStory is null',
-                                );
-                                return;
-                              }
-
-                              if (currentStory.id.isEmpty) {
-                                debugPrint(
-                                  '[HighlightSheet] ERROR: currentStory.id is empty',
-                                );
-                                return;
-                              }
-
-                              if (selectedIndex < 0 ||
-                                  selectedIndex >=
-                                      _highlightController.highlights.length) {
-                                debugPrint(
-                                  '[HighlightSheet] Invalid index: '
-                                  '$selectedIndex, highlights count: '
-                                  '${_highlightController.highlights.length}',
-                                );
-                                return;
-                              }
-
-                              final highlight =
-                                  _highlightController.highlights[selectedIndex];
-
-                              debugPrint('[HighlightSheet] API Request Data:');
-                              debugPrint(
-                                '[HighlightSheet] highlight_id: ${highlight.id}',
-                              );
-                              debugPrint(
-                                '[HighlightSheet] story_id: ${currentStory.id}',
-                              );
-                              debugPrint(
-                                '[HighlightSheet] story_media: '
-                                '${currentStory.mediaUrl}',
-                              );
-
-                              await _createController.addStoryToHighlight(
-                                highlightId: highlight.id,
-                                storyId: currentStory.id,
-                              );
-
-                              if (_createController.isSuccess.value) {
-                                debugPrint(
-                                  '[HighlightSheet] API call successful',
-                                );
-                                
-                                // IMMEDIATELY update global state - this triggers UI rebuild
-                                final stateManager = HighlightStateManager.instance;
-                                stateManager.addHighlightedStory(currentStory.id);
-                                debugPrint('[HighlightSheet] State updated immediately for story: ${currentStory.id}');
-                                
-                                Navigator.pop(context);
-                                
-                                // Refresh highlights for consistency (non-blocking)
-                                _highlightController.fetchMyHighlights();
-                              } else {
-                                debugPrint(
-                                  '[HighlightSheet] API call failed: '
-                                  '${_createController.message.value}',
-                                );
-                                if (mounted &&
-                                    _createController.message.value.isNotEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        _createController.message.value,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      child: Text(
-                        _isSelectedStoryAlreadyAdded()
-                            ? 'Already added'
-                            : 'Done',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
   }
 
   bool _isSelectedStoryAlreadyAdded() {
@@ -292,6 +111,194 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
     }
 
     return _isStoryAlreadyAdded(_highlightController.highlights[selectedIndex]);
+  }
+
+  Future<void> _handleDonePressed() async {
+    final flowProvider = context.read<HighlightFlowProvider>();
+
+    if (flowProvider.isProcessing) return;
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final sheetNavigator = Navigator.of(context);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+    flowProvider.setProcessing(true);
+
+    final currentStory = _storyStateController.currentStory;
+    final highlight =
+        selectedIndex >= 0 &&
+            selectedIndex < _highlightController.highlights.length
+        ? _highlightController.highlights[selectedIndex]
+        : null;
+
+    debugPrint('[Flow] Start Add to Highlight');
+    debugPrint('[Flow] Story ID: ${currentStory?.id}');
+    debugPrint('[Flow] Highlight ID: ${highlight?.id}');
+
+    try {
+      if (currentStory == null) {
+        debugPrint('[Flow] ERROR: currentStory is null');
+        return;
+      }
+
+      if (currentStory.id.isEmpty) {
+        debugPrint('[HighlightSheet] ERROR: currentStory.id is empty');
+        return;
+      }
+
+      if (highlight == null) {
+        debugPrint(
+          '[HighlightSheet] Invalid index: $selectedIndex, highlights count: '
+          '${_highlightController.highlights.length}',
+        );
+        return;
+      }
+
+      await _createController.addStoryToHighlight(
+        highlightId: highlight.id,
+        storyId: currentStory.id,
+      );
+
+      if (_createController.isSuccess.value) {
+        debugPrint('[Flow] API SUCCESS');
+
+        await HighlightStateManager.instance.addHighlightedStory(
+          currentStory.id,
+        );
+
+        sheetNavigator.pop();
+
+        debugPrint('[Flow] Navigation triggered');
+        rootNavigator.pushReplacementNamed('/profile');
+      } else {
+        debugPrint('[Flow] API FAILED');
+        if (mounted && _createController.message.value.isNotEmpty) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text(_createController.message.value)),
+          );
+        }
+      }
+    } finally {
+      flowProvider.setProcessing(false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final flowProvider = context.watch<HighlightFlowProvider>();
+
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Add to highlights',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              SizedBox(
+                height: 250,
+                child: _isLoadingHighlights
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildHighlightsList(),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: selectedIndex != -1 ? 80 : 30,
+                child: selectedIndex != -1
+                    ? Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _isSelectedStoryAlreadyAdded()
+                              ? null
+                              : _handleDonePressed,
+                          child: Text(
+                            _isSelectedStoryAlreadyAdded()
+                                ? 'Already added'
+                                : 'Done',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+        if (flowProvider.isProcessing)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.4),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildHighlightsList() {
+    final highlights = _highlightController.highlights;
+
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: highlights.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _buildAddButton();
+        }
+
+        final highlightIndex = index - 1;
+        final highlight = highlights[highlightIndex];
+        final isSelected = selectedIndex == highlightIndex;
+        final isAlreadyAdded = _isStoryAlreadyAdded(highlight);
+
+        return GestureDetector(
+          onTap: () {
+            if (isAlreadyAdded) {
+              debugPrint(
+                '[HighlightSheet] Duplicate detected: '
+                'highlight_id=${highlight.id}, '
+                'story_id=${_storyStateController.currentStory?.id}',
+              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Already added')));
+            }
+
+            debugPrint('[HighlightSheet] Highlight tapped - selection only');
+            setState(() {
+              selectedIndex = isSelected ? -1 : highlightIndex;
+            });
+          },
+          child: _buildHighlightThumbnail(highlight, isSelected),
+        );
+      },
+    );
   }
 
   Widget _buildAddButton() {
@@ -363,9 +370,9 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                     height: 180,
                     width: 130,
                     color: Colors.grey[300],
-                    child: highlight.coverMediaUrl != null
+                    child: highlight.coverMediaUrl.isNotEmpty
                         ? Image.network(
-                            highlight.coverMediaUrl!,
+                            highlight.coverMediaUrl,
                             fit: BoxFit.cover,
                           )
                         : const Icon(Icons.collections),

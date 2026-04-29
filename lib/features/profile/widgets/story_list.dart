@@ -1,109 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
+import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 
-class StoryList extends StatefulWidget {
-  final ProfileController controller;
+class StoryList extends StatelessWidget {
+  final ProfileProvider provider;
 
-  const StoryList({super.key, required this.controller});
+  const StoryList({super.key, required this.provider});
 
-  @override
-  State<StoryList> createState() => _StoryListState();
-}
-
-class _StoryListState extends State<StoryList> {
   @override
   Widget build(BuildContext context) {
-    // 🔥 OWN PROFILE: Try multiple approaches to get highlighted stories
-    List<Map<String, dynamic>> stories = widget.controller.highlightedStoriesOnly;
-    
-    debugPrint("📦 StoryList count (highlighted only): ${stories.length}");
-    debugPrint("📦 StoryList stories: $stories");
-    
-    // If no stories from first approach, try direct highlights approach
-    if (stories.isEmpty) {
-      debugPrint("🔄 [StoryList] No stories from first approach, trying highlights...");
-      stories = widget.controller.storiesFromHighlights;
-      debugPrint("📦 StoryList count (from highlights): ${stories.length}");
-    }
-    
-    // If still no stories, show all stories as fallback
-    if (stories.isEmpty) {
-      debugPrint("⚠️ [StoryList] No stories found, showing all stories as fallback");
-      stories = widget.controller.storyList.value;
-      debugPrint("📦 StoryList count (all stories fallback): ${stories.length}");
-    }
+    final highlights = provider.highlights;
+
+    debugPrint('[Profile] Highlights row count: ${highlights.length}');
 
     return SizedBox(
-      height: 100,
+      height: 102,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(left: 30),
-        itemCount: 1 + stories.length, // 🔥 FIX
+        itemCount: highlights.length + 1,
         itemBuilder: (context, index) {
-          /// ➕ ADD STORY (FIRST ITEM)
           if (index == 0) {
             return _buildAddStory(context);
           }
 
-          /// 👤 USER STORIES
-          final story = stories[index - 1];
-          return _buildStoryItem(context, story);
+          return _buildHighlightItem(highlights[index - 1]);
         },
       ),
     );
   }
 
-  /// ➕ ADD STORY BUTTON
   Widget _buildAddStory(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 18),
       child: GestureDetector(
         onTap: () async {
-          debugPrint('➕ [StoryList] Add Story tapped');
+          debugPrint('[StoryList] Add Story tapped');
 
           final result = await CameraHandler.openCamera(context);
+          debugPrint('[StoryList] Camera result: $result');
 
-          debugPrint("📸 Camera result: $result");
-
-          // If camera returns a media path, add it as a story
           if (result != null && result is String && result.isNotEmpty) {
-            debugPrint('📸 [StoryList] Adding story from camera: $result');
-            widget.controller.addStory(imageUrl: result);
+            provider.controller.addStory(imageUrl: result);
           }
 
           if (result == 'start_processing' && context.mounted) {
             PostShareFlowBridge.notifyShareStartProcessing();
           }
         },
-        child: Column(
+        child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 60,
-              height: 60,
-              padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
-                ),
-              ),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF212235),
-                ),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.white, size: 28),
-                ),
-              ),
+            _HighlightCircle(
+              child: Icon(Icons.add, color: Colors.white, size: 28),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Add Story',
-              style: TextStyle(color: Colors.white, fontSize: 12),
+            SizedBox(height: 6),
+            SizedBox(
+              width: 72,
+              child: Text(
+                'Add Story',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
             ),
           ],
         ),
@@ -111,62 +73,90 @@ class _StoryListState extends State<StoryList> {
     );
   }
 
-  /// 🔥 STORY ITEM (DYNAMIC)
-  Widget _buildStoryItem(BuildContext context, dynamic story) {
-    // Handle different story formats safely
-    final imageUrl = story['imageUrl'] ?? story['mediaUrl'] ?? "";
-    final username = story['username'] ?? story['username'] ?? "User";
-    final hasSeen = story['hasSeen'] ?? false;
-
-    debugPrint("👀 Story: $username | seen: $hasSeen | imageUrl: $imageUrl");
+  Widget _buildHighlightItem(HighlightModel highlight) {
+    final cover = _coverFor(highlight);
 
     return Padding(
       padding: const EdgeInsets.only(right: 18),
-      child: GestureDetector(
-        onTap: () {
-          debugPrint("📖 Open Story ID: ${story['id']}");
-
-          /// 👉 Yaha story viewer open karega
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: hasSeen
-                    ? null
-                    : const LinearGradient(
-                        colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
-                      ),
-              ),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black,
-                ),
-                child: ClipOval(
-                  child: imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.person, color: Colors.white),
-                        )
-                      : const Icon(Icons.person, color: Colors.white),
-                ),
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _HighlightCircle(
+            child: ClipOval(
+              child: cover != null
+                  ? Image.network(
+                      cover,
+                      fit: BoxFit.cover,
+                      width: 60,
+                      height: 60,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _placeholderIcon(),
+                    )
+                  : _placeholderIcon(),
             ),
-            const SizedBox(height: 6),
-            Text(
-              username,
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 72,
+            child: Text(
+              highlight.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _coverFor(HighlightModel highlight) {
+    if (highlight.coverMediaUrl.trim().isNotEmpty) {
+      return highlight.coverMediaUrl.trim();
+    }
+
+    if (highlight.stories.isNotEmpty &&
+        highlight.stories.first.mediaUrl.trim().isNotEmpty) {
+      return highlight.stories.first.mediaUrl.trim();
+    }
+
+    return null;
+  }
+
+  Widget _placeholderIcon() {
+    return Container(
+      width: 60,
+      height: 60,
+      color: const Color(0xFF212235),
+      child: const Icon(Icons.image_outlined, color: Colors.white70),
+    );
+  }
+}
+
+class _HighlightCircle extends StatelessWidget {
+  final Widget child;
+
+  const _HighlightCircle({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 64,
+      height: 64,
+      padding: const EdgeInsets.all(2),
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
         ),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFF212235),
+        ),
+        child: ClipOval(child: child),
       ),
     );
   }

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
-import 'package:gruve_app/api_calls/profile/model/profile_model.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
-import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
-
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
+import 'package:provider/provider.dart';
 
 import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
@@ -23,27 +20,24 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int selectedTab = 0;
 
-  final ProfileController controller = ProfileController();
   final ScrollController _scrollController = ScrollController();
-
   bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    // So [PostShareFlowBridge] / home can refresh stats + "All" grid after a new post.
     ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
-    debugPrint('🚀 [ProfileScreen] Initializing profile screen');
-    controller.fetchUser();
+    debugPrint('[ProfileScreen] Initializing profile screen');
+    context.read<ProfileProvider>().fetchProfileData();
     _scrollController.addListener(_onProfileScroll);
   }
 
   Future<void> _onBridgeRefreshRequested(String reason) async {
     if (!mounted) return;
     try {
-      await controller.refreshCounts(reason: reason);
+      await context.read<ProfileProvider>().refreshProfileData(reason: reason);
     } catch (e, st) {
-      debugPrint('❌ Profile bridge refresh failed: $e\n$st');
+      debugPrint('[ProfileScreen] Bridge refresh failed: $e\n$st');
     }
   }
 
@@ -52,7 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
-    controller.dispose();
     super.dispose();
   }
 
@@ -60,171 +53,139 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!_scrollController.hasClients) return;
     final pos = _scrollController.position;
     if (!pos.hasPixels || !pos.hasContentDimensions) return;
-    final threshold = 360.0;
+    const threshold = 360.0;
     if (pos.pixels < pos.maxScrollExtent - threshold) return;
-    if (!controller.canLoadMoreForTab(selectedTab)) return;
-    controller.requestLoadMoreThrottled(selectedTab);
+
+    final provider = context.read<ProfileProvider>();
+    if (!provider.canLoadMoreForTab(selectedTab)) return;
+    provider.requestLoadMoreThrottled(selectedTab);
   }
 
   String _displayUsername(String? raw) {
-    final t = (raw ?? '').trim();
-    if (t.isEmpty) return '';
-    return t.startsWith('@') ? t : '@$t';
-  }
-
-  void _applyUpdatedProfile(EditProfileResponse response) {
-    final currentUser = controller.user;
-    final updated = response.data;
-
-    if (currentUser == null) {
-      return;
-    }
-
-    setState(() {
-      controller.user = ProfileModel(
-        id: updated.userId ?? currentUser.id,
-        fullName: updated.fullName.trim().isEmpty
-            ? currentUser.fullName
-            : updated.fullName,
-        username: updated.username.trim().isEmpty
-            ? currentUser.username
-            : updated.username,
-        profileImage:
-            (updated.profile_picture ?? '').trim().isEmpty
-                ? currentUser.profileImage
-                : updated.profile_picture!,
-        isFollowing: currentUser.isFollowing,
-        hasActiveStory: currentUser.hasActiveStory,
-        storyCount: currentUser.storyCount,
-      );
-    });
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) return '';
+    return value.startsWith('@') ? value : '@$value';
   }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: controller.isLoading,
-      builder: (context, loading, _) {
-        final showBlockingLoader = loading && !controller.hasLoadedOnce;
-        if (showBlockingLoader) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    final provider = context.watch<ProfileProvider>();
 
-        return Scaffold(
-          extendBody: true,
-          backgroundColor: const Color(0xFF42174C),
-          endDrawer: ProfileMenuDrawer(profileImage: controller.user?.profileImage),
-          body: Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF42174C), Color(0xFF212235)],
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: RefreshIndicator(
-                onRefresh: _handleRefresh,
-                color: Colors.white,
-                backgroundColor: const Color(0xFF42174C),
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      controller.contentListenable,
-                    ]),
-                    builder: (context, _) {
-                      final user = controller.user;
-                      return Stack(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 130),
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF7D63D1)
-                                  .withValues(alpha: 0.12),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(100),
-                                topRight: Radius.circular(30),
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                const SizedBox(height: 110),
-                                StatsRow(
-                                  subscribersCount:
-                                      controller.stats.subscribersCount,
-                                  likesCount: controller.stats.likesCount,
-                                  videosCount: controller.stats.videosCount,
-                                ),
-                                const SizedBox(height: 25),
-                                StoryList(controller: controller),
-                                const SizedBox(height: 20),
-                                FilterTabs(
-                                  selectedIndex: selectedTab,
-                                  onTabSelected: (index) {
-                                    setState(() {
-                                      selectedTab = index;
-                                    });
-                                    if (_scrollController.hasClients) {
-                                      _scrollController.jumpTo(0);
-                                    }
-                                    controller.ensureTabLoaded(index);
-                                  },
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                  ),
-                                  child: ProfileGrid(
-                                    selectedTab: selectedTab,
-                                    controller: controller,
-                                  ),
-                                ),
-                                const SizedBox(height: 100),
-                              ],
-                            ),
+    if (provider.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (provider.errorMessage != null) {
+      return Scaffold(
+        body: Center(
+          child: Text(
+            provider.errorMessage!,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: const Color(0xFF42174C),
+      endDrawer: ProfileMenuDrawer(profileImage: provider.user?.profileImage),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF42174C), Color(0xFF212235)],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: Colors.white,
+            backgroundColor: const Color(0xFF42174C),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: AnimatedBuilder(
+                animation: provider.contentListenable,
+                builder: (context, _) {
+                  final user = provider.user;
+                  return Stack(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 130),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF7D63D1,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(100),
+                            topRight: Radius.circular(30),
                           ),
-                          Positioned(
-                            top: 30,
-                            left: 0,
-                            right: 0,
-                            child: Builder(
-                              builder: (context) {
-                                final hasStory =
-                                    user?.hasActiveStory ?? false;
-                                debugPrint("🔍 [ProfileScreen] hasActiveStory check:");
-                                debugPrint("  - user?.hasActiveStory: ${user?.hasActiveStory}");
-                                debugPrint("  - Final hasActiveStory: $hasStory");
-                                return ProfileHeader(
-                                  fullName: (user?.fullName ?? '').trim(),
-                                  username: () {
-                                    final u = _displayUsername(user?.username);
-                                    return u.isEmpty ? '@username' : u;
-                                  }(),
-                                  profileImage: user?.profileImage ?? "",
-                                  hasActiveStory: hasStory,
-                                  onProfileUpdated: _applyUpdatedProfile,
-                                );
+                        ),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 110),
+                            StatsRow(
+                              subscribersCount: provider.stats.subscribersCount,
+                              likesCount: provider.stats.likesCount,
+                              videosCount: provider.stats.videosCount,
+                            ),
+                            const SizedBox(height: 25),
+                            StoryList(provider: provider),
+                            const SizedBox(height: 20),
+                            FilterTabs(
+                              selectedIndex: selectedTab,
+                              onTabSelected: (index) {
+                                setState(() {
+                                  selectedTab = index;
+                                });
+                                if (_scrollController.hasClients) {
+                                  _scrollController.jumpTo(0);
+                                }
+                                provider.ensureTabLoaded(index);
                               },
                             ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              child: ProfileGrid(
+                                selectedTab: selectedTab,
+                                controller: provider.controller,
+                              ),
+                            ),
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: 30,
+                        left: 0,
+                        right: 0,
+                        child: ProfileHeader(
+                          fullName: (user?.fullName ?? '').trim(),
+                          username: () {
+                            final username = _displayUsername(user?.username);
+                            return username.isEmpty ? '@username' : username;
+                          }(),
+                          profileImage: user?.profileImage ?? '',
+                          hasActiveStory: user?.hasActiveStory ?? false,
+                          onProfileUpdated: provider.applyUpdatedProfile,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -234,9 +195,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _isRefreshing = true;
 
     try {
-      await controller.refreshCounts(reason: 'pull_to_refresh');
+      await context.read<ProfileProvider>().refreshProfileData(
+        reason: 'pull_to_refresh',
+      );
     } catch (e) {
-      debugPrint('❌ Profile pull-to-refresh failed: $e');
+      debugPrint('[ProfileScreen] Pull-to-refresh failed: $e');
     } finally {
       _isRefreshing = false;
     }

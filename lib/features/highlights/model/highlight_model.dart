@@ -26,7 +26,8 @@ class HighlightModel {
           : int.tryParse(json['stories_count']?.toString() ?? '0') ?? 0,
       coverMediaUrl: json['cover_media_url']?.toString() ?? '',
       createdAt: json['created_at']?.toString() ?? '',
-      stories: storiesList
+      stories:
+          storiesList
               ?.map((item) => HighlightStoryRef.fromJson(item))
               .where((story) => story.id.isNotEmpty)
               .toList() ??
@@ -40,7 +41,8 @@ class HighlightModel {
     if (rawStories is List) return rawStories;
 
     if (rawStories is Map<String, dynamic>) {
-      final nested = rawStories['stories'] ??
+      final nested =
+          rawStories['stories'] ??
           rawStories['items'] ??
           rawStories['results'] ??
           rawStories['data'];
@@ -69,8 +71,9 @@ class HighlightModel {
 
 class HighlightStoryRef {
   final String id;
+  final String mediaUrl;
 
-  const HighlightStoryRef({required this.id});
+  const HighlightStoryRef({required this.id, this.mediaUrl = ''});
 
   factory HighlightStoryRef.fromJson(dynamic json) {
     if (json is String) {
@@ -88,15 +91,28 @@ class HighlightStoryRef {
       }
 
       return HighlightStoryRef(
-        id: (json['story_id'] ??
-                json['storyId'] ??
-                json['story_uuid'] ??
-                json['storyUuid'] ??
-                json['story'] ??
-                json['id'] ??
-                json['uuid'] ??
-                '')
-            .toString(),
+        id:
+            (json['story_id'] ??
+                    json['storyId'] ??
+                    json['story_uuid'] ??
+                    json['storyUuid'] ??
+                    json['story'] ??
+                    json['id'] ??
+                    json['uuid'] ??
+                    '')
+                .toString(),
+        mediaUrl:
+            (json['media_url'] ??
+                    json['mediaUrl'] ??
+                    json['cover_media_url'] ??
+                    json['coverMediaUrl'] ??
+                    json['image'] ??
+                    json['image_url'] ??
+                    json['thumbnail'] ??
+                    json['thumbnail_url'] ??
+                    json['file'] ??
+                    '')
+                .toString(),
       );
     }
 
@@ -104,7 +120,7 @@ class HighlightStoryRef {
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id};
+    return {'id': id, 'media_url': mediaUrl};
   }
 }
 
@@ -131,19 +147,17 @@ class HighlightsResponse {
 class HighlightsData {
   final List<HighlightModel> highlights;
 
-  HighlightsData({
-    required this.highlights,
-  });
+  HighlightsData({required this.highlights});
 
   factory HighlightsData.fromJson(Map<String, dynamic> json) {
     final highlightsList = json['highlights'] as List?;
 
-    final highlights = highlightsList?.map((item) {
-      return HighlightModel.fromJson(item);
-    }).toList() ?? [];
+    final highlights =
+        highlightsList?.map((item) {
+          return HighlightModel.fromJson(item);
+        }).toList() ??
+        [];
 
-    return HighlightsData(
-      highlights: highlights,
-    );
+    return HighlightsData(highlights: highlights);
   }
 }
