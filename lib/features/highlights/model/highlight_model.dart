@@ -4,6 +4,7 @@ class HighlightModel {
   final int storiesCount;
   final String coverMediaUrl;
   final String createdAt;
+  final List<HighlightStoryRef> stories;
 
   HighlightModel({
     required this.id,
@@ -11,18 +12,31 @@ class HighlightModel {
     required this.storiesCount,
     required this.coverMediaUrl,
     required this.createdAt,
+    this.stories = const [],
   });
 
   factory HighlightModel.fromJson(Map<String, dynamic> json) {
+    final storiesList = json['stories'] as List?;
+
     return HighlightModel(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
-      storiesCount: json['stories_count'] is int 
-          ? json['stories_count'] 
+      storiesCount: json['stories_count'] is int
+          ? json['stories_count']
           : int.tryParse(json['stories_count']?.toString() ?? '0') ?? 0,
       coverMediaUrl: json['cover_media_url']?.toString() ?? '',
       createdAt: json['created_at']?.toString() ?? '',
+      stories: storiesList
+              ?.map((item) => HighlightStoryRef.fromJson(item))
+              .where((story) => story.id.isNotEmpty)
+              .toList() ??
+          const [],
     );
+  }
+
+  bool containsStory(String storyId) {
+    if (storyId.isEmpty) return false;
+    return stories.any((story) => story.id == storyId);
   }
 
   Map<String, dynamic> toJson() {
@@ -32,7 +46,42 @@ class HighlightModel {
       'stories_count': storiesCount,
       'cover_media_url': coverMediaUrl,
       'created_at': createdAt,
+      'stories': stories.map((story) => story.toJson()).toList(),
     };
+  }
+}
+
+class HighlightStoryRef {
+  final String id;
+
+  const HighlightStoryRef({required this.id});
+
+  factory HighlightStoryRef.fromJson(dynamic json) {
+    if (json is String) {
+      return HighlightStoryRef(id: json);
+    }
+
+    if (json is Map<String, dynamic>) {
+      final nestedStory = json['story'];
+      if (nestedStory is Map<String, dynamic>) {
+        return HighlightStoryRef.fromJson(nestedStory);
+      }
+
+      return HighlightStoryRef(
+        id: (json['id'] ??
+                json['story_id'] ??
+                json['storyId'] ??
+                json['uuid'] ??
+                '')
+            .toString(),
+      );
+    }
+
+    return const HighlightStoryRef(id: '');
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
   }
 }
 

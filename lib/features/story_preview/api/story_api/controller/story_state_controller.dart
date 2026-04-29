@@ -29,12 +29,20 @@ class StoryStateController extends ChangeNotifier {
     _isLoadingFromStorage = false; // Don't auto-load on init
   }
 
+  static StoryStateController ensureRegistered() {
+    if (!Get.isRegistered<StoryStateController>()) {
+      Get.put<StoryStateController>(StoryStateController(), permanent: true);
+      debugPrint('[StoryState] Registered shared StoryStateController');
+    }
+    return Get.find<StoryStateController>();
+  }
+
   List<StoryData> _userStories = [];
   String? _username;
   String? _avatarUrl;
   bool _isLoadingFromStorage = false;
   String? _currentUserId; // Track current user for cache isolation
-  
+
   // Current story being viewed
   StoryItem? _currentStory;
 
@@ -45,23 +53,26 @@ class StoryStateController extends ChangeNotifier {
   String _getStoriesKey(String? userId) => 'stories_${userId ?? 'me'}';
   String _getUsernameKey(String? userId) => 'story_username_${userId ?? 'me'}';
   String _getAvatarKey(String? userId) => 'story_avatar_${userId ?? 'me'}';
-  String _getTimestampKey(String? userId) => 'story_timestamp_${userId ?? 'me'}';
+  String _getTimestampKey(String? userId) =>
+      'story_timestamp_${userId ?? 'me'}';
 
   bool get hasUserStory => _userStories.isNotEmpty;
   bool get isLoadingFromStorage => _isLoadingFromStorage;
   List<String> get currentUserStoryMediaPaths =>
       _userStories.map((s) => s.mediaPath).toList();
+  List<String?> get currentUserStoryIds =>
+      _userStories.map((s) => s.id).toList();
   DateTime? get storyCreatedAt =>
       _userStories.isNotEmpty ? _userStories.first.createdAt : null;
   String? get username => _username;
   String? get avatarUrl => _avatarUrl;
   List<DateTime> get storyTimestamps =>
       _userStories.map((s) => s.createdAt).toList();
-  
+
   /// Get current story ID (UUID) for API calls
-  String? get currentStoryId =>
-      _userStories.isNotEmpty ? _userStories.first.id : null;
-  
+  String? get currentStoryId => _currentStory?.id ??
+      (_userStories.isNotEmpty ? _userStories.first.id : null);
+
   /// Get story ID by media path
   String? getStoryIdByMediaPath(String mediaPath) {
     final story = _userStories.firstWhere(
@@ -70,20 +81,23 @@ class StoryStateController extends ChangeNotifier {
     );
     return story.id;
   }
-  
+
   /// Get current story being viewed
   StoryItem? get currentStory => _currentStory;
-  
+
   /// Set current story being viewed
   void setCurrentStory(StoryItem? story) {
-    print("🧪 Setting current story: ${story?.id}");
+    debugPrint(
+      '[StoryState] currentStory set: '
+      'id=${story?.id ?? 'NULL'}, media=${story?.mediaUrl ?? 'NULL'}',
+    );
     _currentStory = story;
     notifyListeners();
   }
 
   // Debounced save to prevent excessive storage writes
   Timer? _saveTimer;
-  
+
   void _debouncedSaveToStorage() {
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 500), () {
@@ -187,6 +201,7 @@ class StoryStateController extends ChangeNotifier {
   Future<void> setStoriesFromAPI(
     List<String> mediaPaths, {
     List<DateTime>? createdAts,
+    List<String?>? storyIds,
     String? username,
     String? avatarUrl,
     String? userId,
@@ -212,6 +227,7 @@ class StoryStateController extends ChangeNotifier {
             createdAt: createdAts != null && i < createdAts.length
                 ? createdAts[i]
                 : DateTime.now(),
+            id: storyIds != null && i < storyIds.length ? storyIds[i] : null,
           ),
         );
       }
@@ -237,6 +253,7 @@ class StoryStateController extends ChangeNotifier {
   /// Clear story state
   Future<void> clearStory() async {
     _userStories = [];
+    _currentStory = null;
     notifyListeners();
     await _saveStoriesToStorage(_currentUserId);
   }
@@ -249,6 +266,7 @@ class StoryStateController extends ChangeNotifier {
   /// Clear all story data including user info (for logout)
   Future<void> clearAllData() async {
     _userStories = [];
+    _currentStory = null;
     _username = null;
     _avatarUrl = null;
     _currentUserId = null;
@@ -327,6 +345,7 @@ class StoryStateController extends ChangeNotifier {
           return StoryData(
             mediaPath: story['mediaPath'],
             createdAt: DateTime.parse(story['createdAt']),
+            id: story['id']?.toString(),
           );
         }).toList();
       }
@@ -355,6 +374,7 @@ class StoryStateController extends ChangeNotifier {
               (story) => {
                 'mediaPath': story.mediaPath,
                 'createdAt': story.createdAt.toIso8601String(),
+                'id': story.id,
               },
             )
             .toList(),

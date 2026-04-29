@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
+import 'package:get/get.dart';
 
 /// Utility class for story-related operations
 class StoryUtils {
@@ -29,19 +31,22 @@ class StoryUtils {
     );
 
     try {
-      final storyStateController = StoryStateController();
+      StoryStateController.ensureRegistered();
+      final storyStateController = Get.find<StoryStateController>();
       final storyController = StoryController();
 
       // Check cache first for instant response
       await storyStateController.loadStoriesFromStorage(userId);
-      
+
       // If we have cached stories, navigate immediately and refresh in background
-      if (storyStateController.hasUserStory && !storyStateController.isLoadingFromStorage) {
+      if (storyStateController.hasUserStory &&
+          !storyStateController.isLoadingFromStorage) {
         Navigator.pop(context); // Close loading dialog
-        
+
         final mediaPaths = storyStateController.currentUserStoryMediaPaths;
         final timestamps = storyStateController.storyTimestamps;
-        
+        final storyIds = storyStateController.currentUserStoryIds;
+
         _navigateToStoryScreen(
           context,
           userId: userId,
@@ -50,28 +55,36 @@ class StoryUtils {
           username: username,
           avatar: avatar,
           timestamps: timestamps,
+          storyIds: storyIds,
         );
-        
+
         // Refresh stories in background
-        _refreshStoriesInBackground(storyController, storyStateController, userId, username, avatar);
+        _refreshStoriesInBackground(
+          storyController,
+          storyStateController,
+          userId,
+          username,
+          avatar,
+        );
       } else {
         // No cache, fetch from API
         await storyController.fetchStories(userId: userId);
-        
+
         if (storyController.isSuccess && storyController.stories.isNotEmpty) {
           Navigator.pop(context); // Close loading dialog
-          
-          final mediaPaths = storyController.stories.map((story) => story.mediaUrl).toList();
-          final timestamps = storyController.stories.map((story) => story.createdAt).toList();
-          
-          await storyStateController.setStoriesFromAPI(
-            mediaPaths,
-            createdAts: timestamps,
+
+          final mediaPaths =
+              storyController.stories.map((story) => story.mediaUrl).toList();
+          final timestamps =
+              storyController.stories.map((story) => story.createdAt).toList();
+
+          await storyStateController.setStoriesFromStoryItems(
+            storyController.stories,
             username: username,
             avatarUrl: avatar,
             userId: userId,
           );
-          
+
           _navigateToStoryScreen(
             context,
             userId: userId,
@@ -80,6 +93,7 @@ class StoryUtils {
             username: username,
             avatar: avatar,
             timestamps: timestamps,
+            storyItems: storyController.stories,
           );
         } else {
           Navigator.pop(context); // Close loading dialog
@@ -108,6 +122,8 @@ class StoryUtils {
     required String username,
     required String avatar,
     required List<DateTime> timestamps,
+    List<String?>? storyIds,
+    List<StoryItem>? storyItems,
   }) {
     Navigator.push(
       context,
@@ -119,6 +135,8 @@ class StoryUtils {
           username: username,
           avatarUrl: avatar,
           timestamps: timestamps,
+          storyIds: storyIds,
+          storyItems: storyItems,
         ),
       ),
     );
@@ -133,14 +151,10 @@ class StoryUtils {
   ) async {
     try {
       await storyController.fetchStories(userId: userId);
-      
+
       if (storyController.isSuccess && storyController.stories.isNotEmpty) {
-        final mediaPaths = storyController.stories.map((story) => story.mediaUrl).toList();
-        final timestamps = storyController.stories.map((story) => story.createdAt).toList();
-        
-        await storyStateController.setStoriesFromAPI(
-          mediaPaths,
-          createdAts: timestamps,
+        await storyStateController.setStoriesFromStoryItems(
+          storyController.stories,
           username: username,
           avatarUrl: avatar,
           userId: userId,

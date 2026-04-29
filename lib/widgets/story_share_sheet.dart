@@ -4,6 +4,7 @@ import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/widgets/also_share_sheet.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 class AppColors {
@@ -67,7 +68,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       if (!mounted) return;
 
       if (storyController.isSuccess) {
-        StoryStateController().markStoryAsShared(widget.mediaPath!);
+        StoryStateController.ensureRegistered();
+        Get.find<StoryStateController>().markStoryAsShared(widget.mediaPath!);
 
         final navigator = Navigator.of(context);
         PostShareFlowBridge.notifyStorySharedNavigateToProfile();
