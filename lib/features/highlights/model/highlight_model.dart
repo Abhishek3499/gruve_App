@@ -161,3 +161,26 @@ class HighlightsData {
     return HighlightsData(highlights: highlights);
   }
 }
+
+class HighlightResponse {
+  final int code;
+  final bool success;
+  final String message;
+  final HighlightModel data;
+
+  HighlightResponse({
+    required this.code,
+    required this.success,
+    required this.message,
+    required this.data,
+  });
+
+  factory HighlightResponse.fromJson(Map<String, dynamic> json) {
+    return HighlightResponse(
+      code: json['code'] ?? 200,
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      data: HighlightModel.fromJson(json['data'] ?? json),
+    );
+  }
+}

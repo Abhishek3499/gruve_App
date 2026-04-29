@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/api/highlight_service.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
@@ -65,6 +66,31 @@ class HighlightController extends GetxController {
     } finally {
       isLoading.value = false;
       print('[HighlightController] fetchMyHighlights END');
+    }
+  }
+
+  Future<HighlightModel?> fetchHighlightStories(String highlightId) async {
+    try {
+      debugPrint('[Controller] fetchHighlightStories CALLED with ID: $highlightId');
+      
+      // Validate highlightId before API call
+      if (highlightId.isEmpty) {
+        debugPrint('[Controller] ERROR: Empty highlightId provided');
+        return null;
+      }
+      
+      final response = await _service.fetchHighlightStories(highlightId);
+      
+      if (response.success) {
+        debugPrint('[Controller] API success - Stories count: ${response.data.stories.length}');
+        return response.data;
+      } else {
+        debugPrint('[Controller] API failed: ${response.message}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('[Controller] ERROR: $e');
+      return null;
     }
   }
 }

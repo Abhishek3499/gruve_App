@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 
@@ -26,7 +27,7 @@ class StoryList extends StatelessWidget {
             return _buildAddStory(context);
           }
 
-          return _buildHighlightItem(highlights[index - 1]);
+          return _buildHighlightItem(context, highlights[index - 1]);
         },
       ),
     );
@@ -73,40 +74,55 @@ class StoryList extends StatelessWidget {
     );
   }
 
-  Widget _buildHighlightItem(HighlightModel highlight) {
+  Widget _buildHighlightItem(BuildContext context, HighlightModel highlight) {
     final cover = _coverFor(highlight);
 
     return Padding(
       padding: const EdgeInsets.only(right: 18),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _HighlightCircle(
-            child: ClipOval(
-              child: cover != null
-                  ? Image.network(
-                      cover,
-                      fit: BoxFit.cover,
-                      width: 60,
-                      height: 60,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _placeholderIcon(),
-                    )
-                  : _placeholderIcon(),
+      child: GestureDetector(
+        onTap: () {
+          debugPrint('[StoryList] Highlight item tapped: ${highlight.title}');
+          debugPrint('[StoryList] Highlight ID: ${highlight.id}');
+          debugPrint('[StoryList] Stories count: ${highlight.stories.length}');
+          debugPrint('[HighlightTap] Navigating to viewer');
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HighlightViewerScreen(highlightId: highlight.id),
             ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: 72,
-            child: Text(
-              highlight.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+          );
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _HighlightCircle(
+              child: ClipOval(
+                child: cover != null
+                    ? Image.network(
+                        cover,
+                        fit: BoxFit.cover,
+                        width: 60,
+                        height: 60,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _placeholderIcon(),
+                      )
+                    : _placeholderIcon(),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 72,
+              child: Text(
+                highlight.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
