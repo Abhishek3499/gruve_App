@@ -3,13 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
+import 'package:get/get.dart';
 
 /// Story data model for better organization
 class StoryData {
   final String mediaPath;
   final DateTime createdAt;
+  final String? id; // Story UUID for API calls
 
-  StoryData({required this.mediaPath, required this.createdAt});
+  StoryData({
+    required this.mediaPath,
+    required this.createdAt,
+    this.id,
+  });
 }
 
 /// Optimized controller for managing story state across the app
@@ -27,6 +34,9 @@ class StoryStateController extends ChangeNotifier {
   String? _avatarUrl;
   bool _isLoadingFromStorage = false;
   String? _currentUserId; // Track current user for cache isolation
+  
+  // Current story being viewed
+  StoryItem? _currentStory;
 
   // Cache expiry duration (5 minutes)
   static const Duration _cacheExpiry = Duration(minutes: 5);
@@ -47,6 +57,29 @@ class StoryStateController extends ChangeNotifier {
   String? get avatarUrl => _avatarUrl;
   List<DateTime> get storyTimestamps =>
       _userStories.map((s) => s.createdAt).toList();
+  
+  /// Get current story ID (UUID) for API calls
+  String? get currentStoryId =>
+      _userStories.isNotEmpty ? _userStories.first.id : null;
+  
+  /// Get story ID by media path
+  String? getStoryIdByMediaPath(String mediaPath) {
+    final story = _userStories.firstWhere(
+      (s) => s.mediaPath == mediaPath,
+      orElse: () => StoryData(mediaPath: mediaPath, createdAt: DateTime.now()),
+    );
+    return story.id;
+  }
+  
+  /// Get current story being viewed
+  StoryItem? get currentStory => _currentStory;
+  
+  /// Set current story being viewed
+  void setCurrentStory(StoryItem? story) {
+    print("🧪 Setting current story: ${story?.id}");
+    _currentStory = story;
+    notifyListeners();
+  }
 
   // Debounced save to prevent excessive storage writes
   Timer? _saveTimer;
@@ -109,6 +142,45 @@ class StoryStateController extends ChangeNotifier {
     notifyListeners();
     // Debounce storage save to avoid excessive writes
     _debouncedSaveToStorage();
+  }
+
+  /// Set stories from StoryItem list (replaces entire list)
+  Future<void> setStoriesFromStoryItems(
+    List<StoryItem> storyItems, {
+    String? username,
+    String? avatarUrl,
+    String? userId,
+  }) async {
+    // Clear previous user's data if switching users
+    if (userId != null && _currentUserId != null && userId != _currentUserId) {
+      await _clearUserCache(_currentUserId);
+    }
+
+    _currentUserId = userId;
+    _userStories.clear();
+
+    // Update user info if provided
+    if (username != null) _username = username;
+    if (avatarUrl != null) _avatarUrl = avatarUrl;
+
+    for (final storyItem in storyItems) {
+      _userStories.add(
+        StoryData(
+          mediaPath: storyItem.mediaUrl,
+          createdAt: storyItem.createdAt,
+          id: storyItem.id, // Store the UUID
+        ),
+      );
+    }
+
+    // Set the first story as current if no current story is set
+    if (_currentStory == null && storyItems.isNotEmpty) {
+      setCurrentStory(storyItems.first);
+    }
+
+    _sortStoriesByTime();
+    notifyListeners();
+    await _saveStoriesToStorage(userId);
   }
 
   /// Set stories from API response (replaces entire list)

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
+import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
+import 'package:get/get.dart';
 
 class StorySelectorScreen extends StatefulWidget {
   final List<String> mediaPaths;
@@ -16,13 +18,25 @@ class _StorySelectorScreenState extends State<StorySelectorScreen> {
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(path, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
-        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
-      });
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
     } else {
-      return Image.file(File(path), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
-        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
-      });
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
     }
   }
 
@@ -94,8 +108,13 @@ class _StorySelectorScreenState extends State<StorySelectorScreen> {
 
 class CreateHighlightSheet extends StatefulWidget {
   final String storyImageUrl;
+  final String storyId;
 
-  const CreateHighlightSheet({super.key, required this.storyImageUrl});
+  const CreateHighlightSheet({
+    super.key,
+    required this.storyImageUrl,
+    required this.storyId,
+  });
 
   @override
   State<CreateHighlightSheet> createState() => _CreateHighlightSheetState();
@@ -103,16 +122,31 @@ class CreateHighlightSheet extends StatefulWidget {
 
 class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
   final TextEditingController _nameController = TextEditingController();
+  final HighlightCreateController _createController = Get.put(
+    HighlightCreateController(),
+  );
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(path, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
-        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
-      });
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
     } else {
-      return Image.file(File(path), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
-        return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
-      });
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.grey),
+          );
+        },
+      );
     }
   }
 
@@ -129,7 +163,11 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
         ),
         title: const Text(
           'New Highlight',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.black,
+          ),
         ),
       ),
       body: Column(
@@ -163,7 +201,10 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 hintStyle: const TextStyle(color: Colors.grey),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
               ),
             ),
           ),
@@ -174,8 +215,74 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
+              onPressed: () async {
+                print("➕ New highlight submit → API CALL START");
+
+                // ✅ Validate title
+                if (_nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a highlight name'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
+                final storyId = widget.storyId;
+
+                print("🧪 [DEBUG] FIXED Story ID: $storyId");
+                print("🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}");
+
+                // ❌ prevent null / empty
+                if (storyId.isEmpty) {
+                  print("❌ ERROR: Story ID is empty");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Story ID not found. Please try again.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // ❌ prevent wrong format
+                if (storyId.endsWith('.jpg') ||
+                    storyId.endsWith('.png') ||
+                    storyId.endsWith('.mp4')) {
+                  print("❌ ERROR: Wrong storyId (image file detected)");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Invalid story ID format.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // 🚀 API CALL
+                await _createController.addStoryToHighlight(
+                  highlightId: null,
+                  storyId: storyId,
+                  title: _nameController.text.trim(),
+                );
+
+                // ✅ Success handling
+                if (_createController.isSuccess.value) {
+                  print("✅ Highlight created successfully");
+
+                  Navigator.pop(context);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Highlight created successfully! 🎉'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  print("❌ Highlight creation failed");
+                }
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),

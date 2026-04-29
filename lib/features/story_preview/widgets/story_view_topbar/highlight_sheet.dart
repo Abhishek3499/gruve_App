@@ -4,22 +4,21 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:get/get.dart';
 
 void showInstagramHighlightSheet(BuildContext context) {
   final playbackController = StoryPlaybackController();
-  
-  // Pause story when sheet opens
+
   debugPrint("📱 [HighlightSheet] Opening sheet → Pause Story");
   playbackController.pauseStory(reason: "Highlight Sheet Open");
-  
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) => const HighlightSheetContent(),
   ).then((_) {
-    // Resume story when sheet closes
     debugPrint("📱 [HighlightSheet] Sheet closed → Resume Story");
     playbackController.resumeStory(reason: "Highlight Sheet Closed");
   });
@@ -33,14 +32,19 @@ class HighlightSheetContent extends StatefulWidget {
 }
 
 class _HighlightSheetContentState extends State<HighlightSheetContent> {
-  // Track the selected index (-1 means nothing is selected)
   int selectedIndex = -1;
 
-  // HighlightController instance
-  final HighlightController _highlightController = Get.put(HighlightController());
-  
-  // Playback controller
-  final StoryPlaybackController _playbackController = StoryPlaybackController();
+  final HighlightController _highlightController = Get.put(
+    HighlightController(),
+  );
+
+  final HighlightCreateController _createController = Get.put(
+    HighlightCreateController(),
+  );
+
+  final StoryStateController _storyStateController = Get.put(
+    StoryStateController(),
+  );
 
   @override
   void initState() {
@@ -59,7 +63,6 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag Handle
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             height: 4,
@@ -82,9 +85,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
             height: 250,
             child: Obx(() {
               if (_highlightController.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               final highlights = _highlightController.highlights;
@@ -92,23 +93,20 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
               return ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                // itemCount + 1 to account for the leading Add button
                 itemCount: highlights.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {
-                    // 1. The Add Button (First Item)
                     return _buildAddButton();
                   }
 
-                  // 2. The Highlight Items (Offset by 1)
                   final highlightIndex = index - 1;
                   final highlight = highlights[highlightIndex];
                   final isSelected = selectedIndex == highlightIndex;
 
                   return GestureDetector(
                     onTap: () {
+                      print("👆 Highlight tapped → selection only (NO API)");
                       setState(() {
-                        // Toggle selection or select new
                         selectedIndex = isSelected ? -1 : highlightIndex;
                       });
                     },
@@ -119,7 +117,6 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
             }),
           ),
 
-          // Bottom Action Button
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             height: selectedIndex != -1 ? 80 : 30,
@@ -134,9 +131,35 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: () {
-                        debugPrint("📱 [HighlightSheet] Done button pressed");
-                        Navigator.pop(context);
+                      onPressed: () async {
+                        print("✅ Done button pressed → API CALL START");
+
+                        final currentStory = _storyStateController.currentStory;
+
+                        if (currentStory == null) {
+                          print("❌ ERROR: currentStory is null");
+                          return;
+                        }
+
+                        // Safety check for valid index
+                        if (selectedIndex < 0 || selectedIndex >= _highlightController.highlights.length) {
+                          print("⚠️ Invalid index: $selectedIndex, highlights count: ${_highlightController.highlights.length}");
+                          return;
+                        }
+
+                        final highlight =
+                            _highlightController.highlights[selectedIndex];
+
+                        print("🧪 FIXED Story ID: ${currentStory.id}");
+
+                        await _createController.addStoryToHighlight(
+                          highlightId: highlight.id,
+                          storyId: currentStory.id,
+                        );
+
+                        if (_createController.isSuccess.value) {
+                          Navigator.pop(context);
+                        }
                       },
                       child: const Text(
                         "Done",
@@ -151,7 +174,6 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
     );
   }
 
-  // Update this in your current file
   Widget _buildAddButton() {
     return Padding(
       padding: const EdgeInsets.only(right: 12.0),
@@ -159,29 +181,22 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         children: [
           InkWell(
             onTap: () async {
-              final storyStateController = StoryStateController();
-              
-              // Load stories from storage before accessing
-              await storyStateController.loadStoriesFromStorage(null);
-              
-              final mediaPaths =
-                  storyStateController.currentUserStoryMediaPaths;
+              print("🚀 Navigating to CreateHighlightSheet");
 
-              if (mediaPaths.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No stories available')),
-                );
+              final currentStory = _storyStateController.currentStory;
+
+              if (currentStory == null) {
+                print("❌ ERROR: No story selected");
                 return;
               }
-
-              // 👉 Direct first story ya current story
-              final currentStoryUrl = mediaPaths.first;
 
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      CreateHighlightSheet(storyImageUrl: currentStoryUrl),
+                  builder: (context) => CreateHighlightSheet(
+                    storyImageUrl: currentStory.mediaUrl,
+                    storyId: currentStory.id,
+                  ),
                 ),
               );
             },
@@ -213,9 +228,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
       child: Column(
         children: [
           AnimatedScale(
-            scale: isSelected
-                ? 0.95
-                : 1.0, // Slight shrink animation when selected
+            scale: isSelected ? 0.95 : 1.0,
             duration: const Duration(milliseconds: 200),
             child: Stack(
               children: [
@@ -228,23 +241,11 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                     child: highlight.coverMediaUrl != null
                         ? Image.network(
                             highlight.coverMediaUrl!,
-                            height: 180,
-                            width: 130,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.collections, size: 40, color: Colors.grey);
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              );
-                            },
                           )
-                        : const Icon(Icons.collections, size: 40, color: Colors.grey),
+                        : const Icon(Icons.collections),
                   ),
                 ),
-                // Smooth Selection Overlay
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: isSelected ? 1.0 : 0.0,
@@ -256,23 +257,14 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.blue, width: 3),
                     ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Colors.blue,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.check_circle, color: Colors.blue),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 10),
-          Text(
-            highlight.title,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(highlight.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
       ),
     );

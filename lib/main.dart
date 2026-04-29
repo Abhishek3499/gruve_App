@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,12 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Suppress verbose logs in release mode
+  if (!kDebugMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
+  
   await dotenv.load(fileName: ".env"); // 👈 IMPORTANT
   await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
   runApp(MyApp());

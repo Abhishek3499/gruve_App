@@ -8,7 +8,8 @@
     <application
         android:label="gruve_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -36,6 +37,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Suppress verbose logging in release builds -->
+        <meta-data
+            android:name="flutter.log.level"
+            android:value="error" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
