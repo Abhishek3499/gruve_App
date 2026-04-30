@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../api/block_api_service.dart';
+import '../../profile_menu_drawer/models/blocked/blocked_user_model.dart';
 
 class BlockProvider extends ChangeNotifier {
   final BlockApiService _apiService = BlockApiService();
@@ -10,8 +11,40 @@ class BlockProvider extends ChangeNotifier {
   // Loading state for each user
   final Map<String, bool> _loadingStates = {};
 
+  // Blocked users list
+  List<BlockedUserModel> _blockedUsers = [];
+  bool _isLoadingList = false;
+
+  List<BlockedUserModel> get blockedUsers => _blockedUsers;
+  bool get isLoadingList => _isLoadingList;
+
   void _log(String message) {
     debugPrint('🔒 [BlockProvider] $message');
+  }
+
+  /// Fetch blocked users list
+  Future<void> fetchBlockedUsers() async {
+    if (_isLoadingList) {
+      _log('⚠️ FETCH BLOCKED - Already loading');
+      return;
+    }
+
+    _log('🔄 FETCH START - blocked users list');
+    _isLoadingList = true;
+    notifyListeners();
+
+    try {
+      _blockedUsers = await _apiService.fetchBlockedUsers();
+      _log('✅ DATA LOADED - ${_blockedUsers.length} users');
+    } catch (e) {
+      _log('❌ ERROR - Failed to fetch blocked users: $e');
+      _blockedUsers = [];
+      rethrow;
+    } finally {
+      _isLoadingList = false;
+      notifyListeners();
+      _log('🏁 FETCH END');
+    }
   }
 
   /// Get block state for a specific user
@@ -32,7 +65,7 @@ class BlockProvider extends ChangeNotifier {
   }
 
   /// Toggle block/unblock with optimistic UI update and rollback
-  Future<void> toggleBlockUser(String userId) async {
+  Future<void> toggleBlockUser(String userId, {bool refreshList = false}) async {
     // Guard: Prevent multiple simultaneous API calls
     if (_loadingStates[userId] == true) {
       _log('⚠️ TOGGLE BLOCKED - Already loading for userId=$userId');
@@ -59,6 +92,12 @@ class BlockProvider extends ChangeNotifier {
         // Update with actual server state
         _blockStates[userId] = response.data!.isBlocked;
         _log('✅ STATE UPDATED - Server confirmed: ${_blockStates[userId]}');
+        
+        // Refresh blocked users list if requested
+        if (refreshList) {
+          _log('🔄 Refreshing blocked users list...');
+          await fetchBlockedUsers();
+        }
       } else {
         // Rollback on failure
         _blockStates[userId] = previousState;

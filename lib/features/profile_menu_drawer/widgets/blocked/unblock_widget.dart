@@ -65,10 +65,7 @@ class UnblockWidget extends StatelessWidget {
 
                     /// YES BUTTON
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        onConfirm();
-                      },
+                      onTap: onConfirm,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),

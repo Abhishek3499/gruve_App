@@ -206,6 +206,8 @@ class _VideoOverlayState extends State<VideoOverlay> {
                     builder: (context) => VideoOptionsSheet(
                       userId: post.userId,
                       currentUserId: _currentUserId,
+                      userName: post.username,
+                      profileImage: post.profilePicture,
                     ),
                   );
                 },

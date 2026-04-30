@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
 class SimpleBlockSheet extends StatelessWidget {
-  const SimpleBlockSheet({super.key});
+  final String? userName;
+  final String? profileImage;
+  
+  const SimpleBlockSheet({super.key, this.userName, this.profileImage});
 
   @override
   Widget build(BuildContext context) {
@@ -45,20 +48,22 @@ class SimpleBlockSheet extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(40),
-                  child: Image.asset(AppAssets.appleIcon, fit: BoxFit.cover),
+                  child: profileImage != null && (profileImage!.startsWith('http://') || profileImage!.startsWith('https://'))
+                      ? Image.network(profileImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Image.asset(AppAssets.appleIcon, fit: BoxFit.cover))
+                      : Image.asset(AppAssets.appleIcon, fit: BoxFit.cover),
                 ),
               ),
 
               const SizedBox(height: 16),
 
               /// TITLE LEFT ALIGN
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Block gaivyyy?',
-                    style: TextStyle(
+                    'Block ${userName ?? "this user"}?',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,

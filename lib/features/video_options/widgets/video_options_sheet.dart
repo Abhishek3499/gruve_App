@@ -12,8 +12,16 @@ import '../sheets/simple_not_interested_sheet.dart';
 class VideoOptionsSheet extends StatefulWidget {
   final String userId;
   final String? currentUserId;
+  final String? userName;
+  final String? profileImage;
   
-  const VideoOptionsSheet({super.key, required this.userId, this.currentUserId});
+  const VideoOptionsSheet({
+    super.key, 
+    required this.userId, 
+    this.currentUserId,
+    this.userName,
+    this.profileImage,
+  });
 
   @override
   State<VideoOptionsSheet> createState() => _VideoOptionsSheetState();
@@ -236,10 +244,12 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                             onTap: () async {
                               print('🔴 Block button tapped in VideoOptionsSheet');
                               
-                              // Save provider reference BEFORE any async operation
+                              // Save references BEFORE any async operation
                               final blockProvider = context.read<BlockProvider>();
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
                               final navigator = Navigator.of(context);
                               
+                              print('🔴 Closing VideoOptionsSheet...');
                               navigator.pop();
                               
                               print('🔴 Opening SimpleBlockSheet...');
@@ -247,35 +257,125 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
-                                builder: (context) => const SimpleBlockSheet(),
+                                builder: (context) => SimpleBlockSheet(
+                                  userName: widget.userName,
+                                  profileImage: widget.profileImage,
+                                ),
                               );
 
                               print('🔴 SimpleBlockSheet returned: $result');
 
                               // If user confirmed block action
                               if (result == true) {
-                                print('🔴 User confirmed block, calling API for userId: ${widget.userId}');
+                                print('🔴 User confirmed block');
                                 
+                                // 🚀 INSTANT SNACKBAR - Show immediately
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Blocking ${widget.userName ?? "user"}...',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: const Color(0xFFCD72E3),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    duration: const Duration(milliseconds: 500),
+                                    elevation: 8,
+                                  ),
+                                );
+                                
+                                // API call in background
                                 try {
                                   await blockProvider.toggleBlockUser(widget.userId);
                                   print('🔴 API call completed');
                                   
-                                  if (context.mounted) {
-                                    final isBlocked = blockProvider.isBlocked(widget.userId);
-                                    print('🔴 Block status after API: $isBlocked');
-                                    _showActionSnackBar(
-                                      isBlocked ? 'User blocked successfully' : 'User unblocked successfully',
-                                      context,
-                                    );
-                                  }
+                                  final isBlocked = blockProvider.isBlocked(widget.userId);
+                                  print('🔴 Block status: $isBlocked');
+                                  
+                                  // Success snackbar
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              '${widget.userName ?? "User"} blocked successfully',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: const Color(0xFFCD72E3),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                      duration: const Duration(milliseconds: 1500),
+                                      elevation: 8,
+                                    ),
+                                  );
                                 } catch (e) {
-                                  print('🔴 Error blocking user: $e');
-                                  if (context.mounted) {
-                                    _showActionSnackBar('Failed to block user. Please try again.', context);
-                                  }
+                                  print('🔴 Error: $e');
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                                          const SizedBox(width: 12),
+                                          const Expanded(
+                                            child: Text(
+                                              'Failed to block user',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                      duration: const Duration(milliseconds: 1500),
+                                      elevation: 8,
+                                    ),
+                                  );
                                 }
                               } else {
-                                print('🔴 User cancelled or result is: $result');
+                                print('🔴 User cancelled');
                               }
                             },
                           ),
