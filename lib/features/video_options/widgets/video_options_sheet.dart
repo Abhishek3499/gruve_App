@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import '../../../../core/assets.dart';
 import 'option_button.dart';
 import 'option_item.dart';
@@ -8,7 +10,9 @@ import '../sheets/simple_block_sheet.dart';
 import '../sheets/simple_not_interested_sheet.dart';
 
 class VideoOptionsSheet extends StatefulWidget {
-  const VideoOptionsSheet({super.key});
+  final String userId; // Add userId parameter
+  
+  const VideoOptionsSheet({super.key, required this.userId});
 
   @override
   State<VideoOptionsSheet> createState() => _VideoOptionsSheetState();
@@ -224,14 +228,50 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                           OptionItem(
                             title: 'Block',
                             icon: AppAssets.blocks,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              showModalBottomSheet(
+                            onTap: () async {
+                              print('🔴 Block button tapped in VideoOptionsSheet');
+                              
+                              // Save provider reference BEFORE any async operation
+                              final blockProvider = context.read<BlockProvider>();
+                              final navigator = Navigator.of(context);
+                              
+                              navigator.pop();
+                              
+                              print('🔴 Opening SimpleBlockSheet...');
+                              final result = await showModalBottomSheet<bool>(
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
                                 builder: (context) => const SimpleBlockSheet(),
                               );
+
+                              print('🔴 SimpleBlockSheet returned: $result');
+
+                              // If user confirmed block action
+                              if (result == true) {
+                                print('🔴 User confirmed block, calling API for userId: ${widget.userId}');
+                                
+                                try {
+                                  await blockProvider.toggleBlockUser(widget.userId);
+                                  print('🔴 API call completed');
+                                  
+                                  if (context.mounted) {
+                                    final isBlocked = blockProvider.isBlocked(widget.userId);
+                                    print('🔴 Block status after API: $isBlocked');
+                                    _showActionSnackBar(
+                                      isBlocked ? 'User blocked successfully' : 'User unblocked successfully',
+                                      context,
+                                    );
+                                  }
+                                } catch (e) {
+                                  print('🔴 Error blocking user: $e');
+                                  if (context.mounted) {
+                                    _showActionSnackBar('Failed to block user. Please try again.', context);
+                                  }
+                                }
+                              } else {
+                                print('🔴 User cancelled or result is: $result');
+                              }
                             },
                           ),
                           const SizedBox(height: 12),

@@ -33,7 +33,9 @@ class SubscribeService {
     final isSubscribed = await _apiService.toggleSubscription(userId);
     _log('🎯 API returned state=$isSubscribed for userId=$userId');
     setSubscriptionStatus(userId, isSubscribed);
-    _log('✅ toggleSubscription completed userId=$userId finalState=$isSubscribed');
+    _log(
+      '✅ toggleSubscription completed userId=$userId finalState=$isSubscribed',
+    );
     return isSubscribed;
   }
 

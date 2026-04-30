@@ -193,7 +193,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => const VideoOptionsSheet(),
+                    builder: (context) => VideoOptionsSheet(userId: post.userId),
                   );
                 },
               );
