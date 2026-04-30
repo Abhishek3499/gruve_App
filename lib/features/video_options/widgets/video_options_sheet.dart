@@ -143,7 +143,9 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
           child: Opacity(
             opacity: _fadeAnimation.value,
             child: Container(
-              height: MediaQuery.of(context).size.height * 0.50,
+              height: isSelf 
+                  ? MediaQuery.of(context).size.height * 0.35
+                  : MediaQuery.of(context).size.height * 0.50,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
