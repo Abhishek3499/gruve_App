@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
+import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import '../../../../core/assets.dart';
 import 'option_button.dart';
 import 'option_item.dart';
@@ -14,6 +15,7 @@ class VideoOptionsSheet extends StatefulWidget {
   final String? currentUserId;
   final String? userName;
   final String? profileImage;
+  final String? postId;
   
   const VideoOptionsSheet({
     super.key, 
@@ -21,6 +23,7 @@ class VideoOptionsSheet extends StatefulWidget {
     this.currentUserId,
     this.userName,
     this.profileImage,
+    this.postId,
   });
 
   @override
@@ -191,10 +194,131 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        OptionButton(
-                          icon: AppAssets.savs,
-                          label: 'Save',
-                          onTap: () => _handleAction('Save'),
+                        Consumer<SavePostProvider>(
+                          builder: (context, saveProvider, _) {
+                            final isSaved = widget.postId != null 
+                                ? saveProvider.isSaved(widget.postId!)
+                                : false;
+                            
+                            return OptionButton(
+                              icon: AppAssets.savs,
+                              label: isSaved ? 'Unsave' : 'Save',
+                              onTap: () {
+                                if (widget.postId == null) {
+                                  _showActionSnackBar('Post ID not available', context);
+                                  return;
+                                }
+                                
+                                HapticFeedback.lightImpact();
+                                
+                                final saveProvider = context.read<SavePostProvider>();
+                                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
+                                
+                                final currentState = saveProvider.isSaved(widget.postId!);
+                                
+                                navigator.pop();
+                                
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            currentState ? 'Unsaving...' : 'Saving...',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: const Color(0xFFCD72E3),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    duration: const Duration(milliseconds: 500),
+                                    elevation: 8,
+                                  ),
+                                );
+                                
+                                saveProvider.toggleSavePost(widget.postId!).then((_) {
+                                  final newState = saveProvider.isSaved(widget.postId!);
+                                  
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              newState ? 'Post saved successfully' : 'Post unsaved',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: const Color(0xFFCD72E3),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                      duration: const Duration(milliseconds: 1500),
+                                      elevation: 8,
+                                    ),
+                                  );
+                                }).catchError((e) {
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                                          const SizedBox(width: 12),
+                                          const Expanded(
+                                            child: Text(
+                                              'Failed to save post',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                      duration: const Duration(milliseconds: 1500),
+                                      elevation: 8,
+                                    ),
+                                  );
+                                });
+                              },
+                            );
+                          },
                         ),
                         OptionButton(
                           icon: AppAssets.coll,

@@ -4,6 +4,7 @@ import '../../../core/assets.dart';
 import '../../../api_calls/profile/controller/profile_controller.dart';
 import '../../../features/story_preview/api/create_post_api/model/post_model.dart';
 import '../screens/real_draft_screen.dart';
+import '../screens/post_detail/profile_post_detail_screen.dart';
 
 class ProfileGrid extends StatelessWidget {
   final int selectedTab;
@@ -20,7 +21,6 @@ class ProfileGrid extends StatelessWidget {
     return fromApi;
   }
 
-  /// Small bottom spinner while the next page loads (non-blocking).
   Widget? _pagingFooter() {
     if (!controller.isLoadingTab(selectedTab)) return null;
     if (!controller.canLoadMoreForTab(selectedTab)) return null;
@@ -154,7 +154,7 @@ class ProfileGrid extends StatelessWidget {
               );
             }
             final post = filteredPosts[index - 1];
-            return _buildPostItem(post, context);
+            return _buildPostItem(post, context, filteredPosts, index - 1);
           },
         ),
       );
@@ -223,15 +223,38 @@ class ProfileGrid extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final post = posts[index];
-        return _buildPostItem(post, context);
+        return _buildPostItem(post, context, posts, index);
       },
     );
   }
 
-  Widget _buildPostItem(Post post, BuildContext context) {
+  Widget _buildPostItem(
+    Post post,
+    BuildContext context,
+    List<Post> allPosts,
+    int index,
+  ) {
     return GestureDetector(
       onTap: () {
-        debugPrint('Tapped on post: ${post.id}');
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return ProfilePostDetailScreen(
+                post: post,
+                allPosts: allPosts,
+                initialIndex: index,
+                isOwnProfile: true,
+              );
+            },
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          ),
+        );
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),

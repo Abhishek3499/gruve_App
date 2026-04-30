@@ -163,6 +163,7 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
                   currentUserId: _currentUserId,
                   userName: post.username,
                   profileImage: post.profilePicture,
+                  postId: post.id,
                 ),
               );
             },

@@ -208,6 +208,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                       currentUserId: _currentUserId,
                       userName: post.username,
                       profileImage: post.profilePicture,
+                      postId: post.id,
                     ),
                   );
                 },

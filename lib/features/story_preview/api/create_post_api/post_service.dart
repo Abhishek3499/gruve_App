@@ -288,6 +288,74 @@ class PostService {
     }
   }
 
+  Future<Map<String, dynamic>> toggleSavePost(String postId) async {
+    debugPrint('🚀 [PostService] toggleSavePost START postId=$postId');
+    final token = await TokenStorage.getAccessToken();
+
+    try {
+      final res = await _dio.post(
+        "posts/save/toggle/",
+        data: {"post_id": postId},
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      debugPrint("✅ [PostService] SAVE TOGGLE SUCCESS: ${res.data}");
+      
+      final data = res.data['data'];
+      final isSaved = data['is_saved'] as bool;
+      final returnedPostId = data['post_id'] as String;
+      
+      debugPrint('✅ [PostService] isSaved=$isSaved postId=$returnedPostId');
+      
+      return {
+        'is_saved': isSaved,
+        'post_id': returnedPostId,
+      };
+    } catch (e) {
+      debugPrint("❌ [PostService] SAVE TOGGLE ERROR: $e");
+      if (e is DioException) {
+        debugPrint("❌ [PostService] Status: ${e.response?.statusCode}");
+        debugPrint("❌ [PostService] Response: ${e.response?.data}");
+        if (e.response?.statusCode == 401) {
+          debugPrint("❌ [PostService] Unauthorized error");
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<Post>> fetchSavedPosts() async {
+    debugPrint('🚀 [PostService] fetchSavedPosts START');
+    final token = await TokenStorage.getAccessToken();
+
+    try {
+      final res = await _dio.get(
+        "posts/saved/",
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      debugPrint("✅ [PostService] SAVED POSTS SUCCESS: ${res.data}");
+      
+      final data = res.data['data'];
+      final List<dynamic> postsJson = data['posts'] ?? data['results'] ?? [];
+      
+      final posts = postsJson
+          .map((json) => Post.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+      
+      debugPrint('✅ [PostService] Fetched ${posts.length} saved posts');
+      
+      return posts;
+    } catch (e) {
+      debugPrint("❌ [PostService] FETCH SAVED POSTS ERROR: $e");
+      if (e is DioException) {
+        debugPrint("❌ [PostService] Status: ${e.response?.statusCode}");
+        debugPrint("❌ [PostService] Response: ${e.response?.data}");
+      }
+      rethrow;
+    }
+  }
+
   Future<void> addComment(String postId, String text) async {
     final token = await TokenStorage.getAccessToken();
 
