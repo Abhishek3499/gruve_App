@@ -7,7 +7,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/post_servic
 import 'package:video_player/video_player.dart';
 
 class VideoFeedController {
-  static const int _prefetchVideoCount = 2;
+  static const int _prefetchVideoCount = 1;
 
   bool _disposed = false;
   int _feedLoadGeneration = 0;
@@ -84,7 +84,8 @@ class VideoFeedController {
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
         _notifyFeedChanged();
-        await _ensureControllersAroundIndex(_currentIndex.value, gen);
+        // Preload videos in background without blocking UI
+        unawaited(_ensureControllersAroundIndex(_currentIndex.value, gen));
         if (kDebugMode) {
           debugPrint('Total Posts Count: ${_posts.length}');
         }
@@ -174,7 +175,8 @@ class VideoFeedController {
 
       _currentIndex.value = 0;
       _isPlaying.value = false;
-      await _ensureControllersAroundIndex(0, gen);
+      // Preload videos in background without blocking UI
+      unawaited(_ensureControllersAroundIndex(0, gen));
       playVideo(0);
 
       return true;
@@ -255,6 +257,12 @@ class VideoFeedController {
     if (_disposed) return;
     _disposed = true;
 
+    // Pause all videos first
+    for (final controller in _controllers.values) {
+      controller.pause();
+    }
+
+    // Then dispose
     for (final controller in _controllers.values) {
       controller.dispose();
     }
@@ -263,6 +271,10 @@ class VideoFeedController {
     _currentIndex.dispose();
     _isPlaying.dispose();
     _feedRevision.dispose();
+    
+    if (kDebugMode) {
+      debugPrint('🧹 VideoFeedController fully disposed');
+    }
   }
 
   bool _isSupportedMediaUrl(String url) {
@@ -295,28 +307,29 @@ class VideoFeedController {
     }
 
     final targetIndexes = <int>{};
-    var bufferedVideos = 0;
-    for (var i = index; i < _posts.length; i++) {
-      final mediaUrl = _posts[i].media;
-      if (!mediaUrl.toLowerCase().contains('.mp4')) {
-        continue;
-      }
-
-      targetIndexes.add(i);
-      bufferedVideos++;
-      if (bufferedVideos > _prefetchVideoCount) {
-        break;
-      }
+    
+    // ONLY load current video - no preloading
+    final mediaUrl = _posts[index].media;
+    if (mediaUrl.toLowerCase().contains('.mp4')) {
+      targetIndexes.add(index);
     }
 
+    // Aggressively dispose ALL other videos
     final indexesToDispose = _controllers.keys
-        .where((existingIndex) => !targetIndexes.contains(existingIndex))
+        .where((existingIndex) => existingIndex != index)
         .toList();
     for (final mediaIndex in indexesToDispose) {
       final controller = _controllers.remove(mediaIndex);
-      await controller?.dispose();
+      if (controller != null) {
+        await controller.pause();
+        await controller.dispose();
+        if (kDebugMode) {
+          debugPrint('🗑️ Disposed video at index $mediaIndex');
+        }
+      }
     }
 
+    // Initialize ONLY current video
     for (final mediaIndex in targetIndexes) {
       if (_controllers.containsKey(mediaIndex)) {
         continue;
@@ -327,7 +340,14 @@ class VideoFeedController {
         continue;
       }
 
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
+      );
+      
       try {
         await controller.initialize();
       } catch (e) {
@@ -346,9 +366,13 @@ class VideoFeedController {
       }
 
       controller.setLooping(true);
+      controller.setVolume(1.0);
       _failedVideoIndexes.remove(mediaIndex);
       _controllers[mediaIndex] = controller;
       _notifyFeedChanged();
+      if (kDebugMode) {
+        debugPrint('✅ Loaded video at index $mediaIndex');
+      }
     }
   }
 

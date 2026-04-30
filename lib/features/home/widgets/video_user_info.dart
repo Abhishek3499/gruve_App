@@ -165,6 +165,12 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
       return const SizedBox.shrink();
     }
 
+    // Hide button if already subscribed
+    final isSubscribed = widget.subscribeController.isUserSubscribed(widget.userId);
+    if (isSubscribed) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       height: 32,
       child: SubscribeButton(

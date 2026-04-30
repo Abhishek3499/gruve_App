@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../controllers/video_feed_controller.dart';
-import 'video_overlay.dart';
+import 'optimized_video_overlay.dart';
 import 'video_top_bar.dart';
 
 class VideoFeed extends StatefulWidget {
@@ -51,7 +52,7 @@ class _VideoFeedState extends State<VideoFeed> {
 
   void _onPageChanged(int page) {
     _controller.playVideo(page);
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
 
     final remainingItems = _controller.mediaUrls.length - page - 1;
     if (remainingItems <= 3 &&
@@ -107,11 +108,15 @@ class _VideoFeedState extends State<VideoFeed> {
               hasVideoLoadFailed: hasVideoLoadFailed,
             ),
           ),
-          VideoOverlay(
-            selectedTab: selectedContentTab,
-            onTabChanged: _onTabChanged,
-            controller: _controller,
-            onOwnProfileTap: () => widget.onTabChanged(4),
+          AnimatedBuilder(
+            animation: _controller.currentIndex,
+            builder: (context, _) => OptimizedVideoOverlay(
+              selectedTab: selectedContentTab,
+              onTabChanged: _onTabChanged,
+              controller: _controller,
+              onOwnProfileTap: () => widget.onTabChanged(4),
+              currentIndex: _controller.currentIndex.value,
+            ),
           ),
         ],
       ),
@@ -141,25 +146,24 @@ class _VideoFeedState extends State<VideoFeed> {
         );
       }
 
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return Container(color: Colors.black);
     }
 
     if (!isValidNetworkUrl) return _brokenMediaIcon();
 
-    return Image.network(
-      url,
+    return CachedNetworkImage(
+      imageUrl: url,
       fit: BoxFit.cover,
-      cacheWidth: 400,
-      cacheHeight: 800,
       width: double.infinity,
       height: double.infinity,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) => _brokenMediaIcon(),
+      memCacheWidth: 200,
+      memCacheHeight: 400,
+      maxWidthDiskCache: 300,
+      maxHeightDiskCache: 600,
+      fadeInDuration: const Duration(milliseconds: 50),
+      fadeOutDuration: const Duration(milliseconds: 50),
+      placeholder: (context, url) => Container(color: Colors.black),
+      errorWidget: (context, url, error) => _brokenMediaIcon(),
     );
   }
 
@@ -252,11 +256,7 @@ class _VideoFeedState extends State<VideoFeed> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        _controller.feedRevision,
-        _controller.currentIndex,
-        _controller.isPlaying,
-      ]),
+      animation: _controller.feedRevision,
       builder: (context, _) {
         final showInitialLoader =
             _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
