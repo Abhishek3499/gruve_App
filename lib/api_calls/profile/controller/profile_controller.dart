@@ -7,6 +7,7 @@ import 'package:gruve_app/api_calls/profile/repository/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
+import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 
 import '../model/profile_model.dart';
 import '../model/profile_stats_model.dart';
@@ -85,7 +86,7 @@ class ProfileController {
 
   // Local in-memory story and highlight storage
   final ValueNotifier<List<Map<String, dynamic>>> storyList = ValueNotifier([]);
-  final ValueNotifier<List<Map<String, dynamic>>> highlightList = ValueNotifier([]);
+  final ValueNotifier<List<HighlightModel>> highlightList = ValueNotifier([]);
 
   final ValueNotifier<ProfileModel?> userNotifier = ValueNotifier(null);
 
@@ -99,6 +100,9 @@ class ProfileController {
     storyList,
     highlightList,
   ]);
+
+  /// Get user highlights from profile API (for other user profiles)
+  List<HighlightModel> get userHighlights => highlightList.value;
 
   ProfileModel? get user => userNotifier.value;
   set user(ProfileModel? value) => userNotifier.value = value;
@@ -302,6 +306,9 @@ class ProfileController {
 
       // Stories are now handled by unified Story API system, not Profile API
       // Removed story parsing from ProfileController to eliminate dual-system
+
+      // Parse highlights from API response (data['data']['highlights'])
+      _parseHighlightsFromResponse(userData);
 
       await Future<void>.delayed(const Duration(milliseconds: 16));
       if (_disposed) return;
@@ -1095,133 +1102,162 @@ class ProfileController {
   // _extractStoriesData, _handleMissingStoriesFromProfile, _isCurrentProfileSyncedWithStoryState, _parseStoryCreatedAt
 
   // ========== LOCAL STORY & HIGHLIGHT LOGIC ==========
-  
+
   /// Add a new story to the local storyList
-  void addStory({
-    required String imageUrl,
-    String? username,
-  }) {
+  void addStory({required String imageUrl, String? username}) {
     if (_disposed) return;
-    
+
     final story = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'imageUrl': imageUrl,
       'username': username ?? user?.username ?? 'User',
       'hasSeen': false,
     };
-    
+
     debugPrint('📸 [ProfileController] Adding story: $story');
-    
+
     final currentStories = List<Map<String, dynamic>>.from(storyList.value);
     currentStories.add(story);
     storyList.value = currentStories;
-    
-    debugPrint('✅ [ProfileController] Story added. Total stories: ${storyList.value.length}');
+
+    debugPrint(
+      '✅ [ProfileController] Story added. Total stories: ${storyList.value.length}',
+    );
   }
-  
+
   /// Mark a story as seen
   void markStoryAsSeen(String storyId) {
     if (_disposed) return;
-    
+
     final currentStories = List<Map<String, dynamic>>.from(storyList.value);
     final index = currentStories.indexWhere((s) => s['id'] == storyId);
-    
+
     if (index != -1) {
       currentStories[index]['hasSeen'] = true;
       storyList.value = currentStories;
       debugPrint('👀 [ProfileController] Story marked as seen: $storyId');
     }
   }
-  
+
   /// Create a highlight from a story
-  void addToHighlight({
-    required String storyId,
-    required String title,
-  }) {
+  void addToHighlight({required String storyId, required String title}) {
     if (_disposed) return;
-    
+
     final currentStories = storyList.value;
     final story = currentStories.firstWhere(
       (s) => s['id'] == storyId,
       orElse: () => {},
     );
-    
+
     if (story.isEmpty) {
       debugPrint('❌ [ProfileController] Story not found: $storyId');
       return;
     }
-    
-    final highlight = {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'coverUrl': story['imageUrl'],
-      'title': title,
-      'stories': [story],
-    };
-    
-    debugPrint('🌟 [ProfileController] Creating highlight: $highlight');
-    
-    final currentHighlights = List<Map<String, dynamic>>.from(highlightList.value);
-    currentHighlights.add(highlight);
+
+    // Create a HighlightModel from the story data
+    final highlightModel = HighlightModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      storiesCount: 1,
+      coverMediaUrl: story['imageUrl'] ?? '',
+      createdAt: DateTime.now().toIso8601String(),
+      stories: [
+        HighlightStoryRef(id: storyId, mediaUrl: story['imageUrl'] ?? ''),
+      ],
+    );
+
+    debugPrint(
+      '🌟 [ProfileController] Creating highlight: ${highlightModel.title}',
+    );
+
+    final currentHighlights = List<HighlightModel>.from(highlightList.value);
+    currentHighlights.add(highlightModel);
     highlightList.value = currentHighlights;
-    
-    debugPrint('✅ [ProfileController] Highlight created. Total highlights: ${highlightList.value.length}');
+
+    debugPrint(
+      '✅ [ProfileController] Highlight created. Total highlights: ${highlightList.value.length}',
+    );
   }
-  
+
   /// Add a story to an existing highlight
   void addStoryToHighlight({
     required String highlightId,
     required String storyId,
   }) {
     if (_disposed) return;
-    
+
     final currentStories = storyList.value;
     final story = currentStories.firstWhere(
       (s) => s['id'] == storyId,
       orElse: () => {},
     );
-    
+
     if (story.isEmpty) {
       debugPrint('❌ [ProfileController] Story not found: $storyId');
       return;
     }
-    
-    final currentHighlights = List<Map<String, dynamic>>.from(highlightList.value);
-    final index = currentHighlights.indexWhere((h) => h['id'] == highlightId);
-    
+
+    final currentHighlights = List<HighlightModel>.from(highlightList.value);
+    final index = currentHighlights.indexWhere((h) => h.id == highlightId);
+
     if (index != -1) {
-      final stories = List<Map<String, dynamic>>.from(currentHighlights[index]['stories']);
-      stories.add(story);
-      currentHighlights[index]['stories'] = stories;
+      final highlight = currentHighlights[index];
+      final stories = List<HighlightStoryRef>.from(highlight.stories);
+      stories.add(
+        HighlightStoryRef(id: storyId, mediaUrl: story['imageUrl'] ?? ''),
+      );
+
+      // Create new highlight with updated stories
+      currentHighlights[index] = HighlightModel(
+        id: highlight.id,
+        title: highlight.title,
+        storiesCount: stories.length,
+        coverMediaUrl: highlight.coverMediaUrl,
+        createdAt: highlight.createdAt,
+        stories: stories,
+      );
+
       highlightList.value = currentHighlights;
-      debugPrint('✅ [ProfileController] Story added to highlight: $highlightId');
+      debugPrint(
+        '✅ [ProfileController] Story added to highlight: $highlightId',
+      );
     }
   }
 
   /// Get stories from StoryController and convert to ProfileController format
   List<Map<String, dynamic>> get storiesFromStoryController {
     if (_disposed) return [];
-    
+
     try {
       // For now, create dummy stories from HighlightStateManager to test
       // In a real implementation, this should get stories from StoryController
       HighlightStateManager.ensureRegistered();
-      final highlightedStoryIds = HighlightStateManager.instance.highlightedStoryIds;
-      
-      debugPrint('🔍 [ProfileController] Creating stories from ${highlightedStoryIds.length} highlighted story IDs');
-      
+      final highlightedStoryIds =
+          HighlightStateManager.instance.highlightedStoryIds;
+
+      debugPrint(
+        '🔍 [ProfileController] Creating stories from ${highlightedStoryIds.length} highlighted story IDs',
+      );
+
       // Create dummy stories for testing
-      final stories = highlightedStoryIds.map((storyId) => {
-        'id': storyId,
-        'imageUrl': 'https://via.placeholder.com/60x60', // Dummy image
-        'username': user?.username ?? 'User',
-        'hasSeen': false,
-        'isHighlighted': true,
-        'mediaUrl': 'https://via.placeholder.com/60x60',
-        'mediaKind': 'image',
-        'caption': null,
-      }).toList();
-      
-      debugPrint('✅ [ProfileController] Created ${stories.length} dummy stories from HighlightStateManager');
+      final stories = highlightedStoryIds
+          .map(
+            (storyId) => {
+              'id': storyId,
+              'imageUrl': 'https://via.placeholder.com/60x60', // Dummy image
+              'username': user?.username ?? 'User',
+              'hasSeen': false,
+              'isHighlighted': true,
+              'mediaUrl': 'https://via.placeholder.com/60x60',
+              'mediaKind': 'image',
+              'caption': null,
+            },
+          )
+          .toList();
+
+      debugPrint(
+        '✅ [ProfileController] Created ${stories.length} dummy stories from HighlightStateManager',
+      );
       return stories;
     } catch (e) {
       debugPrint('❌ [ProfileController] Error creating stories: $e');
@@ -1232,100 +1268,188 @@ class ProfileController {
   /// Get only highlighted stories from StoryController (for own profile)
   List<Map<String, dynamic>> get highlightedStoriesOnly {
     if (_disposed) return [];
-    
-    debugPrint('🔍 [ProfileController] Getting highlighted stories from StoryController...');
-    
+
+    debugPrint(
+      '🔍 [ProfileController] Getting highlighted stories from StoryController...',
+    );
+
     // Get stories from StoryController
     final allStories = storiesFromStoryController;
-    
+
     if (allStories.isEmpty) {
-      debugPrint('⚠️ [ProfileController] No stories from StoryController, trying local storyList...');
+      debugPrint(
+        '⚠️ [ProfileController] No stories from StoryController, trying local storyList...',
+      );
       return _getHighlightedStoriesFromLocalList();
     }
-    
+
     HighlightStateManager.ensureRegistered();
-    final highlightedStoryIds = HighlightStateManager.instance.highlightedStoryIds;
-    
-    debugPrint('🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds');
-    
+    final highlightedStoryIds =
+        HighlightStateManager.instance.highlightedStoryIds;
+
+    debugPrint(
+      '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
+    );
+
     final highlightedStories = allStories.where((story) {
       final storyId = story['id']?.toString() ?? '';
-      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(storyId);
-      debugPrint('🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted');
+      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(
+        storyId,
+      );
+      debugPrint(
+        '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
+      );
       return isHighlighted;
     }).toList();
-    
-    debugPrint('🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories');
-    
+
+    debugPrint(
+      '🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories',
+    );
+
     // If no highlighted stories, try alternative approach
     if (highlightedStories.isEmpty && allStories.isNotEmpty) {
-      debugPrint('🔄 [ProfileController] No highlighted stories found, trying alternative approach...');
+      debugPrint(
+        '🔄 [ProfileController] No highlighted stories found, trying alternative approach...',
+      );
       final storiesFromHighlights = this.storiesFromHighlights;
       if (storiesFromHighlights.isNotEmpty) {
         return storiesFromHighlights;
       }
-      debugPrint('⚠️ [ProfileController] No stories in highlights either, showing all stories as fallback');
+      debugPrint(
+        '⚠️ [ProfileController] No stories in highlights either, showing all stories as fallback',
+      );
       return allStories;
     }
-    
+
     return highlightedStories;
   }
 
   /// Fallback method to get highlighted stories from local storyList
   List<Map<String, dynamic>> _getHighlightedStoriesFromLocalList() {
-    debugPrint('🔍 [ProfileController] Total stories in local storyList: ${storyList.value.length}');
-    
+    debugPrint(
+      '🔍 [ProfileController] Total stories in local storyList: ${storyList.value.length}',
+    );
+
     HighlightStateManager.ensureRegistered();
-    
+
     final allStories = storyList.value;
-    final highlightedStoryIds = HighlightStateManager.instance.highlightedStoryIds;
-    
-    debugPrint('🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds');
-    
+    final highlightedStoryIds =
+        HighlightStateManager.instance.highlightedStoryIds;
+
+    debugPrint(
+      '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
+    );
+
     final highlightedStories = allStories.where((story) {
       final storyId = story['id']?.toString() ?? '';
-      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(storyId);
-      debugPrint('🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted');
+      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(
+        storyId,
+      );
+      debugPrint(
+        '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
+      );
       return isHighlighted;
     }).toList();
-    
-    debugPrint('🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories');
+
+    debugPrint(
+      '🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories',
+    );
     return highlightedStories;
   }
 
   /// Get stories from highlights directly (alternative approach)
   List<Map<String, dynamic>> get storiesFromHighlights {
     if (_disposed) return [];
-    
+
     debugPrint('🔍 [ProfileController] Getting stories from highlights...');
-    debugPrint('🔍 [ProfileController] Total highlights: ${highlightList.value.length}');
-    
+    debugPrint(
+      '🔍 [ProfileController] Total highlights: ${highlightList.value.length}',
+    );
+
     final allStories = <Map<String, dynamic>>[];
-    
+
     for (final highlight in highlightList.value) {
-      debugPrint('🔍 [ProfileController] Processing highlight: ${highlight['title']}');
-      if (highlight['stories'] != null) {
-        final stories = List<Map<String, dynamic>>.from(highlight['stories']);
-        
-        // Add missing imageUrl field to each story
-        final processedStories = stories.map((story) {
-          final processedStory = Map<String, dynamic>.from(story);
-          // Add imageUrl field if it doesn't exist (use mediaUrl as fallback)
-          if (!processedStory.containsKey('imageUrl') && processedStory.containsKey('mediaUrl')) {
-            processedStory['imageUrl'] = processedStory['mediaUrl'];
-          }
-          // Ensure other required fields exist
-          processedStory['username'] = processedStory['username'] ?? user?.username ?? 'User';
-          processedStory['hasSeen'] = processedStory['hasSeen'] ?? false;
-          return processedStory;
+      debugPrint(
+        '🔍 [ProfileController] Processing highlight: ${highlight.title}',
+      );
+      if (highlight.stories.isNotEmpty) {
+        // Convert HighlightStoryRef to Map format for compatibility
+        final processedStories = highlight.stories.map((storyRef) {
+          return <String, dynamic>{
+            'id': storyRef.id,
+            'imageUrl': storyRef.mediaUrl.isNotEmpty
+                ? storyRef.mediaUrl
+                : 'https://via.placeholder.com/60x60',
+            'mediaUrl': storyRef.mediaUrl,
+            'username': user?.username ?? 'User',
+            'hasSeen': false,
+            'mediaKind': 'image',
+            'caption': null,
+          };
         }).toList();
-        
-        debugPrint('🔍 [ProfileController] Stories in this highlight: ${processedStories.length}');
+
+        debugPrint(
+          '🔍 [ProfileController] Stories in this highlight: ${processedStories.length}',
+        );
         allStories.addAll(processedStories);
       }
     }
-    
-    debugPrint('🌟 [ProfileController] Got ${allStories.length} stories from ${highlightList.value.length} highlights');
+
+    debugPrint(
+      '🌟 [ProfileController] Got ${allStories.length} stories from ${highlightList.value.length} highlights',
+    );
     return allStories;
+  }
+
+  /// Parse highlights from API response (data['data']['highlights'])
+  void _parseHighlightsFromResponse(Map<String, dynamic> userData) {
+    try {
+      debugPrint('[ProfileController] Parsing highlights from API response');
+
+      final data = userData['data'];
+      if (data is! Map<String, dynamic>) {
+        debugPrint(
+          '[ProfileController] No data object in response, skipping highlights',
+        );
+        highlightList.value = [];
+        return;
+      }
+
+      final highlightsData = data['highlights'];
+      if (highlightsData == null) {
+        debugPrint('[ProfileController] No highlights key in data, skipping');
+        highlightList.value = [];
+        return;
+      }
+
+      if (highlightsData is! List) {
+        debugPrint(
+          '[ProfileController] Highlights is not a list: ${highlightsData.runtimeType}',
+        );
+        highlightList.value = [];
+        return;
+      }
+
+      final parsedHighlights = highlightsData
+          .whereType<Map<String, dynamic>>()
+          .map((item) => HighlightModel.fromJson(item))
+          .where((highlight) => highlight.id.isNotEmpty)
+          .toList();
+
+      highlightList.value = parsedHighlights;
+
+      debugPrint(
+        '[ProfileController] Parsed ${parsedHighlights.length} highlights from API',
+      );
+      for (final highlight in parsedHighlights) {
+        debugPrint(
+          '[ProfileController] Highlight: ${highlight.title} (${highlight.id}) - ${highlight.storiesCount} stories',
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[ProfileController] Error parsing highlights: $e');
+      debugPrint('$stackTrace');
+      highlightList.value = [];
+    }
   }
 }

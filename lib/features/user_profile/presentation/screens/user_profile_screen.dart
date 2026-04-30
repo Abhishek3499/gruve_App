@@ -4,10 +4,10 @@ import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/home/models/subscribe_model.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_filter_tabs.dart';
+import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_highlights_list.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
-import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_story_list.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String profileUserId;
@@ -207,7 +207,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   },
                                 ),
                                 const SizedBox(height: 20),
-                                UserStoryList(),
+                                // User highlights from API (data['data']['highlights'])
+                                ValueListenableBuilder(
+                                  valueListenable: _profileController.highlightList,
+                                  builder: (context, highlights, child) {
+                                    debugPrint('[UserProfileScreen] Highlights count: ${highlights.length}');
+                                    return UserHighlightsList(
+                                      highlights: highlights,
+                                      isOwnProfile: false,
+                                    );
+                                  },
+                                ),
                                 const SizedBox(height: 20),
                                 UserFilterTabs(
                                   selectedIndex: _selectedTab,
