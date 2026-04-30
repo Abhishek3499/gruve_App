@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:gruve_app/screens/auth/token_storage.dart';
 
 import 'video_user_info.dart';
 
@@ -34,12 +35,21 @@ class VideoOverlay extends StatefulWidget {
 
 class _VideoOverlayState extends State<VideoOverlay> {
   late final SubscribeController _subscribeController;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _subscribeController = SubscribeController();
     _initializeUsers();
+    _loadCurrentUserId();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final userId = await TokenStorage.getCurrentUserId();
+    setState(() {
+      _currentUserId = userId;
+    });
   }
 
   void _initializeUsers() {
@@ -193,7 +203,10 @@ class _VideoOverlayState extends State<VideoOverlay> {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => VideoOptionsSheet(userId: post.userId),
+                    builder: (context) => VideoOptionsSheet(
+                      userId: post.userId,
+                      currentUserId: _currentUserId,
+                    ),
                   );
                 },
               );

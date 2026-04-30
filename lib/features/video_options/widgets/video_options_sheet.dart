@@ -10,9 +10,10 @@ import '../sheets/simple_block_sheet.dart';
 import '../sheets/simple_not_interested_sheet.dart';
 
 class VideoOptionsSheet extends StatefulWidget {
-  final String userId; // Add userId parameter
+  final String userId;
+  final String? currentUserId;
   
-  const VideoOptionsSheet({super.key, required this.userId});
+  const VideoOptionsSheet({super.key, required this.userId, this.currentUserId});
 
   @override
   State<VideoOptionsSheet> createState() => _VideoOptionsSheetState();
@@ -132,6 +133,8 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
 
   @override
   Widget build(BuildContext context) {
+    final isSelf = widget.currentUserId != null && widget.currentUserId == widget.userId;
+    
     return AnimatedBuilder(
       animation: Listenable.merge([_slideAnimation, _fadeAnimation]),
       builder: (context, child) {
@@ -204,7 +207,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         children: [
-                          OptionItem(
+                          if (!isSelf) OptionItem(
                             title: 'Not interested',
                             icon: AppAssets.eye,
                             onTap: () {
@@ -218,14 +221,14 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                               );
                             },
                           ),
-                          const SizedBox(height: 12),
+                          if (!isSelf) const SizedBox(height: 12),
                           OptionItem(
                             title: 'Download',
                             icon: AppAssets.downloads,
                             onTap: () => _handleAction('Download'),
                           ),
-                          const SizedBox(height: 12),
-                          OptionItem(
+                          if (!isSelf) const SizedBox(height: 12),
+                          if (!isSelf) OptionItem(
                             title: 'Block',
                             icon: AppAssets.blocks,
                             onTap: () async {
@@ -274,8 +277,8 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                               }
                             },
                           ),
-                          const SizedBox(height: 12),
-                          OptionItem(
+                          if (!isSelf) const SizedBox(height: 12),
+                          if (!isSelf) OptionItem(
                             title: 'Report',
                             icon: AppAssets.reports,
                             iconColor: Colors.red,
