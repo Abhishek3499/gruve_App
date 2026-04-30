@@ -37,12 +37,16 @@ class UserProfileHeader extends StatelessWidget {
 
   void _openStoryView(BuildContext context) {
     // Use unified StoryUtils navigation with userId
+    // isOwnProfile: false because this is other user's profile
+    debugPrint('[UserProfileHeader] Opening other user story - isOwnProfile: false');
+    debugPrint('[UserProfileHeader] profileUserId: $profileUserId');
     StoryUtils.navigateToStoryView(
       context,
       userId: profileUserId,
       displayName: displayName,
       username: username,
       avatar: profileImageUrl ?? '',
+      isOwnProfile: false,
     );
   }
 

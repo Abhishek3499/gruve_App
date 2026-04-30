@@ -9,12 +9,14 @@ import 'package:get/get.dart';
 /// Utility class for story-related operations
 class StoryUtils {
   /// Navigate to story view screen if user has a story
+  /// [isOwnProfile] - true when viewing own stories, false when viewing other user's stories
   static Future<void> navigateToStoryView(
     BuildContext context, {
     String? userId,
     required String displayName,
     required String username,
     required String avatar,
+    bool isOwnProfile = false,
   }) async {
     if (kDebugMode) {
       debugPrint("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
@@ -56,6 +58,7 @@ class StoryUtils {
           avatar: avatar,
           timestamps: timestamps,
           storyIds: storyIds,
+          isOwnProfile: isOwnProfile,
         );
 
         // Refresh stories in background
@@ -94,6 +97,7 @@ class StoryUtils {
             avatar: avatar,
             timestamps: timestamps,
             storyItems: storyController.stories,
+            isOwnProfile: isOwnProfile,
           );
         } else {
           Navigator.pop(context); // Close loading dialog
@@ -124,7 +128,13 @@ class StoryUtils {
     required List<DateTime> timestamps,
     List<String?>? storyIds,
     List<StoryItem>? storyItems,
+    bool isOwnProfile = false,
   }) {
+    if (kDebugMode) {
+      debugPrint("🧭 [StoryUtils] _navigateToStoryScreen called");
+      debugPrint("🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile");
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -137,6 +147,7 @@ class StoryUtils {
           timestamps: timestamps,
           storyIds: storyIds,
           storyItems: storyItems,
+          isOwnProfile: isOwnProfile,
         ),
       ),
     );

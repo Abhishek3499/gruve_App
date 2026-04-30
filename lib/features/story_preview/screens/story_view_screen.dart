@@ -18,6 +18,7 @@ class StoryViewScreen extends StatefulWidget {
   final List<DateTime>? timestamps;
   final List<String?>? storyIds;
   final List<StoryItem>? storyItems;
+  final bool isOwnProfile;
 
   const StoryViewScreen({
     super.key,
@@ -29,6 +30,7 @@ class StoryViewScreen extends StatefulWidget {
     this.timestamps,
     this.storyIds,
     this.storyItems,
+    this.isOwnProfile = false,
   });
 
   @override
@@ -52,6 +54,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   @override
   void initState() {
     super.initState();
+
+    debugPrint('[StoryViewScreen] initState - isOwnProfile: ${widget.isOwnProfile}');
 
     StoryStateController.ensureRegistered();
     _storyStateController = Get.find<StoryStateController>();
@@ -447,12 +451,17 @@ class _StoryViewScreenState extends State<StoryViewScreen>
               progress: _animationController.value,
               onClose: () => Navigator.pop(context),
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(top: false, child: const StoryViewBottom()),
-            ),
+            // Only show bottom bar for own profile stories
+            if (widget.isOwnProfile)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  top: false,
+                  child: StoryViewBottom(isOwnProfile: widget.isOwnProfile),
+                ),
+              ),
           ],
         ),
       ),

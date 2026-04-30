@@ -9,7 +9,9 @@ import 'package:gruve_app/features/story_preview/screens/more_screen.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/highlight_sheet.dart';
 
 class StoryViewBottom extends StatefulWidget {
-  const StoryViewBottom({super.key});
+  final bool isOwnProfile;
+
+  const StoryViewBottom({super.key, this.isOwnProfile = false});
 
   @override
   State<StoryViewBottom> createState() => _StoryViewBottomState();
@@ -38,12 +40,17 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
 
     _storyStateController.addListener(_onStoryChanged);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_highlightController.highlights.isEmpty &&
-          !_highlightController.isLoading.value) {
-        _highlightController.fetchMyHighlights();
-      }
-    });
+    // Only fetch highlights for own profile
+    if (widget.isOwnProfile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_highlightController.highlights.isEmpty &&
+            !_highlightController.isLoading.value) {
+          _highlightController.fetchMyHighlights();
+        }
+      });
+    }
+
+    debugPrint('[StoryViewBottom] initState - isOwnProfile: ${widget.isOwnProfile}');
   }
 
   @override
@@ -80,6 +87,68 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
     );
   }
 
+  /// Build the Highlight button (only shown for own profile)
+  Widget _buildHighlightButton() {
+    if (!widget.isOwnProfile) {
+      debugPrint('[StoryViewBottom] Highlight button hidden - not own profile');
+      return const SizedBox.shrink();
+    }
+
+    return Builder(
+      builder: (context) {
+        final currentStoryId = _storyStateController.currentStory?.id.toString();
+        final isHighlighted =
+            currentStoryId != null && _stateManager.isStoryHighlighted(currentStoryId);
+        final buttonColor = isHighlighted ? _selectedColor : _inactiveColor;
+
+        debugPrint(
+          '[HighlightButton] isOwnProfile: ${widget.isOwnProfile}, '
+          'isHighlighted: $isHighlighted, storyId: ${currentStoryId ?? 'null'}',
+        );
+
+        return GestureDetector(
+          onTap: () {
+            if (isHighlighted) {
+              final highlightName = _matchedHighlight?.title;
+              debugPrint(
+                '[HighlightButton] Tap ignored: already added'
+                '${highlightName == null ? '' : ' to $highlightName'}',
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Already added to highlights'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
+
+            debugPrint('[HighlightButton] Opening highlight sheet');
+            showInstagramHighlightSheet(context);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: _buildHighlightIcon(
+                  isHighlighted: isHighlighted,
+                  color: buttonColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                style: TextStyle(color: buttonColor, fontSize: 12),
+                child: const Text('Highlight'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -93,62 +162,10 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Builder(
-            builder: (context) {
-              final currentStoryId = _storyStateController.currentStory?.id
-                  .toString();
-              final isHighlighted =
-                  currentStoryId != null &&
-                  _stateManager.isStoryHighlighted(currentStoryId);
-              final buttonColor = isHighlighted
-                  ? _selectedColor
-                  : _inactiveColor;
-
-              debugPrint(
-                '[HighlightButton] isHighlighted: $isHighlighted, color: ${buttonColor.toString()}',
-              );
-
-              return GestureDetector(
-                onTap: () {
-                  if (isHighlighted) {
-                    final highlightName = _matchedHighlight?.title;
-                    debugPrint(
-                      '[HighlightButton] Tap ignored: already added'
-                      '${highlightName == null ? '' : ' to $highlightName'}',
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Already added to highlights'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
-
-                  showInstagramHighlightSheet(context);
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: _buildHighlightIcon(
-                        isHighlighted: isHighlighted,
-                        color: buttonColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 180),
-                      style: TextStyle(color: buttonColor, fontSize: 12),
-                      child: const Text('Highlight'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 30),
+          // Highlight button - only visible for own profile
+          _buildHighlightButton(),
+          // Only add spacing if highlight button is shown
+          if (widget.isOwnProfile) const SizedBox(width: 30),
           GestureDetector(
             onTap: () {
               Navigator.push(

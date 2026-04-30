@@ -53,12 +53,14 @@ class ProfileHeader extends StatelessWidget {
                 profileImage: profileImage,
                 hasActiveStory: hasActiveStory,
                 onTap: () async {
+                  debugPrint('[ProfileHeader] Opening own story - isOwnProfile: true');
                   await StoryUtils.navigateToStoryView(
                     context,
                     userId: null,
                     displayName: fullName,
                     username: username,
                     avatar: profileImage,
+                    isOwnProfile: true,
                   );
                 },
               ),
