@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/screens/auth/api/controllers/logout_controller.dart';
@@ -14,10 +13,12 @@ class LogoutProvider extends ChangeNotifier {
   
   bool _isLoading = false;
   String? _errorMessage;
+  bool _shouldNavigate = false;
   
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get shouldNavigate => _shouldNavigate;
 
   /// Main logout method with complete state reset
   Future<void> logout({BuildContext? context}) async {
@@ -28,11 +29,16 @@ class LogoutProvider extends ChangeNotifier {
     _errorMessage = null;
 
     try {
-      // Step 1: Execute logout API call
+      // Step 1: Reset all providers BEFORE any async operations if context is available
+      if (context != null) {
+        await _resetAllProviders(context);
+      }
+      
+      // Step 2: Execute logout API call
       await _controller.logout();
       debugPrint('🔥 [LogoutProvider] Logout API completed');
       
-      // Step 2: Check for API errors
+      // Step 3: Check for API errors
       if (_controller.errorMessage != null) {
         _errorMessage = _controller.errorMessage;
         debugPrint('❌ [LogoutProvider] Logout API failed: $_errorMessage');
@@ -41,15 +47,14 @@ class LogoutProvider extends ChangeNotifier {
       
       debugPrint('✅ [LogoutProvider] Logout API successful');
       
-      // Step 3: Reset all providers if context is available
-      if (context != null) {
-        await _resetAllProviders(context);
-      }
-      
       // Step 4: Clear all storage (this happens in LogoutController too, but ensure it's complete)
       await _clearAllStorage();
       
       debugPrint('✅ [LogoutProvider] Complete logout successful');
+      
+      // Trigger navigation to sign-in screen
+      _shouldNavigate = true;
+      notifyListeners();
       
     } catch (e) {
       _errorMessage = e.toString();
@@ -65,24 +70,26 @@ class LogoutProvider extends ChangeNotifier {
     debugPrint('🔄 [LogoutProvider] Resetting all providers...');
     
     try {
-      // Reset ProfileProvider
+      // Store all provider references before async operations
       final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+      final storyController = Provider.of<StoryController>(context, listen: false);
+      final highlightProvider = Provider.of<HighlightFlowProvider>(context, listen: false);
+      final blockProvider = Provider.of<BlockProvider>(context, listen: false);
+      final saveProvider = Provider.of<SavePostProvider>(context, listen: false);
+      
+      // Reset ProfileProvider
       profileProvider.reset();
       
       // Reset StoryController
-      final storyController = Provider.of<StoryController>(context, listen: false);
       storyController.reset();
       
       // Reset HighlightFlowProvider
-      final highlightProvider = Provider.of<HighlightFlowProvider>(context, listen: false);
       highlightProvider.reset();
       
       // Reset BlockProvider
-      final blockProvider = Provider.of<BlockProvider>(context, listen: false);
       blockProvider.reset();
       
       // Reset SavePostProvider
-      final saveProvider = Provider.of<SavePostProvider>(context, listen: false);
       saveProvider.reset();
       
       debugPrint('✅ [LogoutProvider] All providers reset successfully');
@@ -112,6 +119,15 @@ class LogoutProvider extends ChangeNotifier {
   void clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
+      notifyListeners();
+    }
+  }
+
+  /// Reset navigation flag after navigation is handled
+  void resetNavigationFlag() {
+    if (_shouldNavigate) {
+      _shouldNavigate = false;
+      debugPrint('🔄 [LogoutProvider] Navigation flag reset');
       notifyListeners();
     }
   }

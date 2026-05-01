@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MessageAvatar extends StatelessWidget {
   final String name;
@@ -18,7 +19,16 @@ class MessageAvatar extends StatelessWidget {
       children: [
         Stack(
           children: [
-            CircleAvatar(radius: 30, backgroundImage: AssetImage(imageUrl)),
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.grey[600],
+              backgroundImage: imageUrl.isNotEmpty 
+                  ? CachedNetworkImageProvider(imageUrl) 
+                  : null,
+              child: imageUrl.isEmpty 
+                  ? const Icon(Icons.person, size: 30, color: Colors.white)
+                  : null,
+            ),
 
             /// Online green dot
             if (isOnline)

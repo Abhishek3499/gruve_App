@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/message_model.dart';
 import '../widgets/message_header.dart';
 import '../widgets/message_card.dart';
 import '../widgets/swipe_delete_background.dart';
 import '../data/dummy_messages.dart';
+import '../presentation/provider/user_provider.dart';
+import '../../../../core/network/api_client.dart';
+import '../data/datasource/user_remote_datasource.dart';
+import '../data/repository/user_repository_impl.dart';
+import '../domain/repository/user_repository.dart';
 
 class MessageScreen extends StatefulWidget {
   const MessageScreen({super.key});
@@ -14,6 +20,7 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen> {
   List<ChatUser> _chatUsers = [];
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -25,6 +32,26 @@ class _MessageScreenState extends State<MessageScreen> {
     setState(() {
       _chatUsers = DummyMessages.getChatUsers();
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+
+    _isRefreshing = true;
+
+    try {
+      // Refresh users from API
+      await context.read<UserProvider>().fetchUsers();
+      
+      // Reload chat users (dummy data for now)
+      _loadChatUsers();
+      
+      debugPrint('🔄 [MessageScreen] Pull-to-refresh completed');
+    } catch (e) {
+      debugPrint('💥 [MessageScreen] Pull-to-refresh failed: $e');
+    } finally {
+      _isRefreshing = false;
+    }
   }
 
   void _showDeleteConfirmation(ChatUser user) {
@@ -71,64 +98,86 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1C0B21),
-      resizeToAvoidBottomInset: true,
-      body: Column(
-        children: [
-          /// 🔥 HEADER + LIST OVERLAP AREA
-          Expanded(
-            child: Stack(
-              children: [
-                /// HEADER
-                const MessageHeader(),
+    return MultiProvider(
+      providers: [
+        Provider<ApiClient>(create: (_) => ApiClient()),
+        ProxyProvider<ApiClient, UserRemoteDataSource>(
+          update: (_, apiClient, __) => UserRemoteDataSource(apiClient),
+        ),
+        ProxyProvider<UserRemoteDataSource, UserRepository>(
+          update: (_, dataSource, __) => UserRepositoryImpl(dataSource),
+        ),
+        ChangeNotifierProxyProvider<UserRepository, UserProvider>(
+          create: (_) => UserProvider(
+            UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
+          ),
+          update: (_, repository, __) => UserProvider(repository),
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1C0B21),
+        resizeToAvoidBottomInset: true,
+        body: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          color: Colors.white,
+          backgroundColor: const Color(0xFF42174C),
+          child: Column(
+            children: [
+              /// 🔥 HEADER + LIST OVERLAP AREA
+              Expanded(
+                child: Stack(
+                  children: [
+                    /// HEADER
+                    const MessageHeader(),
 
-                /// MESSAGE LIST
-                Positioned(
-                  top: 265,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1C0B21),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(40),
+                    /// MESSAGE LIST
+                    Positioned(
+                      top: 240,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1C0B21),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(40),
+                          ),
+                        ),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _chatUsers.length,
+                          itemBuilder: (context, index) {
+                            final user = _chatUsers[index];
+                            return Dismissible(
+                              key: Key(user.id),
+                              direction: DismissDirection.endToStart,
+                              background: SwipeDeleteBackground(
+                                onDelete: () => _showDeleteConfirmation(user),
+                              ),
+                              onDismissed: (direction) {
+                                if (direction == DismissDirection.endToStart) {
+                                  _showDeleteConfirmation(user);
+                                }
+                              },
+                              child: MessageCard(
+                                title: user.name,
+                                message: user.lastMessage,
+                                time: user.lastMessageTime,
+                                unreadCount: user.unreadCount,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _chatUsers.length,
-                      itemBuilder: (context, index) {
-                        final user = _chatUsers[index];
-                        return Dismissible(
-                          key: Key(user.id),
-                          direction: DismissDirection.endToStart,
-                          background: SwipeDeleteBackground(
-                            onDelete: () => _showDeleteConfirmation(user),
-                          ),
-                          onDismissed: (direction) {
-                            if (direction == DismissDirection.endToStart) {
-                              _showDeleteConfirmation(user);
-                            }
-                          },
-                          child: MessageCard(
-                            title: user.name,
-                            message: user.lastMessage,
-                            time: user.lastMessageTime,
-                            unreadCount: user.unreadCount,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          /// 🔥 FOOTER (original wala hi)
-        ],
+              /// 🔥 FOOTER (original wala hi)
+            ],
+          ),
+        ),
       ),
     );
   }
