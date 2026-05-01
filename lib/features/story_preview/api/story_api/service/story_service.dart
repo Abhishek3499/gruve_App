@@ -7,6 +7,7 @@ import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/stroy_response.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 
 class StoryService {
   late final Dio _dio;
@@ -36,7 +37,7 @@ class StoryService {
 
       final token = await TokenStorage.getAccessToken();
 
-      final file = File(mediaPath);
+      File file = File(mediaPath);
 
       if (!file.existsSync()) {
         if (kDebugMode) {
@@ -45,11 +46,19 @@ class StoryService {
         throw Exception("File not found");
       }
 
+      // Compress image before upload to prevent 413 errors
+      if (kDebugMode) {
+        debugPrint("🗜️ Compressing image before upload...");
+      }
+      file = await ImageFilterProcessor.compressImageForUpload(file, maxFileSizeKB: 400);
+
       final fileName = file.path.replaceAll(r'\', '/').split('/').last;
 
       if (kDebugMode) {
         debugPrint("📦 Preparing FormData...");
         debugPrint("📄 File Name: $fileName");
+        final int fileSizeKB = await file.length() ~/ 1024;
+        debugPrint("📏 Final file size: ${fileSizeKB}KB");
       }
 
       final formData = FormData.fromMap({

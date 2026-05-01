@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'dart:ui' as ui;
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import '../models/filter_model.dart';
 import '../controller/filter_controller.dart';
-import 'capture_button.dart';
 import '../controller/camera_controller_service.dart';
 import '../services/mode_service.dart';
 import '../utils/camera_logger.dart';
@@ -23,7 +18,6 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   final CameraControllerService _cameraService = CameraControllerService();
   late PageController _pageController;
   int _selectedIndex = 0;
-  bool _showCaptureBadge = false;
 
   @override
   void initState() {
@@ -65,15 +59,11 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
   Future<void> _captureFilteredImage() async {
     CameraLogger.logUserAction('Capturing filtered image');
-    setState(() => _showCaptureBadge = true);
 
     try {
       final rawImage = await _cameraService.captureImage();
       if (rawImage != null && mounted) {
         final mode = ModeService().selectedMode;
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) setState(() => _showCaptureBadge = false);
-        });
 
         if (mode == CameraMode.story || mode == CameraMode.groove) {
           Navigator.of(
@@ -84,7 +74,6 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     } catch (e) {
       CameraLogger.log('Failed to capture filtered image: $e');
       if (mounted) {
-        setState(() => _showCaptureBadge = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to capture image'),
@@ -98,7 +87,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 150, // Total height of the bottom UI area
+      height: 140, // Total height of the bottom UI area
       width: MediaQuery.of(context).size.width,
       color: Colors.transparent,
       child: Stack(
@@ -109,10 +98,10 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
           // 2. Filter Selector (PageView) - Placed below the button but interactive
           Positioned(
-            bottom: 10, // Adjusted to sit near the bottom
-            left: 0,
+            bottom: 20, // Adjusted to sit near the bottom
+            left: -10,
             right: 0,
-            height: 120, // Give it enough height to be tappable
+            height: 100, // Give it enough height to be tappable
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: _onPageChanged,
@@ -121,42 +110,57 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
                 final filter = FilterModel.availableFilters[index];
                 final isSelected = index == _selectedIndex;
 
-                // If selected, we hide the filter icon because the Capture Button overlaps it
-                return AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: isSelected ? 0.0 : 1.0,
-                  child: GestureDetector(
-                    onTap: () => _pageController.animateToPage(
-                      index,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                    ),
+                return GestureDetector(
+                  onTap: () => _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    transform: Matrix4.identity()
+                      ..scale(
+                        isSelected ? 1.2 : 1.0,
+                        isSelected ? 1.2 : 1.0,
+                        isSelected ? 1.2 : 1.0,
+                      ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 60,
-                          height: 60,
+                          width: 55,
+                          height: 55,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white.withAlpha(150),
-                              width: 2,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withAlpha(150),
+                              width: isSelected ? 4 : 2,
                             ),
+                            color: isSelected
+                                ? _getFilterColor(filter.type).withAlpha(100)
+                                : Colors.transparent,
                           ),
                           child: Icon(
                             filter.icon,
-                            color: Colors.white,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.white.withAlpha(200),
                             size: 24,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           filter.name.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.white.withAlpha(200),
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -167,14 +171,14 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
             ),
           ),
 
-          // 3. Main Capture Button - Positioned exactly over the center of the PageView
+          // 3. Main Capture Button - Positioned above the filter selector
           Positioned(
-            bottom: 25, // Aligned with the filter circles
+            bottom: 35, // Positioned above the filter circles
             child: GestureDetector(
               onTap: _captureFilteredImage,
               child: Container(
-                width: 85,
-                height: 85,
+                width: 75,
+                height: 75,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.black.withAlpha(50),
@@ -204,20 +208,40 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     switch (type) {
       case FilterType.none:
         return Colors.grey.shade800;
-      case FilterType.warm:
+      case FilterType.clarendon:
         return Colors.orange.shade400;
-      case FilterType.cool:
+      case FilterType.gingham:
+        return Colors.green.shade400;
+      case FilterType.moon:
+        return Colors.blue.shade300;
+      case FilterType.lark:
+        return Colors.blue.shade200;
+      case FilterType.reyes:
+        return Colors.amber.shade300;
+      case FilterType.juno:
+        return Colors.yellow.shade400;
+      case FilterType.slumber:
+        return Colors.indigo.shade300;
+      case FilterType.crema:
+        return Colors.brown.shade300;
+      case FilterType.ludwig:
+        return Colors.purple.shade400;
+      case FilterType.aden:
         return Colors.blue.shade400;
+      case FilterType.perpetua:
+        return Colors.teal.shade400;
+      case FilterType.mayfair:
+        return Colors.pink.shade300;
+      case FilterType.rise:
+        return Colors.orange.shade300;
+      case FilterType.hudson:
+        return Colors.blue.shade600;
+      case FilterType.valencia:
+        return Colors.red.shade300;
+      case FilterType.xpro2:
+        return Colors.deepOrange.shade400;
       case FilterType.sepia:
         return Colors.brown.shade400;
-      case FilterType.vintage:
-        return Colors.amber.shade600;
-      case FilterType.blackAndWhite:
-        return Colors.grey.shade800;
-      case FilterType.vivid:
-        return Colors.pink.shade400;
-      case FilterType.dramatic:
-        return Colors.purple.shade600;
     }
   }
 }

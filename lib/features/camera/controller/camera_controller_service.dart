@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import '../utils/camera_logger.dart';
+import '../utils/image_filter_processor.dart';
+import 'filter_controller.dart';
 
 class CameraControllerService {
   static final CameraControllerService _instance =
@@ -156,7 +159,37 @@ class CameraControllerService {
       _captureStreamController.add(true);
 
       final image = await _controller!.takePicture();
-      return image;
+      
+      // Get selected filter
+      final filter = FilterController().selectedFilter;
+      
+      // If no matrix filter, return original image
+      if (!filter.hasMatrix) {
+        return image;
+      }
+      
+      // Apply filter to image
+      final File imageFile = File(image.path);
+      
+      // Resize large images to prevent memory issues
+      final File processedFile = await ImageFilterProcessor.resizeImageIfNeeded(imageFile);
+      
+      // Apply color matrix filter
+      final File filteredFile = await ImageFilterProcessor.applyColorMatrixToImage(
+        processedFile,
+        filter.matrix,
+      );
+      
+      // Clean up temporary resized file if different from original
+      if (processedFile.path != imageFile.path) {
+        await processedFile.delete();
+      }
+      
+      // Clean up original file
+      await imageFile.delete();
+      
+      CameraLogger.log('Filter applied: ${filter.name}');
+      return XFile(filteredFile.path);
     } catch (e) {
       _errorStreamController.add('Failed to capture image: ${e.toString()}');
       return null;

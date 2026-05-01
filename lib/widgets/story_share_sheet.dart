@@ -41,15 +41,19 @@ class StoryShareSheet extends StatefulWidget {
 class _StoryShareSheetState extends State<StoryShareSheet> {
   bool _yourStorySelected = true;
   bool _closeFriendsSelected = false;
+  bool _isLoading = false;
 
   Future<void> _handleShareAction() async {
-    if (!_yourStorySelected || widget.mediaPath == null) {
-      Navigator.pop(context);
+    if (!_yourStorySelected || widget.mediaPath == null || _isLoading) {
       return;
     }
 
     debugPrint('\n[StoryShareSheet] Share tapped');
     debugPrint('[StoryShareSheet] MediaPath: ${widget.mediaPath}');
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final storyController = Provider.of<StoryController>(
@@ -79,7 +83,9 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
           navigator.pop();
         }
       } else {
-        Navigator.pop(context);
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(storyController.message)),
         );
@@ -89,7 +95,10 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
 
       if (!mounted) return;
 
-      Navigator.pop(context);
+      setState(() {
+        _isLoading = false;
+      });
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Something went wrong while sharing story'),
@@ -166,7 +175,11 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
               },
             ),
             const SizedBox(height: 24),
-            _buildGradientButton(text: 'Share', onPressed: _handleShareAction),
+            _buildGradientButton(
+              text: _isLoading ? 'Sharing...' : 'Share',
+              onPressed: _isLoading ? null : _handleShareAction,
+              isLoading: _isLoading,
+            ),
           ],
         ),
       ),
@@ -213,7 +226,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
 
   Widget _buildGradientButton({
     required String text,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
+    bool isLoading = false,
   }) {
     return Material(
       color: Colors.transparent,
@@ -225,19 +239,49 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
           height: 56,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
-            gradient: const LinearGradient(
-              colors: [AppColors.primaryPurple, AppColors.secondaryPurple],
-            ),
+            gradient: onPressed != null 
+                ? const LinearGradient(
+                    colors: [AppColors.primaryPurple, AppColors.secondaryPurple],
+                  )
+                : LinearGradient(
+                    colors: [
+                      AppColors.primaryPurple.withOpacity(0.5),
+                      AppColors.secondaryPurple.withOpacity(0.5),
+                    ],
+                  ),
           ),
           alignment: Alignment.center,
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: isLoading
+              ? const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Sharing...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  text,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ),
     );
