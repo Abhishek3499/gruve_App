@@ -121,13 +121,24 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      await controller.fetchUser(reason: 'login_refresh');
+      final results = await Future.wait([
+        controller.fetchUser(reason: 'login_refresh'),
+        _highlightService.fetchMyHighlights(),
+      ]);
+
+      final highlightsResponse = results[1] as HighlightsResponse;
       
       user = controller.user;
       stats = controller.stats;
       posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
+      highlights = List<HighlightModel>.unmodifiable(
+        highlightsResponse.success
+            ? highlightsResponse.data.highlights
+            : const [],
+      );
       
       debugPrint('✅ [ProfileProvider] Profile data refreshed successfully');
+      debugPrint('✅ [ProfileProvider] Highlights count: ${highlights.length}');
     } catch (error, stackTrace) {
       errorMessage = 'Failed to refresh profile';
       debugPrint('❌ [ProfileProvider] Refresh failed: $error');

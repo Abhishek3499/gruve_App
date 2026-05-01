@@ -34,6 +34,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   late final UserProfileController _profileController;
   late final SubscribeController _subscribeController;
   bool _didSeedSubscribeState = false;
+  bool _isRefreshing = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -49,7 +51,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   void dispose() {
     _profileController.contentListenable.removeListener(_syncSubscribeState);
     _profileController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+
+    _isRefreshing = true;
+
+    try {
+      await _profileController.fetchUser();
+      debugPrint('✅ [UserProfileScreen] Pull-to-refresh completed successfully');
+    } catch (e) {
+      debugPrint('❌ [UserProfileScreen] Pull-to-refresh failed: $e');
+    } finally {
+      _isRefreshing = false;
+    }
   }
 
   void _syncSubscribeState() {
@@ -151,10 +169,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         !_isResolvingIdentity &&
         (_identityResolution?.shouldShowSubscribeButton ?? false);
 
-    return SingleChildScrollView(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: constraints.maxHeight),
-        child: Stack(
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: Colors.white,
+      backgroundColor: const Color(0xFF42174C),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Stack(
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 130),
@@ -274,6 +298,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

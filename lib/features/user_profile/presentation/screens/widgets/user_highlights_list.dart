@@ -1,18 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
+import 'package:gruve_app/widgets/user_profile_story_skeleton.dart';
 
 /// Reusable highlights list for user profile
 /// Similar to StoryList but without "Add Story" button
 class UserHighlightsList extends StatelessWidget {
   final List<HighlightModel> highlights;
   final bool isOwnProfile;
+  final ProfileController? controller;
 
   const UserHighlightsList({
     super.key,
     required this.highlights,
     this.isOwnProfile = false,
+    this.controller,
   });
 
   void _log(String message) {
@@ -25,6 +29,16 @@ class UserHighlightsList extends StatelessWidget {
   Widget build(BuildContext context) {
     _log('[UserHighlightsList] Building with ${highlights.length} highlights');
     _log('[UserHighlightsList] isOwnProfile: $isOwnProfile');
+    
+    // Check if we should show skeleton loader
+    final isLoading = controller?.isLoading.value ?? false;
+    _log('[UserHighlightsList] isLoading: $isLoading');
+    
+    // Show skeleton loader while loading
+    if (isLoading) {
+      _log('[UserHighlightsList] Showing skeleton loader');
+      return const UserProfileStorySkeleton(itemCount: 6);
+    }
 
     // Hide if no highlights
     if (highlights.isEmpty) {
