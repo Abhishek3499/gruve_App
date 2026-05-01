@@ -6,6 +6,7 @@ import '../widgets/capture_button.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/side_toolbar.dart';
 import '../widgets/mode_selector.dart';
+import '../widgets/horizontal_filter_selector.dart';
 import '../utils/camera_logger.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -22,7 +23,7 @@ class _CameraScreenState extends State<CameraScreen> {
   void initState() {
     super.initState();
     CameraLogger.log('CameraScreen initialized');
-    
+
     // Initialize camera immediately without delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeCamera();
@@ -54,19 +55,13 @@ class _CameraScreenState extends State<CameraScreen> {
 
           Positioned(top: 50, left: 16, right: 16, child: TopBar()),
 
-          Positioned(left: 16, top: 200, child: SideToolbar()),
+          Positioned(left: 02, top: 200, child: SideToolbar()),
 
-          // Positioned(
-          //   bottom: 140,
-          //   left: 16,
-          //   right: 16,
-          //   child: BottomGalleryStrip(),
-          // ),
           Positioned(
-            bottom: 100,
+            bottom: 70,
             left: 0,
             right: 0,
-            child: Center(child: CaptureButton()),
+            child: HorizontalFilterSelector(),
           ),
 
           Positioned(
