@@ -8,6 +8,9 @@ import 'package:gruve_app/features/user_profile/presentation/screens/widgets/use
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
+import 'package:gruve_app/widgets/story_list_skeleton.dart';
+import 'package:gruve_app/widgets/stats_row_skeleton.dart';
+import 'package:gruve_app/widgets/profile_grid_skeleton.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String profileUserId;
@@ -58,7 +61,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _handleRefresh() async {
     if (_isRefreshing) return;
 
-    _isRefreshing = true;
+    setState(() {
+      _isRefreshing = true;
+    });
 
     try {
       await _profileController.fetchUser();
@@ -66,7 +71,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     } catch (e) {
       debugPrint('❌ [UserProfileScreen] Pull-to-refresh failed: $e');
     } finally {
-      _isRefreshing = false;
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
@@ -146,13 +155,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 builder: (context, constraints) {
                   return Stack(
                     children: [
-                      /// 🔹 MAIN UI (only if data exists)
-                      if (_profileController.user != null)
-                        _buildMainContent(constraints),
-
-                      /// 🔹 SKELETON (first load only)
-                      if (_profileController.user == null)
-                        _buildSkeleton(constraints),
+                      /// 🔹 MAIN UI (always show, skeletons handle loading internally)
+                      _buildMainContent(constraints),
                     ],
                   );
                 },
@@ -179,217 +183,145 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 130),
-              child: Stack(
-                children: [
-                  Container(
-                    height: constraints.maxHeight,
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    padding: const EdgeInsets.only(top: 250, bottom: 120),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0x267D63D1), Color(0x26212235)],
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 130),
+                child: Stack(
+                  children: [
+                    Container(
+                      height: constraints.maxHeight,
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.only(top: 250, bottom: 120),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0x267D63D1), Color(0x26212235)],
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(110),
+                          topRight: Radius.circular(30),
+                          bottomLeft: Radius.circular(80),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF7D63D1).withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(110),
-                        topRight: Radius.circular(30),
-                        bottomLeft: Radius.circular(80),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF7D63D1).withValues(alpha: 0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 120),
+                        ValueListenableBuilder(
+                          valueListenable: _profileController.statsNotifier,
+                          builder: (context, stats, child) {
+                            return AnimatedBuilder(
+                              animation: Listenable.merge([_profileController.contentListenable]),
+                              builder: (context, child) {
+                                // Show skeleton when stats are loading or during refresh
+                                if (_profileController.isLoading.value || _isRefreshing) {
+                                  debugPrint('[UserProfileScreen] Showing skeleton for stats (loading: ${_profileController.isLoading.value}, refreshing: $_isRefreshing)');
+                                  return const StatsRowSkeleton();
+                                }
+                                return UserStatsRow(stats: stats);
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        // User highlights from API (data['data']['highlights'])
+                        ValueListenableBuilder(
+                          valueListenable: _profileController.highlightList,
+                          builder: (context, highlights, child) {
+                            debugPrint(
+                              '[UserProfileScreen] Highlights count: ${highlights.length}',
+                            );
+                            return AnimatedBuilder(
+                              animation: Listenable.merge([_profileController.contentListenable]),
+                              builder: (context, child) {
+                                // Show skeleton when highlights are loading or during refresh
+                                if (_profileController.isLoading.value || _isRefreshing) {
+                                  debugPrint('[UserProfileScreen] Showing skeleton for highlights (loading: ${_profileController.isLoading.value}, refreshing: $_isRefreshing)');
+                                  return const StoryListSkeleton(otherUsersCount: 6);
+                                }
+                                return UserHighlightsList(
+                                  highlights: highlights,
+                                  isOwnProfile: false,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        UserFilterTabs(
+                          selectedIndex: _selectedTab,
+                          onTabSelected: (index) {
+                            setState(() {
+                              _selectedTab = index;
+                            });
+                          },
+                        ),
+                        AnimatedBuilder(
+                          animation: _profileController.contentListenable,
+                          builder: (context, child) {
+                            // Show skeleton when grid is loading or during refresh
+                            if (_profileController.isLoading.value || _isRefreshing) {
+                              debugPrint('[UserProfileScreen] Showing skeleton for grid (loading: ${_profileController.isLoading.value}, refreshing: $_isRefreshing)');
+                              return const ProfileGridSkeleton(itemCount: 9, showDraftItem: false);
+                            }
+                            return UserProfileGrid(
+                              controller: _profileController,
+                              selectedTab: _selectedTab,
+                            );
+                          },
                         ),
                       ],
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 120),
-                      ValueListenableBuilder(
-                        valueListenable: _profileController.statsNotifier,
-                        builder: (context, stats, child) {
-                          return UserStatsRow(stats: stats);
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      // User highlights from API (data['data']['highlights'])
-                      ValueListenableBuilder(
-                        valueListenable: _profileController.highlightList,
-                        builder: (context, highlights, child) {
-                          debugPrint(
-                            '[UserProfileScreen] Highlights count: ${highlights.length}',
-                          );
-                          return UserHighlightsList(
-                            highlights: highlights,
-                            isOwnProfile: false,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      UserFilterTabs(
-                        selectedIndex: _selectedTab,
-                        onTabSelected: (index) {
-                          setState(() {
-                            _selectedTab = index;
-                          });
-                        },
-                      ),
-                      AnimatedBuilder(
-                        animation: _profileController.contentListenable,
-                        builder: (context, child) {
-                          return UserProfileGrid(
-                            controller: _profileController,
-                            selectedTab: _selectedTab,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            AnimatedBuilder(
-              animation: _profileController.contentListenable,
-              builder: (context, child) {
-                final profile = _profileController.user;
-                final resolvedUserId = (profile?.id.isNotEmpty ?? false)
-                    ? profile!.id
-                    : widget.profileUserId;
-                final resolvedUsername = (profile?.username.isNotEmpty ?? false)
-                    ? profile!.username
-                    : _normalizedUsername;
-                final initialIsSubscribed =
-                    _subscribeController
-                        .getUserSubscribeModel(resolvedUserId)
-                        ?.isSubscribed ??
-                    profile?.isFollowing ??
-                    false;
-
-                return Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    UserProfileHeader(
-                      displayName: widget.userName,
-                      username: resolvedUsername,
-                      profileUserId: resolvedUserId,
-                      profileImageUrl:
-                          (profile?.profileImage.isNotEmpty ?? false)
-                          ? profile!.profileImage
-                          : widget.profileImageUrl,
-                      hasActiveStory:
-                          profile?.hasActiveStory ??
-                          widget.initialHasActiveStory,
-                      showSubscribeButton: showSubscribeButton,
-                      reserveSubscribeSpace: _isResolvingIdentity,
-                      subscribeController: _subscribeController,
-                      initialIsSubscribed: initialIsSubscribed,
-                    ),
                   ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(BoxConstraints constraints) {
-    return SizedBox(
-      height: constraints.maxHeight,
-      width: double.infinity,
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(height: 30),
-
-              /// Profile image
-              const CircleAvatar(radius: 40, backgroundColor: Colors.white12),
-
-              const SizedBox(height: 10),
-
-              Container(
-                height: 14,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(6),
                 ),
               ),
+              AnimatedBuilder(
+                animation: _profileController.contentListenable,
+                builder: (context, child) {
+                  final profile = _profileController.user;
+                  final resolvedUserId = (profile?.id.isNotEmpty ?? false)
+                      ? profile!.id
+                      : widget.profileUserId;
+                  final resolvedUsername = (profile?.username.isNotEmpty ?? false)
+                      ? profile!.username
+                      : _normalizedUsername;
+                  final initialIsSubscribed =
+                      _subscribeController
+                          .getUserSubscribeModel(resolvedUserId)
+                          ?.isSubscribed ??
+                      profile?.isFollowing ??
+                      false;
 
-              const SizedBox(height: 6),
-
-              Container(
-                height: 12,
-                width: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// Stats
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(3, (_) {
                   return Column(
                     children: [
-                      Container(
-                        height: 14,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        height: 12,
-                        width: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                      const SizedBox(height: 20),
+                      UserProfileHeader(
+                        displayName: widget.userName,
+                        username: resolvedUsername,
+                        profileUserId: resolvedUserId,
+                        profileImageUrl:
+                            (profile?.profileImage.isNotEmpty ?? false)
+                            ? profile!.profileImage
+                            : widget.profileImageUrl,
+                        hasActiveStory:
+                            profile?.hasActiveStory ??
+                            widget.initialHasActiveStory,
+                        showSubscribeButton: showSubscribeButton,
+                        reserveSubscribeSpace: _isResolvingIdentity,
+                        subscribeController: _subscribeController,
+                        initialIsSubscribed: initialIsSubscribed,
                       ),
                     ],
-                  );
-                }),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(10),
-                itemCount: 9,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 6,
-                  mainAxisSpacing: 6,
-                ),
-                itemBuilder: (_, _) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   );
                 },
               ),
@@ -400,3 +332,5 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 }
+
+

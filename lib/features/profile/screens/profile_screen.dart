@@ -10,6 +10,8 @@ import '../widgets/profile_header.dart';
 import '../widgets/profile_menu_drawer.dart';
 import '../widgets/stats_row.dart';
 import '../widgets/story_list.dart';
+import '../../../widgets/stats_row_skeleton.dart';
+import '../../../widgets/profile_grid_skeleton.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -148,11 +150,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           const SizedBox(height: 110),
-                          StatsRow(
-                            subscribersCount: provider.stats.subscribersCount,
-                            likesCount: provider.stats.likesCount,
-                            videosCount: provider.stats.videosCount,
-                          ),
+                          // Show skeleton when stats are loading
+                          provider.isLoading 
+                              ? const StatsRowSkeleton()
+                              : StatsRow(
+                                  subscribersCount: provider.stats.subscribersCount,
+                                  likesCount: provider.stats.likesCount,
+                                  videosCount: provider.stats.videosCount,
+                                ),
                           const SizedBox(height: 25),
                           StoryList(provider: provider),
                           const SizedBox(height: 20),
@@ -170,10 +175,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: ProfileGrid(
-                              selectedTab: selectedTab,
-                              controller: provider.controller,
-                            ),
+                            child: provider.isLoading && selectedTab == 0
+                                ? const ProfileGridSkeleton(itemCount: 9, showDraftItem: true)
+                                : ProfileGrid(
+                                    selectedTab: selectedTab,
+                                    controller: provider.controller,
+                                  ),
                           ),
                           const SizedBox(height: 100),
                         ],
