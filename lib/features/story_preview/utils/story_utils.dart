@@ -40,6 +40,8 @@ class StoryUtils {
       // Check cache first for instant response
       await storyStateController.loadStoriesFromStorage(userId);
 
+      if (!context.mounted) return;
+
       // If we have cached stories, navigate immediately and refresh in background
       if (storyStateController.hasUserStory &&
           !storyStateController.isLoadingFromStorage) {
@@ -73,6 +75,8 @@ class StoryUtils {
         // No cache, fetch from API
         await storyController.fetchStories(userId: userId);
 
+        if (!context.mounted) return;
+
         if (storyController.isSuccess && storyController.stories.isNotEmpty) {
           Navigator.pop(context); // Close loading dialog
 
@@ -88,6 +92,8 @@ class StoryUtils {
             userId: userId,
           );
 
+          if (!context.mounted) return;
+
           _navigateToStoryScreen(
             context,
             userId: userId,
@@ -100,14 +106,18 @@ class StoryUtils {
             isOwnProfile: isOwnProfile,
           );
         } else {
-          Navigator.pop(context); // Close loading dialog
+          if (context.mounted) {
+            Navigator.pop(context); // Close loading dialog
+          }
           if (kDebugMode) {
             debugPrint("⚠️ No stories found");
           }
         }
       }
     } catch (e) {
-      Navigator.pop(context); // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+      }
       if (kDebugMode) {
         debugPrint("❌ Error navigating to story: $e");
       }

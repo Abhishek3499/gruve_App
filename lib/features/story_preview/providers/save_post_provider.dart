@@ -96,6 +96,18 @@ class SavePostProvider extends ChangeNotifier {
     }
   }
 
+  /// Reset all save post data on logout
+  void reset() {
+    debugPrint('🔄 [SavePostProvider] Resetting save post data...');
+    _savedPosts.clear();
+    _loadingPosts.clear();
+    _savedPostsList.clear();
+    _savedPostsError = null;
+    _isLoadingSavedPosts = false;
+    notifyListeners();
+    debugPrint('✅ [SavePostProvider] Save post data reset complete');
+  }
+
   void clearSavedState() {
     _savedPosts.clear();
     _loadingPosts.clear();

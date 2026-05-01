@@ -3,7 +3,14 @@ import '../../../../core/assets.dart';
 
 /// Header widget for Account screen
 class AccountHeader extends StatelessWidget {
-  const AccountHeader({super.key});
+  final String fullName;
+  final bool isLoading;
+
+  const AccountHeader({
+    super.key,
+    this.fullName = 'User',
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +42,13 @@ class AccountHeader extends StatelessWidget {
                   splashColor: Colors.transparent,
                   highlightColor: Colors.transparent,
                   child: SizedBox(
-                    height: 60, // 👈 bigger tap area (important)
+                    height: 60,
                     width: 50,
                     child: Center(
                       child: Container(
                         height: 30,
                         width: 30,
-                        decoration: BoxDecoration(shape: BoxShape.circle),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: Image.asset(AppAssets.back),
                       ),
                     ),
@@ -49,15 +56,18 @@ class AccountHeader extends StatelessWidget {
                 ),
               ),
             ),
-
-            const Positioned(
+            Positioned(
               top: 25,
               left: 0,
               right: 0,
               child: Text(
-                "Hey, Kato",
+                isLoading
+                    ? 'Loading...'
+                    : fullName.isEmpty
+                        ? 'Hey, User'
+                        : 'Hey, $fullName',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,

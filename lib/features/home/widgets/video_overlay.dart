@@ -53,7 +53,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
   }
 
   void _initializeUsers() {
-    print("🔧 INITIALIZING USERS FOR SUBSCRIBE CONTROLLER");
+    debugPrint("🔧 INITIALIZING USERS FOR SUBSCRIBE CONTROLLER");
 
     // Initialize with posts data when available
     if (widget.controller.posts.isNotEmpty) {
@@ -67,7 +67,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
           )
           .toList();
 
-      print("📊 INITIALIZING WITH ${usersData.length} USERS FROM POSTS");
+      debugPrint("📊 INITIALIZING WITH ${usersData.length} USERS FROM POSTS");
       _subscribeController.initializeUsers(usersData);
     } else {
       // Fallback dummy data
@@ -76,7 +76,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
         {'userId': 'user2', 'username': 'alex_d'},
         {'userId': 'user3', 'username': 'sarah_k'},
       ];
-      print("⚠️ INITIALIZING WITH DUMMY DATA (NO POSTS AVAILABLE)");
+      debugPrint("⚠️ INITIALIZING WITH DUMMY DATA (NO POSTS AVAILABLE)");
       _subscribeController.initializeUsers(dummyUsers);
     }
   }
@@ -94,7 +94,8 @@ class _VideoOverlayState extends State<VideoOverlay> {
             animation: widget.controller.currentIndex,
             builder: (context, _) {
               final index = widget.controller.currentIndex.value;
-              if (widget.controller.posts.isEmpty || index >= widget.controller.posts.length) {
+              if (widget.controller.posts.isEmpty ||
+                  index >= widget.controller.posts.length) {
                 return const SizedBox.shrink();
               }
               final post = widget.controller.posts[index];
@@ -122,7 +123,8 @@ class _VideoOverlayState extends State<VideoOverlay> {
             animation: widget.controller.currentIndex,
             builder: (context, _) {
               final index = widget.controller.currentIndex.value;
-              if (widget.controller.posts.isEmpty || index >= widget.controller.posts.length) {
+              if (widget.controller.posts.isEmpty ||
+                  index >= widget.controller.posts.length) {
                 return const SizedBox.shrink();
               }
               final post = widget.controller.posts[index];
@@ -181,7 +183,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                           post.commentsCount++; // 🔥 MAIN FIX
                         });
 
-                        print("💬 COUNT: ${post.commentsCount}");
+                        debugPrint("💬 COUNT: ${post.commentsCount}");
                       },
                     ),
                   );

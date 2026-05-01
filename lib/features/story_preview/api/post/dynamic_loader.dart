@@ -3,18 +3,28 @@ import 'package:flutter/material.dart';
 
 class DynamicLoader extends StatelessWidget {
   final double progress; // 0.0 to 100.0
+  final double? size;
+  final Color? color;
 
-  const DynamicLoader({super.key, required this.progress});
+  const DynamicLoader({
+    super.key,
+    required this.progress,
+    this.size,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final loaderSize = size ?? 100;
+    final loaderColor = color ?? const Color(0xFFBB86FC);
+
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: progress),
       duration: const Duration(milliseconds: 300), // Smooth transition
       builder: (context, value, child) {
         return CustomPaint(
-          size: const Size(100, 100),
-          painter: LoaderPainter(value),
+          size: Size(loaderSize, loaderSize),
+          painter: LoaderPainter(value, color: loaderColor),
           child: Center(
             child: Text(
               "${value.toInt()}%",
@@ -33,7 +43,8 @@ class DynamicLoader extends StatelessWidget {
 
 class LoaderPainter extends CustomPainter {
   final double progress;
-  LoaderPainter(this.progress);
+  final Color color;
+  LoaderPainter(this.progress, {required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -43,7 +54,7 @@ class LoaderPainter extends CustomPainter {
 
     // 1. Background Track (Light Circle)
     final trackPaint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white.withValues(alpha: 0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
@@ -52,7 +63,7 @@ class LoaderPainter extends CustomPainter {
     // 2. Progress Arc (The actual loading part)
     final progressPaint = Paint()
       ..color =
-          const Color(0xFFBB86FC) // Light purple glow color
+          color // Light purple glow color
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap
           .round // Rounded edges for production look

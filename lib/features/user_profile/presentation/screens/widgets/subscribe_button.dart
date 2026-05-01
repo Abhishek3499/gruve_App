@@ -22,7 +22,7 @@ class SubscribeButton extends StatefulWidget {
 
 class _SubscribeButtonState extends State<SubscribeButton> {
   void _log(String message) {
-    print('🪪 [ProfileSubscribeButton] $message');
+    debugPrint('🪪 [ProfileSubscribeButton] $message');
   }
 
   @override

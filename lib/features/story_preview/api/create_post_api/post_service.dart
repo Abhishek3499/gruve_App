@@ -92,28 +92,13 @@ class PostService {
           receiveTimeout: const Duration(minutes: 5),
         ),
       );
-      print("✅ CREATE RESPONSE: ${res.data}");
+      debugPrint("✅ CREATE RESPONSE: ${res.data}");
 
       return CreatePostResponse.fromJson(res.data);
     } catch (e) {
-      print("❌ CREATE ERROR: $e");
+      debugPrint("❌ CREATE ERROR: $e");
       rethrow;
     }
-  }
-
-  List<dynamic> _postsPayloadList(dynamic responseData) {
-    if (responseData is! Map) {
-      throw const FormatException('Expected JSON object');
-    }
-
-    final map = Map<String, dynamic>.from(responseData);
-    final data = map['data'];
-
-    if (data is Map && data['results'] is List) {
-      return data['results'];
-    }
-
-    throw const FormatException("Invalid response format");
   }
 
   Future<PaginatedPostsResponse> getPaginatedPosts({
@@ -207,12 +192,12 @@ class PostService {
     try {
       final res = await _getWithRetry("posts/get-post/", options: opts);
 
-      print("📡 FULL API RESPONSE: ${res.data}");
+      debugPrint("📡 FULL API RESPONSE: ${res.data}");
 
       final data = res.data['data'];
 
       if (data == null) {
-        print("❌ Invalid response structure - no data field");
+        debugPrint("❌ Invalid response structure - no data field");
         return [];
       }
 
@@ -222,31 +207,31 @@ class PostService {
       } else if (data['results'] != null) {
         list = data['results'];
       } else {
-        print("❌ Invalid response structure - no posts or results field");
+        debugPrint("❌ Invalid response structure - no posts or results field");
         return [];
       }
 
-      print("📊 TOTAL POSTS FROM API: ${list.length}");
+      debugPrint("📊 TOTAL POSTS FROM API: ${list.length}");
 
       return list.map((e) {
         final post = Post.fromJson(Map<String, dynamic>.from(e));
 
-        print("✅ PARSED POST:");
-        print("ID: ${post.id}");
-        print("CAPTION: ${post.caption}");
-        print("MEDIA: ${post.media}");
-        print("❤️ Likes: ${post.likesCount}");
-        print("💬 Comments: ${post.commentsCount}");
-        print("👤 User: ${post.username}");
-        print("🔔 Subscribed: ${post.isSubscribed}");
+        debugPrint("✅ PARSED POST:");
+        debugPrint("ID: ${post.id}");
+        debugPrint("CAPTION: ${post.caption}");
+        debugPrint("MEDIA: ${post.media}");
+        debugPrint("❤️ Likes: ${post.likesCount}");
+        debugPrint("💬 Comments: ${post.commentsCount}");
+        debugPrint("👤 User: ${post.username}");
+        debugPrint("🔔 Subscribed: ${post.isSubscribed}");
 
         return post;
       }).toList();
     } catch (e) {
-      print("❌ GET POSTS ERROR: $e");
+      debugPrint("❌ GET POSTS ERROR: $e");
       if (e is DioException) {
         if (e.response?.statusCode == 401) {
-          print("Unauthorized error");
+          debugPrint("Unauthorized error");
           return [];
         }
         rethrow;

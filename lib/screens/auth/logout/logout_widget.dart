@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/screens/auth/api/controllers/logout_controller.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
 import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 
 class LogoutWidget extends StatelessWidget {
-  final LogoutController _logoutController = LogoutController();
-
-  LogoutWidget({super.key});
+  const LogoutWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -49,52 +49,80 @@ class LogoutWidget extends StatelessWidget {
                     const SizedBox(height: 27),
 
                     /// LOGOUT BUTTON
-                    GestureDetector(
-                      onTap: () async {
-                        print("🔥 YES CLICKED");
-                        final navigator = Navigator.of(context);
-                        navigator.pop();
-
-                        await _logoutController.logout();
-
-                        print("🔥 LOGOUT DONE");
-
-                        // ❌ don't use old context
-                        navigator.pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const SignInScreen(),
+                    Consumer<LogoutProvider>(
+                      builder: (context, logoutProvider, child) {
+                        return GestureDetector(
+                          onTap: logoutProvider.isLoading ? null : () async {
+                            debugPrint("🔥 YES CLICKED");
+                            
+                            // Store navigator reference before popping dialog
+                            final navigator = Navigator.of(context);
+                            
+                            // Start logout process first with context
+                            await logoutProvider.logout(context: context);
+                            
+                            // Close dialog and navigate
+                            if (context.mounted && logoutProvider.errorMessage == null) {
+                              debugPrint("🚀 [LogoutWidget] Closing dialog and navigating...");
+                              navigator.pop(); // Close dialog
+                              
+                              // Use rootNavigatorKey for safe navigation
+                              rootNavigatorKey.currentState?.pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const SignInScreen(),
+                                ),
+                                (route) => false,
+                              );
+                              debugPrint("🚀 [LogoutWidget] Navigation completed!");
+                            } else {
+                              // Just close dialog if there's an error
+                              if (context.mounted) {
+                                navigator.pop();
+                              }
+                            }
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              gradient: logoutProvider.isLoading
+                                  ? const LinearGradient(
+                                      colors: [Colors.grey, Colors.grey],
+                                    )
+                                  : const LinearGradient(
+                                      colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
+                                    ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purpleAccent.withValues(alpha: 0.6),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: logoutProvider.isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Yes",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                            ),
                           ),
-                          (route) => false,
                         );
                       },
-
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.purpleAccent.withValues(alpha: 0.6),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "Yes",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ),

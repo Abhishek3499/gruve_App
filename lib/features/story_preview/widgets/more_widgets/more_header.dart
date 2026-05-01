@@ -40,8 +40,8 @@ class MoreHeader extends StatelessWidget {
                     height: 40,
                     width: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(
-                        0.05,
+                      color: Colors.white.withValues(
+                        alpha: 0.05,
                       ), // Optional: slight circle bg
                       shape: BoxShape.circle,
                     ),

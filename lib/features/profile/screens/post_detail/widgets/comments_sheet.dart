@@ -4,10 +4,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_
 class CommentsSheet extends StatefulWidget {
   final Post post;
 
-  const CommentsSheet({
-    super.key,
-    required this.post,
-  });
+  const CommentsSheet({super.key, required this.post});
 
   @override
   State<CommentsSheet> createState() => _CommentsSheetState();
@@ -16,16 +13,8 @@ class CommentsSheet extends StatefulWidget {
 class _CommentsSheetState extends State<CommentsSheet> {
   final TextEditingController _commentController = TextEditingController();
   final List<Map<String, String>> _comments = [
-    {
-      'username': 'user1',
-      'comment': 'Amazing post! 🔥',
-      'timestamp': '2h ago',
-    },
-    {
-      'username': 'user2',
-      'comment': 'Love this!',
-      'timestamp': '1h ago',
-    },
+    {'username': 'user1', 'comment': 'Amazing post! 🔥', 'timestamp': '2h ago'},
+    {'username': 'user2', 'comment': 'Love this!', 'timestamp': '1h ago'},
   ];
 
   @override
@@ -62,7 +51,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -82,11 +71,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 24),
                 ),
               ],
             ),
@@ -113,25 +98,23 @@ class _CommentsSheetState extends State<CommentsSheet> {
                     decoration: InputDecoration(
                       hintText: 'Add a comment...',
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(
-                          color: Colors.white,
-                        ),
+                        borderSide: const BorderSide(color: Colors.white),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -194,7 +177,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                     Text(
                       comment['timestamp']!,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                     ),
@@ -204,7 +187,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                 Text(
                   comment['comment']!,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                   ),
                 ),
@@ -213,7 +196,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
           ),
           Icon(
             Icons.favorite_border,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             size: 16,
           ),
         ],

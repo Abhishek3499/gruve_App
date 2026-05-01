@@ -71,6 +71,7 @@ class _ModeSelectorState extends State<ModeSelector> {
           if (result is PostPreviewOpenShare) {
             Navigator.of(context).pop();
             await Future<void>.delayed(Duration.zero);
+            if (!mounted) return;
             final shareResult = await showSharePostOnHomeSheet(
               result.mediaPath,
             );

@@ -42,4 +42,26 @@ class AppColors {
   static const Color success = Color(0xFF4CAF50);
   static const Color green = Colors.green;
   static const Color transparent = Colors.transparent;
+
+  // ============ LOADER COLORS ============
+  /// Primary loader color - used for circular progress indicators
+  static const Color loaderPrimary = Color(0xFF9544A7);
+
+  /// Dark loader color - used on dark backgrounds
+  static const Color loaderDark = Color(0xFFBB86FC);
+
+  /// Light loader color - used on light backgrounds
+  static const Color loaderLight = Colors.white;
+
+  /// Shimmer base color for dark themes
+  static const Color shimmerBase = Color(0xFF2A1B3D);
+
+  /// Shimmer highlight color for dark themes
+  static const Color shimmerHighlight = Color(0xFF3D2A54);
+
+  /// Profile skeleton placeholders
+  static const Color skeletonPlaceholder = Color(0x1AFFFFFF);
+
+  /// Button loading color
+  static const Color buttonLoader = Colors.white;
 }

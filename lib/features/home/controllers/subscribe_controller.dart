@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 
@@ -17,13 +18,15 @@ class SubscribeController extends ChangeNotifier {
   final Set<String> _syncingUsers = <String>{};
 
   void _log(String message) {
-    print('🎛️ [SubscribeController] $message');
+    debugPrint('🎛️ [SubscribeController] $message');
   }
 
   bool isUserSubscribed(String userId) {
     final localUser = _users[userId];
     if (localUser != null) {
-      _log('🔍 local state hit userId=$userId result=${localUser.isSubscribed}');
+      _log(
+        '🔍 local state hit userId=$userId result=${localUser.isSubscribed}',
+      );
       return localUser.isSubscribed;
     }
 

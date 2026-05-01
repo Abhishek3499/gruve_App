@@ -42,7 +42,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final post = widget.allPosts[index];
     if (post.media.toLowerCase().contains('.mp4') &&
         _videoControllers[index] == null) {
-      final controller = VideoPlayerController.network(post.media);
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(post.media),
+      );
       controller
           .initialize()
           .then((_) {
@@ -115,7 +117,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Image.asset(
@@ -171,8 +173,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withOpacity(0.9),
-                  Colors.black.withOpacity(0.7),
+                  Colors.black.withValues(alpha: 0.9),
+                  Colors.black.withValues(alpha: 0.7),
                   Colors.transparent,
                 ],
               ),
@@ -213,7 +215,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),
@@ -288,7 +290,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

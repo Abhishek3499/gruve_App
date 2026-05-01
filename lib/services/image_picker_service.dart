@@ -10,13 +10,6 @@ class ImagePickerService {
     return status.isGranted;
   }
 
-  static Future<bool> _requestStoragePermission() async {
-    // For Android 13+, use READ_MEDIA_IMAGES
-    // For Android 12 and below, use READ_EXTERNAL_STORAGE
-    final status = await Permission.storage.request();
-    return status.isGranted || status.isLimited;
-  }
-
   static Future<XFile?> pickImageFromCamera() async {
     try {
       // Request camera permission

@@ -4,7 +4,7 @@ import 'package:gruve_app/core/assets.dart';
 class SimpleBlockSheet extends StatelessWidget {
   final String? userName;
   final String? profileImage;
-  
+
   const SimpleBlockSheet({super.key, this.userName, this.profileImage});
 
   @override
@@ -48,8 +48,18 @@ class SimpleBlockSheet extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(40),
-                  child: profileImage != null && (profileImage!.startsWith('http://') || profileImage!.startsWith('https://'))
-                      ? Image.network(profileImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Image.asset(AppAssets.appleIcon, fit: BoxFit.cover))
+                  child:
+                      profileImage != null &&
+                          (profileImage!.startsWith('http://') ||
+                              profileImage!.startsWith('https://'))
+                      ? Image.network(
+                          profileImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Image.asset(
+                            AppAssets.appleIcon,
+                            fit: BoxFit.cover,
+                          ),
+                        )
                       : Image.asset(AppAssets.appleIcon, fit: BoxFit.cover),
                 ),
               ),

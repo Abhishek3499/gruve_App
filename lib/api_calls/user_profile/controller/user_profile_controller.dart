@@ -1,6 +1,5 @@
 import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
 import 'package:gruve_app/api_calls/user_profile/repository/user_profile_repository.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 
 class UserProfileController extends ProfileController {
   UserProfileController({

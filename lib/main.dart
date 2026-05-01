@@ -7,6 +7,7 @@ import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
+import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => BlockProvider()),
         ChangeNotifierProvider(create: (_) => SavePostProvider()),
+        ChangeNotifierProvider(create: (_) => LogoutProvider()),
       ],
       child: MaterialApp(
         title: 'Gruve',

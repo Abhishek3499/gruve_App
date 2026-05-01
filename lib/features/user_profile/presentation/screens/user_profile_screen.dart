@@ -108,10 +108,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final showSubscribeButton =
-        !_isResolvingIdentity &&
-        (_identityResolution?.shouldShowSubscribeButton ?? false);
-
     return Scaffold(
       extendBody: true,
       body: AnimatedBuilder(
@@ -133,10 +129,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   return Stack(
                     children: [
                       /// 🔹 MAIN UI (only if data exists)
-                      if (_profileController.user != null) _buildMainContent(constraints),
+                      if (_profileController.user != null)
+                        _buildMainContent(constraints),
 
                       /// 🔹 SKELETON (first load only)
-                      if (_profileController.user == null) _buildSkeleton(constraints),
+                      if (_profileController.user == null)
+                        _buildSkeleton(constraints),
                     ],
                   );
                 },
@@ -158,138 +156,130 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         constraints: BoxConstraints(minHeight: constraints.maxHeight),
         child: Stack(
           children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 130),
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: constraints.maxHeight,
-                              width: double.infinity,
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              padding: const EdgeInsets.only(
-                                top: 250,
-                                bottom: 120,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Color(0x267D63D1),
-                                    Color(0x26212235),
-                                  ],
-                                ),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(110),
-                                  topRight: Radius.circular(30),
-                                  bottomLeft: Radius.circular(80),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF7D63D1,
-                                    ).withValues(alpha: 0.3),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const SizedBox(height: 120),
-                                ValueListenableBuilder(
-                                  valueListenable:
-                                      _profileController.statsNotifier,
-                                  builder: (context, stats, child) {
-                                    return UserStatsRow(stats: stats);
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                // User highlights from API (data['data']['highlights'])
-                                ValueListenableBuilder(
-                                  valueListenable: _profileController.highlightList,
-                                  builder: (context, highlights, child) {
-                                    debugPrint('[UserProfileScreen] Highlights count: ${highlights.length}');
-                                    return UserHighlightsList(
-                                      highlights: highlights,
-                                      isOwnProfile: false,
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                UserFilterTabs(
-                                  selectedIndex: _selectedTab,
-                                  onTabSelected: (index) {
-                                    setState(() {
-                                      _selectedTab = index;
-                                    });
-                                  },
-                                ),
-                                AnimatedBuilder(
-                                  animation:
-                                      _profileController.contentListenable,
-                                  builder: (context, child) {
-                                    return UserProfileGrid(
-                                      controller: _profileController,
-                                      selectedTab: _selectedTab,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
+            Padding(
+              padding: const EdgeInsets.only(top: 130),
+              child: Stack(
+                children: [
+                  Container(
+                    height: constraints.maxHeight,
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.only(top: 250, bottom: 120),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x267D63D1), Color(0x26212235)],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(110),
+                        topRight: Radius.circular(30),
+                        bottomLeft: Radius.circular(80),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7D63D1).withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 120),
+                      ValueListenableBuilder(
+                        valueListenable: _profileController.statsNotifier,
+                        builder: (context, stats, child) {
+                          return UserStatsRow(stats: stats);
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      // User highlights from API (data['data']['highlights'])
+                      ValueListenableBuilder(
+                        valueListenable: _profileController.highlightList,
+                        builder: (context, highlights, child) {
+                          debugPrint(
+                            '[UserProfileScreen] Highlights count: ${highlights.length}',
+                          );
+                          return UserHighlightsList(
+                            highlights: highlights,
+                            isOwnProfile: false,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      UserFilterTabs(
+                        selectedIndex: _selectedTab,
+                        onTabSelected: (index) {
+                          setState(() {
+                            _selectedTab = index;
+                          });
+                        },
                       ),
                       AnimatedBuilder(
                         animation: _profileController.contentListenable,
                         builder: (context, child) {
-                          final profile = _profileController.user;
-                          final resolvedUserId =
-                              (profile?.id.isNotEmpty ?? false)
-                              ? profile!.id
-                              : widget.profileUserId;
-                          final resolvedUsername =
-                              (profile?.username.isNotEmpty ?? false)
-                              ? profile!.username
-                              : _normalizedUsername;
-                          final initialIsSubscribed =
-                              _subscribeController
-                                  .getUserSubscribeModel(resolvedUserId)
-                                  ?.isSubscribed ??
-                              profile?.isFollowing ??
-                              false;
-
-                          return Column(
-                            children: [
-                              const SizedBox(height: 20),
-                              UserProfileHeader(
-                                displayName: widget.userName,
-                                username: resolvedUsername,
-                                profileUserId: resolvedUserId,
-                                profileImageUrl:
-                                    (profile?.profileImage.isNotEmpty ?? false)
-                                    ? profile!.profileImage
-                                    : widget.profileImageUrl,
-                                hasActiveStory: profile?.hasActiveStory ?? widget.initialHasActiveStory,
-                                showSubscribeButton: showSubscribeButton,
-                                reserveSubscribeSpace: _isResolvingIdentity,
-                                subscribeController: _subscribeController,
-                                initialIsSubscribed: initialIsSubscribed,
-                              ),
-                            ],
+                          return UserProfileGrid(
+                            controller: _profileController,
+                            selectedTab: _selectedTab,
                           );
                         },
                       ),
                     ],
                   ),
-                ),
-              );
+                ],
+              ),
+            ),
+            AnimatedBuilder(
+              animation: _profileController.contentListenable,
+              builder: (context, child) {
+                final profile = _profileController.user;
+                final resolvedUserId = (profile?.id.isNotEmpty ?? false)
+                    ? profile!.id
+                    : widget.profileUserId;
+                final resolvedUsername = (profile?.username.isNotEmpty ?? false)
+                    ? profile!.username
+                    : _normalizedUsername;
+                final initialIsSubscribed =
+                    _subscribeController
+                        .getUserSubscribeModel(resolvedUserId)
+                        ?.isSubscribed ??
+                    profile?.isFollowing ??
+                    false;
+
+                return Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    UserProfileHeader(
+                      displayName: widget.userName,
+                      username: resolvedUsername,
+                      profileUserId: resolvedUserId,
+                      profileImageUrl:
+                          (profile?.profileImage.isNotEmpty ?? false)
+                          ? profile!.profileImage
+                          : widget.profileImageUrl,
+                      hasActiveStory:
+                          profile?.hasActiveStory ??
+                          widget.initialHasActiveStory,
+                      showSubscribeButton: showSubscribeButton,
+                      reserveSubscribeSpace: _isResolvingIdentity,
+                      subscribeController: _subscribeController,
+                      initialIsSubscribed: initialIsSubscribed,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSkeleton(BoxConstraints constraints) {
-    return Container(
+    return SizedBox(
       height: constraints.maxHeight,
       width: double.infinity,
       child: SingleChildScrollView(
@@ -302,10 +292,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               const SizedBox(height: 30),
 
               /// Profile image
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white12,
-              ),
+              const CircleAvatar(radius: 40, backgroundColor: Colors.white12),
 
               const SizedBox(height: 10),
 
@@ -367,13 +354,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(10),
                 itemCount: 9,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 6,
                   mainAxisSpacing: 6,
                 ),
-                itemBuilder: (_, __) {
+                itemBuilder: (_, _) {
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white12,

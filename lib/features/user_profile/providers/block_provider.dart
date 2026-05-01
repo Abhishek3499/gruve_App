@@ -122,7 +122,18 @@ class BlockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clear all states
+  /// Reset all block data on logout
+  void reset() {
+    debugPrint('🔄 [BlockProvider] Resetting block data...');
+    _blockStates.clear();
+    _loadingStates.clear();
+    _blockedUsers.clear();
+    _isLoadingList = false;
+    notifyListeners();
+    debugPrint('✅ [BlockProvider] Block data reset complete');
+  }
+
+  /// Clear all states (legacy method)
   void clearAll() {
     _blockStates.clear();
     _loadingStates.clear();

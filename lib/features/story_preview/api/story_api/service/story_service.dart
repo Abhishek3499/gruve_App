@@ -105,7 +105,11 @@ class StoryService {
     }
   }
 
-  Future<StoriesResponse> fetchStories({String? userId, int page = 1, int limit = 5}) async {
+  Future<StoriesResponse> fetchStories({
+    String? userId,
+    int page = 1,
+    int limit = 5,
+  }) async {
     try {
       if (kDebugMode) {
         debugPrint("\n🚀 ===== FETCH STORIES START =====");
@@ -121,22 +125,17 @@ class StoryService {
       final isMe = userId == null;
 
       if (kDebugMode) {
-        print("🌐 API CALL:");
-        print("➡️ Endpoint: $endpoint");
-        print("➡️ userId: ${userId ?? 'me (own stories)'}");
-        print("➡️ isMe: $isMe");
+        debugPrint("🌐 API CALL:");
+        debugPrint("➡️ Endpoint: $endpoint");
+        debugPrint("➡️ userId: ${userId ?? 'me (own stories)'}");
+        debugPrint("➡️ isMe: $isMe");
         debugPrint("🌐 Hitting API: GET $endpoint");
       }
 
       final res = await _dio.get(
         endpoint,
-        queryParameters: {
-          "page": page,
-          "limit": limit,
-        },
-        options: Options(
-          headers: {"Authorization": "Bearer $token"},
-        ),
+        queryParameters: {"page": page, "limit": limit},
+        options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       if (kDebugMode) {
@@ -144,11 +143,11 @@ class StoryService {
         debugPrint("📊 Status Code: ${res.statusCode}");
         debugPrint("📥 Response Data: ${res.data}");
 
-        print("📥 API RESPONSE:");
+        debugPrint("📥 API RESPONSE:");
         if (res.data['data'] != null && res.data['data']['stories'] != null) {
-          print("➡️ Stories count: ${res.data['data']['stories'].length}");
+          debugPrint("➡️ Stories count: ${res.data['data']['stories'].length}");
         } else {
-          print("➡️ Stories count: 0 (no stories in response)");
+          debugPrint("➡️ Stories count: 0 (no stories in response)");
         }
 
         debugPrint("🏁 ===== FETCH STORIES END =====\n");

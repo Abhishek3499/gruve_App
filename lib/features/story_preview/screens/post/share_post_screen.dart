@@ -251,7 +251,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                         height: 42,
                         child: GestureDetector(
                           onTap: () {
-                            print("🔥 SHARE CLICKED");
+                            debugPrint("🔥 SHARE CLICKED");
 
                             final caption = captionController.text;
                             final mediaPath = widget.mediaPath;

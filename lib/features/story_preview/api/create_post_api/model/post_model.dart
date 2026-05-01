@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CreatePostResponse {
@@ -7,7 +8,7 @@ class CreatePostResponse {
   CreatePostResponse({required this.success, required this.message});
 
   factory CreatePostResponse.fromJson(Map<String, dynamic> json) {
-    print("Create response json: $json");
+    debugPrint("Create response json: $json");
 
     return CreatePostResponse(
       success: json['success'] ?? false,

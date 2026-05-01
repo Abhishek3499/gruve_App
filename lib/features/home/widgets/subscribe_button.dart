@@ -23,7 +23,7 @@ class SubscribeButton extends StatefulWidget {
 
 class _SubscribeButtonState extends State<SubscribeButton> {
   void _log(String message) {
-    print('🎬 [HomeSubscribeButton] $message');
+    debugPrint('🎬 [HomeSubscribeButton] $message');
   }
 
   @override
@@ -32,7 +32,8 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     _log(
       '🛠️ initState userId=${widget.userId} username=${widget.username} initial=${widget.initialIsSubscribed}',
     );
-    if (widget.subscribeController.getUserSubscribeModel(widget.userId) == null) {
+    if (widget.subscribeController.getUserSubscribeModel(widget.userId) ==
+        null) {
       _log('🧱 no local model found, seeding initial state');
       widget.subscribeController.addOrUpdateUser(
         SubscribeModel(
@@ -42,7 +43,9 @@ class _SubscribeButtonState extends State<SubscribeButton> {
         ),
       );
     } else {
-      _log('📦 existing local model already present for userId=${widget.userId}');
+      _log(
+        '📦 existing local model already present for userId=${widget.userId}',
+      );
     }
   }
 
@@ -95,9 +98,8 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               _showSubscriptionSnackBar(optimisticStatus);
 
               try {
-                final result = await widget.subscribeController.toggleSubscription(
-                  widget.userId,
-                );
+                final result = await widget.subscribeController
+                    .toggleSubscription(widget.userId);
                 _log(
                   '✅ toggleSubscription future resolved userId=${widget.userId} result=$result',
                 );

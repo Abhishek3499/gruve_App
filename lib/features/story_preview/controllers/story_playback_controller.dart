@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 /// Global controller for managing story playback state
 /// Handles pause/resume logic across the entire app
@@ -31,14 +30,18 @@ class StoryPlaybackController extends ChangeNotifier {
   void pauseStory({String? reason}) {
     if (!_isInitialized) {
       if (kDebugMode) {
-        debugPrint("⚠️ [StoryPlaybackController] Cannot pause - not initialized");
+        debugPrint(
+          "⚠️ [StoryPlaybackController] Cannot pause - not initialized",
+        );
       }
       return;
     }
 
     if (_isPaused) {
       if (kDebugMode) {
-        debugPrint("⚠️ [StoryPlaybackController] Already paused - ignoring duplicate call");
+        debugPrint(
+          "⚠️ [StoryPlaybackController] Already paused - ignoring duplicate call",
+        );
       }
       return;
     }
@@ -47,7 +50,9 @@ class StoryPlaybackController extends ChangeNotifier {
     notifyListeners();
 
     if (kDebugMode) {
-      debugPrint("⏸️ [StoryPlaybackController] Story Paused${reason != null ? ' - $reason' : ''}");
+      debugPrint(
+        "⏸️ [StoryPlaybackController] Story Paused${reason != null ? ' - $reason' : ''}",
+      );
     }
   }
 
@@ -55,14 +60,18 @@ class StoryPlaybackController extends ChangeNotifier {
   void resumeStory({String? reason}) {
     if (!_isInitialized) {
       if (kDebugMode) {
-        debugPrint("⚠️ [StoryPlaybackController] Cannot resume - not initialized");
+        debugPrint(
+          "⚠️ [StoryPlaybackController] Cannot resume - not initialized",
+        );
       }
       return;
     }
 
     if (!_isPaused) {
       if (kDebugMode) {
-        debugPrint("⚠️ [StoryPlaybackController] Already playing - ignoring duplicate call");
+        debugPrint(
+          "⚠️ [StoryPlaybackController] Already playing - ignoring duplicate call",
+        );
       }
       return;
     }
@@ -71,7 +80,9 @@ class StoryPlaybackController extends ChangeNotifier {
     notifyListeners();
 
     if (kDebugMode) {
-      debugPrint("▶️ [StoryPlaybackController] Story Resumed${reason != null ? ' - $reason' : ''}");
+      debugPrint(
+        "▶️ [StoryPlaybackController] Story Resumed${reason != null ? ' - $reason' : ''}",
+      );
     }
   }
 

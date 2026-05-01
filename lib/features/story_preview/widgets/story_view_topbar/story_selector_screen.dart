@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:get/get.dart';
 
@@ -216,34 +215,40 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
             padding: const EdgeInsets.all(16),
             child: ElevatedButton(
               onPressed: () async {
-                print("➕ New highlight submit → API CALL START");
+                debugPrint("➕ New highlight submit → API CALL START");
 
                 // ✅ Validate title
                 if (_nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a highlight name'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a highlight name'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                   return;
                 }
 
                 // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
                 final storyId = widget.storyId;
 
-                print("🧪 [DEBUG] FIXED Story ID: $storyId");
-                print("🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}");
+                debugPrint("🧪 [DEBUG] FIXED Story ID: $storyId");
+                debugPrint(
+                  "🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}",
+                );
 
                 // ❌ prevent null / empty
                 if (storyId.isEmpty) {
-                  print("❌ ERROR: Story ID is empty");
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Story ID not found. Please try again.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  debugPrint("❌ ERROR: Story ID is empty");
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Story ID not found. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                   return;
                 }
 
@@ -251,13 +256,15 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                 if (storyId.endsWith('.jpg') ||
                     storyId.endsWith('.png') ||
                     storyId.endsWith('.mp4')) {
-                  print("❌ ERROR: Wrong storyId (image file detected)");
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Invalid story ID format.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  debugPrint("❌ ERROR: Wrong storyId (image file detected)");
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Invalid story ID format.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                   return;
                 }
 
@@ -270,18 +277,22 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
 
                 // ✅ Success handling
                 if (_createController.isSuccess.value) {
-                  print("✅ Highlight created successfully");
+                  debugPrint("✅ Highlight created successfully");
+
+                  if (!mounted) return;
 
                   Navigator.pop(context);
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Highlight created successfully! 🎉'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Highlight created successfully! 🎉'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 } else {
-                  print("❌ Highlight creation failed");
+                  debugPrint("❌ Highlight creation failed");
                 }
               },
               style: ElevatedButton.styleFrom(

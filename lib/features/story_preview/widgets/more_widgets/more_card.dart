@@ -16,7 +16,7 @@ class MoreCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(MoreConstants.cardBorderRadius),
         boxShadow: [
           BoxShadow(
-            color: MoreConstants.shadowColor.withOpacity(0.6), // 👈 fix
+            color: MoreConstants.shadowColor.withValues(alpha: 0.6), // 👈 fix
             blurRadius: 25,
             spreadRadius: 2,
             offset: const Offset(0, 15),

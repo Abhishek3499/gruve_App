@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
@@ -8,7 +9,7 @@ class SubscribeApiService {
   late final Dio _dio;
 
   void _log(String message) {
-    print('🌐 [SubscribeApiService] $message');
+    debugPrint('🌐 [SubscribeApiService] $message');
   }
 
   SubscribeApiService() {
@@ -26,9 +27,7 @@ class SubscribeApiService {
       final response = await _dio.post(
         _toggleEndpoint,
         data: {'user_id': userId},
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
       _log('✅ response status=${response.statusCode}');

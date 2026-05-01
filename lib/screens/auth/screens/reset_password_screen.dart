@@ -28,10 +28,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   late final TextEditingController _confirmPasswordController;
 
-  // Real-time validation state
-  String? _newPasswordError;
-  String? _confirmPasswordError;
-
   @override
   void initState() {
     super.initState();
@@ -229,6 +225,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               final token = await TokenStorage.getResetToken();
 
                               if (token == null) {
+                                if (!mounted) return false;
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
@@ -255,6 +253,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                                 await TokenStorage.clearResetToken();
 
+                                if (!mounted) return false;
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(message)),
                                 );
@@ -271,6 +271,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                                 return true;
                               } else {
+                                if (!mounted) return false;
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(message),

@@ -43,9 +43,7 @@ class _SavedScreenContent extends StatelessWidget {
                   builder: (context, provider, _) {
                     if (provider.isLoadingSavedPosts) {
                       return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(color: Colors.white),
                       );
                     }
 
@@ -86,14 +84,14 @@ class _SavedScreenContent extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.bookmark_border,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               size: 64,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No saved posts yet',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 18,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -102,7 +100,7 @@ class _SavedScreenContent extends StatelessWidget {
                             Text(
                               'Save posts to view them here',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                             ),
@@ -113,12 +111,13 @@ class _SavedScreenContent extends StatelessWidget {
 
                     return GridView.builder(
                       padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 0.7,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 0.7,
+                          ),
                       itemCount: provider.savedPostsList.length,
                       itemBuilder: (context, index) {
                         final post = provider.savedPostsList[index];
@@ -127,19 +126,26 @@ class _SavedScreenContent extends StatelessWidget {
                             Navigator.push(
                               context,
                               PageRouteBuilder(
-                                pageBuilder: (context, animation, secondaryAnimation) {
-                                  return PostDetailScreen(
-                                    post: post,
-                                    allPosts: provider.savedPostsList,
-                                    initialIndex: index,
-                                  );
-                                },
-                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  );
-                                },
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) {
+                                      return PostDetailScreen(
+                                        post: post,
+                                        allPosts: provider.savedPostsList,
+                                        initialIndex: index,
+                                      );
+                                    },
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      );
+                                    },
                               ),
                             );
                           },
@@ -165,28 +171,37 @@ class _SavedScreenContent extends StatelessWidget {
                                       : Image.network(
                                           post.media,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              color: Colors.grey[900],
-                                              child: const Icon(
-                                                Icons.broken_image,
-                                                color: Colors.white54,
-                                                size: 32,
-                                              ),
-                                            );
-                                          },
-                                          loadingBuilder: (context, child, loadingProgress) {
-                                            if (loadingProgress == null) return child;
-                                            return Container(
-                                              color: Colors.grey[900],
-                                              child: const Center(
-                                                child: CircularProgressIndicator(
-                                                  color: Colors.white54,
-                                                  strokeWidth: 2,
-                                                ),
-                                              ),
-                                            );
-                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.grey[900],
+                                                  child: const Icon(
+                                                    Icons.broken_image,
+                                                    color: Colors.white54,
+                                                    size: 32,
+                                                  ),
+                                                );
+                                              },
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return Container(
+                                                  color: Colors.grey[900],
+                                                  child: const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: Colors.white54,
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
                                         ),
                                   if (post.media.toLowerCase().contains('.mp4'))
                                     Positioned(
@@ -196,7 +211,9 @@ class _SavedScreenContent extends StatelessWidget {
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
                                           color: Colors.black54,
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: const Icon(
                                           Icons.play_arrow,

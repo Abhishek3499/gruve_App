@@ -6,10 +6,7 @@ import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 class HighlightViewerScreen extends StatefulWidget {
   final String highlightId;
 
-  const HighlightViewerScreen({
-    super.key,
-    required this.highlightId,
-  });
+  const HighlightViewerScreen({super.key, required this.highlightId});
 
   @override
   State<HighlightViewerScreen> createState() => _HighlightViewerScreenState();
@@ -36,19 +33,25 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
     });
 
     try {
-      debugPrint('[API] Fetching highlight stories for ID: ${widget.highlightId}');
-      
+      debugPrint(
+        '[API] Fetching highlight stories for ID: ${widget.highlightId}',
+      );
+
       final highlightController = Get.isRegistered<HighlightController>()
           ? Get.find<HighlightController>()
           : Get.put(HighlightController());
-      
-      final fetchedHighlight = await highlightController.fetchHighlightStories(widget.highlightId);
-      
+
+      final fetchedHighlight = await highlightController.fetchHighlightStories(
+        widget.highlightId,
+      );
+
       if (fetchedHighlight != null) {
         setState(() {
           isLoading = false;
           highlight = fetchedHighlight;
-          debugPrint('[Viewer] API success - Stories count: ${highlight!.stories.length}');
+          debugPrint(
+            '[Viewer] API success - Stories count: ${highlight!.stories.length}',
+          );
         });
       } else {
         setState(() {
@@ -68,7 +71,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
 
   void _nextStory() {
     if (highlight == null) return;
-    
+
     if (currentIndex < highlight!.stories.length - 1) {
       setState(() {
         currentIndex++;
@@ -110,7 +113,10 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
           _buildTopOverlay(),
 
           // Bottom progress indicator
-          if (!isLoading && errorMessage == null && highlight != null && highlight!.stories.isNotEmpty)
+          if (!isLoading &&
+              errorMessage == null &&
+              highlight != null &&
+              highlight!.stories.isNotEmpty)
             _buildProgressIndicator(),
         ],
       ),
@@ -173,7 +179,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
 
   Widget _buildStoryViewer() {
     final story = highlight!.stories[currentIndex];
-    
+
     return GestureDetector(
       onTap: _nextStory,
       onHorizontalDragEnd: (details) {
@@ -183,9 +189,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
           _nextStory();
         }
       },
-      child: Center(
-        child: _buildStoryMedia(story),
-      ),
+      child: Center(child: _buildStoryMedia(story)),
     );
   }
 
@@ -271,7 +275,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
             width: currentIndex == index ? 24 : 8,
             height: 8,
             decoration: BoxDecoration(
-              color: currentIndex == index ? Colors.white : Colors.white.withOpacity(0.4),
+              color: currentIndex == index
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(4),
             ),
           ),

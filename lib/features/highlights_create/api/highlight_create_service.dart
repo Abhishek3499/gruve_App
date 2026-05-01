@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
@@ -84,18 +85,20 @@ class HighlightCreateService {
     try {
       final uniqueStoryIds = storyIds.toSet();
       if (uniqueStoryIds.length != storyIds.length) {
-        print('[Highlight] Duplicate story_id detected in request body');
+        debugPrint('[Highlight] Duplicate story_id detected in request body');
         return HighlightCreateResponse.failure(
           message: 'Story already added to this highlight',
           statusCode: 400,
         );
       }
 
-      print('[Highlight] POST highlights/');
+      debugPrint('[Highlight] POST highlights/');
 
       final token = await TokenStorage.getAccessToken();
-      print('[Highlight] Authorization Token: '
-          '${token?.isNotEmpty == true ? 'Present' : 'Missing'}');
+      debugPrint(
+        '[Highlight] Authorization Token: '
+        '${token?.isNotEmpty == true ? 'Present' : 'Missing'}',
+      );
 
       final Map<String, dynamic> requestData = {
         'title': title,
@@ -106,7 +109,7 @@ class HighlightCreateService {
         requestData['highlight_id'] = highlightId;
       }
 
-      print('[Highlight] Request Body: $requestData');
+      debugPrint('[Highlight] Request Body: $requestData');
 
       final response = await _dio.post(
         'highlights/',
@@ -114,15 +117,15 @@ class HighlightCreateService {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      print('[Highlight] Response status=${response.statusCode}');
-      print('[Highlight] Response data=${response.data}');
+      debugPrint('[Highlight] Response status=${response.statusCode}');
+      debugPrint('[Highlight] Response data=${response.data}');
 
       return HighlightCreateResponse.fromJson(response.data);
     } on DioException catch (e) {
-      print('[Highlight] Error: DioException');
-      print('[Highlight] Status Code: ${e.response?.statusCode}');
-      print('[Highlight] Error Data: ${e.response?.data}');
-      print('[Highlight] Message: ${e.message}');
+      debugPrint('[Highlight] Error: DioException');
+      debugPrint('[Highlight] Status Code: ${e.response?.statusCode}');
+      debugPrint('[Highlight] Error Data: ${e.response?.data}');
+      debugPrint('[Highlight] Message: ${e.message}');
 
       final responseData = e.response?.data;
       if (responseData is Map<String, dynamic>) {
@@ -143,8 +146,8 @@ class HighlightCreateService {
         statusCode: e.response?.statusCode,
       );
     } catch (e) {
-      print('[Highlight] Error: Unknown Exception');
-      print('[Highlight] Message: $e');
+      debugPrint('[Highlight] Error: Unknown Exception');
+      debugPrint('[Highlight] Message: $e');
       return HighlightCreateResponse.failure(message: 'Something went wrong');
     }
   }

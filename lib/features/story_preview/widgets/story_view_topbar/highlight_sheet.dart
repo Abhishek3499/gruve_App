@@ -173,6 +173,8 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
           currentStory.id,
         );
 
+        if (!mounted) return;
+
         sheetNavigator.pop();
 
         _log('[Flow] Navigation triggered');

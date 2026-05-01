@@ -10,4 +10,12 @@ class HighlightFlowProvider extends ChangeNotifier {
     _isProcessing = value;
     notifyListeners();
   }
+
+  /// Reset highlight flow state on logout
+  void reset() {
+    debugPrint('🔄 [HighlightFlowProvider] Resetting highlight flow...');
+    _isProcessing = false;
+    notifyListeners();
+    debugPrint('✅ [HighlightFlowProvider] Highlight flow reset complete');
+  }
 }

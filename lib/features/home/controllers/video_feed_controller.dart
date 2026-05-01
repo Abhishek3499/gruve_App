@@ -7,8 +7,6 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/post_servic
 import 'package:video_player/video_player.dart';
 
 class VideoFeedController {
-  static const int _prefetchVideoCount = 1;
-
   bool _disposed = false;
   int _feedLoadGeneration = 0;
 

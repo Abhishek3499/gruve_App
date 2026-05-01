@@ -112,6 +112,46 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Refresh profile data (used on login)
+  Future<void> refreshProfile() async {
+    debugPrint('🔄 [ProfileProvider] Refreshing profile data...');
+    
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    
+    try {
+      await controller.fetchUser(reason: 'login_refresh');
+      
+      user = controller.user;
+      stats = controller.stats;
+      posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
+      
+      debugPrint('✅ [ProfileProvider] Profile data refreshed successfully');
+    } catch (error, stackTrace) {
+      errorMessage = 'Failed to refresh profile';
+      debugPrint('❌ [ProfileProvider] Refresh failed: $error');
+      debugPrint('$stackTrace');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Reset all profile data on logout
+  void reset() {
+    debugPrint('🔄 [ProfileProvider] Resetting profile data...');
+    controller.reset();
+    user = null;
+    stats = const ProfileStatsModel.empty();
+    posts = [];
+    highlights = [];
+    isLoading = false;
+    errorMessage = null;
+    notifyListeners();
+    debugPrint('✅ [ProfileProvider] Profile data reset complete');
+  }
+
   @override
   void dispose() {
     controller.dispose();

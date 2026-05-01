@@ -327,6 +327,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
 
 
+                              if (!mounted) return false;
+
                               Navigator.push(
 
                                 context,

@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/service/story_service.dart';
@@ -11,7 +10,7 @@ class StoryController extends ChangeNotifier {
   bool isLoading = false;
   String message = "";
   bool isSuccess = false;
-  
+
   // Stories data
   List<StoryItem> stories = [];
   int totalCount = 0;
@@ -81,12 +80,16 @@ class StoryController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchStories({String? userId, int page = 1, int limit = 5}) async {
+  Future<void> fetchStories({
+    String? userId,
+    int page = 1,
+    int limit = 5,
+  }) async {
     try {
       if (kDebugMode) {
         debugPrint("\n🎬 ===== FETCH STORIES CONTROLLER START =====");
-        print("🧠 FetchStories:");
-        print("➡️ userId: ${userId ?? 'me (own stories)'}");
+        debugPrint("🧠 FetchStories:");
+        debugPrint("➡️ userId: ${userId ?? 'me (own stories)'}");
         debugPrint("⏳ Loading started...");
         debugPrint("📄 Page: $page");
         debugPrint("📏 Limit: $limit");
@@ -124,7 +127,9 @@ class StoryController extends ChangeNotifier {
         HighlightStateManager.ensureRegistered();
         for (final story in stories) {
           if (story.isHighlighted == true) {
-            await HighlightStateManager.instance.markStoryAsHighlighted(story.id);
+            await HighlightStateManager.instance.markStoryAsHighlighted(
+              story.id,
+            );
           }
         }
 

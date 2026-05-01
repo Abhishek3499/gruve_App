@@ -27,7 +27,7 @@ class RightActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("🔥 RightActionBar rebuild | isLiked: $isLiked"); // ✅ DEBUG
+    debugPrint("🔥 RightActionBar rebuild | isLiked: $isLiked"); // ✅ DEBUG
 
     return SizedBox(
       width: 55,
@@ -100,7 +100,7 @@ class _ActionIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        print('👉 tapped: ${iconPath.split('/').last}'); // ✅ DEBUG
+        debugPrint('👉 tapped: ${iconPath.split('/').last}'); // ✅ DEBUG
         onTap?.call();
       },
       child: Column(

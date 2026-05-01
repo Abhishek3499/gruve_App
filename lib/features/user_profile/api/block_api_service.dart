@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import '../models/block_toggle_response_model.dart';
@@ -11,7 +12,7 @@ class BlockApiService {
   late final Dio _dio;
 
   void _log(String message) {
-    print('🌐 [BlockApiService] $message');
+    debugPrint('?? [BlockApiService] $message');
   }
 
   BlockApiService() {

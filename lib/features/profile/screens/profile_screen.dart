@@ -139,8 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       margin: const EdgeInsets.only(top: 130),
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7D63D1)
-                            .withValues(alpha: 0.12),
+                        color: const Color(0xFF7D63D1).withValues(alpha: 0.12),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(100),
                           topRight: Radius.circular(30),
@@ -150,8 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           const SizedBox(height: 110),
                           StatsRow(
-                            subscribersCount:
-                                provider.stats.subscribersCount,
+                            subscribersCount: provider.stats.subscribersCount,
                             likesCount: provider.stats.likesCount,
                             videosCount: provider.stats.videosCount,
                           ),
@@ -171,9 +169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: ProfileGrid(
                               selectedTab: selectedTab,
                               controller: provider.controller,
@@ -190,17 +186,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: ProfileHeader(
                         fullName: (user?.fullName ?? '').trim(),
                         username: () {
-                          final username =
-                              _displayUsername(user?.username);
-                          return username.isEmpty
-                              ? '@username'
-                              : username;
+                          final username = _displayUsername(user?.username);
+                          return username.isEmpty ? '@username' : username;
                         }(),
                         profileImage: user?.profileImage ?? '',
-                        hasActiveStory:
-                            user?.hasActiveStory ?? false,
-                        onProfileUpdated:
-                            provider.applyUpdatedProfile,
+                        hasActiveStory: user?.hasActiveStory ?? false,
+                        onProfileUpdated: provider.applyUpdatedProfile,
                       ),
                     ),
                   ],
@@ -232,10 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 30),
 
               /// Profile image
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white12,
-              ),
+              const CircleAvatar(radius: 40, backgroundColor: Colors.white12),
 
               const SizedBox(height: 10),
 
@@ -297,13 +285,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(10),
                 itemCount: 9,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 6,
                   mainAxisSpacing: 6,
                 ),
-                itemBuilder: (_, __) {
+                itemBuilder: (_, _) {
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white12,
@@ -326,8 +313,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       await context.read<ProfileProvider>().refreshProfileData(
-            reason: 'pull_to_refresh',
-          );
+        reason: 'pull_to_refresh',
+      );
     } catch (e) {
       _log('[ProfileScreen] Pull-to-refresh failed: $e');
     } finally {

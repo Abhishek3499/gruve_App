@@ -46,6 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (accessToken != null && accessToken.isNotEmpty) {
         // User is logged in, navigate to Home screen
         debugPrint("🔑 Token found, navigating to Home screen");
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -70,6 +71,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } else {
         // No token found, navigate to Intro screen
         debugPrint("🔑 No token found, navigating to Intro screen");
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(

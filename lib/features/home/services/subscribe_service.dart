@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../api/subscribe_api_service.dart';
 
 class SubscribeService {
@@ -9,7 +11,7 @@ class SubscribeService {
   final Set<String> _subscribedUsers = {};
 
   void _log(String message) {
-    print('🧰 [SubscribeService] $message');
+    debugPrint('🧰 [SubscribeService] $message');
   }
 
   bool isUserSubscribed(String userId) {

@@ -201,7 +201,6 @@ class EditProfileService {
       const endpoint = 'user/edit_profile/';
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
       final requestData = await _buildUpdatePayload(request);
-      final isMultipart = true; // Always FormData now
 
       debugPrint('[EditProfileService] PATCH $endpoint');
       debugPrint('[EditProfileService] Headers: $headers');

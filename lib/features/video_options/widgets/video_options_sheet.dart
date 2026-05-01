@@ -16,10 +16,10 @@ class VideoOptionsSheet extends StatefulWidget {
   final String? userName;
   final String? profileImage;
   final String? postId;
-  
+
   const VideoOptionsSheet({
-    super.key, 
-    required this.userId, 
+    super.key,
+    required this.userId,
     this.currentUserId,
     this.userName,
     this.profileImage,
@@ -144,8 +144,9 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
 
   @override
   Widget build(BuildContext context) {
-    final isSelf = widget.currentUserId != null && widget.currentUserId == widget.userId;
-    
+    final isSelf =
+        widget.currentUserId != null && widget.currentUserId == widget.userId;
+
     return AnimatedBuilder(
       animation: Listenable.merge([_slideAnimation, _fadeAnimation]),
       builder: (context, child) {
@@ -154,7 +155,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
           child: Opacity(
             opacity: _fadeAnimation.value,
             child: Container(
-              height: isSelf 
+              height: isSelf
                   ? MediaQuery.of(context).size.height * 0.35
                   : MediaQuery.of(context).size.height * 0.50,
               decoration: BoxDecoration(
@@ -196,29 +197,37 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                       children: [
                         Consumer<SavePostProvider>(
                           builder: (context, saveProvider, _) {
-                            final isSaved = widget.postId != null 
+                            final isSaved = widget.postId != null
                                 ? saveProvider.isSaved(widget.postId!)
                                 : false;
-                            
+
                             return OptionButton(
                               icon: AppAssets.savs,
                               label: isSaved ? 'Unsave' : 'Save',
                               onTap: () {
                                 if (widget.postId == null) {
-                                  _showActionSnackBar('Post ID not available', context);
+                                  _showActionSnackBar(
+                                    'Post ID not available',
+                                    context,
+                                  );
                                   return;
                                 }
-                                
+
                                 HapticFeedback.lightImpact();
-                                
-                                final saveProvider = context.read<SavePostProvider>();
-                                final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                                final saveProvider = context
+                                    .read<SavePostProvider>();
+                                final scaffoldMessenger = ScaffoldMessenger.of(
+                                  context,
+                                );
                                 final navigator = Navigator.of(context);
-                                
-                                final currentState = saveProvider.isSaved(widget.postId!);
-                                
+
+                                final currentState = saveProvider.isSaved(
+                                  widget.postId!,
+                                );
+
                                 navigator.pop();
-                                
+
                                 scaffoldMessenger.showSnackBar(
                                   SnackBar(
                                     content: Row(
@@ -228,13 +237,18 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                           height: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                            currentState ? 'Unsaving...' : 'Saving...',
+                                            currentState
+                                                ? 'Unsaving...'
+                                                : 'Saving...',
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 14,
@@ -249,73 +263,107 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
                                     duration: const Duration(milliseconds: 500),
                                     elevation: 8,
                                   ),
                                 );
-                                
-                                saveProvider.toggleSavePost(widget.postId!).then((_) {
-                                  final newState = saveProvider.isSaved(widget.postId!);
-                                  
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              newState ? 'Post saved successfully' : 'Post unsaved',
-                                              style: const TextStyle(
+
+                                saveProvider
+                                    .toggleSavePost(widget.postId!)
+                                    .then((_) {
+                                      final newState = saveProvider.isSaved(
+                                        widget.postId!,
+                                      );
+
+                                      scaffoldMessenger.showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.check_circle,
                                                 color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
+                                                size: 20,
                                               ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  newState
+                                                      ? 'Post saved successfully'
+                                                      : 'Post unsaved',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          backgroundColor: const Color(
+                                            0xFFCD72E3,
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      backgroundColor: const Color(0xFFCD72E3),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                      duration: const Duration(milliseconds: 1500),
-                                      elevation: 8,
-                                    ),
-                                  );
-                                }).catchError((e) {
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                                          const SizedBox(width: 12),
-                                          const Expanded(
-                                            child: Text(
-                                              'Failed to save post',
-                                              style: TextStyle(
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
+                                          duration: const Duration(
+                                            milliseconds: 1500,
+                                          ),
+                                          elevation: 8,
+                                        ),
+                                      );
+                                    })
+                                    .catchError((e) {
+                                      scaffoldMessenger.showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.error_outline,
                                                 color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
+                                                size: 20,
                                               ),
+                                              const SizedBox(width: 12),
+                                              const Expanded(
+                                                child: Text(
+                                                  'Failed to save post',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.red,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                      duration: const Duration(milliseconds: 1500),
-                                      elevation: 8,
-                                    ),
-                                  );
-                                });
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
+                                          duration: const Duration(
+                                            milliseconds: 1500,
+                                          ),
+                                          elevation: 8,
+                                        ),
+                                      );
+                                    });
                               },
                             );
                           },
@@ -341,20 +389,21 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         children: [
-                          if (!isSelf) OptionItem(
-                            title: 'Not interested',
-                            icon: AppAssets.eye,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) =>
-                                    const SimpleNotInterestedSheet(),
-                              );
-                            },
-                          ),
+                          if (!isSelf)
+                            OptionItem(
+                              title: 'Not interested',
+                              icon: AppAssets.eye,
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) =>
+                                      const SimpleNotInterestedSheet(),
+                                );
+                              },
+                            ),
                           if (!isSelf) const SizedBox(height: 12),
                           OptionItem(
                             title: 'Download',
@@ -362,92 +411,59 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                             onTap: () => _handleAction('Download'),
                           ),
                           if (!isSelf) const SizedBox(height: 12),
-                          if (!isSelf) OptionItem(
-                            title: 'Block',
-                            icon: AppAssets.blocks,
-                            onTap: () async {
-                              print('🔴 Block button tapped in VideoOptionsSheet');
-                              
-                              // Save references BEFORE any async operation
-                              final blockProvider = context.read<BlockProvider>();
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              final navigator = Navigator.of(context);
-                              
-                              print('🔴 Closing VideoOptionsSheet...');
-                              navigator.pop();
-                              
-                              print('🔴 Opening SimpleBlockSheet...');
-                              final result = await showModalBottomSheet<bool>(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => SimpleBlockSheet(
-                                  userName: widget.userName,
-                                  profileImage: widget.profileImage,
-                                ),
-                              );
+                          if (!isSelf)
+                            OptionItem(
+                              title: 'Block',
+                              icon: AppAssets.blocks,
+                              onTap: () async {
+                                // Save references BEFORE any async operation
+                                final blockProvider = context
+                                    .read<BlockProvider>();
+                                final scaffoldMessenger = ScaffoldMessenger.of(
+                                  context,
+                                );
+                                final navigator = Navigator.of(context);
 
-                              print('🔴 SimpleBlockSheet returned: $result');
+                                navigator.pop();
 
-                              // If user confirmed block action
-                              if (result == true) {
-                                print('🔴 User confirmed block');
-                                
-                                // 🚀 INSTANT SNACKBAR - Show immediately
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            'Blocking ${widget.userName ?? "user"}...',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    backgroundColor: const Color(0xFFCD72E3),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                    duration: const Duration(milliseconds: 500),
-                                    elevation: 8,
+                                final result = await showModalBottomSheet<bool>(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => SimpleBlockSheet(
+                                    userName: widget.userName,
+                                    profileImage: widget.profileImage,
                                   ),
                                 );
-                                
-                                // API call in background
-                                try {
-                                  await blockProvider.toggleBlockUser(widget.userId);
-                                  print('🔴 API call completed');
-                                  
-                                  final isBlocked = blockProvider.isBlocked(widget.userId);
-                                  print('🔴 Block status: $isBlocked');
-                                  
-                                  // Success snackbar
+
+                                debugPrint(
+                                  '🔴 SimpleBlockSheet returned: $result',
+                                );
+
+                                // If user confirmed block action
+                                if (result == true) {
+                                  debugPrint('🔴 User confirmed block');
+
+                                  // 🚀 INSTANT SNACKBAR - Show immediately
                                   scaffoldMessenger.showSnackBar(
                                     SnackBar(
                                       content: Row(
                                         children: [
-                                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                          const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          ),
                                           const SizedBox(width: 12),
                                           Expanded(
                                             child: Text(
-                                              '${widget.userName ?? "User"} blocked successfully',
+                                              'Blocking ${widget.userName ?? "user"}...',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 14,
@@ -462,64 +478,139 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                      duration: const Duration(milliseconds: 1500),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 16,
+                                      ),
+                                      duration: const Duration(
+                                        milliseconds: 500,
+                                      ),
                                       elevation: 8,
                                     ),
                                   );
-                                } catch (e) {
-                                  print('🔴 Error: $e');
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                                          const SizedBox(width: 12),
-                                          const Expanded(
-                                            child: Text(
-                                              'Failed to block user',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
+
+                                  // API call in background
+                                  try {
+                                    await blockProvider.toggleBlockUser(
+                                      widget.userId,
+                                    );
+                                    debugPrint('🔴 API call completed');
+
+                                    if (!mounted) return;
+
+                                    final isBlocked = blockProvider.isBlocked(
+                                      widget.userId,
+                                    );
+                                    debugPrint('🔴 Block status: $isBlocked');
+
+                                    // Success snackbar
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.check_circle,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                '${widget.userName ?? "User"} blocked successfully',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
                                             ),
+                                          ],
+                                        ),
+                                        backgroundColor: const Color(
+                                          0xFFCD72E3,
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
-                                        ],
+                                        ),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 16,
+                                        ),
+                                        duration: const Duration(
+                                          milliseconds: 1500,
+                                        ),
+                                        elevation: 8,
                                       ),
-                                      backgroundColor: Colors.red,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                    );
+                                  } catch (e) {
+                                    debugPrint('🔴 Error: $e');
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.error_outline,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Expanded(
+                                              child: Text(
+                                                'Failed to block user',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 16,
+                                        ),
+                                        duration: const Duration(
+                                          milliseconds: 1500,
+                                        ),
+                                        elevation: 8,
                                       ),
-                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                      duration: const Duration(milliseconds: 1500),
-                                      elevation: 8,
-                                    ),
-                                  );
+                                    );
+                                  }
+                                } else {
+                                  debugPrint('🔴 User cancelled');
                                 }
-                              } else {
-                                print('🔴 User cancelled');
-                              }
-                            },
-                          ),
+                              },
+                            ),
                           if (!isSelf) const SizedBox(height: 12),
-                          if (!isSelf) OptionItem(
-                            title: 'Report',
-                            icon: AppAssets.reports,
-                            iconColor: Colors.red,
-                            textColor: Colors.red,
-                            hasArrow: true,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => const SimpleReportSheet(),
-                              );
-                            },
-                          ),
+                          if (!isSelf)
+                            OptionItem(
+                              title: 'Report',
+                              icon: AppAssets.reports,
+                              iconColor: Colors.red,
+                              textColor: Colors.red,
+                              hasArrow: true,
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) =>
+                                      const SimpleReportSheet(),
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),

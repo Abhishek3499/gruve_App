@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:gruve_app/core/assets.dart';
 
 import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 
 import 'package:gruve_app/screens/auth/api/controllers/login_controller.dart';
 
@@ -150,6 +153,26 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
     if (_controller.response?.success == true) {
       debugPrint("LOGIN SUCCESS -> GO TO HOME");
+
+      if (!mounted) return false;
+
+      // Refresh providers to fetch fresh data for new user
+      try {
+        debugPrint('🔄 [Login] Refreshing providers for fresh data...');
+        
+        // Refresh profile data
+        final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+        await profileProvider.refreshProfile();
+        
+        // Refresh story data
+        final storyController = Provider.of<StoryController>(context, listen: false);
+        storyController.reset(); // Clear any cached story data
+        
+        debugPrint('✅ [Login] Providers refreshed successfully');
+      } catch (e) {
+        debugPrint('❌ [Login] Error refreshing providers: $e');
+        // Continue navigation even if provider refresh fails
+      }
 
       Navigator.pushReplacement(
         context,

@@ -5,7 +5,6 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
-import 'widgets/post_action_sheet.dart';
 
 class ProfilePostDetailScreen extends StatefulWidget {
   final Post post;
@@ -48,7 +47,9 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     final post = widget.allPosts[index];
     if (post.media.toLowerCase().contains('.mp4') &&
         _videoControllers[index] == null) {
-      final controller = VideoPlayerController.network(post.media);
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(post.media),
+      );
       controller
           .initialize()
           .then((_) {
@@ -60,7 +61,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             }
           })
           .catchError((e) {
-            debugPrint('❌ Video init error: $e');
+            debugPrint('Video init error: $e');
           });
     }
   }
@@ -85,16 +86,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     setState(() {
       _isLiked[postId] = !(_isLiked[postId] ?? false);
     });
-    debugPrint('❤️ Toggled like for post: $postId');
-  }
-
-  void _showActionSheet(Post post) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          PostActionSheet(post: post, isOwnProfile: widget.isOwnProfile),
-    );
+    debugPrint('Toggled like for post: $postId');
   }
 
   @override
@@ -122,7 +114,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               return _buildPostItem(post, index);
             },
           ),
-
           Positioned(
             top: 16,
             left: 16,
@@ -132,7 +123,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Image.asset(
@@ -145,28 +136,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               ),
             ),
           ),
-
-          // Positioned(
-          //   top: 16,
-          //   right: 16,
-          //   child: SafeArea(
-          //     child: GestureDetector(
-          //       onTap: () => _showActionSheet(widget.allPosts[_currentIndex]),
-          //       child: Container(
-          //         padding: const EdgeInsets.all(8),
-          //         decoration: BoxDecoration(
-          //           color: Colors.black.withOpacity(0.5),
-          //           shape: BoxShape.circle,
-          //         ),
-          //         child: const Icon(
-          //           Icons.more_vert,
-          //           color: Colors.white,
-          //           size: 24,
-          //         ),
-          //       ),
-          //     ),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -198,7 +167,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                 : _buildImagePlayer(post.media),
           ),
         ),
-
         Positioned(
           bottom: 0,
           left: 0,
@@ -209,9 +177,9 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withOpacity(0.95),
-                  Colors.black.withOpacity(0.8),
-                  Colors.black.withOpacity(0.5),
+                  Colors.black.withValues(alpha: 0.95),
+                  Colors.black.withValues(alpha: 0.8),
+                  Colors.black.withValues(alpha: 0.5),
                   Colors.transparent,
                 ],
               ),
@@ -251,7 +219,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),
@@ -261,7 +229,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -277,32 +244,21 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                         _buildActionButton(
                           icon: Icons.comment_outlined,
                           count: post.commentsCount,
-                          onTap: () {
-                            debugPrint('💬 Comments tapped');
-                          },
+                          onTap: () {},
                         ),
                         const SizedBox(width: 24),
                         _buildActionButton(
                           icon: Icons.share_outlined,
                           count: 0,
-                          onTap: () {
-                            debugPrint('📤 Share tapped');
-                          },
+                          onTap: () {},
                         ),
                       ],
                     ),
-
                     Consumer<SavePostProvider>(
                       builder: (context, provider, _) {
                         final isSaved = provider.isSaved(post.id);
-                        final isLoading = provider.isLoading(post.id);
-
                         return GestureDetector(
-                          onTap: isLoading
-                              ? null
-                              : () {
-                                  provider.toggleSavePost(post.id);
-                                },
+                          onTap: () => provider.toggleSavePost(post.id),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             child: Icon(
@@ -320,7 +276,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             ),
           ),
         ),
-
         if (isVideo && videoController != null)
           Center(
             child: AnimatedOpacity(
@@ -329,7 +284,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -350,7 +305,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
         child: CircularProgressIndicator(color: Colors.white),
       );
     }
-
     return SizedBox.expand(
       child: FittedBox(
         fit: BoxFit.cover,
@@ -369,7 +323,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
         child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
       );
     }
-
     return CachedNetworkImage(
       imageUrl: imageUrl,
       fit: BoxFit.cover,

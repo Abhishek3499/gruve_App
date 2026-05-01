@@ -100,7 +100,7 @@ class EditProfileData {
 
     final userId = json['user_id'];
     final username = json['username'] ?? '';
-    final profile_picture = json['profile_picture'];
+    final profilePicture = json['profile_picture'];
     final fullName = json['full_name'] ?? '';
     final phone = json['phone'];
     final email = json['email'];
@@ -110,7 +110,7 @@ class EditProfileData {
     debugPrint("📝 [EditProfileData] Parsed fields:");
     debugPrint("  🆔 userId: $userId");
     debugPrint("  👤 username: '$username'");
-    debugPrint("  🖼️ profile_picture: '$profile_picture'");
+    debugPrint("  🖼️ profile_picture: '$profilePicture'");
     debugPrint("  🏷️ fullName: '$fullName'");
     debugPrint("  📞 phone: '$phone'");
     debugPrint("  📧 email: '$email'");
@@ -122,7 +122,7 @@ class EditProfileData {
     return EditProfileData(
       userId: userId,
       username: username,
-      profile_picture: profile_picture,
+      profile_picture: profilePicture,
       fullName: fullName,
       phone: phone,
       email: email,

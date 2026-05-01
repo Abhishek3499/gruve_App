@@ -1452,4 +1452,30 @@ class ProfileController {
       highlightList.value = [];
     }
   }
+
+  /// Reset all profile controller data on logout
+  void reset() {
+    debugPrint('🔄 [ProfileController] Resetting controller data...');
+    
+    user = null;
+    statsNotifier.value = const ProfileStatsModel.empty();
+    _allTabState.posts.clear();
+    _allTabState.page = 1;
+    _allTabState.hasNext = true;
+    _trendingTabState.posts.clear();
+    _trendingTabState.page = 1;
+    _trendingTabState.hasNext = true;
+    _likedTabState.posts.clear();
+    _likedTabState.page = 1;
+    _likedTabState.hasNext = true;
+    _isRefreshing = false;
+    _hasLoadedOnce = false;
+    _profileFetchBackoffUntil = null;
+    highlightList.value = [];
+    storyList.value = [];
+    postsNotifier.value = [];
+    gridRevision.value = 0;
+    
+    debugPrint('✅ [ProfileController] Controller data reset complete');
+  }
 }

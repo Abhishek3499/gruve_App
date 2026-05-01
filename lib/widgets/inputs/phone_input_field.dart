@@ -80,7 +80,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
 
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFB86AD0).withOpacity(0.25),
+                color: const Color(0xFFB86AD0).withValues(alpha: 0.25),
                 blurRadius: 12,
                 spreadRadius: 1,
               ),
@@ -132,7 +132,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               Container(
                 height: 30,
                 width: 1.2,
-                color: const Color(0xFFB86AD0).withOpacity(0.6),
+                color: const Color(0xFFB86AD0).withValues(alpha: 0.6),
               ),
 
               // ── PHONE INPUT ──────────────────────────────

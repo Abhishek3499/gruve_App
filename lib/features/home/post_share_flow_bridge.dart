@@ -38,21 +38,21 @@ class PostShareFlowBridge {
   static void setVideoController(dynamic controller) {
     _videoControllerRef = controller;
     if (kDebugMode) {
-      print("🔔 Bridge: Video controller reference set");
+      debugPrint("🔔 Bridge: Video controller reference set");
     }
   }
 
   static void setVideoService(VideoService service) {
     _currentVideoService = service;
     if (kDebugMode) {
-      print("🔔 Bridge: Video service reference set");
+      debugPrint("🔔 Bridge: Video service reference set");
     }
   }
 
   static void markProcessingCompleted() {
     if (_currentVideoService != null) {
       if (kDebugMode) {
-        print("🔔 Bridge: Marking processing as completed");
+        debugPrint("🔔 Bridge: Marking processing as completed");
       }
       _currentVideoService!.markCompleted();
     }
@@ -90,15 +90,15 @@ class PostShareFlowBridge {
       await _waitForProcessingOverlayFrame();
       await PostService().createPost(caption: caption, mediaPath: mediaPath);
       if (kDebugMode) {
-        print("✅ API call completed successfully");
+        debugPrint("✅ API call completed successfully");
       }
       await notifyPostCreated();
       if (kDebugMode) {
-        print("🔔 Post created notification finished");
+        debugPrint("🔔 Post created notification finished");
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ POST ERROR: $e");
+        debugPrint("❌ POST ERROR: $e");
       }
       onShareUploadError?.call();
     }
@@ -109,21 +109,21 @@ class PostShareFlowBridge {
   /// after refresh so the overlay can close after the feed is updated.
   static Future<void> notifyPostCreated() async {
     if (kDebugMode) {
-      print("🔔 Bridge: notifyPostCreated called");
+      debugPrint("🔔 Bridge: notifyPostCreated called");
     }
 
     if (_videoControllerRef != null) {
       if (kDebugMode) {
-        print("🔔 Bridge: Refreshing video feed (awaiting GET)...");
+        debugPrint("🔔 Bridge: Refreshing video feed (awaiting GET)...");
       }
       final result = await _videoControllerRef!.initVideos(refresh: true);
       if (kDebugMode) {
         if (result == true) {
-          print("✅ Bridge: Video feed refreshed successfully");
+          debugPrint("✅ Bridge: Video feed refreshed successfully");
         } else if (result == false) {
-          print("❌ Bridge: Video feed refresh failed");
+          debugPrint("❌ Bridge: Video feed refresh failed");
         } else {
-          print("🔔 Bridge: Video feed refresh superseded by newer load");
+          debugPrint("🔔 Bridge: Video feed refresh superseded by newer load");
         }
       }
       if (result == true) {
@@ -133,8 +133,8 @@ class PostShareFlowBridge {
       }
     } else {
       if (kDebugMode) {
-        print("❌ Bridge: No refresh method available, setting flag");
-        print(
+        debugPrint("❌ Bridge: No refresh method available, setting flag");
+        debugPrint(
           "🔄 Bridge: Refresh flag set, will refresh when home tab is accessed",
         );
       }
@@ -149,7 +149,7 @@ class PostShareFlowBridge {
     bool needed = _needsRefresh;
     if (needed) {
       if (kDebugMode) {
-        print("🔄 Bridge: Refresh needed, clearing flag");
+        debugPrint("🔄 Bridge: Refresh needed, clearing flag");
       }
       _needsRefresh = false;
     }
@@ -165,7 +165,7 @@ class PostShareFlowBridge {
     _currentVideoService = null;
     _needsRefresh = false;
     if (kDebugMode) {
-      print("🔔 Bridge: All callbacks cleared");
+      debugPrint("🔔 Bridge: All callbacks cleared");
     }
   }
 }

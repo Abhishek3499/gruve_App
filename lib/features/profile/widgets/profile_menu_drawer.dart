@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/auth/logout/logout_widget.dart';
+import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';
@@ -238,33 +240,50 @@ class ProfileMenuDrawer extends StatelessWidget {
                       const SizedBox(height: 10),
 
                       /// Logout
-                      GestureDetector(
-                        onTap: () {
-                          debugPrint("🔥 LOGOUT CLICKED");
+                      Consumer<LogoutProvider>(
+                        builder: (context, logoutProvider, child) {
+                          return GestureDetector(
+                            onTap: logoutProvider.isLoading ? null : () {
+                              debugPrint("🔥 LOGOUT CLICKED");
 
-                          Navigator.pop(context); // 👈 close drawer first
+                              Navigator.pop(context); // 👈 close drawer first
+                              logoutProvider.clearError(); // Clear previous errors
 
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (dialogContext) => LogoutWidget(),
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (dialogContext) => LogoutWidget(),
+                              );
+                            },
+
+                            child: Row(
+                              children: [
+                                Icon(
+                                  logoutProvider.isLoading 
+                                      ? Icons.hourglass_empty 
+                                      : Icons.logout, 
+                                  color: logoutProvider.isLoading 
+                                      ? Colors.grey 
+                                      : Colors.white, 
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  logoutProvider.isLoading 
+                                      ? "Logging out..." 
+                                      : "Log out",
+                                  style: TextStyle(
+                                    color: logoutProvider.isLoading 
+                                        ? Colors.grey 
+                                        : Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
-
-                        child: Row(
-                          children: const [
-                            Icon(Icons.logout, color: Colors.white, size: 22),
-                            SizedBox(width: 16),
-                            Text(
-                              "Log out",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
 
                       const SizedBox(height: 30),

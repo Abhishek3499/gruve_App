@@ -63,12 +63,12 @@ class _BlockedScreenState extends State<BlockedScreen> {
                         name: user.name,
                         username: user.username,
                         onUnblock: () async {
-                          print('🟢 Unblock button tapped');
+                          debugPrint('🟢 Unblock button tapped');
                           // Save references BEFORE async operations
                           final blockProvider = context.read<BlockProvider>();
                           final scaffoldMessenger = ScaffoldMessenger.of(context);
                           
-                          print('🟢 Opening dialog...');
+                          debugPrint('🟢 Opening dialog...');
                           final result = await showDialog<bool>(
                             context: context,
                             barrierColor: Colors.black.withValues(alpha: 0.7),
@@ -77,17 +77,17 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 name: user.name,
                                 username: user.username,
                                 onConfirm: () {
-                                  print('🟢 Yes button clicked, popping with true');
+                                  debugPrint('🟢 Yes button clicked, popping with true');
                                   Navigator.of(dialogContext).pop(true);
                                 },
                               );
                             },
                           );
 
-                          print('🟢 Dialog result: $result');
+                          debugPrint('🟢 Dialog result: $result');
                           
                           if (result == true) {
-                            print('🟢 Result is true, showing loading snackbar...');
+                            debugPrint('🟢 Result is true, showing loading snackbar...');
                             
                             // 🚀 INSTANT LOADING SNACKBAR
                             scaffoldMessenger.showSnackBar(
@@ -126,14 +126,16 @@ class _BlockedScreenState extends State<BlockedScreen> {
                               ),
                             );
                             
-                            print('🟢 Calling API...');
+                            debugPrint('🟢 Calling API...');
                             try {
                               await blockProvider.toggleBlockUser(
                                 user.userId,
                                 refreshList: true,
                               );
-                              
-                              print('🟢 API success, showing success snackbar...');
+
+                              if (!mounted) return;
+
+                              debugPrint('🟢 API success, showing success snackbar...');
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
@@ -162,10 +164,13 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                   elevation: 8,
                                 ),
                               );
-                              print('🟢 Success snackbar shown!');
+                              debugPrint('🟢 Success snackbar shown!');
                             } catch (e) {
-                              print('🔴 Error: $e');
+                              debugPrint('🔴 Error: $e');
                               debugPrint('Error unblocking user: $e');
+
+                              if (!mounted) return;
+
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
@@ -196,7 +201,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
                               );
                             }
                           } else {
-                            print('🟡 Dialog cancelled or result is: $result');
+                            debugPrint('🟡 Dialog cancelled or result is: $result');
                           }
                         },
                       );
