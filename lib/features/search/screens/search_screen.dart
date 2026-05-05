@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import '../widgets/search_bar.dart';
+import 'package:gruve_app/features/search/widgets/search_bar.dart';
+
 import '../widgets/profile_section.dart';
 import '../widgets/horizontal_image_list.dart';
 import 'search_page.dart';

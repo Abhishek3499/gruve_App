@@ -105,7 +105,9 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
                               leading: CircleAvatar(
-                                backgroundImage: AssetImage(user.avatar),
+                                backgroundImage: user.avatar.startsWith('http')
+                                    ? NetworkImage(user.avatar)
+                                    : AssetImage(user.avatar) as ImageProvider,
                               ),
                               title: Text(
                                 user.name,

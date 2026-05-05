@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
-import '../../story_preview/widgets/hide_story_widgets/searchbar_re.dart';
+import '../../search/widgets/search_bar.dart';
 import '../widgets/user_list_item.dart';
 import '../data/dummy_search_users.dart';
 
@@ -33,7 +33,22 @@ class SearchUsersScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  const SearchbarRe(hintText: 'Search users'),
+                  const CustomSearchBar(
+                    hintText: 'Search users',
+                    borderRadius: 25,
+                    borderWidth: 4,
+                    backgroundGradient: LinearGradient(
+                      colors: [Color(0xFF72008D), Color(0xFF511263)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Colors.white,
+                      size: 23,
+                    ),
+                    hintStyle: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
                 ],
               ),
             ),

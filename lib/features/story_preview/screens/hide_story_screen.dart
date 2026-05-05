@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/search/widgets/search_bar.dart';
 import 'package:gruve_app/features/story_preview/widgets/hide_story_widgets/done_button.dart';
 import 'package:gruve_app/features/story_preview/widgets/hide_story_widgets/hide_story_header.dart';
-import 'package:gruve_app/features/story_preview/widgets/hide_story_widgets/searchbar_re.dart';
 import 'package:gruve_app/features/story_preview/widgets/hide_story_widgets/user_list.dart';
 
 class HideStoryScreen extends StatelessWidget {
@@ -34,7 +34,19 @@ class HideStoryScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            const SearchbarRe(hintText: 'Search'),
+            const CustomSearchBar(
+              hintText: 'Search',
+              width: 362,
+              borderRadius: 25,
+              borderWidth: 4,
+              backgroundGradient: LinearGradient(
+                colors: [Color(0xFF72008D), Color(0xFF511263)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              prefixIcon: Icon(Icons.search, color: Colors.white, size: 23),
+              hintStyle: TextStyle(color: Colors.white, fontSize: 14),
+            ),
 
             const SizedBox(height: 20),
 

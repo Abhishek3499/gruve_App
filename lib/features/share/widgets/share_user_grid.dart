@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
+import 'package:gruve_app/features/search/widgets/search_bar.dart';
 
-import '../data/dummy_share_users.dart';
-import '../models/share_user_model.dart';
 import 'share_user_item.dart';
 
 class ShareUserGrid extends StatefulWidget {
@@ -13,27 +13,53 @@ class ShareUserGrid extends StatefulWidget {
 
 class _ShareUserGridState extends State<ShareUserGrid> {
   final TextEditingController _searchController = TextEditingController();
-  List<ShareUserModel> _filteredUsers = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _filteredUsers = DummyShareUsers.getShareUsers();
-  }
+  final DebouncedUserSearch _userSearch = DebouncedUserSearch();
+  List<SearchUser> _users = [];
+  bool _isSearching = false;
+  String? _searchError;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _userSearch.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String query) {
     setState(() {
-      _filteredUsers = DummyShareUsers.getFilteredUsers(query);
+      _searchError = null;
+      _isSearching = query.trim().isNotEmpty;
+      if (query.trim().isEmpty) {
+        _users = [];
+      }
     });
+
+    if (query.trim().isEmpty) {
+      _userSearch.clear();
+      return;
+    }
+
+    _userSearch.search(
+      query,
+      onResults: (users) {
+        if (!mounted) return;
+        setState(() {
+          _users = users;
+          _isSearching = false;
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _users = [];
+          _isSearching = false;
+          _searchError = 'Unable to search users right now';
+        });
+      },
+    );
   }
 
-  void _onUserTap(ShareUserModel user) {
+  void _onUserTap(SearchUser user) {
     // Handle user selection for sharing
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -49,64 +75,86 @@ class _ShareUserGridState extends State<ShareUserGrid> {
     return Column(
       children: [
         // Search bar
-        Container(
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Color.fromARGB(77, 23, 22, 22),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Color.fromARGB(248, 79, 2, 98), width: 1),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: const InputDecoration(
-                    hintText: ' Search',
-                    hintStyle: TextStyle(color: Colors.white, fontSize: 14),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: CustomSearchBar(
+            controller: _searchController,
+            hintText: ' Search',
+            backgroundColor: const Color.fromARGB(77, 23, 22, 22),
+            borderGradient: null,
+            border: Border.all(
+              color: const Color.fromARGB(248, 79, 2, 98),
+              width: 1,
+            ),
+            borderWidth: 0,
+            borderRadius: 15,
+            height: 48,
+            prefixIcon: null,
+            textStyle: const TextStyle(color: Colors.white, fontSize: 14),
+            hintStyle: const TextStyle(color: Colors.white, fontSize: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 14,
+            ),
+            onChanged: _onSearchChanged,
           ),
         ),
 
         const SizedBox(height: 16),
 
         // Users grid
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: _filteredUsers.length,
-            itemBuilder: (context, index) {
-              final user = _filteredUsers[index];
-              return ShareUserItem(user: user, onTap: () => _onUserTap(user));
-            },
-          ),
-        ),
+        Expanded(child: _buildContent()),
       ],
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isSearching) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+      );
+    }
+
+    if (_searchError != null) {
+      return Center(
+        child: Text(
+          _searchError!,
+          style: const TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+      );
+    }
+
+    if (_searchController.text.trim().isEmpty) {
+      return const Center(
+        child: Text(
+          'Search users to share',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+      );
+    }
+
+    if (_users.isEmpty) {
+      return const Center(
+        child: Text(
+          'No users found',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: _users.length,
+      itemBuilder: (context, index) {
+        final user = _users[index];
+        return ShareUserItem(user: user, onTap: () => _onUserTap(user));
+      },
     );
   }
 }

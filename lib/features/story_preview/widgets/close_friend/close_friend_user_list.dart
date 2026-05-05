@@ -1,68 +1,90 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/story_preview/models/close_frind_user_model.dart';
+import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
 
 import 'close_friend_user_tile.dart';
 
-class CloseFriendUserList extends StatefulWidget {
-  const CloseFriendUserList({super.key});
+class CloseFriendUserList extends StatelessWidget {
+  final List<SearchUser> users;
+  final Set<String> selectedUserIds;
+  final bool isSearching;
+  final String? errorMessage;
+  final bool hasQuery;
+  final ValueChanged<SearchUser> onToggle;
 
-  @override
-  State<CloseFriendUserList> createState() => _CloseFriendUserListState();
-}
-
-class _CloseFriendUserListState extends State<CloseFriendUserList> {
-  List<CloseFrindUserModel> users = [
-    CloseFrindUserModel(name: "Skyler", handle: "Skyler@&\$213"),
-    CloseFrindUserModel(name: "Luna", handle: "Luna@893"),
-    CloseFrindUserModel(name: "Alex", handle: "Alex@777"),
-    CloseFrindUserModel(name: "Sophia", handle: "Sophia@341"),
-  ];
+  const CloseFriendUserList({
+    super.key,
+    required this.users,
+    required this.selectedUserIds,
+    required this.isSearching,
+    required this.hasQuery,
+    required this.onToggle,
+    this.errorMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
-    List<CloseFrindUserModel> selected = users
-        .where((u) => u.isSelected)
-        .toList();
+    if (isSearching) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+      );
+    }
 
-    List<CloseFrindUserModel> suggest = users
-        .where((u) => !u.isSelected)
+    if (errorMessage != null) {
+      return Center(
+        child: Text(
+          errorMessage!,
+          style: const TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+      );
+    }
+
+    if (!hasQuery) {
+      return const Center(
+        child: Text(
+          'Search to add close friends',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+      );
+    }
+
+    if (users.isEmpty) {
+      return const Center(
+        child: Text(
+          'No users found',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
+        ),
+      );
+    }
+
+    final selected = users
+        .where((user) => selectedUserIds.contains(user.id))
+        .toList();
+    final suggested = users
+        .where((user) => !selectedUserIds.contains(user.id))
         .toList();
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        /// SELECTED USERS
         if (selected.isNotEmpty)
           ...selected.map(
             (user) => CloseFriendUserTile(
               user: user,
-              onTap: () {
-                setState(() {
-                  user.isSelected = !user.isSelected;
-                });
-              },
+              isSelected: true,
+              onTap: () => onToggle(user),
             ),
           ),
-
         if (selected.isNotEmpty) const SizedBox(height: 20),
-
-        /// SUGGEST TITLE
         const Text(
-          "Suggest",
+          'Suggest',
           style: TextStyle(color: Colors.white, fontSize: 16),
         ),
-
         const SizedBox(height: 10),
-
-        /// SUGGEST USERS
-        ...suggest.map(
+        ...suggested.map(
           (user) => CloseFriendUserTile(
             user: user,
-            onTap: () {
-              setState(() {
-                user.isSelected = !user.isSelected;
-              });
-            },
+            isSelected: false,
+            onTap: () => onToggle(user),
           ),
         ),
       ],

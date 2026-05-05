@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import '../models/share_user_model.dart';
+import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
+import 'package:gruve_app/core/assets.dart';
 
 class ShareUserItem extends StatelessWidget {
-  final ShareUserModel user;
+  final SearchUser user;
   final VoidCallback? onTap;
 
-  const ShareUserItem({
-    super.key,
-    required this.user,
-    this.onTap,
-  });
+  const ShareUserItem({super.key, required this.user, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +30,10 @@ class ShareUserItem extends StatelessWidget {
                   ),
                 ),
                 child: ClipOval(
-                  child: Image.asset(
-                    user.avatar,
+                  child: Image(
+                    image: user.avatar.isNotEmpty
+                        ? NetworkImage(user.avatar)
+                        : const AssetImage(AppAssets.profile) as ImageProvider,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -49,7 +48,7 @@ class ShareUserItem extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Online indicator
               if (user.isOnline)
                 Positioned(
@@ -61,18 +60,15 @@ class ShareUserItem extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.green,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
                   ),
                 ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Username
           SizedBox(
             width: 70,

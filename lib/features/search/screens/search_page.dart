@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../models/search_history_model.dart';
 import '../widgets/search_bar.dart';
@@ -14,8 +15,12 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final DebouncedUserSearch _userSearch = DebouncedUserSearch();
 
   List<SearchHistoryModel> _searchHistory = [];
+  List<SearchUser> _users = [];
+  bool _isSearching = false;
+  String? _searchError;
 
   @override
   void initState() {
@@ -27,6 +32,7 @@ class _SearchPageState extends State<SearchPage> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _userSearch.dispose();
     super.dispose();
   }
 
@@ -71,8 +77,43 @@ class _SearchPageState extends State<SearchPage> {
     _addToHistory(query);
   }
 
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchError = null;
+      _isSearching = query.trim().isNotEmpty;
+      if (query.trim().isEmpty) {
+        _users = [];
+      }
+    });
+
+    if (query.trim().isEmpty) {
+      _userSearch.clear();
+      return;
+    }
+
+    _userSearch.search(
+      query,
+      onResults: (users) {
+        if (!mounted) return;
+        setState(() {
+          _users = users;
+          _isSearching = false;
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _users = [];
+          _isSearching = false;
+          _searchError = 'Unable to search users right now';
+        });
+      },
+    );
+  }
+
   void _onHistoryItemTap(String query) {
     _searchController.text = query;
+    _onSearchChanged(query);
     _onSearchSubmitted(query);
   }
 
@@ -109,9 +150,7 @@ class _SearchPageState extends State<SearchPage> {
                       child: CustomSearchBar(
                         controller: _searchController,
                         focusNode: _searchFocusNode,
-                        onChanged: (value) {
-                          setState(() {});
-                        },
+                        onChanged: _onSearchChanged,
                         onSubmitted: _onSearchSubmitted,
                       ),
                     ),
@@ -163,6 +202,52 @@ class _SearchPageState extends State<SearchPage> {
 
                       const SizedBox(height: 20),
                     ],
+
+                    if (_isSearching)
+                      const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFD42BC2),
+                          ),
+                        ),
+                      ),
+
+                    if (_searchError != null)
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Text(
+                            _searchError!,
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    if (_users.isNotEmpty)
+                      ..._users.map(
+                        (user) => ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.white24,
+                            backgroundImage: user.avatar.isNotEmpty
+                                ? NetworkImage(user.avatar)
+                                : AssetImage(AppAssets.profile)
+                                      as ImageProvider,
+                          ),
+                          title: Text(
+                            user.name,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            '@${user.username}',
+                            style: const TextStyle(color: Colors.white54),
+                          ),
+                          onTap: () => _onSearchSubmitted(user.username),
+                        ),
+                      ),
 
                     /// EMPTY STATE
                     if (showEmptyState)

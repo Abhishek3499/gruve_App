@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
+import 'package:gruve_app/features/search/widgets/search_bar.dart';
 
 class AlsoShareSheet extends StatefulWidget {
   const AlsoShareSheet({super.key});
@@ -9,49 +11,60 @@ class AlsoShareSheet extends StatefulWidget {
 
 class _AlsoShareSheetState extends State<AlsoShareSheet> {
   final TextEditingController _searchController = TextEditingController();
-  final List<UserModel> _allUsers = [
-    UserModel(name: 'Your Story', username: '@candice', isSelected: false),
-    UserModel(name: 'Alex Johnson', username: '@alexj', isSelected: false),
-    UserModel(name: 'Sarah Williams', username: '@sarahw', isSelected: false),
-    UserModel(name: 'Mike Davis', username: '@miked', isSelected: false),
-    UserModel(name: 'Emma Wilson', username: '@emmaw', isSelected: false),
-    UserModel(name: 'Chris Brown', username: '@chrisb', isSelected: false),
-    UserModel(name: 'Lisa Anderson', username: '@lisaa', isSelected: false),
-    UserModel(name: 'David Miller', username: '@davidm', isSelected: false),
-  ];
-  List<UserModel> _filteredUsers = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _filteredUsers = List.from(_allUsers);
-    _searchController.addListener(_onSearchChanged);
-  }
+  final DebouncedUserSearch _userSearch = DebouncedUserSearch();
+  final Set<String> _selectedUserIds = {};
+  List<SearchUser> _users = [];
+  bool _isSearching = false;
+  String? _searchError;
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _userSearch.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
+  void _onSearchChanged(String query) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredUsers = List.from(_allUsers);
-      } else {
-        _filteredUsers = _allUsers.where((user) =>
-          user.name.toLowerCase().contains(query) ||
-          user.username.toLowerCase().contains(query)
-        ).toList();
+      _searchError = null;
+      _isSearching = query.trim().isNotEmpty;
+      if (query.trim().isEmpty) {
+        _users = [];
       }
     });
+
+    if (query.trim().isEmpty) {
+      _userSearch.clear();
+      return;
+    }
+
+    _userSearch.search(
+      query,
+      onResults: (users) {
+        if (!mounted) return;
+        setState(() {
+          _users = users;
+          _isSearching = false;
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _users = [];
+          _isSearching = false;
+          _searchError = 'Unable to search users right now';
+        });
+      },
+    );
   }
 
-  void _toggleUserSelection(int index) {
+  void _toggleUserSelection(SearchUser user) {
     setState(() {
-      _filteredUsers[index].isSelected = !_filteredUsers[index].isSelected;
+      if (_selectedUserIds.contains(user.id)) {
+        _selectedUserIds.remove(user.id);
+      } else {
+        _selectedUserIds.add(user.id);
+      }
     });
   }
 
@@ -65,7 +78,6 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
       ),
       child: Column(
         children: [
-          // Drag Handle
           Container(
             margin: const EdgeInsets.only(top: 12),
             width: 40,
@@ -75,10 +87,7 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // Title
           const Text(
             'Share',
             style: TextStyle(
@@ -87,68 +96,78 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _buildSearchBar(),
           ),
-
           const SizedBox(height: 20),
-
-          // Users List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredUsers.length,
-              itemBuilder: (context, index) {
-                return _UserListTile(
-                  user: _filteredUsers[index],
-                  onShareTap: () => _toggleUserSelection(index),
-                );
-              },
-            ),
-          ),
-
-          // Done Button
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: _buildDoneButton(),
-          ),
+          Expanded(child: _buildUserList()),
+          Padding(padding: const EdgeInsets.all(20), child: _buildDoneButton()),
         ],
       ),
     );
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
+    return CustomSearchBar(
+      controller: _searchController,
+      hintText: 'Search users...',
+      backgroundColor: const Color(0xFF1E1A2E),
+      borderRadius: 25,
+      prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+      textStyle: const TextStyle(color: Colors.white, fontSize: 16),
+      hintStyle: const TextStyle(color: Colors.white54, fontSize: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      onChanged: _onSearchChanged,
+    );
+  }
+
+  Widget _buildUserList() {
+    if (_isSearching) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+      );
+    }
+
+    if (_searchError != null) {
+      return Center(
+        child: Text(
+          _searchError!,
+          style: const TextStyle(color: Colors.white54, fontSize: 14),
         ),
-      ),
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(23),
-          color: const Color(0xFF1E1A2E),
+      );
+    }
+
+    if (_searchController.text.trim().isEmpty) {
+      return const Center(
+        child: Text(
+          'Search users to share',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
         ),
-        child: TextField(
-          controller: _searchController,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          decoration: const InputDecoration(
-            hintText: 'Search users...',
-            hintStyle: TextStyle(color: Colors.white54, fontSize: 16),
-            prefixIcon: Icon(Icons.search, color: Colors.white54, size: 20),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
+      );
+    }
+
+    if (_users.isEmpty) {
+      return const Center(
+        child: Text(
+          'No users found',
+          style: TextStyle(color: Colors.white54, fontSize: 14),
         ),
-      ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _users.length,
+      itemBuilder: (context, index) {
+        final user = _users[index];
+        return _UserListTile(
+          user: user,
+          isSelected: _selectedUserIds.contains(user.id),
+          onShareTap: () => _toggleUserSelection(user),
+        );
+      },
     );
   }
 
@@ -156,8 +175,7 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
-        final selectedUsers = _allUsers.where((user) => user.isSelected).toList();
-        debugPrint('Sharing with ${selectedUsers.length} users');
+        debugPrint('Sharing with ${_selectedUserIds.length} users');
       },
       child: Container(
         width: double.infinity,
@@ -180,24 +198,14 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
   }
 }
 
-class UserModel {
-  final String name;
-  final String username;
-  bool isSelected;
-
-  UserModel({
-    required this.name,
-    required this.username,
-    this.isSelected = false,
-  });
-}
-
 class _UserListTile extends StatelessWidget {
-  final UserModel user;
+  final SearchUser user;
+  final bool isSelected;
   final VoidCallback onShareTap;
 
   const _UserListTile({
     required this.user,
+    required this.isSelected,
     required this.onShareTap,
   });
 
@@ -207,14 +215,13 @@ class _UserListTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          // Profile Avatar
           CircleAvatar(
             radius: 24,
             backgroundColor: Colors.grey[600],
-            backgroundImage: user.name == 'Your Story'
-                ? const NetworkImage('https://i.pravatar.cc/150?u=candice')
+            backgroundImage: user.avatar.isNotEmpty
+                ? NetworkImage(user.avatar)
                 : null,
-            child: user.name != 'Your Story'
+            child: user.avatar.isEmpty
                 ? Text(
                     user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                     style: const TextStyle(
@@ -225,10 +232,7 @@ class _UserListTile extends StatelessWidget {
                   )
                 : null,
           ),
-
           const SizedBox(width: 16),
-
-          // User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,17 +247,12 @@ class _UserListTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  user.username,
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 14,
-                  ),
+                  '@${user.username}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 14),
                 ),
               ],
             ),
           ),
-
-          // Share Button
           GestureDetector(
             onTap: onShareTap,
             child: AnimatedContainer(
@@ -262,20 +261,20 @@ class _UserListTile extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: user.isSelected
+                gradient: isSelected
                     ? const LinearGradient(
                         colors: [Color(0xFF9B27AF), Color(0xFF6A0DAD)],
                       )
                     : null,
-                color: user.isSelected ? null : Colors.transparent,
-                border: user.isSelected
+                color: isSelected ? null : Colors.transparent,
+                border: isSelected
                     ? null
                     : Border.all(color: Colors.white38, width: 1),
               ),
               alignment: Alignment.center,
               child: Text(
-                user.isSelected ? 'Shared' : 'Share',
-                style: TextStyle(
+                isSelected ? 'Shared' : 'Share',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
