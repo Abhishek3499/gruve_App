@@ -4,6 +4,8 @@ import 'package:gruve_app/core/assets.dart';
 import '../models/search_history_model.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/search_history_item.dart';
+import '../data/services/recent_search_service.dart';
+import '../../user_profile/presentation/screens/user_profile_screen.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -16,8 +18,10 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final DebouncedUserSearch _userSearch = DebouncedUserSearch();
+  final RecentSearchService _recentSearchService = RecentSearchService();
 
   List<SearchHistoryModel> _searchHistory = [];
+  List<SearchUser> _recentSearches = [];
   List<SearchUser> _users = [];
   bool _isSearching = false;
   String? _searchError;
@@ -26,6 +30,16 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
     _searchFocusNode.requestFocus();
+    _loadRecentSearches();
+  }
+
+  Future<void> _loadRecentSearches() async {
+    final recentSearches = await _recentSearchService.getRecentSearches();
+    if (mounted) {
+      setState(() {
+        _recentSearches = recentSearches;
+      });
+    }
   }
 
   @override
@@ -117,10 +131,32 @@ class _SearchPageState extends State<SearchPage> {
     _onSearchSubmitted(query);
   }
 
+  Future<void> _navigateToUserProfile(SearchUser user) async {
+    // Save user to recent searches
+    await _recentSearchService.addRecentSearch(user);
+
+    // Navigate immediately to profile screen using same screen as video overlay
+    if (!mounted) return;
+    
+    debugPrint('🔍 [SearchPage] Navigating to profile for user: ${user.username} (ID: ${user.id})');
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(
+          profileUserId: user.id,
+          userName: user.name,
+          profileImageUrl: user.avatar.isNotEmpty ? user.avatar : null,
+          initialHasActiveStory: user.isOnline, // Use isOnline as story indicator
+        ),
+      ),
+    ).then((_) => _loadRecentSearches()); // refresh recent searches on back
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool showEmptyState =
-        _searchHistory.isEmpty && _searchController.text.isEmpty;
+        _recentSearches.isEmpty && _searchHistory.isEmpty && _searchController.text.isEmpty;
 
     return Scaffold(
       body: Container(
@@ -162,7 +198,75 @@ class _SearchPageState extends State<SearchPage> {
               Expanded(
                 child: ListView(
                   children: [
-                    /// SEARCH HISTORY
+                    /// RECENT SEARCHES (shown when search field is empty)
+                    if (_searchController.text.isEmpty && _recentSearches.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Recent',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await _recentSearchService.clearAll();
+                                _loadRecentSearches();
+                              },
+                              child: const Text(
+                                'Clear all',
+                                style: TextStyle(
+                                  color: Color(0xFFD42BC2),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      ..._recentSearches.map(
+                        (user) => ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.white24,
+                            backgroundImage: user.avatar.isNotEmpty
+                                ? NetworkImage(user.avatar)
+                                : AssetImage(AppAssets.profile)
+                                      as ImageProvider,
+                          ),
+                          title: Text(
+                            user.name,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            '@${user.username}',
+                            style: const TextStyle(color: Colors.white54),
+                          ),
+                          trailing: GestureDetector(
+                            onTap: () async {
+                              await _recentSearchService.removeRecentSearch(user.id);
+                              _loadRecentSearches();
+                            },
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                          onTap: () => _navigateToUserProfile(user),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+
+                    /// SEARCH HISTORY (legacy - shown when search has text)
                     if (_searchHistory.isNotEmpty) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -245,7 +349,7 @@ class _SearchPageState extends State<SearchPage> {
                             '@${user.username}',
                             style: const TextStyle(color: Colors.white54),
                           ),
-                          onTap: () => _onSearchSubmitted(user.username),
+                          onTap: () => _navigateToUserProfile(user),
                         ),
                       ),
 

@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
-import 'package:provider/provider.dart';
+import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
+import '../data/models/user_profile_model.dart';
 
 import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
@@ -14,7 +16,9 @@ import '../../../widgets/stats_row_skeleton.dart';
 import '../../../widgets/profile_grid_skeleton.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? userId;
+
+  const ProfileScreen({super.key, this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -36,11 +40,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
-    _log('[ProfileScreen] Initializing profile screen');
+    _log('[ProfileScreen] Initializing profile screen with userId: ${widget.userId}');
 
-    final provider = context.read<ProfileProvider>();
-    if (provider.user == null) {
-      provider.fetchProfileData();
+    // Handle both own profile (userId is null) and other users (userId is provided)
+    if (widget.userId == null) {
+      // Own profile - use existing ProfileProvider
+      final provider = context.read<ProfileProvider>();
+      if (provider.user == null) {
+        provider.fetchProfileData();
+      }
+    } else {
+      // Other user's profile - fetch using UserProfileProvider after first frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<UserProfileProvider>().fetchProfile(widget.userId!);
+        }
+      });
     }
 
     _scrollController.addListener(_onProfileScroll);
@@ -83,34 +98,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ProfileProvider>();
+    // Handle both own profile and other users
+    if (widget.userId == null) {
+      // Own profile - use existing ProfileProvider
+      final provider = context.watch<ProfileProvider>();
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFF42174C),
-      endDrawer: ProfileMenuDrawer(profileImage: provider.user?.profileImage),
-      body: Stack(
-        children: [
-          /// 🔹 MAIN UI (only if data exists)
-          if (provider.user != null) _buildMainContent(provider),
+      return Scaffold(
+        extendBody: true,
+        backgroundColor: const Color(0xFF42174C),
+        endDrawer: ProfileMenuDrawer(profileImage: provider.user?.profileImage),
+        body: Stack(
+          children: [
+            /// 🔹 MAIN UI (only if data exists)
+            if (provider.user != null) _buildMainContentForOwnProfile(provider),
 
-          /// 🔹 SKELETON (first load only)
-          if (provider.user == null) _buildSkeleton(),
+            /// 🔹 SKELETON (first load only)
+            if (provider.user == null) _buildSkeleton(),
 
-          /// 🔹 ERROR OVERLAY
-          if (provider.errorMessage != null)
-            Center(
-              child: Text(
-                provider.errorMessage!,
-                style: const TextStyle(color: Colors.white),
+            /// 🔹 ERROR OVERLAY
+            if (provider.errorMessage != null)
+              Center(
+                child: Text(
+                  provider.errorMessage!,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
+          ],
+        ),
+      );
+    } else {
+      // Other user's profile - use UserProfileProvider
+      return Consumer<UserProfileProvider>(
+        builder: (context, userProfileProvider, child) {
+          return Scaffold(
+            extendBody: true,
+            backgroundColor: const Color(0xFF42174C),
+            body: Stack(
+              children: [
+                /// 🔹 LOADING STATE
+                if (userProfileProvider.isLoading)
+                  const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  ),
+
+                /// 🔹 ERROR STATE
+                if (userProfileProvider.hasError)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          userProfileProvider.errorMessage ?? 'Failed to load profile',
+                          style: const TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            userProfileProvider.fetchProfile(widget.userId!);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD42BC2),
+                          ),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                /// 🔹 MAIN UI (only if data exists)
+                if (userProfileProvider.hasData) 
+                  _buildMainContentForOtherUser(userProfileProvider.profile!),
+              ],
             ),
-        ],
-      ),
-    );
+          );
+        },
+      );
+    }
   }
 
-  Widget _buildMainContent(ProfileProvider provider) {
+  Widget _buildMainContentForOwnProfile(ProfileProvider provider) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -205,6 +274,125 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContentForOtherUser(UserProfile userProfile) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF42174C), Color(0xFF212235)],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Stack(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 130),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7D63D1).withValues(alpha: 0.12),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(100),
+                    topRight: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 110),
+                    // Show user stats from UserProfile
+                    StatsRow(
+                      subscribersCount: userProfile.followersCount,
+                      likesCount: userProfile.followingCount,
+                      videosCount: userProfile.postsCount,
+                    ),
+                    const SizedBox(height: 25),
+                    // Bio section
+                    if (userProfile.bio.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          userProfile.bio,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    // Follow/Following button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // TODO: Implement follow/unfollow functionality
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Follow functionality coming soon')),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: userProfile.isFollowing 
+                              ? Colors.grey 
+                              : const Color(0xFFD42BC2),
+                          minimumSize: const Size(double.infinity, 45),
+                        ),
+                        child: Text(
+                          userProfile.isFollowing ? 'Following' : 'Follow',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FilterTabs(
+                      selectedIndex: selectedTab,
+                      onTabSelected: (index) {
+                        setState(() {
+                          selectedTab = index;
+                        });
+                        if (_scrollController.hasClients) {
+                          _scrollController.jumpTo(0);
+                        }
+                        // TODO: Load posts for other user
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: const ProfileGridSkeleton(itemCount: 9, showDraftItem: false),
+                    ),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 30,
+                left: 0,
+                right: 0,
+                child: ProfileHeader(
+                  fullName: userProfile.fullName.trim(),
+                  username: _displayUsername(userProfile.username),
+                  profileImage: userProfile.profilePicture,
+                  hasActiveStory: false, // TODO: Add story status to UserProfile model
+                  onProfileUpdated: null, // Cannot edit other user's profile
+                ),
+              ),
+            ],
           ),
         ),
       ),
