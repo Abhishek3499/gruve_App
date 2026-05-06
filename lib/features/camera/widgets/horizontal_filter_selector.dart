@@ -118,6 +118,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
                   ),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
+
                     transform: Matrix4.identity()
                       ..scale(
                         isSelected ? 1.2 : 1.0,

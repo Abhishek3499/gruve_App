@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import '../screen/search_users_screen.dart';
+import '../../search/screens/search_page.dart';
 import 'message_avatar_list.dart';
 
 class MessageHeader extends StatelessWidget {
@@ -56,10 +56,11 @@ class MessageHeader extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
                     onTap: () {
+                      debugPrint('🔍 [MessageHeader] Opening search from message header');
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const SearchUsersScreen(),
+                          builder: (context) => const SearchPage(),
                         ),
                       );
                     },
