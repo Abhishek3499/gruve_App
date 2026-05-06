@@ -6,6 +6,7 @@ import '../widgets/search_bar.dart';
 import '../widgets/search_history_item.dart';
 import '../data/services/recent_search_service.dart';
 import '../../user_profile/presentation/screens/user_profile_screen.dart';
+import '../../../../core/widgets/shimmer/search_shimmer.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -308,13 +309,11 @@ class _SearchPageState extends State<SearchPage> {
                     ],
 
                     if (_isSearching)
+                      // ✅ SHIMMER while searching — shows user row shapes
+                      // Prevents the jarring spinner → list jump
                       const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFD42BC2),
-                          ),
-                        ),
+                        padding: EdgeInsets.only(top: 16),
+                        child: SearchResultsShimmer(itemCount: 6),
                       ),
 
                     if (_searchError != null)

@@ -10,6 +10,7 @@ import '../../../../core/network/api_client.dart';
 import '../data/datasource/user_remote_datasource.dart';
 import '../data/repository/user_repository_impl.dart';
 import '../domain/repository/user_repository.dart';
+import '../../../../core/widgets/shimmer/chat_shimmer.dart';
 
 class MessageScreen extends StatefulWidget {
   const MessageScreen({super.key});
@@ -20,6 +21,10 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen> {
   List<ChatUser> _chatUsers = [];
+  // ✅ Track initial load separately from refresh
+  // isInitialLoading = true only on first open, shows shimmer
+  // _isRefreshing = true on pull-to-refresh, shows RefreshIndicator
+  bool _isInitialLoading = true;
   bool _isRefreshing = false;
 
   @override
@@ -29,8 +34,14 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _loadChatUsers() {
-    setState(() {
-      _chatUsers = DummyMessages.getChatUsers();
+    // Simulate initial load delay so shimmer is visible
+    // Replace this Future.delayed with your real API call when ready
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      setState(() {
+        _chatUsers = DummyMessages.getChatUsers();
+        _isInitialLoading = false;
+      });
     });
   }
 
@@ -143,7 +154,11 @@ class _MessageScreenState extends State<MessageScreen> {
                             top: Radius.circular(40),
                           ),
                         ),
-                        child: ListView.builder(
+                        child: _isInitialLoading
+                            // ✅ SHIMMER on first load — shows chat row shapes
+                            // so user knows what's coming before data arrives
+                            ? const ChatListShimmer(itemCount: 7)
+                            : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _chatUsers.length,
                           itemBuilder: (context, index) {

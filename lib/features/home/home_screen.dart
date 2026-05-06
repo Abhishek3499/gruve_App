@@ -29,6 +29,9 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isDisposed = false;
   VideoFeedController? _videoController;
   VideoService? _currentVideoService;
+  
+  // ✅ CRITICAL: Cache screens to prevent rebuilds
+  late final List<Widget> _screens;
 
   // Double tap detection for Home tab with smooth animations
   int? _lastHomeTapTime;
@@ -49,6 +52,31 @@ class _HomeScreenState extends State<HomeScreen>
     if (kDebugMode) {
       debugPrint("🏠 Home Screen initState called");
     }
+    
+    // ✅ Initialize screens ONCE
+    _screens = [
+      VideoFeed(
+        selectedIndex: _currentIndex,
+        onTabChanged: _onItemTapped,
+        onControllerReady: (controller) {
+          if (kDebugMode) {
+            debugPrint("🏠 Home Screen: VideoFeed onControllerReady called!");
+          }
+          _videoController = controller;
+          PostShareFlowBridge.setVideoController(controller);
+          if (kDebugMode) {
+            debugPrint(
+              "🏠 Home Screen: Video controller ready and set to bridge",
+            );
+          }
+        },
+      ),
+      const SearchScreen(),
+      const SizedBox.shrink(),
+      const SizedBox.shrink(),
+      const ProfileScreen(),
+    ];
+    
     PostShareFlowBridge.onShareStartProcessing = () {
       if (kDebugMode) {
         debugPrint("🏠 Home Screen: Share start processing callback triggered");
@@ -352,35 +380,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  List<Widget> _getScreens() {
-    if (kDebugMode) {
-      debugPrint(
-        "🏠 Home Screen: _getScreens called, _currentIndex: $_currentIndex",
-      );
-    }
-    return [
-      VideoFeed(
-        selectedIndex: _currentIndex,
-        onTabChanged: _onItemTapped,
-        onControllerReady: (controller) {
-          if (kDebugMode) {
-            debugPrint("🏠 Home Screen: VideoFeed onControllerReady called!");
-          }
-          _videoController = controller;
-          PostShareFlowBridge.setVideoController(controller);
-          if (kDebugMode) {
-            debugPrint(
-              "🏠 Home Screen: Video controller ready and set to bridge",
-            );
-          }
-        },
-      ),
-      SearchScreen(),
-      const SizedBox.shrink(),
-      const SizedBox.shrink(),
-      const ProfileScreen(),
-    ];
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -391,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.black,
-      body: IndexedStack(index: _currentIndex, children: _getScreens()),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: CustomBottomNavigationBar(
         selectedIndex: _currentIndex,
         onItemSelected: _onItemTapped,

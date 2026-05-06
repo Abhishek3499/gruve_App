@@ -306,15 +306,24 @@ class VideoFeedController {
 
     final targetIndexes = <int>{};
     
-    // ONLY load current video - no preloading
-    final mediaUrl = _posts[index].media;
-    if (mediaUrl.toLowerCase().contains('.mp4')) {
+    // ✅ TIKTOK STRATEGY: Preload current + next video for smooth swiping
+    // Current video
+    final currentUrl = _posts[index].media;
+    if (currentUrl.toLowerCase().contains('.mp4')) {
       targetIndexes.add(index);
     }
+    
+    // Next video (preload for smooth transition)
+    if (index + 1 < _posts.length) {
+      final nextUrl = _posts[index + 1].media;
+      if (nextUrl.toLowerCase().contains('.mp4')) {
+        targetIndexes.add(index + 1);
+      }
+    }
 
-    // Aggressively dispose ALL other videos
+    // ✅ Dispose videos that are NOT current or next
     final indexesToDispose = _controllers.keys
-        .where((existingIndex) => existingIndex != index)
+        .where((existingIndex) => !targetIndexes.contains(existingIndex))
         .toList();
     for (final mediaIndex in indexesToDispose) {
       final controller = _controllers.remove(mediaIndex);
@@ -327,7 +336,7 @@ class VideoFeedController {
       }
     }
 
-    // Initialize ONLY current video
+    // ✅ Initialize current and next videos
     for (final mediaIndex in targetIndexes) {
       if (_controllers.containsKey(mediaIndex)) {
         continue;

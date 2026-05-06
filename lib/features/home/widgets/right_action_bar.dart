@@ -27,8 +27,6 @@ class RightActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("🔥 RightActionBar rebuild | isLiked: $isLiked"); // ✅ DEBUG
-
     return SizedBox(
       width: 55,
       height: 300,
@@ -83,7 +81,7 @@ class RightActionBar extends StatelessWidget {
   }
 }
 
-class _ActionIcon extends StatelessWidget {
+class _ActionIcon extends StatefulWidget {
   final String iconPath;
   final String? count;
   final VoidCallback? onTap;
@@ -97,29 +95,61 @@ class _ActionIcon extends StatelessWidget {
   });
 
   @override
+  State<_ActionIcon> createState() => _ActionIconState();
+}
+
+class _ActionIconState extends State<_ActionIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _animController.forward().then((_) => _animController.reverse());
+    widget.onTap?.call();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        debugPrint('👉 tapped: ${iconPath.split('/').last}'); // ✅ DEBUG
-        onTap?.call();
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(iconPath, height: size, width: size),
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(widget.iconPath, height: widget.size, width: widget.size),
 
-          if (count != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              count!,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+            if (widget.count != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                widget.count!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

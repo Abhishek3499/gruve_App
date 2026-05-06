@@ -46,13 +46,15 @@ class SearchScreen extends StatelessWidget {
                 /// BANNER
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      AppAssets.baner,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                  child: RepaintBoundary(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        AppAssets.baner,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -60,41 +62,49 @@ class SearchScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 /// FIRST PROFILE
-                ProfileSection(
-                  username: "MindChargedBody",
-                  subtitle: "Challenge",
-                  stats: "1.5 B",
-                  profileImage: AppAssets.profile,
+                const RepaintBoundary(
+                  child: ProfileSection(
+                    username: "MindChargedBody",
+                    subtitle: "Challenge",
+                    stats: "1.5 B",
+                    profileImage: AppAssets.profile,
+                  ),
                 ),
 
                 const SizedBox(height: 16),
 
-                HorizontalImageList(
-                  imageList: [
-                    AppAssets.frame1,
-                    AppAssets.frame2,
-                    AppAssets.frame3,
-                  ],
+                RepaintBoundary(
+                  child: HorizontalImageList(
+                    imageList: [
+                      AppAssets.frame1,
+                      AppAssets.frame2,
+                      AppAssets.frame3,
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 24),
 
                 /// SECOND PROFILE
-                ProfileSection(
-                  username: "Fitnessguru",
-                  subtitle: "Challenge",
-                  stats: "2.3 B",
-                  profileImage: AppAssets.profile,
+                const RepaintBoundary(
+                  child: ProfileSection(
+                    username: "Fitnessguru",
+                    subtitle: "Challenge",
+                    stats: "2.3 B",
+                    profileImage: AppAssets.profile,
+                  ),
                 ),
 
                 const SizedBox(height: 16),
 
-                HorizontalImageList(
-                  imageList: [
-                    AppAssets.frame1,
-                    AppAssets.frame1,
-                    AppAssets.frame3,
-                  ],
+                RepaintBoundary(
+                  child: HorizontalImageList(
+                    imageList: [
+                      AppAssets.frame1,
+                      AppAssets.frame1,
+                      AppAssets.frame3,
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 32),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/assets.dart';
 import '../../comments/models/comment_model.dart';
 import '../../comments/api/comment_service.dart';
+import '../../../../core/widgets/shimmer/comment_shimmer.dart';
 
 class CommentSheet extends StatefulWidget {
   final String postId;
@@ -101,11 +102,9 @@ class _CommentSheetState extends State<CommentSheet> {
           /// COMMENTS LIST
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                    ),
-                  )
+                // ✅ SHIMMER — shows comment row shapes while loading
+                // Prevents the jarring spinner → list jump
+                ? const CommentShimmer(itemCount: 5)
                 : _comments.isEmpty
                     ? const Center(
                         child: Text(

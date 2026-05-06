@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/video_feed_controller.dart';
 import 'optimized_video_overlay.dart';
 import 'video_top_bar.dart';
+import '../../../core/widgets/shimmer/feed_shimmer.dart';
 
 class VideoFeed extends StatefulWidget {
   final int selectedIndex;
@@ -108,14 +109,15 @@ class _VideoFeedState extends State<VideoFeed> {
               hasVideoLoadFailed: hasVideoLoadFailed,
             ),
           ),
-          AnimatedBuilder(
-            animation: _controller.currentIndex,
-            builder: (context, _) => OptimizedVideoOverlay(
+          // ✅ Only rebuild overlay when currentIndex changes, not on every frame
+          ValueListenableBuilder<int>(
+            valueListenable: _controller.currentIndex,
+            builder: (context, currentIdx, _) => OptimizedVideoOverlay(
               selectedTab: selectedContentTab,
               onTabChanged: _onTabChanged,
               controller: _controller,
               onOwnProfileTap: () => widget.onTabChanged(4),
-              currentIndex: _controller.currentIndex.value,
+              currentIndex: currentIdx,
             ),
           ),
         ],
@@ -134,13 +136,17 @@ class _VideoFeedState extends State<VideoFeed> {
       if (hasVideoLoadFailed) return _brokenMediaIcon();
 
       if (videoController != null && videoController.value.isInitialized) {
-        return SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: videoController.value.size.width,
-              height: videoController.value.size.height,
-              child: VideoPlayer(videoController),
+        return AnimatedOpacity(
+          opacity: 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: videoController.value.size.width,
+                height: videoController.value.size.height,
+                child: VideoPlayer(videoController),
+              ),
             ),
           ),
         );
@@ -160,8 +166,8 @@ class _VideoFeedState extends State<VideoFeed> {
       memCacheHeight: 400,
       maxWidthDiskCache: 300,
       maxHeightDiskCache: 600,
-      fadeInDuration: const Duration(milliseconds: 50),
-      fadeOutDuration: const Duration(milliseconds: 50),
+      fadeInDuration: const Duration(milliseconds: 200),
+      fadeOutDuration: const Duration(milliseconds: 100),
       placeholder: (context, url) => Container(color: Colors.black),
       errorWidget: (context, url, error) => _brokenMediaIcon(),
     );
@@ -178,12 +184,9 @@ class _VideoFeedState extends State<VideoFeed> {
   }
 
   Widget _buildInitialLoader() {
-    return const ColoredBox(
-      color: Colors.black,
-      child: Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
-    );
+    // ✅ PRODUCTION SHIMMER — shows exact layout of what's loading
+    // Users immediately understand the structure instead of staring at a spinner
+    return const FeedShimmer();
   }
 
   Widget _buildEmptyState() {
@@ -255,9 +258,10 @@ class _VideoFeedState extends State<VideoFeed> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller.feedRevision,
-      builder: (context, _) {
+    // ✅ Split state: Only rebuild UI when feed structure changes, not on every video load
+    return ValueListenableBuilder<int>(
+      valueListenable: _controller.feedRevision,
+      builder: (context, _, __) {
         final showInitialLoader =
             _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
         final showEmptyState =

@@ -38,14 +38,18 @@ class Comment {
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
-      id: json['id'] ?? '',
+      id: (json['id'] ?? '').toString(),
       body: json['body'] ?? '',
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
+      updatedAt: DateTime.parse(
+        json['updated_at'] ?? DateTime.now().toIso8601String(),
+      ),
       user: CommentUser.fromJson(json['user'] ?? {}),
     );
   }
-  
+
   String get timeAgo {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
@@ -81,7 +85,8 @@ class CommentResponse {
     return CommentResponse(
       postId: json['post_id'] ?? '',
       count: json['count'] ?? 0,
-      results: (json['results'] as List?)
+      results:
+          (json['results'] as List?)
               ?.map((e) => Comment.fromJson(e))
               .toList() ??
           [],
