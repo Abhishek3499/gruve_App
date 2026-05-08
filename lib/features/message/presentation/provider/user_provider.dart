@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import '../../domain/repository/user_repository.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../data/repository/user_repository_impl.dart';
-import '../../data/models/user_model.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;

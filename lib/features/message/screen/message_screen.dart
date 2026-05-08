@@ -113,16 +113,16 @@ class _MessageScreenState extends State<MessageScreen> {
       providers: [
         Provider<ApiClient>(create: (_) => ApiClient()),
         ProxyProvider<ApiClient, UserRemoteDataSource>(
-          update: (_, apiClient, __) => UserRemoteDataSource(apiClient),
+          update: (_, apiClient, _) => UserRemoteDataSource(apiClient),
         ),
         ProxyProvider<UserRemoteDataSource, UserRepository>(
-          update: (_, dataSource, __) => UserRepositoryImpl(dataSource),
+          update: (_, dataSource, _) => UserRepositoryImpl(dataSource),
         ),
         ChangeNotifierProxyProvider<UserRepository, UserProvider>(
           create: (_) => UserProvider(
             UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
           ),
-          update: (_, repository, __) => UserProvider(repository),
+          update: (_, repository, _) => UserProvider(repository),
         ),
       ],
       child: Scaffold(

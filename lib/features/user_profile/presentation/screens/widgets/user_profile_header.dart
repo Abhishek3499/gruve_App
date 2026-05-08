@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
@@ -38,7 +39,9 @@ class UserProfileHeader extends StatelessWidget {
   void _openStoryView(BuildContext context) {
     // Use unified StoryUtils navigation with userId
     // isOwnProfile: false because this is other user's profile
-    debugPrint('[UserProfileHeader] Opening other user story - isOwnProfile: false');
+    debugPrint(
+      '[UserProfileHeader] Opening other user story - isOwnProfile: false',
+    );
     debugPrint('[UserProfileHeader] profileUserId: $profileUserId');
     StoryUtils.navigateToStoryView(
       context,
@@ -62,7 +65,12 @@ class UserProfileHeader extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Image.asset(
+                  AppAssets.back,
+                  color: Colors.white,
+                  height: 22,
+                  width: 22,
+                ),
               ),
               const Spacer(),
             ],

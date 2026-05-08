@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../controller/camera_controller_service.dart';
 import '../widgets/camera_preview_widget.dart';
-import '../widgets/capture_button.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/side_toolbar.dart';
 import '../widgets/mode_selector.dart';

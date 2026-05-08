@@ -70,9 +70,19 @@ class SearchUser {
 }
 
 class UserSearchService {
-  UserSearchService({Dio? dio}) : _dio = dio ?? AppDio.create();
+  UserSearchService({Dio? dio}) : _dio = dio ?? _createOptimizedDio();
 
   final Dio _dio;
+
+  // Create optimized Dio with shorter timeout for user search
+  static Dio _createOptimizedDio() {
+    debugPrint('⚡ [UserSearchService] Creating optimized Dio with reduced timeout');
+    return AppDio.create(
+      connectTimeout: const Duration(seconds: 5),
+      receiveTimeout: const Duration(seconds: 5),
+      sendTimeout: const Duration(seconds: 5),
+    );
+  }
 
   Future<List<SearchUser>> searchUsers(String query) async {
     debugPrint('🔍 [UserSearchService] ========== SEARCH START ==========');
@@ -90,7 +100,7 @@ class UserSearchService {
     try {
       debugPrint('🌐 [UserSearchService] Making API call...');
       debugPrint('🌐 [UserSearchService] Endpoint: /user/users/search/');
-      debugPrint('🌐 [UserSearchService] Query params: {q: $trimmedQuery}');
+      debugPrint('🌐 [UserSearchService] Query params: {username: $trimmedQuery}');
 
       final response = await _dio.get(
         'user/users/search/',
@@ -128,6 +138,14 @@ class UserSearchService {
         '❌ [UserSearchService] Request headers: ${e.requestOptions.headers}',
       );
 
+      // Handle specific timeout errors gracefully
+      if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
+        debugPrint('⏰ [UserSearchService] ⏰ TIMEOUT ERROR - Returning empty list');
+        debugPrint('⚠️ [UserSearchService] ⚠️ Search timed out, user can try again');
+        debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
+        return []; // Return empty list instead of throwing
+      }
+
       if (e.response?.statusCode == 422) {
         debugPrint('⚠️ [UserSearchService] 422 Error - Unprocessable Entity');
         debugPrint('⚠️ [UserSearchService] This usually means:');
@@ -135,16 +153,22 @@ class UserSearchService {
         debugPrint('   - Query too short (minimum length required)');
         debugPrint('   - Query contains invalid characters');
         debugPrint('   - Missing required parameters');
+        return []; // Return empty list for validation errors
       } else if (e.response?.statusCode == 404) {
         debugPrint('⚠️ [UserSearchService] 404 Error - Not Found');
         debugPrint('⚠️ [UserSearchService] This usually means:');
         debugPrint('   - Endpoint does not exist');
         debugPrint('   - Wrong API path');
         debugPrint('   - API version mismatch');
+        return []; // Return empty list for not found
+      } else if (e.response?.statusCode == 401) {
+        debugPrint('⚠️ [UserSearchService] 401 Error - Unauthorized');
+        debugPrint('⚠️ [UserSearchService] User token expired or invalid');
+        return []; // Return empty list for auth errors
       }
 
       debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-      rethrow;
+      return []; // Return empty list for all other errors
     } catch (e) {
       debugPrint(
         '❌ [UserSearchService] ========== UNEXPECTED ERROR ==========',
@@ -152,7 +176,7 @@ class UserSearchService {
       debugPrint('❌ [UserSearchService] Error type: ${e.runtimeType}');
       debugPrint('❌ [UserSearchService] Error: $e');
       debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-      rethrow;
+      return []; // Return empty list for unexpected errors
     }
   }
 
@@ -250,7 +274,7 @@ class UserSearchService {
 class DebouncedUserSearch {
   DebouncedUserSearch({
     UserSearchService? service,
-    this.delay = const Duration(milliseconds: 450),
+    this.delay = const Duration(milliseconds: 300), // Reduced from 450ms to 300ms for faster response
   }) : _service = service ?? UserSearchService() {
     debugPrint(
       '🔧 [DebouncedUserSearch] Initialized with delay: ${delay.inMilliseconds}ms',
@@ -261,6 +285,7 @@ class DebouncedUserSearch {
   final Duration delay;
   Timer? _timer;
   int _requestId = 0;
+  bool _isSearching = false; // Add search state tracking
 
   void search(
     String query, {
@@ -269,6 +294,7 @@ class DebouncedUserSearch {
   }) {
     debugPrint('🔍 [DebouncedUserSearch] Search triggered for: "$query"');
 
+    // Cancel previous timer and increment request ID
     _timer?.cancel();
     final requestId = ++_requestId;
 
@@ -278,16 +304,31 @@ class DebouncedUserSearch {
     );
 
     _timer = Timer(delay, () async {
+      // Double-check if this request is still current
+      if (requestId != _requestId) {
+        debugPrint(
+          '⚠️ [DebouncedUserSearch] Request $requestId is stale (current: $_requestId), skipping',
+        );
+        return;
+      }
+
+      // Prevent concurrent searches
+      if (_isSearching) {
+        debugPrint(
+          '⚠️ [DebouncedUserSearch] Already searching, skipping request $requestId',
+        );
+        return;
+      }
+
+      _isSearching = true;
       debugPrint(
-        '⏰ [DebouncedUserSearch] Debounce timer expired, executing search...',
-      );
-      debugPrint(
-        '🔍 [DebouncedUserSearch] Request ID: $requestId (current: $_requestId)',
+        '⏰ [DebouncedUserSearch] Debounce timer expired, executing search $requestId...',
       );
 
       try {
         final results = await _service.searchUsers(query);
 
+        // Final check after async operation
         if (requestId == _requestId) {
           debugPrint(
             '✅ [DebouncedUserSearch] Request $requestId is still current, returning ${results.length} results',
@@ -295,7 +336,7 @@ class DebouncedUserSearch {
           onResults(results);
         } else {
           debugPrint(
-            '⚠️ [DebouncedUserSearch] Request $requestId is stale (current: $_requestId), ignoring results',
+            '⚠️ [DebouncedUserSearch] Request $requestId became stale during search (current: $_requestId), ignoring results',
           );
         }
       } catch (error) {
@@ -303,6 +344,7 @@ class DebouncedUserSearch {
           '❌ [DebouncedUserSearch] Search error for request $requestId: $error',
         );
 
+        // Final check after async operation
         if (requestId == _requestId) {
           debugPrint(
             '❌ [DebouncedUserSearch] Request $requestId is still current, calling onError',
@@ -310,9 +352,14 @@ class DebouncedUserSearch {
           onError(error);
         } else {
           debugPrint(
-            '⚠️ [DebouncedUserSearch] Request $requestId is stale (current: $_requestId), ignoring error',
+            '⚠️ [DebouncedUserSearch] Request $requestId became stale during error (current: $_requestId), ignoring error',
           );
         }
+      } finally {
+        _isSearching = false;
+        debugPrint(
+          '🔧 [DebouncedUserSearch] Search completed for request $requestId, ready for next',
+        );
       }
     });
   }

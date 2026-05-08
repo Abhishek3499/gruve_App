@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/constants/app_colors.dart';
 
 class UserStoryList extends StatelessWidget {
   final List<Map<String, dynamic>> stories;
@@ -75,7 +74,7 @@ class UserStoryList extends StatelessWidget {
             ),
             child: CircleAvatar(
               radius: 30,
-              backgroundImage: imageUrl.isNotEmpty 
+              backgroundImage: imageUrl.isNotEmpty
                   ? NetworkImage(imageUrl)
                   : null,
               backgroundColor: const Color(0xFF212235),

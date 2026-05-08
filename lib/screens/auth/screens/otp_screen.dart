@@ -14,6 +14,8 @@ import 'package:gruve_app/screens/auth/widgets/otp_input_box.dart';
 
 import 'package:gruve_app/main.dart';
 
+import 'package:gruve_app/services/socket_service.dart';
+
 
 
 class OtpScreen extends StatefulWidget {
@@ -338,13 +340,25 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
       } else {
 
-        if (widget.onVerified != null) {
+        // 🔌 CONNECT WEBSOCKET FOR LOGIN/SIGNUP SUCCESS
+        final accessToken = controller.verifyOtpResponse?.data?.accessToken;
+        if (accessToken != null && accessToken.isNotEmpty) {
+          debugPrint("🔌 [OTP Success] 🔌 Connecting websocket after OTP verification");
+          debugPrint("🎫 [OTP Success] 🎫 Access token received: ${accessToken.substring(0, 10)}...");
+          SocketService().connect(accessToken);
+          debugPrint("✅ [OTP Success] ✅ WebSocket connection initiated");
+        } else {
+          debugPrint("⚠️ [OTP Success] ⚠️ No access token available for websocket connection");
+        }
 
+        if (widget.onVerified != null) {
+          debugPrint("🎯 [OTP Success] 🎯 Calling onVerified callback");
           widget.onVerified!();
+          debugPrint("✅ [OTP Success] ✅ onVerified callback executed");
 
         } else {
 
-          debugPrint("⚠️ onVerified is null");
+          debugPrint("⚠️ [OTP Success] ⚠️ onVerified is null");
 
         }
 

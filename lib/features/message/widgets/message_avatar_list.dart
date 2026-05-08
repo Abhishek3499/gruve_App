@@ -20,7 +20,7 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
-    
+
     // No need to manually fetch users anymore - UserProvider auto-fetches in constructor
   }
 
@@ -46,10 +46,12 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
 
   Future<void> _loadMoreUsers() async {
     final provider = context.read<UserProvider>();
-    
+
     // Prevent duplicate calls
     if (provider.isFetchingMore || !provider.hasNext) {
-      debugPrint('⏸️ [MessageAvatarList] Skipping loadMore - isFetchingMore: ${provider.isFetchingMore}, hasNext: ${provider.hasNext}');
+      debugPrint(
+        '⏸️ [MessageAvatarList] Skipping loadMore - isFetchingMore: ${provider.isFetchingMore}, hasNext: ${provider.hasNext}',
+      );
       return;
     }
 
@@ -76,8 +78,10 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
   Widget build(BuildContext context) {
     return Consumer<UserProvider>(
       builder: (context, p, child) {
-        debugPrint('🔄 [MessageAvatarList] UI rebuilding — isLoading: ${p.isLoading}, users: ${p.users.length}, isFetchingMore: ${p.isFetchingMore}');
-        
+        debugPrint(
+          '🔄 [MessageAvatarList] UI rebuilding — isLoading: ${p.isLoading}, users: ${p.users.length}, isFetchingMore: ${p.isFetchingMore}',
+        );
+
         if (p.isLoading && p.users.isEmpty) {
           // Initial loading state - show skeleton
           return const MessageAvatarSkeleton(avatarCount: 6);
@@ -104,8 +108,12 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
-                separatorBuilder: (_, __) => const SizedBox(width: 16),
-                itemCount: p.users.length + (p.isFetchingMore ? 1 : 0), // Add loader at end if fetching more
+                separatorBuilder: (_, _) => const SizedBox(width: 16),
+                itemCount:
+                    p.users.length +
+                    (p.isFetchingMore
+                        ? 1
+                        : 0), // Add loader at end if fetching more
                 itemBuilder: (context, index) {
                   // Show loading indicator at the end when fetching more
                   if (index == p.users.length && p.isFetchingMore) {
@@ -116,8 +124,11 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
                   final user = p.users[index];
                   return MessageAvatar(
                     name: user.username,
-                    imageUrl: user.profilePicture ?? '',   // empty string = null fallback handled in MessageAvatar
-                    isOnline: false,                        // API doesn't return isOnline, default false
+                    imageUrl:
+                        user.profilePicture ??
+                        '', // empty string = null fallback handled in MessageAvatar
+                    isOnline:
+                        false, // API doesn't return isOnline, default false
                   );
                 },
               ),

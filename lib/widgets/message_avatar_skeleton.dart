@@ -6,10 +6,7 @@ import 'package:gruve_app/core/constants/app_colors.dart';
 class MessageAvatarSkeleton extends StatelessWidget {
   final int avatarCount;
 
-  const MessageAvatarSkeleton({
-    super.key,
-    this.avatarCount = 6,
-  });
+  const MessageAvatarSkeleton({super.key, this.avatarCount = 6});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +18,7 @@ class MessageAvatarSkeleton extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          separatorBuilder: (_, __) => const SizedBox(width: 16),
+          separatorBuilder: (_, _) => const SizedBox(width: 16),
           itemCount: avatarCount,
           itemBuilder: (context, index) {
             return _buildAvatarSkeleton();

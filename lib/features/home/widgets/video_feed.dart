@@ -175,11 +175,7 @@ class _VideoFeedState extends State<VideoFeed> {
 
   Widget _brokenMediaIcon() {
     return const Center(
-      child: Icon(
-        Icons.broken_image,
-        color: Colors.white,
-        size: 50,
-      ),
+      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
     );
   }
 
@@ -201,7 +197,9 @@ class _VideoFeedState extends State<VideoFeed> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                hasError ? Icons.wifi_off_rounded : Icons.video_library_outlined,
+                hasError
+                    ? Icons.wifi_off_rounded
+                    : Icons.video_library_outlined,
                 color: Colors.white70,
                 size: 42,
               ),
@@ -217,10 +215,7 @@ class _VideoFeedState extends State<VideoFeed> {
               ),
               if (hasError) ...[
                 const SizedBox(height: 16),
-                TextButton(
-                  onPressed: _refreshFeed,
-                  child: const Text('Retry'),
-                ),
+                TextButton(onPressed: _refreshFeed, child: const Text('Retry')),
               ],
             ],
           ),
@@ -261,7 +256,7 @@ class _VideoFeedState extends State<VideoFeed> {
     // ✅ Split state: Only rebuild UI when feed structure changes, not on every video load
     return ValueListenableBuilder<int>(
       valueListenable: _controller.feedRevision,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         final showInitialLoader =
             _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
         final showEmptyState =

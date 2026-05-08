@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/services/socket_service.dart';
 import 'package:provider/provider.dart';
 
 import 'package:gruve_app/core/assets.dart';
@@ -152,28 +153,39 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     // ✅ SUCCESS CASE
 
     if (_controller.response?.success == true) {
-      debugPrint("LOGIN SUCCESS -> GO TO HOME");
+      debugPrint("🎉 [Login] 🎉 LOGIN SUCCESS -> GO TO HOME");
+      SocketService().connect(_controller.response!.data!.accessToken);
+      debugPrint("🔌 [Login] 🔌 WebSocket connection initiated");
 
       if (!mounted) return false;
 
       // Refresh providers to fetch fresh data for new user
       try {
-        debugPrint('🔄 [Login] Refreshing providers for fresh data...');
-        
+        debugPrint('🔄 [Login] 🔄 Refreshing providers for fresh data...');
+
         // Refresh profile data
-        final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+        final profileProvider = Provider.of<ProfileProvider>(
+          context,
+          listen: false,
+        );
         await profileProvider.refreshProfile();
-        
+        debugPrint('👤 [Login] 👤 Profile data refreshed');
+
         // Refresh story data
-        final storyController = Provider.of<StoryController>(context, listen: false);
+        final storyController = Provider.of<StoryController>(
+          context,
+          listen: false,
+        );
         storyController.reset(); // Clear any cached story data
-        
-        debugPrint('✅ [Login] Providers refreshed successfully');
+        debugPrint('📖 [Login] 📖 Story data reset');
+
+        debugPrint('✅ [Login] ✅ Providers refreshed successfully');
       } catch (e) {
-        debugPrint('❌ [Login] Error refreshing providers: $e');
+        debugPrint('❌ [Login] ❌ Error refreshing providers: $e');
         // Continue navigation even if provider refresh fails
       }
 
+      debugPrint("🏠 [Login] 🏠 Navigating to HomeScreen");
       Navigator.pushReplacement(
         context,
 

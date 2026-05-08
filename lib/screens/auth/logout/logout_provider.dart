@@ -7,6 +7,7 @@ import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.d
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 class LogoutProvider extends ChangeNotifier {
   final LogoutController _controller = LogoutController();
@@ -22,23 +23,35 @@ class LogoutProvider extends ChangeNotifier {
 
   /// Main logout method with complete state reset
   Future<void> logout({BuildContext? context}) async {
-    debugPrint('🔥 [LogoutProvider] Starting complete logout process...');
+    debugPrint('⚡ [LogoutProvider] ⚡ Starting INSTANT logout process...');
     
     // Set loading state immediately
     _setLoading(true);
     _errorMessage = null;
 
     try {
-      // Step 1: Reset all providers BEFORE any async operations if context is available
+      // ⚡ STEP 1: INSTANT WebSocket disconnect FIRST (critical requirement)
+      debugPrint('⚡ [LogoutProvider] ⚡ INSTANT WebSocket disconnect...');
+      final stopwatch = Stopwatch()..start();
+      
+      SocketService().disconnect();
+      
+      // Wait for disconnect to complete (under 100ms requirement)
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      final disconnectTime = stopwatch.elapsedMilliseconds;
+      debugPrint('⚡ [LogoutProvider] ⚡ WebSocket disconnected in ${disconnectTime}ms');
+      
+      // ⚡ STEP 2: Reset all providers if context is available
       if (context != null) {
         await _resetAllProviders(context);
       }
       
-      // Step 2: Execute logout API call
+      // ⚡ STEP 3: Execute logout API call
       await _controller.logout();
       debugPrint('🔥 [LogoutProvider] Logout API completed');
       
-      // Step 3: Check for API errors
+      // ⚡ STEP 4: Check for API errors
       if (_controller.errorMessage != null) {
         _errorMessage = _controller.errorMessage;
         debugPrint('❌ [LogoutProvider] Logout API failed: $_errorMessage');
@@ -47,10 +60,10 @@ class LogoutProvider extends ChangeNotifier {
       
       debugPrint('✅ [LogoutProvider] Logout API successful');
       
-      // Step 4: Clear all storage (this happens in LogoutController too, but ensure it's complete)
+      // ⚡ STEP 5: Clear all storage (this happens in LogoutController too, but ensure it's complete)
       await _clearAllStorage();
       
-      debugPrint('✅ [LogoutProvider] Complete logout successful');
+      debugPrint('✅ [LogoutProvider] Complete logout successful in ${stopwatch.elapsedMilliseconds}ms');
       
       // Trigger navigation to sign-in screen
       _shouldNavigate = true;

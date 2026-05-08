@@ -4,6 +4,7 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/intro/intro_screen.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:gruve_app/services/socket_service.dart';
 import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -44,9 +45,17 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       
       if (accessToken != null && accessToken.isNotEmpty) {
-        // User is logged in, navigate to Home screen
-        debugPrint("🔑 Token found, navigating to Home screen");
+        // User is logged in, connect websocket and navigate to Home screen
+        debugPrint("🔑 [Splash] 🔑 Token found, connecting websocket and navigating to Home screen");
+        debugPrint("🎫 [Splash] 🎫 Token preview: ${accessToken.substring(0, 10)}...");
+        
+        // 🔌 CONNECT WEBSOCKET FOR AUTO-LOGIN
+        debugPrint("🔌 [Splash Auto-Login] 🔌 Connecting websocket with existing token");
+        SocketService().connect(accessToken);
+        debugPrint("✅ [Splash] ✅ WebSocket connection initiated");
+        
         if (!mounted) return;
+        debugPrint("🏠 [Splash] 🏠 Navigating to HomeScreen");
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -70,8 +79,9 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       } else {
         // No token found, navigate to Intro screen
-        debugPrint("🔑 No token found, navigating to Intro screen");
+        debugPrint("� [Splash] 🚫 No token found, navigating to Intro screen");
         if (!mounted) return;
+        debugPrint("🎯 [Splash] 🎯 Navigating to IntroScreen");
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
