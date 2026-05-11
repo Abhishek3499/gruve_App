@@ -52,34 +52,23 @@ class LogoutWidget extends StatelessWidget {
                     Consumer<LogoutProvider>(
                       builder: (context, logoutProvider, child) {
                         return GestureDetector(
-                          onTap: logoutProvider.isLoading ? null : () async {
+                          onTap: logoutProvider.isLoading ? null : () {
                             debugPrint("🔥 YES CLICKED");
-                            
-                            // Store navigator reference before popping dialog
-                            final navigator = Navigator.of(context);
-                            
-                            // Start logout process first with context
-                            await logoutProvider.logout(context: context);
-                            
-                            // Close dialog and navigate
-                            if (context.mounted && logoutProvider.errorMessage == null) {
-                              debugPrint("🚀 [LogoutWidget] Closing dialog and navigating...");
-                              navigator.pop(); // Close dialog
-                              
-                              // Use rootNavigatorKey for safe navigation
-                              rootNavigatorKey.currentState?.pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (context) => const SignInScreen(),
-                                ),
-                                (route) => false,
-                              );
-                              debugPrint("🚀 [LogoutWidget] Navigation completed!");
-                            } else {
-                              // Just close dialog if there's an error
-                              if (context.mounted) {
-                                navigator.pop();
-                              }
-                            }
+                            logoutProvider.clearError(); // Clear any previous logout error
+
+                            // Start logout ASAP; it will continue in background after navigation.
+                            logoutProvider.logout(context: context);
+
+                            debugPrint("🚀 [LogoutWidget] Navigating to SignIn immediately...");
+                            Navigator.of(context).pop(); // Close dialog immediately
+
+                            rootNavigatorKey.currentState?.pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => const SignInScreen(),
+                              ),
+                              (route) => false,
+                            );
+                            debugPrint("🚀 [LogoutWidget] Instant navigation completed.");
                           },
                           child: Container(
                             width: double.infinity,

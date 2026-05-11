@@ -11,22 +11,31 @@ class LogoutService {
     sendTimeout: const Duration(seconds: 5),
   );
 
-  Future<LogoutResponse> logout() async {
-    final refreshToken = await TokenStorage.getRefreshToken();
-    final accessToken = await TokenStorage.getAccessToken();
+  Future<LogoutResponse> logout({
+    String? accessToken,
+    String? refreshToken,
+  }) async {
+    final refreshTokenValue =
+        refreshToken?.trim().isEmpty ?? true
+            ? await TokenStorage.getRefreshToken()
+            : refreshToken;
+    final accessTokenValue =
+        accessToken?.trim().isEmpty ?? true
+            ? await TokenStorage.getAccessToken()
+            : accessToken;
 
-    if (refreshToken == null || refreshToken.isEmpty) {
+    if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
       throw "Refresh token not found";
     }
 
-    final request = LogoutRequest(refreshToken: refreshToken);
+    final request = LogoutRequest(refreshToken: refreshTokenValue);
 
     try {
       const endpoint = "auth/logout/";
       final requestData = request.toJson();
       final headers = {
-        if (accessToken != null && accessToken.isNotEmpty)
-          "Authorization": "Bearer $accessToken",
+        if (accessTokenValue != null && accessTokenValue.isNotEmpty)
+          "Authorization": "Bearer $accessTokenValue",
       };
       
       debugPrint("=== LOGOUT REQUEST ===");
@@ -34,8 +43,8 @@ class LogoutService {
       debugPrint("METHOD: POST");
       debugPrint("HEADERS: $headers");
       debugPrint("BODY: $requestData");
-      debugPrint("REFRESH TOKEN: $refreshToken");
-      debugPrint("ACCESS TOKEN: $accessToken");
+      debugPrint("REFRESH TOKEN: $refreshTokenValue");
+      debugPrint("ACCESS TOKEN: $accessTokenValue");
 
       final response = await dio.post(
         endpoint,

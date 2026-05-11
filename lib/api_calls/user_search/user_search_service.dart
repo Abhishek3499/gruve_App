@@ -274,7 +274,7 @@ class UserSearchService {
 class DebouncedUserSearch {
   DebouncedUserSearch({
     UserSearchService? service,
-    this.delay = const Duration(milliseconds: 300), // Reduced from 450ms to 300ms for faster response
+    this.delay = const Duration(milliseconds: 400), // Updated to 400ms to match search_page.dart debounce
   }) : _service = service ?? UserSearchService() {
     debugPrint(
       '🔧 [DebouncedUserSearch] Initialized with delay: ${delay.inMilliseconds}ms',

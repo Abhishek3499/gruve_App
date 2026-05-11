@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/conversation_model.dart';
 import '../services/message_service.dart';
+import 'dart:developer' as developer;
 
 /// Provider for managing conversation state
 /// 
@@ -100,6 +101,8 @@ class MessageProvider extends ChangeNotifier {
     bool refresh = false,
     int? page,
   }) async {
+    final fetchStart = DateTime.now();
+    
     if (refresh) {
       _currentPage = 1;
       _hasMoreData = true;
@@ -114,7 +117,9 @@ class MessageProvider extends ChangeNotifier {
     try {
       debugPrint('📡 [MessageProvider] Fetching conversations - Page: $_currentPage, Refresh: $refresh');
       
+      final apiStart = DateTime.now();
       final conversations = await _messageService.getConversationList();
+      final apiTime = DateTime.now().difference(apiStart);
       
       if (refresh) {
         // Replace all conversations on refresh
@@ -125,13 +130,18 @@ class MessageProvider extends ChangeNotifier {
       }
       
       // Sort conversations by updated_at (most recent first)
+      final sortStart = DateTime.now();
       _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      final sortTime = DateTime.now().difference(sortStart);
       
       // Update pagination state
       _hasMoreData = conversations.length >= _pageSize;
       if (!refresh) {
         _currentPage++;
       }
+      
+      final totalTime = DateTime.now().difference(fetchStart);
+      developer.log('🌐 [PERF] MessageProvider fetch: API ${apiTime.inMilliseconds}ms, Sort ${sortTime.inMilliseconds}ms, Total ${totalTime.inMilliseconds}ms', name: 'MessageProvider');
       
       debugPrint('✅ [MessageProvider] Successfully fetched ${conversations.length} conversations');
       debugPrint('📊 [MessageProvider] Total conversations: ${_conversations.length}');

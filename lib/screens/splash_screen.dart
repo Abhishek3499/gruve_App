@@ -6,6 +6,7 @@ import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:video_player/video_player.dart';
+import 'dart:developer' as developer;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,14 +19,21 @@ class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
   bool _isReady = false;
   Timer? _navigationTimer;
+  final DateTime _appStartTime = DateTime.now();
 
   @override
   void initState() {
     super.initState();
 
+    final videoInitStart = DateTime.now();
+    developer.log('🚀 [PERF] Splash screen video initialization started', name: 'SplashScreen');
+    
     _controller = VideoPlayerController.asset(AppAssets.splashVideo)
       ..initialize().then((_) {
         if (!mounted) return;
+        
+        final videoInitTime = DateTime.now().difference(videoInitStart);
+        developer.log('🎥 [PERF] Video initialized in ${videoInitTime.inMilliseconds}ms', name: 'SplashScreen');
 
         setState(() {
           _isReady = true;
@@ -40,8 +48,15 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigationTimer = Timer(const Duration(seconds: 3), () async {
       if (!mounted) return;
 
+      final totalStartupTime = DateTime.now().difference(_appStartTime);
+      developer.log('🚀 [PERF] Total app startup time: ${totalStartupTime.inMilliseconds}ms', name: 'SplashScreen');
+
       // Check if user is already logged in
+      final tokenCheckStart = DateTime.now();
       final accessToken = await TokenStorage.getAccessToken();
+      final tokenCheckTime = DateTime.now().difference(tokenCheckStart);
+      developer.log('🔑 [PERF] Token check completed in ${tokenCheckTime.inMilliseconds}ms', name: 'SplashScreen');
+      
       if (!mounted) return;
       
       if (accessToken != null && accessToken.isNotEmpty) {
@@ -51,7 +66,10 @@ class _SplashScreenState extends State<SplashScreen> {
         
         // 🔌 CONNECT WEBSOCKET FOR AUTO-LOGIN
         debugPrint("🔌 [Splash Auto-Login] 🔌 Connecting websocket with existing token");
+        final websocketStart = DateTime.now();
         SocketService().connect(accessToken);
+        final websocketTime = DateTime.now().difference(websocketStart);
+        developer.log('🔌 [PERF] WebSocket connection initiated in ${websocketTime.inMilliseconds}ms', name: 'SplashScreen');
         debugPrint("✅ [Splash] ✅ WebSocket connection initiated");
         
         if (!mounted) return;

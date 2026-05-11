@@ -150,8 +150,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       return false;
     }
 
-    // ✅ SUCCESS CASE
-
     if (_controller.response?.success == true) {
       debugPrint("🎉 [Login] 🎉 LOGIN SUCCESS -> GO TO HOME");
       SocketService().connect(_controller.response!.data!.accessToken);
@@ -159,40 +157,37 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
       if (!mounted) return false;
 
-      // Refresh providers to fetch fresh data for new user
-      try {
-        debugPrint('🔄 [Login] 🔄 Refreshing providers for fresh data...');
+      final profileProvider = Provider.of<ProfileProvider>(
+        context,
+        listen: false,
+      );
+      final storyController = Provider.of<StoryController>(
+        context,
+        listen: false,
+      );
 
-        // Refresh profile data
-        final profileProvider = Provider.of<ProfileProvider>(
-          context,
-          listen: false,
-        );
-        await profileProvider.refreshProfile();
-        debugPrint('👤 [Login] 👤 Profile data refreshed');
-
-        // Refresh story data
-        final storyController = Provider.of<StoryController>(
-          context,
-          listen: false,
-        );
-        storyController.reset(); // Clear any cached story data
-        debugPrint('📖 [Login] 📖 Story data reset');
-
-        debugPrint('✅ [Login] ✅ Providers refreshed successfully');
-      } catch (e) {
-        debugPrint('❌ [Login] ❌ Error refreshing providers: $e');
-        // Continue navigation even if provider refresh fails
-      }
+      // Refresh application state in the background to keep login fast.
+      Future<void>.delayed(Duration.zero, () async {
+        try {
+          debugPrint('🔄 [Login] 🔄 Refreshing providers in background...');
+          await profileProvider.refreshProfile();
+          debugPrint('👤 [Login] 👤 Profile data refreshed');
+          storyController.reset();
+          debugPrint('📖 [Login] 📖 Story data reset');
+          debugPrint('✅ [Login] ✅ Background refresh completed');
+        } catch (e, stackTrace) {
+          debugPrint('❌ [Login] ❌ Background refresh failed: $e');
+          debugPrint('$stackTrace');
+        }
+      });
 
       debugPrint("🏠 [Login] 🏠 Navigating to HomeScreen");
       Navigator.pushReplacement(
         context,
-
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
 
-      return true; // ✅ ADD THIS
+      return true;
     }
 
     return false;

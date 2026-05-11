@@ -25,29 +25,62 @@ class VideoFeedController {
   final ValueNotifier<int> _feedRevision = ValueNotifier(0);
 
   bool _isInitialLoading = false;
+  bool _isRefreshing = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _loadError;
   CursorModel? _nextCursor;
 
-  VideoFeedController() {
-    if (kDebugMode) {
-      debugPrint("VideoFeedController initialized");
-    }
-  }
+  // Request deduplication
+  int _lastRefreshRequestId = 0;
+  int _lastLoadMoreRequestId = 0;
 
-  ValueNotifier<int> get currentIndex => _currentIndex;
-  ValueNotifier<bool> get isPlaying => _isPlaying;
-  ValueNotifier<int> get feedRevision => _feedRevision;
-  List<VideoPlayerController> get controllers => _controllers.values.toList();
+  // Separate loading states for better UX
   bool get isInitialLoading => _isInitialLoading;
+  bool get isRefreshing => _isRefreshing;
   bool get isLoadingMore => _isLoadingMore;
+
+  // ADDED: Missing getters that were causing compile errors
+  ValueNotifier<int> get currentIndex => _currentIndex;
   bool get hasMore => _hasMore;
   String? get loadError => _loadError;
+  ValueNotifier<int> get feedRevision => _feedRevision;
+  int get gen => _feedLoadGeneration;
 
+  // ADDED: Missing method that was causing compile errors
   void _notifyFeedChanged() {
-    if (_disposed) return;
     _feedRevision.value++;
+  }
+
+  /// Merges refreshed posts at the top, avoiding duplicates and preserving scroll position
+  void _mergeRefreshedPosts(List<Post> newPosts) {
+    final existingIds = _posts.map((post) => post.id).toSet();
+
+    // Filter out posts that already exist
+    final uniqueNewPosts = newPosts
+        .where((post) => !existingIds.contains(post.id))
+        .toList();
+
+    if (uniqueNewPosts.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('No new posts to merge - all posts already exist');
+      }
+      return;
+    }
+
+    // Insert new posts at the beginning
+    _posts.insertAll(0, uniqueNewPosts);
+    _mediaUrls.insertAll(0, uniqueNewPosts.map((e) => e.media).toList());
+
+    if (kDebugMode) {
+      debugPrint('Merged ${uniqueNewPosts.length} new posts at the top');
+      debugPrint('Total posts after merge: ${_posts.length}');
+    }
+
+    // Adjust current index to maintain scroll position relative to old content
+    if (_currentIndex.value > 0) {
+      _currentIndex.value += uniqueNewPosts.length;
+    }
   }
 
   VideoPlayerController? controllerForMediaIndex(int mediaIndex) {
@@ -59,9 +92,10 @@ class VideoFeedController {
   }
 
   Future<bool?> loadMorePosts() async {
-    if (_isLoadingMore || !_hasMore) return null;
+    if (_isLoadingMore || !_hasMore || _isRefreshing) return null;
 
-    final gen = ++_feedLoadGeneration;
+    final requestId = ++_feedLoadGeneration;
+    _lastLoadMoreRequestId = requestId;
     _isLoadingMore = true;
     _loadError = null;
     _notifyFeedChanged();
@@ -71,7 +105,9 @@ class VideoFeedController {
         debugPrint("Load More Triggered");
       }
 
-      final response = await _postService.getPaginatedPosts(cursor: _nextCursor);
+      final response = await _postService.getPaginatedPosts(
+        cursor: _nextCursor,
+      );
       final posts = response.posts
           .where((post) => _isSupportedMediaUrl(post.media))
           .toList();
@@ -83,7 +119,9 @@ class VideoFeedController {
         _hasMore = response.hasMore;
         _notifyFeedChanged();
         // Preload videos in background without blocking UI
-        unawaited(_ensureControllersAroundIndex(_currentIndex.value, gen));
+        unawaited(
+          _ensureControllersAroundIndex(_currentIndex.value, requestId),
+        );
         if (kDebugMode) {
           debugPrint('Total Posts Count: ${_posts.length}');
         }
@@ -92,11 +130,27 @@ class VideoFeedController {
         _hasMore = response.hasMore;
       }
 
+      if (requestId != _feedLoadGeneration) {
+        if (kDebugMode) {
+          debugPrint(
+            'Load more request $requestId cancelled due to newer request',
+          );
+        }
+        return null;
+      }
+
       if (kDebugMode) {
         debugPrint('Loaded ${posts.length} more posts');
       }
 
-      if (gen != _feedLoadGeneration) return null;
+      if (requestId != _feedLoadGeneration) {
+        if (kDebugMode) {
+          debugPrint(
+            'Load more request $requestId cancelled due to newer request',
+          );
+        }
+        return null;
+      }
       return true;
     } catch (e) {
       if (kDebugMode) {
@@ -111,8 +165,33 @@ class VideoFeedController {
   }
 
   Future<bool?> initVideos({bool refresh = false}) async {
-    final gen = ++_feedLoadGeneration;
-    _isInitialLoading = _mediaUrls.isEmpty;
+    final requestId = ++_feedLoadGeneration;
+
+    if (refresh) {
+      // Prevent multiple simultaneous refreshes
+      if (_isRefreshing) {
+        if (kDebugMode) {
+          debugPrint(
+            '⏳ [VideoFeed] Refresh already in progress, skipping request $requestId',
+          );
+        }
+        return null;
+      }
+      _lastRefreshRequestId = requestId;
+      _isRefreshing = true;
+    } else {
+      // Prevent multiple simultaneous initial loads
+      if (_isInitialLoading) {
+        if (kDebugMode) {
+          debugPrint(
+            '⏳ [VideoFeed] Initial load already in progress, skipping request $requestId',
+          );
+        }
+        return null;
+      }
+      _isInitialLoading = _mediaUrls.isEmpty;
+    }
+
     _loadError = null;
     _notifyFeedChanged();
 
@@ -126,7 +205,7 @@ class VideoFeedController {
         _hasMore = true;
         _isLoadingMore = false;
         _postService.resetPagination();
-        _notifyFeedChanged();
+        // Don't clear posts for refresh - keep them visible
       }
 
       final response = await _postService.getPaginatedPosts(
@@ -142,25 +221,38 @@ class VideoFeedController {
         if (kDebugMode) {
           debugPrint("API returned no posts");
         }
-        _posts = [];
-        _mediaUrls = [];
+        if (!refresh) {
+          // Only clear posts for initial load
+          _posts = [];
+          _mediaUrls = [];
+        }
         _hasMore = false;
         _notifyFeedChanged();
       } else if (posts.isEmpty) {
         if (kDebugMode) {
           debugPrint("Posts received, but media URLs were empty or invalid");
         }
-        _posts = [];
-        _mediaUrls = [];
+        if (!refresh) {
+          // Only clear posts for initial load
+          _posts = [];
+          _mediaUrls = [];
+        }
         _hasMore = response.hasMore;
         _nextCursor = response.nextCursor;
         _notifyFeedChanged();
       } else {
-        _posts = posts;
-        _mediaUrls = _posts.map((e) => e.media).toList();
+        if (refresh) {
+          // For refresh: merge new posts at the top, avoid duplicates
+          _mergeRefreshedPosts(posts);
+        } else {
+          // For initial load: replace all posts
+          _posts = posts;
+          _mediaUrls = _posts.map((e) => e.media).toList();
+        }
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
         _notifyFeedChanged();
+
         if (kDebugMode) {
           debugPrint('Total Posts Count: ${_posts.length}');
         }
@@ -168,14 +260,22 @@ class VideoFeedController {
 
       if (gen != _feedLoadGeneration) return null;
 
-      await _disposeAllControllers();
-      _failedVideoIndexes.clear();
+      // Only dispose and recreate controllers for initial load, not refresh
+      if (!refresh) {
+        await _disposeAllControllers();
+        _failedVideoIndexes.clear();
+        _currentIndex.value = 0;
+        _isPlaying.value = false;
+      }
 
-      _currentIndex.value = 0;
-      _isPlaying.value = false;
       // Preload videos in background without blocking UI
-      unawaited(_ensureControllersAroundIndex(0, gen));
-      playVideo(0);
+      unawaited(
+        _ensureControllersAroundIndex(refresh ? _currentIndex.value : 0, gen),
+      );
+
+      if (!refresh) {
+        playVideo(0);
+      }
 
       return true;
     } catch (e) {
@@ -186,6 +286,7 @@ class VideoFeedController {
       return false;
     } finally {
       _isInitialLoading = false;
+      _isRefreshing = false;
       _notifyFeedChanged();
     }
   }
@@ -269,7 +370,7 @@ class VideoFeedController {
     _currentIndex.dispose();
     _isPlaying.dispose();
     _feedRevision.dispose();
-    
+
     if (kDebugMode) {
       debugPrint('🧹 VideoFeedController fully disposed');
     }
@@ -305,14 +406,14 @@ class VideoFeedController {
     }
 
     final targetIndexes = <int>{};
-    
+
     // ✅ TIKTOK STRATEGY: Preload current + next video for smooth swiping
     // Current video
     final currentUrl = _posts[index].media;
     if (currentUrl.toLowerCase().contains('.mp4')) {
       targetIndexes.add(index);
     }
-    
+
     // Next video (preload for smooth transition)
     if (index + 1 < _posts.length) {
       final nextUrl = _posts[index + 1].media;
@@ -354,7 +455,7 @@ class VideoFeedController {
           allowBackgroundPlayback: false,
         ),
       );
-      
+
       try {
         await controller.initialize();
       } catch (e) {

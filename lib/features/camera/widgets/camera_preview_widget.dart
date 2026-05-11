@@ -7,6 +7,7 @@ import 'package:camera/camera.dart';
 import '../controller/camera_controller_service.dart';
 
 import '../utils/camera_logger.dart';
+import 'dart:developer' as developer;
 
 
 
@@ -59,12 +60,17 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
 
 
   void _initializeListeners() {
+    final initStart = DateTime.now();
+    developer.log('📷 [PERF] Camera initialization started', name: 'CameraPreview');
 
     _initSub = _cameraService.initializationStream.listen((isInitialized) {
 
       if (!mounted) return;
 
-
+      if (isInitialized) {
+        final initTime = DateTime.now().difference(initStart);
+        developer.log('📷 [PERF] Camera initialized in ${initTime.inMilliseconds}ms', name: 'CameraPreview');
+      }
 
       setState(() {
 

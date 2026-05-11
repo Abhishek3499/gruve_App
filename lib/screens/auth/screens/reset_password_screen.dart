@@ -28,6 +28,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   late final TextEditingController _confirmPasswordController;
 
+  bool isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -188,6 +190,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           child: GetStartedButton(
                             text: 'Reset ',
 
+                            isLoading: isLoading,
+
                             onComplete: () async {
                               final password = _newPasswordController.text
                                   .trim();
@@ -240,6 +244,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 return false;
                               }
 
+                              setState(() => isLoading = true);
+
                               // 🔥 CALL API
 
                               final message = await _controller.resetPassword(
@@ -247,6 +253,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                                 password: password,
                               );
+
+                              if (!mounted) return false;
+
+                              setState(() => isLoading = false);
 
                               if (message.toLowerCase().contains("success")) {
                                 // ✅ CLEAR TOKEN AFTER SUCCESS

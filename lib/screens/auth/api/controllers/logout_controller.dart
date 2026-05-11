@@ -10,23 +10,25 @@ class LogoutController {
   String? errorMessage;
   LogoutResponse? response;
 
-  Future<void> logout() async {
+  Future<void> logout({
+    String? accessToken,
+    String? refreshToken,
+  }) async {
     isLoading = true;
     errorMessage = null;
     debugPrint("🚪 [Logout] 🚪 Starting logout process");
 
     try {
-      final refreshToken = await TokenStorage.getRefreshToken();
-      final accessToken = await TokenStorage.getAccessToken();
-      debugPrint("🔍 [Logout] 🔍 Checking tokens - accessToken: ${accessToken != null ? 'found' : 'not found'}, refreshToken: ${refreshToken != null ? 'found' : 'not found'}");
-
       final hasToken =
           (refreshToken != null && refreshToken.isNotEmpty) ||
           (accessToken != null && accessToken.isNotEmpty);
 
       if (hasToken) {
         debugPrint("📡 [Logout] 📡 Calling logout API");
-        final res = await _service.logout();
+        final res = await _service.logout(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
         response = res;
 
         if (!res.success) {

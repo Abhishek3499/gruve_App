@@ -1,8 +1,29 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
+import 'package:gruve_app/core/network/pending_request_queue.dart';
+import 'package:gruve_app/core/network/token_refresh_service.dart';
 
 class AppDio {
+  static CancelToken? _logoutCancelToken;
+  static PendingRequestQueue? _pendingQueue;
+
+  static CancelToken get _cancelToken => _logoutCancelToken ??= CancelToken();
+
+  static PendingRequestQueue get _queue =>
+      _pendingQueue ??= PendingRequestQueue(TokenRefreshService());
+
+  static void cancelAllRequests([String? reason]) {
+    if (_logoutCancelToken != null && !_logoutCancelToken!.isCancelled) {
+      _logoutCancelToken!.cancel(reason ?? 'Logout request cancellation');
+    }
+    _logoutCancelToken = CancelToken();
+
+    // Also cancel pending queued requests
+    _queue.cancelAll(reason);
+  }
+
   static Dio create({
     Duration connectTimeout = const Duration(seconds: 20),
     Duration receiveTimeout = const Duration(seconds: 20),
@@ -22,6 +43,9 @@ class AppDio {
       ),
     );
 
+    // Add refresh token interceptor
+    dio.interceptors.add(RefreshTokenInterceptor(dio));
+
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -38,6 +62,7 @@ class AppDio {
             }
           }
 
+          options.cancelToken = options.cancelToken ?? _cancelToken;
           handler.next(options);
         },
         onError: (error, handler) {

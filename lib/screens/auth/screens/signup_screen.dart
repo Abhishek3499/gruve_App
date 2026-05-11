@@ -86,6 +86,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _useEmail = true;
 
+  bool isLoading = false;
+
 
 
   String? get _genderError => (_genderTouched && selectedGender == null)
@@ -837,6 +839,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         text: 'Sign Up',
 
+                        isLoading: isLoading,
+
                         onComplete: () async {
 
                           if (!mounted) return false;
@@ -864,7 +868,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             return false;
                           }
 
-
+                          setState(() => isLoading = true);
 
                           final identifier = _identifierController.text.trim();
 
@@ -884,7 +888,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
 
 
-                          if (!context.mounted) return false;
+                          if (!mounted) return false;
+
+                          setState(() => isLoading = false);
 
 
 

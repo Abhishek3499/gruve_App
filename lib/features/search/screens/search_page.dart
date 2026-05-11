@@ -1,3 +1,4 @@
+import 'dart:async'; // Added for Timer debounce
 import 'package:flutter/material.dart';
 import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
 import 'package:gruve_app/core/assets.dart';
@@ -18,7 +19,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  final DebouncedUserSearch _userSearch = DebouncedUserSearch();
+  final DebouncedUserSearch _userSearch = DebouncedUserSearch(); // Changed delay to 400ms in service
   final RecentSearchService _recentSearchService = RecentSearchService();
 
   List<SearchHistoryModel> _searchHistory = [];
@@ -26,6 +27,7 @@ class _SearchPageState extends State<SearchPage> {
   List<SearchUser> _users = [];
   bool _isSearching = false;
   String? _searchError;
+  Timer? _debounceTimer; // Added for custom debounce control
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel(); // CHANGED: Cancel debounce timer on dispose
     _searchController.dispose();
     _searchFocusNode.dispose();
     _userSearch.dispose();
@@ -93,37 +96,48 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onSearchChanged(String query) {
+    // Cancel existing debounce timer
+    _debounceTimer?.cancel();
+    
+    // CHANGED: Clear results immediately when user types, set searching state
     setState(() {
-      _searchError = null;
-      _isSearching = query.trim().isNotEmpty;
-      if (query.trim().isEmpty) {
-        _users = [];
-      }
+      _users = []; // Clear previous results instantly
+      _searchError = null; // Clear any previous errors
+      _isSearching = query.trim().isNotEmpty; // Only show loader when there's text
     });
 
+    // CHANGED: Handle empty query case - clear debounced search
     if (query.trim().isEmpty) {
       _userSearch.clear();
       return;
     }
 
-    _userSearch.search(
-      query,
-      onResults: (users) {
-        if (!mounted) return;
-        setState(() {
-          _users = users;
-          _isSearching = false;
-        });
-      },
-      onError: (_) {
-        if (!mounted) return;
-        setState(() {
-          _users = [];
-          _isSearching = false;
-          _searchError = 'Unable to search users right now';
-        });
-      },
-    );
+    // CHANGED: Add 400ms debounce using Timer instead of relying on service debounce
+    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return; // Safety check
+      
+      // Only proceed if still searching (user hasn't cleared the query)
+      if (query.trim().isNotEmpty) {
+        _userSearch.search(
+          query,
+          onResults: (users) {
+            if (!mounted) return;
+            setState(() {
+              _users = users;
+              _isSearching = false; // Stop loader when results arrive
+            });
+          },
+          onError: (_) {
+            if (!mounted) return;
+            setState(() {
+              _users = [];
+              _isSearching = false; // Stop loader on error
+              _searchError = 'Unable to search users right now';
+            });
+          },
+        );
+      }
+    });
   }
 
   void _onHistoryItemTap(String query) {
@@ -156,8 +170,13 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool showEmptyState =
-        _recentSearches.isEmpty && _searchHistory.isEmpty && _searchController.text.isEmpty;
+    // CHANGED: Simplified state variables for clear if-else if logic
+    final bool isEmptySearch = _searchController.text.isEmpty;
+    final bool hasResults = _users.isNotEmpty;
+    final bool isLoading = _isSearching;
+    final bool hasError = _searchError != null;
+    final bool hasRecentSearches = _recentSearches.isNotEmpty;
+    final bool showEmptyState = isEmptySearch && !hasRecentSearches; // Only show empty when no searches and no recents
 
     return Scaffold(
       body: Container(
@@ -199,8 +218,43 @@ class _SearchPageState extends State<SearchPage> {
               Expanded(
                 child: ListView(
                   children: [
-                    /// RECENT SEARCHES (shown when search field is empty)
-                    if (_searchController.text.isEmpty && _recentSearches.isNotEmpty) ...[
+                    // CHANGED: Single if-else if chain - only ONE state shows at a time
+                    
+                    // STATE 1: Empty search with no recent searches - show empty hint
+                    if (showEmptyState) ...[
+                      const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.search_outlined,
+                                color: Colors.white54,
+                                size: 48,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No recent searches',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Start typing to see suggestions',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] 
+                    // STATE 2: Empty search with recent searches - show recent searches only
+                    else if (isEmptySearch && hasRecentSearches) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         child: Row(
@@ -265,58 +319,17 @@ class _SearchPageState extends State<SearchPage> {
                       ),
 
                       const SizedBox(height: 20),
-                    ],
-
-                    /// SEARCH HISTORY (legacy - shown when search has text)
-                    if (_searchHistory.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Recent Search',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: _clearAllHistory,
-                              child: const Text(
-                                'Clear all',
-                                style: TextStyle(
-                                  color: Color(0xFFD42BC2),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      ..._searchHistory.map(
-                        (historyItem) => SearchHistoryItem(
-                          historyItem: historyItem,
-                          onTap: () => _onHistoryItemTap(historyItem.query),
-                          onRemove: () => _removeFromHistory(historyItem.id),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-
-                    if (_isSearching)
-                      // ✅ SHIMMER while searching — shows user row shapes
-                      // Prevents the jarring spinner → list jump
+                    ]
+                    // STATE 3: Loading state - show shimmer only when user has typed and API is in progress
+                    else if (isLoading) ...[
+                      // CHANGED: Only show loader when user has typed something AND search is in progress
                       const Padding(
                         padding: EdgeInsets.only(top: 16),
                         child: SearchResultsShimmer(itemCount: 6),
                       ),
-
-                    if (_searchError != null)
+                    ]
+                    // STATE 4: Error state - show error message only when API has failed
+                    else if (hasError) ...[
                       Padding(
                         padding: const EdgeInsets.all(24),
                         child: Center(
@@ -329,8 +342,9 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                       ),
-
-                    if (_users.isNotEmpty)
+                    ]
+                    // STATE 5: Results state - show search results only when API has responded with data
+                    else if (hasResults) ...[
                       ..._users.map(
                         (user) => ListTile(
                           leading: CircleAvatar(
@@ -351,22 +365,22 @@ class _SearchPageState extends State<SearchPage> {
                           onTap: () => _navigateToUserProfile(user),
                         ),
                       ),
-
-                    /// EMPTY STATE
-                    if (showEmptyState)
+                    ]
+                    // STATE 6: No results found - when search completed but returned empty
+                    else if (!isEmptySearch && !isLoading && !hasError && !hasResults) ...[
                       const Padding(
-                        padding: EdgeInsets.all(32),
+                        padding: EdgeInsets.all(24),
                         child: Center(
                           child: Column(
                             children: [
                               Icon(
-                                Icons.search_outlined,
+                                Icons.search_off,
                                 color: Colors.white54,
                                 size: 48,
                               ),
                               SizedBox(height: 16),
                               Text(
-                                'No recent searches',
+                                'No results found',
                                 style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 16,
@@ -374,7 +388,7 @@ class _SearchPageState extends State<SearchPage> {
                               ),
                               SizedBox(height: 8),
                               Text(
-                                'Start typing to see suggestions',
+                                'Try different keywords',
                                 style: TextStyle(
                                   color: Colors.white38,
                                   fontSize: 14,
@@ -384,6 +398,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),

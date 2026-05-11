@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:developer' as developer;
 
 class SocketService {
   // =========================
@@ -45,6 +46,8 @@ class SocketService {
   // =========================
 
   void connect(String token) {
+    final connectionStart = DateTime.now();
+    
     try {
       // ALREADY CONNECTED - DUPLICATE PREVENTION
       if (_isConnected) {
@@ -66,9 +69,14 @@ class SocketService {
       );
 
       // CREATE CONNECTION
+      final connectStart = DateTime.now();
       _channel = WebSocketChannel.connect(Uri.parse(socketUrl));
+      final connectTime = DateTime.now().difference(connectStart);
 
       _isConnected = true;
+      final totalTime = DateTime.now().difference(connectionStart);
+
+      developer.log('🔌 [PERF] Socket connection: ${connectTime.inMilliseconds}ms, Total: ${totalTime.inMilliseconds}ms', name: 'SocketService');
 
       debugPrint("✅ [SocketService] ✅ SOCKET CONNECTED SUCCESSFULLY");
       debugPrint("🎉 [SocketService] 🎉 WebSocket connection established");
@@ -77,6 +85,8 @@ class SocketService {
       _listenMessages();
     } catch (e) {
       _isConnected = false;
+      final failedTime = DateTime.now().difference(connectionStart);
+      developer.log('🔌 [PERF] Socket connection failed after ${failedTime.inMilliseconds}ms: $e', name: 'SocketService');
 
       debugPrint("💥 [SocketService] 💥 SOCKET CONNECTION ERROR => $e");
       debugPrint("❌ [SocketService] ❌ Connection failed");

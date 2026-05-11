@@ -27,7 +27,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final TextEditingController _usernameController =
       TextEditingController(); // ✅ FIX
 
-  bool _submitting = false;
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -50,10 +50,28 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 children: [
                   const SizedBox(height: 120),
 
-                  const Text(
-                    "Complete Profile",
-                    style: TextStyle(color: Colors.white, fontSize: 26),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: AppAssets.syncopateFont,
+                          color: Colors.white,
+                        ),
+                        children: [
+                          TextSpan(text: 'Complete '),
+                          TextSpan(
+                            text: 'Profile',
+                            style: TextStyle(color: Color(0xFFB86AD0)),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+
+                  const SizedBox(height: 40),
 
                   const SizedBox(height: 40),
 
@@ -113,7 +131,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   // 🔥 BUTTON
                   GetStartedButton(
                     text: 'Complete',
-                    isLoading: _submitting,
+                    isLoading: isLoading,
                     onComplete: () async {
                       final username = _usernameController.text.trim();
                       final file = _selectedImage?.path;
@@ -133,14 +151,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         return false;
                       }
 
-                      setState(() => _submitting = true);
+                      setState(() => isLoading = true);
                       try {
                         await controller.completeProfile(
                           username: username,
                           file: file,
                         );
                       } finally {
-                        if (mounted) setState(() => _submitting = false);
+                        if (mounted) setState(() => isLoading = false);
                       }
 
                       if (!context.mounted) return false;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/api/controllers/logout_controller.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
@@ -8,14 +9,15 @@ import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 
 class LogoutProvider extends ChangeNotifier {
   final LogoutController _controller = LogoutController();
-  
+
   bool _isLoading = false;
   String? _errorMessage;
   bool _shouldNavigate = false;
-  
+
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -23,108 +25,122 @@ class LogoutProvider extends ChangeNotifier {
 
   /// Main logout method with complete state reset
   Future<void> logout({BuildContext? context}) async {
-    debugPrint('⚡ [LogoutProvider] ⚡ Starting INSTANT logout process...');
-    
-    // Set loading state immediately
+    debugPrint('⚡ [LogoutProvider] ⚡ Starting instant logout process...');
     _setLoading(true);
     _errorMessage = null;
 
     try {
-      // ⚡ STEP 1: INSTANT WebSocket disconnect FIRST (critical requirement)
-      debugPrint('⚡ [LogoutProvider] ⚡ INSTANT WebSocket disconnect...');
-      final stopwatch = Stopwatch()..start();
-      
-      SocketService().disconnect();
-      
-      // Wait for disconnect to complete (under 100ms requirement)
-      await Future.delayed(const Duration(milliseconds: 50));
-      
-      final disconnectTime = stopwatch.elapsedMilliseconds;
-      debugPrint('⚡ [LogoutProvider] ⚡ WebSocket disconnected in ${disconnectTime}ms');
-      
-      // ⚡ STEP 2: Reset all providers if context is available
+      // Use auth state manager for centralized logout handling
+      await AuthStateManager().logout();
+
+      // Reset local providers if context is available
       if (context != null) {
-        await _resetAllProviders(context);
+        final profileProvider = _tryGetProvider<ProfileProvider>(context);
+        final storyController = _tryGetProvider<StoryController>(context);
+        final highlightProvider = _tryGetProvider<HighlightFlowProvider>(
+          context,
+        );
+        final blockProvider = _tryGetProvider<BlockProvider>(context);
+        final saveProvider = _tryGetProvider<SavePostProvider>(context);
+
+        debugPrint('🔄 [LogoutProvider] Resetting local providers...');
+        profileProvider?.reset();
+        storyController?.reset();
+        highlightProvider?.reset();
+        blockProvider?.reset();
+        saveProvider?.reset();
+        debugPrint('✅ [LogoutProvider] Local providers cleared');
       }
-      
-      // ⚡ STEP 3: Execute logout API call
-      await _controller.logout();
-      debugPrint('🔥 [LogoutProvider] Logout API completed');
-      
-      // ⚡ STEP 4: Check for API errors
-      if (_controller.errorMessage != null) {
-        _errorMessage = _controller.errorMessage;
-        debugPrint('❌ [LogoutProvider] Logout API failed: $_errorMessage');
-        return;
+
+      // Cancel pending network requests
+      AppDio.cancelAllRequests('User logout');
+
+      // Start logout API in the background after navigation has already been triggered.
+      final refreshToken = await TokenStorage.getRefreshToken();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        Future<void>.delayed(Duration.zero, () async {
+          try {
+            await _controller.logout(
+              accessToken: await TokenStorage.getAccessToken(),
+              refreshToken: refreshToken,
+            );
+            if (_controller.errorMessage != null) {
+              debugPrint(
+                '❌ [LogoutProvider] Background logout API returned error: ${_controller.errorMessage}',
+              );
+            } else {
+              debugPrint('✅ [LogoutProvider] Background logout API completed');
+            }
+          } catch (e) {
+            debugPrint('❌ [LogoutProvider] Background logout API failed: $e');
+          }
+        });
+      } else {
+        debugPrint(
+          '⚠️ [LogoutProvider] ⚠️ No refresh token available for background logout API',
+        );
       }
-      
-      debugPrint('✅ [LogoutProvider] Logout API successful');
-      
-      // ⚡ STEP 5: Clear all storage (this happens in LogoutController too, but ensure it's complete)
-      await _clearAllStorage();
-      
-      debugPrint('✅ [LogoutProvider] Complete logout successful in ${stopwatch.elapsedMilliseconds}ms');
-      
-      // Trigger navigation to sign-in screen
+
       _shouldNavigate = true;
-      notifyListeners();
-      
     } catch (e) {
       _errorMessage = e.toString();
       debugPrint('❌ [LogoutProvider] Logout exception: $e');
     } finally {
-      // Clear loading state
       _setLoading(false);
+    }
+  }
+
+  T? _tryGetProvider<T>(BuildContext? context) {
+    if (context == null) return null;
+    try {
+      return Provider.of<T>(context, listen: false);
+    } catch (_) {
+      return null;
     }
   }
 
   /// Reset all providers to clear user data
   Future<void> _resetAllProviders(BuildContext context) async {
     debugPrint('🔄 [LogoutProvider] Resetting all providers...');
-    
+
     try {
       // Store all provider references before async operations
-      final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
-      final storyController = Provider.of<StoryController>(context, listen: false);
-      final highlightProvider = Provider.of<HighlightFlowProvider>(context, listen: false);
+      final profileProvider = Provider.of<ProfileProvider>(
+        context,
+        listen: false,
+      );
+      final storyController = Provider.of<StoryController>(
+        context,
+        listen: false,
+      );
+      final highlightProvider = Provider.of<HighlightFlowProvider>(
+        context,
+        listen: false,
+      );
       final blockProvider = Provider.of<BlockProvider>(context, listen: false);
-      final saveProvider = Provider.of<SavePostProvider>(context, listen: false);
-      
+      final saveProvider = Provider.of<SavePostProvider>(
+        context,
+        listen: false,
+      );
+
       // Reset ProfileProvider
       profileProvider.reset();
-      
+
       // Reset StoryController
       storyController.reset();
-      
+
       // Reset HighlightFlowProvider
       highlightProvider.reset();
-      
+
       // Reset BlockProvider
       blockProvider.reset();
-      
+
       // Reset SavePostProvider
       saveProvider.reset();
-      
+
       debugPrint('✅ [LogoutProvider] All providers reset successfully');
     } catch (e) {
       debugPrint('❌ [LogoutProvider] Error resetting providers: $e');
-    }
-  }
-
-  /// Clear all storage completely
-  Future<void> _clearAllStorage() async {
-    debugPrint('🗑️ [LogoutProvider] Clearing all storage...');
-    
-    try {
-      // Clear tokens (already done in LogoutController, but ensure it's complete)
-      await TokenStorage.clearTokens();
-      
-      // Clear reset token if exists
-      await TokenStorage.clearResetToken();
-      
-      debugPrint('✅ [LogoutProvider] All storage cleared successfully');
-    } catch (e) {
-      debugPrint('❌ [LogoutProvider] Error clearing storage: $e');
     }
   }
 

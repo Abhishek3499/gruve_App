@@ -55,10 +55,15 @@ class _VideoFeedState extends State<VideoFeed> {
     _controller.playVideo(page);
     HapticFeedback.selectionClick();
 
+    // Threshold-based pagination: load more when user is close to end
+    const paginationThreshold = 5; // Load more when 5 items remaining
     final remainingItems = _controller.mediaUrls.length - page - 1;
-    if (remainingItems <= 3 &&
+
+    if (remainingItems <= paginationThreshold &&
         _controller.hasMore &&
-        !_controller.isLoadingMore) {
+        !_controller.isLoadingMore &&
+        !_controller.isRefreshing) {
+      // Don't load more during refresh
       _controller.loadMorePosts();
     }
   }
@@ -74,9 +79,26 @@ class _VideoFeedState extends State<VideoFeed> {
   }
 
   Future<void> _refreshFeed() async {
+    // Prevent multiple simultaneous refreshes
+    if (_controller.isRefreshing) {
+      debugPrint('⏳ [VideoFeed] Refresh already in progress, skipping');
+      return;
+    }
+
     await _controller.initVideos(refresh: true);
+
     if (!mounted || !_pageController.hasClients) return;
-    _pageController.jumpToPage(0);
+
+    // Only jump to top if we have new content (current index changed due to merge)
+    final currentIndex = _controller.currentIndex.value;
+    if (currentIndex > 0) {
+      // Smooth scroll to show new content instead of jumping
+      _pageController.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   bool _isNetworkMediaUrl(String url) {
@@ -260,7 +282,10 @@ class _VideoFeedState extends State<VideoFeed> {
         final showInitialLoader =
             _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
         final showEmptyState =
-            !_controller.isInitialLoading && _controller.mediaUrls.isEmpty;
+            !_controller.isInitialLoading &&
+            _controller.mediaUrls.isEmpty &&
+            !_controller.isRefreshing;
+        final showRefreshIndicator = _controller.mediaUrls.isNotEmpty;
 
         return Stack(
           children: [
@@ -268,7 +293,7 @@ class _VideoFeedState extends State<VideoFeed> {
               _buildInitialLoader()
             else if (showEmptyState)
               _buildEmptyState()
-            else
+            else if (showRefreshIndicator)
               RefreshIndicator(
                 onRefresh: _refreshFeed,
                 color: Colors.white,
@@ -283,6 +308,18 @@ class _VideoFeedState extends State<VideoFeed> {
                   ),
                   itemBuilder: (context, index) => _buildFeedItem(index),
                 ),
+              )
+            else
+              // Fallback: show feed without refresh indicator if needed
+              PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                onPageChanged: _onPageChanged,
+                itemCount: _controller.mediaUrls.length,
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                itemBuilder: (context, index) => _buildFeedItem(index),
               ),
             _buildPagingLoader(),
             VideoTopBar(
