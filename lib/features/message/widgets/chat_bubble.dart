@@ -4,18 +4,27 @@ import '../models/message_model.dart';
 import '../../../core/assets.dart';
 import 'message_popup_menu.dart';
 
-class ChatBubble extends StatelessWidget {
+class ChatBubble extends MessageBubble {
+  const ChatBubble({
+    super.key,
+    required super.message,
+    super.onActionSelected,
+    super.onLongPress,
+  });
+}
+
+class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final Function(MessageAction)? onActionSelected;
 
   // ── New: long press callback with position + size ──
   final void Function(Offset globalPosition, Size size)? onLongPress;
 
-  const ChatBubble({
+  const MessageBubble({
     super.key,
     required this.message,
     this.onActionSelected,
-    this.onLongPress, // pass this from ChatScreen
+    this.onLongPress,
   });
 
   @override
@@ -126,7 +135,7 @@ class ChatBubble extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          "06:14 PM",
+          _formatTime(),
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 10,
@@ -138,6 +147,18 @@ class ChatBubble extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  String _formatTime() {
+    final localTime = message.timestamp.toLocal();
+    final hour = localTime.hour > 12
+        ? localTime.hour - 12
+        : localTime.hour == 0
+            ? 12
+            : localTime.hour;
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    final period = localTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
   }
 
   Widget _buildImageContent() {

@@ -68,6 +68,8 @@ dependencies:
 
   web_socket_channel: ^2.4.0
 
+  connectivity_plus: ^5.0.2
+
   timeago: ^3.6.1
 
 

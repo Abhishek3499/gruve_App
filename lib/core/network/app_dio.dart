@@ -4,6 +4,9 @@ import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
 import 'package:gruve_app/core/network/pending_request_queue.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
+import 'package:gruve_app/core/network/request_deduplication_manager.dart';
+import 'package:gruve_app/core/cache/cache_interceptor.dart';
+import 'package:gruve_app/core/cache/cache_manager.dart';
 
 class AppDio {
   static CancelToken? _logoutCancelToken;
@@ -22,6 +25,12 @@ class AppDio {
 
     // Also cancel pending queued requests
     _queue.cancelAll(reason);
+    
+    // Cancel all in-flight deduplicated requests
+    RequestDeduplicationManager().cancelAll(reason);
+    
+    // Clear cache on logout
+    CacheManager().clear();
   }
 
   static Dio create({
@@ -45,6 +54,12 @@ class AppDio {
 
     // Add refresh token interceptor
     dio.interceptors.add(RefreshTokenInterceptor(dio));
+
+    // Add cache interceptor (before deduplication for optimal performance)
+    dio.interceptors.add(CacheInterceptor());
+
+    // Add request deduplication interceptor
+    dio.interceptors.add(RequestDeduplicationInterceptor());
 
     dio.interceptors.add(
       InterceptorsWrapper(

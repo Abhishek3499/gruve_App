@@ -6,14 +6,16 @@ import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
 import '../data/models/user_profile_model.dart';
+import 'package:gruve_app/core/loading/loading_state_manager.dart';
+import 'package:gruve_app/core/widgets/skeletons/profile_skeleton.dart';
+import 'package:gruve_app/widgets/stats_row_skeleton.dart';
+import 'package:gruve_app/widgets/profile_grid_skeleton.dart';
 
 import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_menu_drawer.dart';
 import '../widgets/stats_row.dart';
 import '../widgets/story_list.dart';
-import '../../../widgets/stats_row_skeleton.dart';
-import '../../../widgets/profile_grid_skeleton.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
@@ -221,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 110),
                           // Show skeleton when stats are loading
                           provider.isLoading 
-                              ? const StatsRowSkeleton()
+                              ? StatsRowSkeleton()
                               : StatsRow(
                                   subscribersCount: provider.stats.subscribersCount,
                                   likesCount: provider.stats.likesCount,
@@ -245,13 +247,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: provider.isLoading && selectedTab == 0
-                                ? const ProfileGridSkeleton(itemCount: 9, showDraftItem: true)
+                                ? ProfileGridSkeleton(itemCount: 9, showDraftItem: true)
                                 : ProfileGrid(
                                     selectedTab: selectedTab,
                                     controller: provider.controller,
                                   ),
                           ),
-                          const SizedBox(height: 100),
+                          SizedBox(height: 100),
                         ],
                       ),
                     ),
@@ -374,7 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: const ProfileGridSkeleton(itemCount: 9, showDraftItem: false),
+                      child: ProfileGridSkeleton(itemCount: 9, showDraftItem: false),
                     ),
                     const SizedBox(height: 100),
                   ],

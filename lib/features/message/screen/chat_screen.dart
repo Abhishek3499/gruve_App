@@ -1,21 +1,25 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import '../models/message_model.dart';
+
+import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';
+import '../models/message_model.dart';
 import '../models/reply_message_model.dart';
+import '../services/message_service.dart';
 import '../widgets/chat_header.dart';
-import '../widgets/chat_bubble.dart';
 import '../widgets/chat_input_field.dart';
+import '../widgets/message_bubble.dart';
 import '../widgets/message_popup_menu.dart';
-import '../widgets/reply_preview_bar.dart';
 import '../widgets/pinned_message_banner.dart';
+import '../widgets/reply_preview_bar.dart';
 
 class ChatScreen extends StatefulWidget {
-  // Support both old ChatUser and new ConversationModel for backward compatibility
+  // Supports both the new ConversationModel flow and the older ChatUser flow.
   final dynamic userOrConversation;
-  
+
   const ChatScreen({
-    super.key, 
+    super.key,
     required this.userOrConversation,
   });
 
@@ -24,63 +28,98 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  List<MessageModel> _messages = [];
-  bool _isLoading = false;
+  late final MessageController _messageController;
+  final ScrollController _scrollController = ScrollController();
+
+  bool _isSending = false;
+  bool _hasCompletedInitialScroll = false;
   ReplyMessageModel? _activeReply;
   MessageModel? _pinnedMessage;
 
-  // ── Popup / blur state ──
   bool _showPopup = false;
   MessageModel? _popupMessage;
   double _popupMessageBottom = 0;
-  double _popupMessageTop = 0; // ← top of pressed bubble
-  Size _popupBubbleSize = Size.zero; // ← size of pressed bubble
+  double _popupMessageTop = 0;
+  Size _popupBubbleSize = Size.zero;
 
-  // ── Delete mode state ──
   bool _isDeleteMode = false;
   final Set<String> _selectedMessageIds = {};
 
-  // Helper getters for backward compatibility
-  bool get _isConversationModel => widget.userOrConversation is ConversationModel;
+  bool get _isConversationModel =>
+      widget.userOrConversation is ConversationModel;
+
   String get _userName {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUserName;
     }
     return (widget.userOrConversation as dynamic).name ?? 'Unknown';
   }
-  
+
   String get _userId {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUser.id;
     }
     return (widget.userOrConversation as dynamic).id ?? '';
   }
-  
-  String? get _userAvatar {
+
+  String get _conversationId {
     if (_isConversationModel) {
-      return (widget.userOrConversation as ConversationModel).otherUserAvatar;
+      return (widget.userOrConversation as ConversationModel).id;
     }
-    return (widget.userOrConversation as dynamic).avatar;
+
+    try {
+      final dynamic legacyUser = widget.userOrConversation;
+      return legacyUser.conversationId?.toString() ?? '';
+    } catch (_) {
+      return '';
+    }
   }
+
+  List<MessageModel> get _messages => _messageController.messages;
 
   @override
   void initState() {
     super.initState();
-    debugPrint('💬 [ChatScreen] Screen initialized for: $_userName');
-    _loadMessages();
-  }
+    debugPrint('[ChatScreen] init user=$_userName conversation=$_conversationId');
 
-  void _loadMessages() {
-    debugPrint('📋 [ChatScreen] Loading messages for user: $_userName ($_userId)');
-    setState(() {
-      // TODO: Implement real chat messages API
-      // For now, initialize with empty list
-      _messages = [];
+    _messageController = MessageController(
+      messageService: MessageService(),
+      conversationId: _conversationId,
+      receiverUserId: _userId,
+    )..addListener(_handleMessageStateChanged);
+
+    // Requirement: the messages API is called only after ChatScreen opens.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('[ChatScreen] Fetch messages requested for $_conversationId');
+      _hasCompletedInitialScroll = false;
+      _messageController.fetchInitialMessages();
     });
-    debugPrint('📭 [ChatScreen] Messages loaded (empty for now)');
   }
 
-  // ── Show popup on long press ──
+  void _handleMessageStateChanged() {
+    if (!mounted) return;
+    setState(() {});
+
+    if (!_messageController.isInitialLoading &&
+        !_messageController.hasError &&
+        _messageController.hasMessages &&
+        !_hasCompletedInitialScroll) {
+      _hasCompletedInitialScroll = true;
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   void _showMessagePopup(
     MessageModel message,
     Offset globalPosition,
@@ -91,15 +130,12 @@ class _ChatScreenState extends State<ChatScreen> {
       _showPopup = true;
       _popupMessage = message;
       _popupBubbleSize = bubbleSize;
-      // top of the bubble inside SafeArea
       _popupMessageTop = globalPosition.dy - statusBarHeight;
-      // bottom of the bubble inside SafeArea
       _popupMessageBottom =
           globalPosition.dy + bubbleSize.height - statusBarHeight + 10;
     });
   }
 
-  // ── Dismiss popup ──
   void _dismissPopup() {
     setState(() {
       _showPopup = false;
@@ -107,7 +143,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // ── Enter delete mode ──
   void _enterDeleteMode() {
     setState(() {
       _showPopup = false;
@@ -120,7 +155,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // ── Exit delete mode ──
   void _exitDeleteMode() {
     setState(() {
       _isDeleteMode = false;
@@ -139,40 +173,44 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _deleteSelectedMessages() {
+    _messageController.removeMessages(_selectedMessageIds);
     setState(() {
-      _messages.removeWhere((msg) => _selectedMessageIds.contains(msg.id));
       _isDeleteMode = false;
       _selectedMessageIds.clear();
     });
   }
 
   void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-    debugPrint('📤 [ChatScreen] Sending message: $text');
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty) return;
+
+    debugPrint('[ChatScreen] Sending local message to $_conversationId');
     final newMessage = MessageModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text,
+      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+      text: trimmedText,
       timestamp: DateTime.now(),
       isSent: true,
       senderId: 'me',
       replyTo: _activeReply?.originalMessage,
     );
+
     setState(() {
-      _messages.add(newMessage);
-      _isLoading = true;
+      _isSending = true;
       _activeReply = null;
     });
-    debugPrint('✅ [ChatScreen] Message added to local state');
+    _messageController.appendLocalMessage(newMessage);
+    _scrollToBottom();
+
     Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _isLoading = false);
-      debugPrint('⏳ [ChatScreen] Message sending completed');
+      if (!mounted) return;
+      setState(() => _isSending = false);
     });
   }
 
   void _sendImage(String imagePath) {
-    debugPrint('🖼️ [ChatScreen] Sending image: $imagePath');
+    debugPrint('[ChatScreen] Sending local image message to $_conversationId');
     final newMessage = MessageModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
       text: '',
       timestamp: DateTime.now(),
       isSent: true,
@@ -180,24 +218,26 @@ class _ChatScreenState extends State<ChatScreen> {
       imagePath: imagePath,
       replyTo: _activeReply?.originalMessage,
     );
+
     setState(() {
-      _messages.add(newMessage);
-      _isLoading = true;
+      _isSending = true;
       _activeReply = null;
     });
-    debugPrint('✅ [ChatScreen] Image message added to local state');
+    _messageController.appendLocalMessage(newMessage);
+    _scrollToBottom();
+
     Future.delayed(const Duration(seconds: 1), () {
-      setState(() => _isLoading = false);
-      debugPrint('⏳ [ChatScreen] Image sending completed');
+      if (!mounted) return;
+      setState(() => _isSending = false);
     });
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
-    debugPrint('⚙️ [ChatScreen] Handling message action: $action for message: ${message.id}');
+    debugPrint('[ChatScreen] Message action=$action id=${message.id}');
     _dismissPopup();
+
     switch (action) {
       case MessageAction.reply:
-        debugPrint('↩️ [ChatScreen] Setting up reply to message: ${message.id}');
         setState(() {
           _activeReply = ReplyMessageModel(
             originalMessage: message,
@@ -205,63 +245,59 @@ class _ChatScreenState extends State<ChatScreen> {
             previewText: message.text.isNotEmpty ? message.text : 'Image',
           );
         });
-        debugPrint('✅ [ChatScreen] Reply setup completed');
         break;
       case MessageAction.forward:
-        debugPrint('↗️ [ChatScreen] Forward feature requested (not implemented)');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Forward feature coming soon!')),
         );
         break;
       case MessageAction.pin:
-        debugPrint('📌 [ChatScreen] Pinning message: ${message.id}');
-        setState(() {
-          if (_pinnedMessage != null) {
-            final idx = _messages.indexWhere((m) => m.id == _pinnedMessage!.id);
-            if (idx != -1) {
-              _messages[idx] = _messages[idx].copyWith(isPinned: false);
-              debugPrint('📍 [ChatScreen] Unpinned previous message: ${_pinnedMessage!.id}');
-            }
-          }
-          final idx = _messages.indexWhere((m) => m.id == message.id);
-          if (idx != -1) {
-            _messages[idx] = _messages[idx].copyWith(isPinned: true);
-            _pinnedMessage = _messages[idx];
-            debugPrint('📌 [ChatScreen] Pinned message: ${message.id}');
-          }
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$_userName pinned a message')),
-        );
-        debugPrint('✅ [ChatScreen] Pin action completed');
+        _pinMessage(message);
         break;
       case MessageAction.report:
-        debugPrint('🚨 [ChatScreen] Report feature requested (not implemented)');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Report feature coming soon!')),
         );
         break;
       case MessageAction.delete:
-        debugPrint('🗑️ [ChatScreen] Delete mode activated');
         _enterDeleteMode();
         break;
     }
-    debugPrint('✅ [ChatScreen] Message action handling completed');
+  }
+
+  void _pinMessage(MessageModel message) {
+    if (_pinnedMessage != null) {
+      _messageController.replaceMessage(
+        _pinnedMessage!.copyWith(isPinned: false),
+      );
+    }
+
+    final pinned = message.copyWith(isPinned: true);
+    _messageController.replaceMessage(pinned);
+    setState(() => _pinnedMessage = pinned);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$_userName pinned a message')),
+    );
   }
 
   void _clearReply() {
-    debugPrint('❌ [ChatScreen] Clearing reply');
     setState(() => _activeReply = null);
   }
 
   List<MessageModel> _getSortedMessages() {
-    final sorted = List<MessageModel>.from(_messages);
-    sorted.sort((a, b) {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return a.timestamp.compareTo(b.timestamp);
-    });
+    final sorted = List<MessageModel>.from(_messages)
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return sorted;
+  }
+
+  @override
+  void dispose() {
+    _messageController.removeListener(_handleMessageStateChanged);
+    _messageController.dispose();
+    _scrollController.dispose();
+    debugPrint('[ChatScreen] dispose conversation=$_conversationId');
+    super.dispose();
   }
 
   @override
@@ -289,7 +325,6 @@ class _ChatScreenState extends State<ChatScreen> {
           child: SafeArea(
             child: Stack(
               children: [
-                // ── Layer 1: Main chat layout ──
                 Column(
                   children: [
                     ChatHeader(
@@ -302,56 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
                       },
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: sortedMessages.length,
-                        itemBuilder: (context, index) {
-                          final message = sortedMessages[index];
-                          final isSelected = _selectedMessageIds.contains(
-                            message.id,
-                          );
-
-                          Widget bubble = ChatBubble(
-                            message: message,
-                            onActionSelected: (action) =>
-                                _handleMessageAction(action, message),
-                            onLongPress: (globalPos, size) =>
-                                _showMessagePopup(message, globalPos, size),
-                          );
-
-                          if (_isDeleteMode) {
-                            bubble = MessageWithCheckbox(
-                              message: bubble,
-                              isSelected: isSelected,
-                              onTap: () => _toggleMessageSelection(message.id),
-                              onCheckboxChanged: (_) =>
-                                  _toggleMessageSelection(message.id),
-                            );
-                          }
-
-                          if (message.isPinned) {
-                            return Column(
-                              children: [
-                                if (index > 0) const SizedBox(height: 10),
-                                bubble,
-                                PinnedMessageBanner(
-                                  pinnedMessage: message,
-                                  username: _userName,
-                                ),
-                              ],
-                            );
-                          }
-                          return Column(
-                            children: [
-                              if (index > 0) const SizedBox(height: 10),
-                              bubble,
-                            ],
-                          );
-                        },
-                      ),
-                    ),
+                    Expanded(child: _buildMessageBody(sortedMessages)),
                     if (_activeReply != null && !_isDeleteMode)
                       ReplyPreviewBar(
                         replyMessage: _activeReply!,
@@ -363,12 +349,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       ChatInputField(
                         onSendMessage: _sendMessage,
                         onSendImage: _sendImage,
-                        isLoading: _isLoading,
+                        isLoading: _isSending,
                       ),
                   ],
                 ),
-
-                // ── Layer 2: Blur — poora background blur hoga ──
                 if (_showPopup)
                   Positioned.fill(
                     child: GestureDetector(
@@ -381,8 +365,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ),
                   ),
-
-                // ── Layer 3: Pressed message — blur ke upar, clear dikhega ──
                 if (_showPopup && _popupMessage != null)
                   Positioned(
                     top: _popupMessageTop,
@@ -390,16 +372,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     right: 0,
                     height: _popupBubbleSize.height,
                     child: IgnorePointer(
-                      // non-interactive — sirf display ke liye
-                      child: ChatBubble(
+                      child: MessageBubble(
                         message: _popupMessage!,
                         onActionSelected: null,
                         onLongPress: null,
                       ),
                     ),
                   ),
-
-                // ── Layer 4: Popup menu — sabse upar ──
                 if (_showPopup && _popupMessage != null)
                   Positioned(
                     top: _popupMessageBottom + 4,
@@ -420,28 +399,105 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Widget _buildDeleteModeHeader() {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  //     child: Row(
-  //       children: [
-  //         GestureDetector(
-  //           onTap: _exitDeleteMode,
-  //           child: const Icon(Icons.close, color: Colors.white, size: 24),
-  //         ),
-  //         const SizedBox(width: 16),
-  //         Text(
-  //           '${_selectedMessageIds.length} selected',
-  //           style: const TextStyle(
-  //             color: Colors.white,
-  //             fontSize: 18,
-  //             fontWeight: FontWeight.w600,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+  Widget _buildMessageBody(List<MessageModel> sortedMessages) {
+    if (_messageController.isInitialLoading && sortedMessages.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    if (_messageController.hasError && sortedMessages.isEmpty) {
+      return _buildErrorState();
+    }
+
+    if (sortedMessages.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      physics: const BouncingScrollPhysics(),
+      itemCount: sortedMessages.length,
+      itemBuilder: (context, index) {
+        final message = sortedMessages[index];
+        return _buildMessageRow(message, index);
+      },
+    );
+  }
+
+  Widget _buildMessageRow(MessageModel message, int index) {
+    final isSelected = _selectedMessageIds.contains(message.id);
+
+    Widget bubble = MessageBubble(
+      message: message,
+      onActionSelected: (action) => _handleMessageAction(action, message),
+      onLongPress: (globalPos, size) =>
+          _showMessagePopup(message, globalPos, size),
+    );
+
+    if (_isDeleteMode) {
+      bubble = MessageWithCheckbox(
+        message: bubble,
+        isSelected: isSelected,
+        onTap: () => _toggleMessageSelection(message.id),
+        onCheckboxChanged: (_) => _toggleMessageSelection(message.id),
+      );
+    }
+
+    return Column(
+      children: [
+        if (index > 0) const SizedBox(height: 10),
+        bubble,
+        if (message.isPinned)
+          PinnedMessageBanner(
+            pinnedMessage: message,
+            username: _userName,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white54, size: 46),
+            const SizedBox(height: 14),
+            Text(
+              _messageController.error ?? 'Unable to load messages',
+              style: const TextStyle(color: Colors.white70, fontSize: 15),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline, color: Colors.white54, size: 46),
+          SizedBox(height: 12),
+          Text(
+            'No messages yet',
+            style: TextStyle(color: Colors.white70, fontSize: 16),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Send a message to start the chat',
+            style: TextStyle(color: Colors.white54, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildDeleteBottomBar() {
     return Container(

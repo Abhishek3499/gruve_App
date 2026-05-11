@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class MessageModel {
   final String id;
   final String text;
@@ -21,8 +23,52 @@ class MessageModel {
     this.isRead = false,
   });
 
+  factory MessageModel.fromJson(
+    Map<String, dynamic> json, {
+    String? currentUserId,
+    String? receiverUserId,
+  }) {
+    final senderId = _stringValue(
+      json['sender_id'] ??
+          json['senderId'] ??
+          json['sender']?['id'] ??
+          json['user']?['id'],
+    );
+
+    final isSent = currentUserId != null && currentUserId.isNotEmpty
+        ? senderId == currentUserId
+        : receiverUserId != null && receiverUserId.isNotEmpty
+            ? senderId != receiverUserId
+            : json['is_sent'] == true || json['isSent'] == true;
+
+    return MessageModel(
+      id: _stringValue(json['id'] ?? json['_id']),
+      text: _stringValue(json['content'] ?? json['text'] ?? json['message']),
+      timestamp: _parseDateTime(
+        json['created_at'] ?? json['createdAt'] ?? json['timestamp'],
+      ),
+      isSent: isSent,
+      senderId: senderId,
+      imagePath: _nullableString(
+        json['image'] ?? json['image_url'] ?? json['media_url'] ?? json['file'],
+      ),
+      isRead: json['is_read'] == true || json['isRead'] == true,
+    );
+  }
+
   bool get hasImage => imagePath != null && imagePath!.isNotEmpty;
   bool get hasReply => replyTo != null;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'content': text,
+      'created_at': timestamp.toIso8601String(),
+      'sender_id': senderId,
+      'is_read': isRead,
+      if (imagePath != null) 'image': imagePath,
+    };
+  }
 
   MessageModel copyWith({
     String? id,
@@ -46,6 +92,25 @@ class MessageModel {
       isPinned: isPinned ?? this.isPinned,
       isRead: isRead ?? this.isRead,
     );
+  }
+
+  static String _stringValue(dynamic value) => value?.toString() ?? '';
+
+  static String? _nullableString(dynamic value) {
+    final parsed = value?.toString();
+    return parsed == null || parsed.isEmpty ? null : parsed;
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      try {
+        return DateTime.parse(value);
+      } catch (error) {
+        debugPrint('[MessageModel] Failed to parse timestamp "$value": $error');
+      }
+    }
+    return DateTime.now();
   }
 }
 

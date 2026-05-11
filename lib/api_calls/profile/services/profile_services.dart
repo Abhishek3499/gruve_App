@@ -44,6 +44,7 @@ class ProfileService {
 
     debugPrint("[ProfileService] GET user/profile_data/");
     debugPrint("[ProfileService] Query params: $queryParams");
+    debugPrint("[ProfileService] 🔄 [DEDUP TEST] Request will be deduplicated if duplicate");
     const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {

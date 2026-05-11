@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
@@ -26,9 +27,6 @@ import 'package:gruve_app/core/network/api_client.dart';
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 Future<void> main() async {
-  final appInitStart = DateTime.now();
-  developer.log('🚀 [PERF] App initialization started', name: 'Main');
-  
   WidgetsFlutterBinding.ensureInitialized();
 
   // Suppress verbose logs in release mode
@@ -36,36 +34,9 @@ Future<void> main() async {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
 
-  // Set preferred orientations for better performance
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  final envLoadStart = DateTime.now();
   await dotenv.load(fileName: ".env"); // 👈 IMPORTANT
-  final envLoadTime = DateTime.now().difference(envLoadStart);
-  developer.log('⚙️ [PERF] Environment loaded in ${envLoadTime.inMilliseconds}ms', name: 'Main');
-
-  final sharedPrefsStart = DateTime.now();
+  await EnvironmentConfig.initialize(); // 👈 CRITICAL - Initialize environment config
   await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
-  final sharedPrefsTime = DateTime.now().difference(sharedPrefsStart);
-  developer.log('💾 [PERF] SharedPreferences initialized in ${sharedPrefsTime.inMilliseconds}ms', name: 'Main');
-
-  final totalInitTime = DateTime.now().difference(appInitStart);
-  developer.log('🚀 [PERF] Total main() initialization time: ${totalInitTime.inMilliseconds}ms', name: 'Main');
-
-  // Start frame performance monitoring
-  if (kDebugMode) {
-    WidgetsBinding.instance.addTimingsCallback((timings) {
-      for (final timing in timings) {
-        if (timing.totalSpan.inMicroseconds > 16666) { // > 16.66ms = < 60 FPS
-          developer.log('⚠️ [PERF] Frame drop: ${timing.totalSpan.inMicroseconds}μs', name: 'FrameTiming');
-        }
-      }
-    });
-  }
-
   runApp(MyApp());
 }
 
@@ -83,8 +54,14 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BlockProvider()),
         ChangeNotifierProvider(create: (_) => SavePostProvider()),
         ChangeNotifierProvider(create: (_) => LogoutProvider()),
-        ChangeNotifierProvider(create: (_) => MessageProvider(MessageService())),
-        ChangeNotifierProvider(create: (_) => UserProvider(UserRepositoryImpl(UserRemoteDataSource(ApiClient())))),
+        ChangeNotifierProvider(
+          create: (_) => MessageProvider(MessageService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => UserProvider(
+            UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'Gruve',

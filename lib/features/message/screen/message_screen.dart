@@ -34,7 +34,9 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _showDeleteConfirmation(ConversationModel conversation) {
-    debugPrint('🗑️ [MessageScreen] Showing delete confirmation for: ${conversation.otherUserName}');
+    debugPrint(
+      '🗑️ [MessageScreen] Showing delete confirmation for: ${conversation.otherUserName}',
+    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -71,7 +73,9 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _deleteConversation(ConversationModel conversation) {
-    debugPrint('🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}');
+    debugPrint(
+      '🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}',
+    );
     context.read<MessageProvider>().deleteConversation(conversation.id);
   }
 
@@ -125,7 +129,9 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildConversationList(MessageProvider messageProvider) {
-    debugPrint('📋 [MessageScreen] Building conversation list - Loading: ${messageProvider.isLoading}, Conversations: ${messageProvider.conversationCount}');
+    debugPrint(
+      '📋 [MessageScreen] Building conversation list - Loading: ${messageProvider.isLoading}, Conversations: ${messageProvider.conversationCount}',
+    );
     // Show loading shimmer on initial load
     if (messageProvider.isLoading && !messageProvider.hasConversations) {
       debugPrint('✨ [MessageScreen] Showing shimmer loading state');
@@ -134,7 +140,9 @@ class _MessageScreenState extends State<MessageScreen> {
 
     // Show error state
     if (messageProvider.hasError && !messageProvider.hasConversations) {
-      debugPrint('❌ [MessageScreen] Showing error state: ${messageProvider.error}');
+      debugPrint(
+        '❌ [MessageScreen] Showing error state: ${messageProvider.error}',
+      );
       return _buildErrorState(messageProvider);
     }
 
@@ -145,12 +153,16 @@ class _MessageScreenState extends State<MessageScreen> {
     }
 
     // Show conversation list
-    debugPrint('📱 [MessageScreen] Showing conversation list with ${messageProvider.conversationCount} items');
+    debugPrint(
+      '📱 [MessageScreen] Showing conversation list with ${messageProvider.conversationCount} items',
+    );
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
         // Load more when reaching near bottom
         if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
-          debugPrint('⬇️ [MessageScreen] Reached bottom, loading more conversations');
+          debugPrint(
+            '⬇️ [MessageScreen] Reached bottom, loading more conversations',
+          );
           messageProvider.loadMoreConversations();
         }
         return false;
@@ -231,7 +243,9 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _navigateToChat(ConversationModel conversation) {
-    debugPrint('💬 [MessageScreen] Navigating to chat with: ${conversation.otherUserName} (${conversation.id})');
+    debugPrint(
+      '💬 [MessageScreen] Navigating to chat with: ${conversation.otherUserName} (${conversation.id})',
+    );
     // Mark conversation as read when opening
     context.read<MessageProvider>().markConversationAsRead(conversation.id);
 
