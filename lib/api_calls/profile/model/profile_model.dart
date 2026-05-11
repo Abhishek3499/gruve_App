@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/parsing/safe_parsing_helpers.dart';
 
 class ProfileModel {
   final String id;
@@ -21,12 +22,13 @@ class ProfileModel {
 
   /// Overlays nested `data` / `user` / `profile` fields so top-level keys resolve.
   static Map<String, dynamic> flattenUserJson(Map<String, dynamic> json) {
-    final base = Map<String, dynamic>.from(json);
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: 'ProfileModel.flattenUserJson');
+    final base = Map<String, dynamic>.from(safeJson);
 
     void overlay(dynamic node) {
       if (node is! Map) return;
-      final m = Map<String, dynamic>.from(node);
-      m.forEach((k, v) {
+      final safeNode = SafeParsingHelpers.validateAndCleanMap(node, context: 'ProfileModel.flattenUserJson.overlay');
+      safeNode.forEach((k, v) {
         if (v == null) return;
         if (v is String && v.trim().isEmpty) return;
         final existing = base[k];
@@ -38,11 +40,11 @@ class ProfileModel {
       });
     }
 
-    overlay(json['data']);
-    overlay(json['user']);
-    overlay(json['profile']);
-    if (json['data'] is Map) {
-      final d = Map<String, dynamic>.from(json['data'] as Map);
+    overlay(safeJson['data']);
+    overlay(safeJson['user']);
+    overlay(safeJson['profile']);
+    if (safeJson['data'] is Map) {
+      final d = SafeParsingHelpers.validateAndCleanMap(safeJson['data'], context: 'ProfileModel.flattenUserJson.data');
       overlay(d['user']);
       overlay(d['profile']);
     }
@@ -51,59 +53,64 @@ class ProfileModel {
   }
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    final flat = flattenUserJson(json);
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: 'ProfileModel.fromJson');
+    final flat = flattenUserJson(safeJson);
     debugPrint("[ProfileModel] fromJson (flattened keys): ${flat.keys.toList()}");
     debugPrint("[ProfileModel] Full flattened JSON: $flat");
 
-    final fullName = _pickString(flat, const [
+    final fullName = SafeParsingHelpers.safeString(flat, const [
       'full_name',
       'fullname',
       'display_name',
       'name',
       'first_name',
-    ]);
+    ], fallback: '');
 
-    var username = _pickString(flat, const [
+    var username = SafeParsingHelpers.safeString(flat, const [
       'username',
       'user_name',
       'handle',
-    ]);
+    ], fallback: '');
 
     if (username.isEmpty) {
       username = '';
     }
 
-    final profileImage = _pickString(flat, const [
+    final profileImage = SafeParsingHelpers.safeString(flat, const [
       'profile_picture',
       'profile_image',
       'avatar',
       'photo',
       'image',
-    ]);
+    ], fallback: '');
 
-    final id = flat['id']?.toString() ??
-        flat['user_id']?.toString() ??
-        flat['pk']?.toString() ??
-        "";
-    final isFollowing = _pickBool(flat, const [
+    final id = SafeParsingHelpers.safeString(flat, const [
+      'id',
+      'user_id',
+      'pk',
+    ], fallback: "");
+    
+    final isFollowing = SafeParsingHelpers.safeBool(flat, const [
       'is_following',
       'is_subscribed',
       'following',
       'subscribed',
-    ]);
+    ], fallback: false);
 
-    final parsedHasActiveStory = _pickBool(flat, const [
+    final parsedHasActiveStory = SafeParsingHelpers.safeBool(flat, const [
       'has_active_story',
       'has_story',
       'story_active',
       'has_stories',
-    ]);
-    final storyCount = _pickInt(flat, const [
+    ], fallback: false);
+    
+    final storyCount = SafeParsingHelpers.safeInt(flat, const [
       'story_count',
       'stories_count',
       'storyCount',
       'storiesCount',
-    ]);
+    ], fallback: 0);
+    
     final hasActiveStory = parsedHasActiveStory;
 
     debugPrint(

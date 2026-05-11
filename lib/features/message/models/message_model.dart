@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/parsing/safe_parsing_helpers.dart';
 
 class MessageModel {
   final String id;
@@ -28,31 +29,36 @@ class MessageModel {
     String? currentUserId,
     String? receiverUserId,
   }) {
-    final senderId = _stringValue(
-      json['sender_id'] ??
-          json['senderId'] ??
-          json['sender']?['id'] ??
-          json['user']?['id'],
-    );
+    debugPrint('📨 [MessageModel] 🔍 Starting message parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📨 MessageModel.fromJson');
+    debugPrint('📨 [MessageModel] 🗺️ Message keys: ${safeJson.keys.toList()}');
+    
+    final senderId = SafeParsingHelpers.safeString(safeJson, const [
+      'sender_id',
+      'senderId', 
+      'sender.id',
+      'user.id',
+    ], fallback: '');
 
     final isSent = currentUserId != null && currentUserId.isNotEmpty
         ? senderId == currentUserId
         : receiverUserId != null && receiverUserId.isNotEmpty
             ? senderId != receiverUserId
-            : json['is_sent'] == true || json['isSent'] == true;
+            : SafeParsingHelpers.safeBool(safeJson, const ['is_sent', 'isSent'], fallback: false);
 
     return MessageModel(
-      id: _stringValue(json['id'] ?? json['_id']),
-      text: _stringValue(json['content'] ?? json['text'] ?? json['message']),
+      id: SafeParsingHelpers.safeString(safeJson, const ['id', '_id'], fallback: ''),
+      text: SafeParsingHelpers.safeString(safeJson, const ['content', 'text', 'message'], fallback: ''),
       timestamp: _parseDateTime(
-        json['created_at'] ?? json['createdAt'] ?? json['timestamp'],
+        safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
       ),
       isSent: isSent,
       senderId: senderId,
-      imagePath: _nullableString(
-        json['image'] ?? json['image_url'] ?? json['media_url'] ?? json['file'],
+      imagePath: SafeParsingHelpers.safeNullableString(
+        safeJson,
+        const ['image', 'image_url', 'media_url', 'file'],
       ),
-      isRead: json['is_read'] == true || json['isRead'] == true,
+      isRead: SafeParsingHelpers.safeBool(safeJson, const ['is_read', 'isRead'], fallback: false),
     );
   }
 
@@ -105,7 +111,7 @@ class MessageModel {
     if (value is DateTime) return value;
     if (value is String && value.isNotEmpty) {
       try {
-        return DateTime.parse(value);
+        return DateTime.parse(value).toLocal();
       } catch (error) {
         debugPrint('[MessageModel] Failed to parse timestamp "$value": $error');
       }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../../core/parsing/safe_parsing_helpers.dart';
 import '../../domain/entities/user_entity.dart';
 
 class UserModel {
@@ -15,16 +16,20 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final fullName = json['full_name'] as String? ?? '';
-    final username = (json['username'] as String?)?.isNotEmpty == true
-        ? json['username'] as String
-        : fullName;
-    debugPrint('👤 [UserModel] Parsing user: ${json['user_id']}');
+    debugPrint('👤 [UserModel] 🔍 Starting user parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '👤 UserModel.fromJson');
+    debugPrint('👤 [UserModel] 🗺️ User keys: ${safeJson.keys.toList()}');
+    
+    final fullName = SafeParsingHelpers.safeString(safeJson, const ['full_name', 'fullName', 'name'], fallback: '');
+    final username = SafeParsingHelpers.safeString(safeJson, const ['username', 'user_name', 'handle'], fallback: '');
+    final finalUsername = username.isNotEmpty ? username : fullName;
+    
+    debugPrint('👤 [UserModel] 📝 Parsing user: ${safeJson['user_id']}');
     return UserModel(
-      userId: json['user_id'] as String? ?? '',
-      username: username,
+      userId: SafeParsingHelpers.safeString(safeJson, const ['user_id', 'userId', 'id', 'pk'], fallback: ''),
+      username: finalUsername,
       fullName: fullName,
-      profilePicture: json['profile_picture'] as String?,
+      profilePicture: SafeParsingHelpers.safeNullableString(safeJson, const ['profile_picture', 'profileImage', 'avatar', 'photo']),
     );
   }
 
@@ -50,9 +55,13 @@ class PaginatedUserResponse {
   });
 
   factory PaginatedUserResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>?;
-    if (data == null) {
-      debugPrint('❌ [PaginatedUserResponse] No data field in response');
+    debugPrint('📦 [PaginatedUserResponse] 🔍 Starting paginated response parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📦 PaginatedUserResponse.fromJson');
+    debugPrint('📦 [PaginatedUserResponse] 🗺️ Response keys: ${safeJson.keys.toList()}');
+    
+    final data = SafeParsingHelpers.safeMapParse(safeJson['data'], context: '📦 PaginatedUserResponse.data');
+    if (data.isEmpty) {
+      debugPrint('❌ [PaginatedUserResponse] 🚫 No data field in response');
       return PaginatedUserResponse(
         users: [],
         page: 1,
@@ -61,16 +70,30 @@ class PaginatedUserResponse {
       );
     }
 
-    final resultsList = data['results'] as List<dynamic>?;
-    final users = resultsList?.map((item) => UserModel.fromJson(item as Map<String, dynamic>)).toList() ?? [];
+    final resultsList = SafeParsingHelpers.safeListParse(data['results'], context: '📦 PaginatedUserResponse.results');
+    final users = <UserModel>[];
     
-    debugPrint('📦 [PaginatedUserResponse] Parsed ${users.length} users from page ${data['page']}');
+    debugPrint('📦 [PaginatedUserResponse] 📝 Processing ${resultsList.length} users');
+    for (int i = 0; i < resultsList.length; i++) {
+      try {
+        final userJson = SafeParsingHelpers.safeMapParse(resultsList[i], context: '📦 PaginatedUserResponse[$i]');
+        if (userJson.isNotEmpty) {
+          final user = UserModel.fromJson(userJson);
+          users.add(user);
+          debugPrint('✅ [PaginatedUserResponse] ✨ Successfully parsed user at index $i');
+        }
+      } catch (e) {
+        debugPrint('💥 [PaginatedUserResponse] ❌ Failed to parse user at index $i: $e');
+      }
+    }
+    
+    debugPrint('📦 [PaginatedUserResponse] 🏆 Parsed ${users.length}/${resultsList.length} users from page ${data['page']}');
     
     return PaginatedUserResponse(
       users: users,
-      page: data['page'] as int? ?? 1,
-      hasNext: data['has_next'] as bool? ?? false,
-      limit: data['limit'] as int? ?? 20,
+      page: SafeParsingHelpers.safeInt(data, const ['page'], fallback: 1),
+      hasNext: SafeParsingHelpers.safeBool(data, const ['has_next', 'hasNext'], fallback: false),
+      limit: SafeParsingHelpers.safeInt(data, const ['limit'], fallback: 20),
     );
   }
 }

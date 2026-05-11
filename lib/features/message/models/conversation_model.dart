@@ -1,4 +1,6 @@
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:flutter/foundation.dart';
+import '../../../core/parsing/safe_parsing_helpers.dart';
 
 /// Model representing the other user in a conversation
 class OtherUser {
@@ -13,10 +15,29 @@ class OtherUser {
   });
 
   factory OtherUser.fromJson(Map<String, dynamic> json) {
+    debugPrint('👤 [OtherUser] 🔍 Starting user parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '👤 OtherUser.fromJson');
+    final flat = _flattenUserJson(safeJson);
+    debugPrint('👤 [OtherUser] 🗺️ Flattened keys: ${flat.keys.toList()}');
+    
     return OtherUser(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? 'Unknown',
-      avatar: json['avatar'] as String?,
+      id: SafeParsingHelpers.safeString(flat, const ['id', 'user_id', '_id', 'pk'], fallback: ''),
+      name: SafeParsingHelpers.safeString(
+        flat,
+        const ['name', 'full_name', 'fullname', 'username', 'display_name'],
+        fallback: 'Unknown',
+      ),
+      avatar: SafeParsingHelpers.safeNullableString(
+        flat,
+        const [
+          'avatar',
+          'profile_picture',
+          'profileImage',
+          'profile_image',
+          'photo',
+          'image',
+        ],
+      ),
     );
   }
 
@@ -56,6 +77,55 @@ class OtherUser {
   String toString() => 'OtherUser(id: $id, name: $name, avatar: $avatar)';
 }
 
+Map<String, dynamic> _flattenUserJson(Map<String, dynamic> json) {
+  final base = Map<String, dynamic>.from(json);
+
+  void overlay(dynamic node) {
+    if (node is! Map) return;
+    final map = Map<String, dynamic>.from(node);
+    for (final entry in map.entries) {
+      final value = entry.value;
+      final existing = base[entry.key];
+      final existingEmpty = existing == null ||
+          (existing is String && existing.trim().isEmpty);
+      if (existingEmpty && value != null) {
+        base[entry.key] = value;
+      }
+    }
+  }
+
+  overlay(json['user']);
+  overlay(json['profile']);
+  overlay(json['data']);
+  if (json['data'] is Map) {
+    final data = Map<String, dynamic>.from(json['data'] as Map);
+    overlay(data['user']);
+    overlay(data['profile']);
+  }
+
+  return base;
+}
+
+String _pickString(
+  Map<String, dynamic> map,
+  List<String> keys, {
+  String fallback = '',
+}) {
+  return _pickNullableString(map, keys) ?? fallback;
+}
+
+String? _pickNullableString(Map<String, dynamic> map, List<String> keys) {
+  for (final key in keys) {
+    final value = map[key];
+    if (value == null) continue;
+    final stringValue = value.toString().trim();
+    if (stringValue.isNotEmpty && stringValue.toLowerCase() != 'null') {
+      return stringValue;
+    }
+  }
+  return null;
+}
+
 /// Model representing the last message in a conversation
 class LastMessage {
   final String content;
@@ -67,9 +137,15 @@ class LastMessage {
   });
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
+    debugPrint('📨 [LastMessage] 🔍 Starting message parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📨 LastMessage.fromJson');
+    debugPrint('📨 [LastMessage] 🗺️ Message keys: ${safeJson.keys.toList()}');
+    
     return LastMessage(
-      content: json['content'] as String? ?? '',
-      createdAt: _parseDateTime(json['created_at']),
+      content: SafeParsingHelpers.safeString(safeJson, const ['content', 'text', 'message'], fallback: ''),
+      createdAt: _parseDateTime(
+        safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
+      ),
     );
   }
 
@@ -86,7 +162,7 @@ class LastMessage {
     
     if (dateTime is String) {
       try {
-        return DateTime.parse(dateTime);
+        return DateTime.parse(dateTime).toLocal();
       } catch (e) {
         return DateTime.now();
       }
@@ -141,6 +217,8 @@ class ConversationModel {
   final LastMessage lastMessage;
   final DateTime updatedAt;
   final int unreadCount;
+  final String? participant_1_id;
+  final String? participant_2_id;
 
   const ConversationModel({
     required this.id,
@@ -148,15 +226,43 @@ class ConversationModel {
     required this.lastMessage,
     required this.updatedAt,
     this.unreadCount = 0,
+    this.participant_1_id,
+    this.participant_2_id,
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
+    debugPrint('💬 [ConversationModel] 🔍 Starting conversation parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '💬 ConversationModel.fromJson');
+    debugPrint('💬 [ConversationModel] 🗺️ Conversation keys: ${safeJson.keys.toList()}');
+    
+    // Safely extract nested objects
+    final otherUserData = SafeParsingHelpers.safeMapParse(
+      safeJson['other_user'] ??
+          safeJson['otherUser'] ??
+          safeJson['user'] ??
+          safeJson['participant'] ??
+          {},
+      context: '💬 ConversationModel.otherUser'
+    );
+    
+    final lastMessageData = SafeParsingHelpers.safeMapParse(
+      safeJson['last_message'] ?? safeJson['lastMessage'] ?? {},
+      context: '💬 ConversationModel.lastMessage'
+    );
+    
+    debugPrint('💬 [ConversationModel] 👤 Other user keys: ${otherUserData.keys.toList()}');
+    debugPrint('💬 [ConversationModel] 📨 Last message keys: ${lastMessageData.keys.toList()}');
+    
     return ConversationModel(
-      id: json['id'] as String? ?? '',
-      otherUser: OtherUser.fromJson(json['other_user'] as Map<String, dynamic>? ?? {}),
-      lastMessage: LastMessage.fromJson(json['last_message'] as Map<String, dynamic>? ?? {}),
-      updatedAt: _parseDateTime(json['updated_at']),
-      unreadCount: json['unread_count'] as int? ?? 0,
+      id: SafeParsingHelpers.safeString(safeJson, const ['id', '_id', 'conversation_id'], fallback: ''),
+      otherUser: OtherUser.fromJson(otherUserData),
+      lastMessage: LastMessage.fromJson(lastMessageData),
+      updatedAt: _parseDateTime(
+        safeJson['updated_at'] ?? safeJson['updatedAt'] ?? safeJson['last_message_at'],
+      ),
+      unreadCount: SafeParsingHelpers.safeInt(safeJson, const ['unread_count', 'unreadCount'], fallback: 0),
+      participant_1_id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_1_id', 'participant1Id']),
+      participant_2_id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_2_id', 'participant2Id']),
     );
   }
 
@@ -167,6 +273,8 @@ class ConversationModel {
       'last_message': lastMessage.toJson(),
       'updated_at': updatedAt.toIso8601String(),
       'unread_count': unreadCount,
+      'participant_1_id': participant_1_id,
+      'participant_2_id': participant_2_id,
     };
   }
 
@@ -176,7 +284,7 @@ class ConversationModel {
     
     if (dateTime is String) {
       try {
-        return DateTime.parse(dateTime);
+        return DateTime.parse(dateTime).toLocal();
       } catch (e) {
         return DateTime.now();
       }
@@ -206,6 +314,8 @@ class ConversationModel {
     LastMessage? lastMessage,
     DateTime? updatedAt,
     int? unreadCount,
+    String? participant_1_id,
+    String? participant_2_id,
   }) {
     return ConversationModel(
       id: id ?? this.id,
@@ -213,6 +323,8 @@ class ConversationModel {
       lastMessage: lastMessage ?? this.lastMessage,
       updatedAt: updatedAt ?? this.updatedAt,
       unreadCount: unreadCount ?? this.unreadCount,
+      participant_1_id: participant_1_id ?? this.participant_1_id,
+      participant_2_id: participant_2_id ?? this.participant_2_id,
     );
   }
 
@@ -224,7 +336,9 @@ class ConversationModel {
         other.otherUser == otherUser &&
         other.lastMessage == lastMessage &&
         other.updatedAt == updatedAt &&
-        other.unreadCount == unreadCount;
+        other.unreadCount == unreadCount &&
+        other.participant_1_id == participant_1_id &&
+        other.participant_2_id == participant_2_id;
   }
 
   @override
@@ -233,11 +347,13 @@ class ConversationModel {
         otherUser.hashCode ^
         lastMessage.hashCode ^
         updatedAt.hashCode ^
-        unreadCount.hashCode;
+        unreadCount.hashCode ^
+        participant_1_id.hashCode ^
+        participant_2_id.hashCode;
   }
 
   @override
   String toString() {
-    return 'ConversationModel(id: $id, otherUser: $otherUser, lastMessage: $lastMessage, updatedAt: $updatedAt, unreadCount: $unreadCount)';
+    return 'ConversationModel(id: $id, otherUser: $otherUser, lastMessage: $lastMessage, updatedAt: $updatedAt, unreadCount: $unreadCount, participant_1_id: $participant_1_id, participant_2_id: $participant_2_id)';
   }
 }

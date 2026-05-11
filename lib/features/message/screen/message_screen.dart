@@ -6,6 +6,7 @@ import '../widgets/message_header.dart';
 import '../widgets/message_card.dart';
 import '../widgets/swipe_delete_background.dart';
 import '../screen/chat_screen.dart';
+import '../utils/user_display_helper.dart';
 import '../../../core/widgets/shimmer/chat_shimmer.dart';
 
 class MessageScreen extends StatefulWidget {
@@ -253,7 +254,13 @@ class _MessageScreenState extends State<MessageScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(userOrConversation: conversation),
+        builder: (context) => ChatScreen(
+          conversationId: conversation.id,
+          receiverId: conversation.otherUser.id,
+          userName: conversation.otherUserName,
+          profileImage: conversation.otherUser.avatar,
+          userOrConversation: conversation,
+        ),
       ),
     );
   }

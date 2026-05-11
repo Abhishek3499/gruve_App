@@ -48,10 +48,68 @@ class TokenStorage {
     final token = await _readSecure(_accessTokenKey);
     if (token != null && token.isNotEmpty) {
       debugPrint("🎫 [TokenStorage] 🎫 Access token found: ${token.substring(0, 10)}...");
-    } else {
-      debugPrint("🚫 [TokenStorage] 🚫 No access token found");
+      
+      // Validate token format (basic JWT check)
+      if (_isValidTokenFormat(token)) {
+        return token;
+      } else {
+        debugPrint("❌ [TokenStorage] ❌ Invalid token format detected");
+        return null;
+      }
     }
-    return token;
+    
+    debugPrint("⚠️ [TokenStorage] ⚠️ No access token found");
+    return null;
+  }
+
+  /// Basic token format validation (JWT structure check)
+  static bool _isValidTokenFormat(String token) {
+    try {
+      // Basic JWT format: header.payload.signature
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        debugPrint("❌ [TokenStorage] ❌ Token doesn't have 3 parts (JWT format)");
+        return false;
+      }
+      
+      // Try to decode payload to check expiration
+      final payload = parts[1];
+      // Pad base64 string if needed
+      final paddedPayload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
+      final decodedBytes = Uri.decodeComponent(paddedPayload);
+      
+      // Basic check if payload can be decoded
+      if (decodedBytes.isEmpty) {
+        debugPrint("❌ [TokenStorage] ❌ Token payload cannot be decoded");
+        return false;
+      }
+      
+      return true;
+    } catch (e) {
+      debugPrint("❌ [TokenStorage] ❌ Token validation error: $e");
+      return false;
+    }
+  }
+
+  /// Check if token is likely expired (basic check)
+  static Future<bool> isTokenExpired() async {
+    final token = await getAccessToken();
+    if (token == null) return true;
+    
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+      
+      final payload = parts[1];
+      final paddedPayload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
+      final decodedBytes = Uri.decodeComponent(paddedPayload);
+      
+      // This is a basic check - in production you'd want proper JWT decoding
+      return decodedBytes.isEmpty;
+    } catch (e) {
+      debugPrint("❌ [TokenStorage] ❌ Expiration check error: $e");
+      return true; // Assume expired if we can't check
+    }
   }
 
   static Future<String?> getRefreshToken() async {

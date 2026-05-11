@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 import 'package:gruve_app/core/socket/socket_reconnect_manager.dart';
@@ -46,7 +46,7 @@ class SocketService {
           _onDisconnected();
           break;
         case SocketEventType.reconnecting:
-          _onReconnecting(event.data as int);
+          _onReconnecting(event.data is int ? event.data as int : 0);
           break;
         case SocketEventType.failed:
           _onFailed();
@@ -66,13 +66,18 @@ class SocketService {
     debugPrint("✅ [SocketService] ✅ SOCKET CONNECTED SUCCESSFULLY");
     debugPrint("🎉 [SocketService] 🎉 WebSocket connection established");
     if (connectionTime != null) {
-      developer.log('🔌 [PERF] Socket connected at: ${connectionTime.toIso8601String()}', name: 'SocketService');
+      developer.log(
+        '🔌 [PERF] Socket connected at: ${connectionTime.toIso8601String()}',
+        name: 'SocketService',
+      );
     }
   }
 
   void _onDisconnected() {
     debugPrint("� [SocketService] � SOCKET CONNECTION CLOSED");
-    debugPrint("� [SocketService] � Connection ended, will reconnect automatically");
+    debugPrint(
+      "� [SocketService] � Connection ended, will reconnect automatically",
+    );
   }
 
   void _onReconnecting(int attempt) {
@@ -97,40 +102,64 @@ class SocketService {
   /// Connect to WebSocket (maintains backward compatibility)
   Future<void> connect(String token) async {
     debugPrint("🔌 [SocketService] 🔌 CONNECTING SOCKET...");
-    debugPrint("🎫 [SocketService] 🎫 Token preview: ${token.substring(0, 10)}...");
-    
+    final previewLength = token.length < 10 ? token.length : 10;
+    debugPrint(
+      "🎫 [SocketService] 🎫 Token preview: ${token.substring(0, previewLength)}...",
+    );
+
     // The reconnect manager will handle token internally
     await _reconnectManager.connect();
   }
 
   /// Send message through enhanced socket
-  void sendMessage({required String conversationId, required String message}) {
+  bool sendMessage({required String conversationId, required String message}) {
     if (message.trim().isEmpty) {
       debugPrint("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
-      return;
+      return false;
     }
 
-    debugPrint("📝 [SocketService] 📝 Sending to conversation: $conversationId");
-    debugPrint("💬 [SocketService] 💬 Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}");
+    if (!_reconnectManager.isConnected) {
+      debugPrint(
+        "⚠️ [SocketService] ⚠️ WEBSOCKET NOT CONNECTED - Message not sent",
+      );
+      return false;
+    }
+
+    debugPrint(
+      "📝 [SocketService] 📝 Sending to conversation: $conversationId",
+    );
+    debugPrint(
+      "💬 [SocketService] 💬 Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}",
+    );
 
     final data = {
-      "conversation_id": conversationId, 
+      "type": "send_message",
+      "conversation_id": conversationId,
       "content": message,
       "timestamp": DateTime.now().millisecondsSinceEpoch,
     };
 
-    _reconnectManager.sendMessage(data);
-    
-    debugPrint("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");
+    try {
+      final sent = _reconnectManager.sendMessage(data);
+      debugPrint(
+        sent
+            ? "✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY"
+            : "❌ [SocketService] ❌ MESSAGE NOT QUEUED",
+      );
+      return sent;
+    } catch (e) {
+      debugPrint("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");
+      return false;
+    }
   }
 
   /// Disconnect from WebSocket
   Future<void> disconnect() async {
     debugPrint("🔌 [SocketService] 🔌 DISCONNECTING SOCKET...");
     debugPrint("👋 [SocketService] 👋 Closing connection");
-    
+
     await _reconnectManager.disconnect();
-    
+
     debugPrint("✅ [SocketService] ✅ SOCKET DISCONNECTED SUCCESSFULLY");
   }
 
@@ -162,12 +191,12 @@ class SocketService {
 
   Future<void> dispose() async {
     debugPrint("🗑️ [SocketService] 🗑️ DISPOSING SOCKET SERVICE");
-    
+
     await _eventSubscription?.cancel();
     _eventSubscription = null;
-    
+
     await _reconnectManager.dispose();
-    
+
     debugPrint("✅ [SocketService] ✅ SOCKET SERVICE DISPOSED");
   }
 }

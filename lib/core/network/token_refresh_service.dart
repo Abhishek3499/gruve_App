@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 
 /// Production-level token refresh service with race condition protection
@@ -59,9 +57,16 @@ class TokenRefreshService {
         ),
       );
 
+      final previewLength = refreshToken.length < 10 ? refreshToken.length : 10;
+      debugPrint('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
+      debugPrint('🔄 [TokenRefresh] Refresh token: ${refreshToken.substring(0, previewLength)}...');
+
       final response = await dio.post(
-        '/auth/refresh', // Adjust endpoint as needed
-        data: {'refreshToken': refreshToken},
+        '/auth/refresh',
+        data: {
+          'refresh_token': refreshToken,
+          'refreshToken': refreshToken,
+        },
         options: Options(
           headers: {'Content-Type': 'application/json'},
           // Skip auth header for refresh endpoint
@@ -69,10 +74,22 @@ class TokenRefreshService {
         ),
       );
 
+      debugPrint('📊 [TokenRefresh] Refresh response status: ${response.statusCode}');
+      debugPrint('📊 [TokenRefresh] Refresh response data: ${response.data}');
+
       if (response.statusCode == 200 && response.data != null) {
-        final data = response.data;
-        final newAccessToken = data['accessToken']?.toString();
-        final newRefreshToken = data['refreshToken']?.toString();
+        final data = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{};
+        final tokenData = data['data'] is Map<String, dynamic>
+            ? data['data'] as Map<String, dynamic>
+            : data;
+        final newAccessToken =
+            tokenData['access_token']?.toString() ??
+            tokenData['accessToken']?.toString();
+        final newRefreshToken =
+            tokenData['refresh_token']?.toString() ??
+            tokenData['refreshToken']?.toString();
 
         if (newAccessToken != null &&
             newAccessToken.isNotEmpty &&

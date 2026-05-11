@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../message/utils/conversation_utils.dart';
 
 class FollowTile extends StatelessWidget {
   final String username;
   final String time;
   final String profileImage;
+  final String userId;
 
   const FollowTile({
     super.key,
     required this.username,
     required this.time,
     required this.profileImage,
+    required this.userId,
   });
 
   @override
@@ -46,11 +49,21 @@ class FollowTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            onPressed: () {},
+            onPressed: () => _handleMessageTap(context),
             child: const Text("Message", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
+    );
+  }
+
+  void _handleMessageTap(BuildContext context) {
+    ConversationUtils.navigateToChat(
+      context: context,
+      receiverId: userId,
+      receiverName: username,
+      receiverProfileImage: profileImage.isNotEmpty ? profileImage : null,
+      source: 'follow_tile',
     );
   }
 }

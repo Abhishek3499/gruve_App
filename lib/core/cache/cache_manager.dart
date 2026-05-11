@@ -151,7 +151,7 @@ class CacheManager {
     debugPrint('🗄️ [CacheManager] Initialized');
   }
 
-  /// Get cached data or null if not found/expired
+  /// Get cached data or null if not found/expired with enhanced logging
   Future<T?> get<T>(
     String key,
     T Function(dynamic) fromJson,
@@ -159,14 +159,23 @@ class CacheManager {
   ) async {
     await initialize();
 
+    debugPrint('🔍 [CacheManager] Getting cache for key: $key');
+
     // Try memory cache first
     final memoryEntry = _memoryCache[key];
-    if (memoryEntry != null && memoryEntry.isValid) {
-      debugLog.cache('GET', key, 
-        type: 'MEMORY', 
-        hit: true, 
-        size: _getDataSize(memoryEntry.data));
-      return memoryEntry.data as T;
+    if (memoryEntry != null) {
+      if (memoryEntry.isValid) {
+        final age = memoryEntry.age;
+        debugLog.cache('GET', key, 
+          type: 'MEMORY', 
+          hit: true, 
+          size: _getDataSize(memoryEntry.data));
+        return memoryEntry.data as T;
+      } else {
+        debugPrint('⏰ [CacheManager] Memory cache entry expired for $key (age: ${memoryEntry.age.inSeconds}s, ttl: ${memoryEntry.ttl.inSeconds}s)');
+      }
+    } else {
+      debugPrint('🔍 [CacheManager] No memory cache entry for $key');
     }
 
     // Try disk cache if memory miss
@@ -179,6 +188,10 @@ class CacheManager {
         hit: true, 
         size: _getDataSize(diskEntry.data));
       return diskEntry.data;
+    } else if (diskEntry != null) {
+      debugPrint('⏰ [CacheManager] Disk cache entry expired for $key (age: ${diskEntry.age.inSeconds}s, ttl: ${diskEntry.ttl.inSeconds}s)');
+    } else {
+      debugPrint('🔍 [CacheManager] No disk cache entry for $key');
     }
 
     // Return stale data if stale-while-revalidate is enabled
@@ -187,7 +200,8 @@ class CacheManager {
       if (staleData != null) {
         debugLog.cache('GET', key, 
           type: 'STALE', 
-          hit: memoryEntry?.isValid == true ? true : diskEntry?.isValid == true ? true : false);
+          hit: memoryEntry?.isValid == true ? true : diskEntry?.isValid == true ? true : false,
+          size: _getDataSize(staleData));
         return staleData as T;
       }
     }
@@ -196,7 +210,7 @@ class CacheManager {
     return null;
   }
 
-  /// Put data in cache
+  /// Put data in cache with enhanced logging and memory optimization
   Future<void> put<T>(
     String key,
     T data,
@@ -205,16 +219,24 @@ class CacheManager {
   }) async {
     await initialize();
 
+    final dataSize = _getDataSize(data);
+    
+    // Memory optimization: Check if we're approaching limits
+    if (_memoryCache.length >= config.maxMemoryEntries) {
+      debugPrint('⚠️ [CacheManager] Memory cache full (${_memoryCache.length}/${config.maxMemoryEntries}), triggering cleanup before put');
+      _cleanupMemoryCache(config.maxMemoryEntries - 1); // Make space
+    }
+
     final entry = CacheEntry<T>(data: data, ttl: config.memoryTTL);
     _memoryCache[key] = entry;
 
-    debugLog.cache('PUT', key, 
-      type: 'MEMORY', 
-      size: _getDataSize(data));
+    debugPrint('💾 [CacheManager] PUT $key (MEMORY, size: ${dataSize}B, entries: ${_memoryCache.length})');
 
-    // Store to disk if serializer is provided
-    if (toJson != null) {
+    // Store to disk if serializer is provided and data is not too large
+    if (toJson != null && dataSize < 1024 * 1024) { // 1MB limit for disk cache
       await _putToDisk(key, entry, toJson);
+    } else if (dataSize >= 1024 * 1024) {
+      debugPrint('⚠️ [CacheManager] Skipping disk cache for large data (${(dataSize / 1024 / 1024).toStringAsFixed(2)}MB): $key');
     }
 
     // Cleanup old entries
@@ -298,11 +320,29 @@ class CacheManager {
     debugPrint('🧹 [CacheManager] Cleared all cache');
   }
 
-  /// Get cache statistics
+  /// Get comprehensive cache statistics
   CacheStats getStats() {
+    final totalMemorySize = _memoryCache.entries
+        .map((e) => _getDataSize(e.value.data))
+        .fold<int>(0, (sum, size) => sum + size);
+    
+    final expiredEntries = _memoryCache.entries
+        .where((e) => !e.value.isValid)
+        .length;
+    
+    final averageAge = _memoryCache.isEmpty 
+        ? Duration.zero 
+        : Duration(milliseconds: _memoryCache.entries
+            .map((e) => e.value.age.inMilliseconds)
+            .reduce((a, b) => a + b) ~/ _memoryCache.length);
+
     return CacheStats(
       memorySize: _memoryCache.length,
       backgroundRefreshes: _backgroundRefreshes.length,
+      totalMemorySizeBytes: totalMemorySize,
+      expiredEntries: expiredEntries,
+      averageAge: averageAge,
+      inFlightRequests: _backgroundRefreshes.keys.toList(),
     );
   }
 
@@ -342,18 +382,29 @@ class CacheManager {
   }
 
   void _cleanupMemoryCache(int maxEntries) {
-    if (_memoryCache.length <= maxEntries) return;
+    if (_memoryCache.length <= maxEntries) {
+      debugPrint('🧹 [CacheManager] No cleanup needed (${_memoryCache.length}/$maxEntries entries)');
+      return;
+    }
 
     // Sort by creation time and remove oldest
     final sortedEntries = _memoryCache.entries.toList()
       ..sort((a, b) => a.value.createdAt.compareTo(b.value.createdAt));
 
     final toRemove = sortedEntries.length - maxEntries;
+    final removedKeys = <String>[];
+    
     for (int i = 0; i < toRemove; i++) {
-      _memoryCache.remove(sortedEntries[i].key);
+      final entry = sortedEntries[i];
+      final age = entry.value.age;
+      final size = _getDataSize(entry.value.data);
+      removedKeys.add(entry.key);
+      _memoryCache.remove(entry.key);
+      debugPrint('🗑️ [CacheManager] Removed old entry: ${entry.key} (age: ${age.inSeconds}s, size: ${size}B)');
     }
 
-    debugPrint('🧹 [CacheManager] Cleaned up $toRemove old memory entries');
+    debugPrint('🧹 [CacheManager] Cleaned up $toRemove old memory entries. Remaining: ${_memoryCache.length}/$maxEntries');
+    debugPrint('🧹 [CacheManager] Removed keys: ${removedKeys.join(', ')}');
   }
 
   bool _isStale(String key, CacheConfig config) {
@@ -384,24 +435,46 @@ class CacheManager {
     }
   }
 
-  /// Calculate approximate size of data in bytes
+  /// Calculate approximate size of data in bytes with enhanced logging
   int _getDataSize(dynamic data) {
-    if (data == null) return 0;
+    if (data == null) {
+      debugPrint('📏 [CacheManager] Data is null, size: 0 bytes');
+      return 0;
+    }
+    
+    int size;
+    String type;
     
     try {
       if (data is String) {
-        return data.length;
+        size = data.length;
+        type = 'String';
       } else if (data is Map) {
-        return jsonEncode(data).length;
+        final jsonString = jsonEncode(data);
+        size = jsonString.length;
+        type = 'Map(${data.length} keys)';
       } else if (data is List) {
-        return jsonEncode(data).length;
+        final jsonString = jsonEncode(data);
+        size = jsonString.length;
+        type = 'List(${data.length} items)';
+      } else if (data.toString().contains('CacheData')) {
+        // Handle CacheData type checking without direct import
+        size = 100; // Estimated size for wrapper objects
+        type = 'CacheData';
       } else {
         // For other types, use toString() as approximation
-        return data.toString().length;
+        final stringRep = data.toString();
+        size = stringRep.length;
+        type = data.runtimeType.toString();
       }
+      
+      debugPrint('📏 [CacheManager] Data size calculated: $size bytes for type $type');
+      return size;
     } catch (e) {
       // Fallback to string length if serialization fails
-      return data.toString().length;
+      final fallbackSize = data.toString().length;
+      debugPrint('⚠️ [CacheManager] Size calculation failed for ${data.runtimeType}: $e, using fallback: $fallbackSize bytes');
+      return fallbackSize;
     }
   }
 }
@@ -421,16 +494,46 @@ class CacheResult<T> {
   bool get hasData => data != null;
 }
 
-/// Cache statistics
+/// Enhanced cache statistics with detailed metrics
 class CacheStats {
   final int memorySize;
   final int backgroundRefreshes;
+  final int totalMemorySizeBytes;
+  final int expiredEntries;
+  final Duration averageAge;
+  final List<String> inFlightRequests;
 
   CacheStats({
     required this.memorySize,
     required this.backgroundRefreshes,
+    required this.totalMemorySizeBytes,
+    required this.expiredEntries,
+    required this.averageAge,
+    required this.inFlightRequests,
   });
 
+  /// Get memory size in human readable format
+  String get memorySizeFormatted {
+    if (totalMemorySizeBytes < 1024) return '${totalMemorySizeBytes}B';
+    if (totalMemorySizeBytes < 1024 * 1024) return '${(totalMemorySizeBytes / 1024).toStringAsFixed(1)}KB';
+    return '${(totalMemorySizeBytes / 1024 / 1024).toStringAsFixed(1)}MB';
+  }
+
+  /// Get average age in human readable format
+  String get averageAgeFormatted {
+    if (averageAge.inSeconds < 60) return '${averageAge.inSeconds}s';
+    if (averageAge.inMinutes < 60) return '${averageAge.inMinutes}m ${averageAge.inSeconds % 60}s';
+    return '${averageAge.inHours}h ${averageAge.inMinutes % 60}m';
+  }
+
   @override
-  String toString() => 'CacheStats(memory: $memorySize, refreshing: $backgroundRefreshes)';
+  String toString() {
+    return 'CacheStats('
+           'entries: $memorySize, '
+           'size: $memorySizeFormatted, '
+           'expired: $expiredEntries, '
+           'avgAge: $averageAgeFormatted, '
+           'refreshing: $backgroundRefreshes, '
+           'inFlight: ${inFlightRequests.length})';
+  }
 }

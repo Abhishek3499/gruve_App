@@ -1,5 +1,3 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
@@ -24,7 +22,7 @@ class RefreshTokenInterceptor extends Interceptor {
   RefreshTokenInterceptor(this._dio);
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // Skip auth for certain endpoints
     if (options.extra['skipAuth'] == true) {
       handler.next(options);
@@ -32,7 +30,7 @@ class RefreshTokenInterceptor extends Interceptor {
     }
 
     // Add authorization header if not present
-    _addAuthHeaderIfNeeded(options);
+    await _addAuthHeaderIfNeeded(options);
     handler.next(options);
   }
 
@@ -88,7 +86,11 @@ class RefreshTokenInterceptor extends Interceptor {
               retryError.response?.statusCode == 401) {
             await _handleAuthFailure();
           }
-          handler.next(retryError as DioException);
+          if (retryError is DioException) {
+            handler.next(retryError);
+          } else {
+            handler.next(err);
+          }
           return;
         }
       } else {

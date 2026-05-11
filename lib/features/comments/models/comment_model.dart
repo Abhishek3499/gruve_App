@@ -13,12 +13,33 @@ class CommentUser {
 
   factory CommentUser.fromJson(Map<String, dynamic> json) {
     return CommentUser(
-      id: json['id'] ?? '',
-      username: json['username'] ?? 'Unknown User',
+      id: json['id']?.toString() ?? '',
+      username: json['username']?.toString() ??
+          json['name']?.toString() ??
+          'Unknown User',
       isSubscribed: json['is_subscribed'] ?? false,
-      profilePicture: json['profile_picture'],
+      profilePicture: _pickString(json, const [
+        'profile_picture',
+        'profileImage',
+        'profile_image',
+        'avatar',
+        'photo',
+        'image',
+      ]),
     );
   }
+}
+
+String? _pickString(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) continue;
+    final stringValue = value.toString().trim();
+    if (stringValue.isNotEmpty && stringValue.toLowerCase() != 'null') {
+      return stringValue;
+    }
+  }
+  return null;
 }
 
 class Comment {

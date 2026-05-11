@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/assets.dart';
+import '../../../../core/widgets/optimized/optimized_image.dart';
 import '../../comments/models/comment_model.dart';
 import '../../comments/api/comment_service.dart';
 import '../../../../core/widgets/shimmer/comment_shimmer.dart';
@@ -199,15 +200,10 @@ class _CommentSheetState extends State<CommentSheet> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          OptimizedAvatar(
+            imageUrl: comment.user.profilePicture,
+            name: comment.user.username,
             radius: 18,
-            backgroundColor: Colors.white24,
-            backgroundImage: comment.user.profilePicture != null
-                ? NetworkImage(comment.user.profilePicture!)
-                : null,
-            child: comment.user.profilePicture == null
-                ? const Icon(Icons.person, color: Colors.white70, size: 20)
-                : null,
           ),
           const SizedBox(width: 12),
           Expanded(

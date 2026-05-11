@@ -28,11 +28,13 @@ class ThisWeekSection extends StatelessWidget {
             username: "martini_rond",
             time: "3d",
             profileImage: AppAssets.frame2,
+            userId: "user_martini_rond",
           ),
           const FollowTile(
             username: "maxjacobson",
             time: "3d",
             profileImage: AppAssets.frame1,
+            userId: "user_maxjacobson",
           ),
         ],
       ),

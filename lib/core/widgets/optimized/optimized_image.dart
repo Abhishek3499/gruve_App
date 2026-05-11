@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/debug/debug_logger.dart';
+import 'package:shimmer/shimmer.dart';
 
-/// Optimized network image with caching and performance features
 class OptimizedImage extends StatelessWidget {
-  final String imageUrl;
+  final String? imageUrl;
   final double? width;
   final double? height;
   final BoxFit fit;
@@ -24,62 +26,68 @@ class OptimizedImage extends StatelessWidget {
     this.useMemCache = true,
   });
 
+  static String? normalizeImageUrl(String? value) {
+    final raw = value?.trim();
+    if (raw == null || raw.isEmpty || raw.toLowerCase() == 'null') {
+      return null;
+    }
+
+    final uri = Uri.tryParse(raw);
+    if (uri == null) return null;
+
+    if (uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      return raw;
+    }
+
+    if (raw.startsWith('/')) {
+      final base = Uri.tryParse(EnvironmentConfig.baseUrl);
+      if (base == null) return null;
+      return base.replace(path: raw).toString();
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (imageUrl.isEmpty) {
-      return _buildPlaceholder();
+    final normalizedUrl = normalizeImageUrl(imageUrl);
+    if (normalizedUrl == null) {
+      return errorWidget ?? _buildDefaultError();
     }
 
     return CachedNetworkImage(
-      imageUrl: imageUrl,
+      imageUrl: normalizedUrl,
       width: width,
       height: height,
       fit: fit,
-      memCacheWidth: useMemCache ? width?.toInt() : null,
-      memCacheHeight: useMemCache ? height?.toInt() : null,
-      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 200),
+      memCacheWidth: useMemCache ? _cacheExtent(context, width) : null,
+      memCacheHeight: useMemCache ? _cacheExtent(context, height) : null,
+      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 180),
       placeholder: (context, url) => placeholder ?? _buildDefaultPlaceholder(),
-      errorWidget: (context, url, error) => errorWidget ?? _buildDefaultError(),
+      errorWidget: (context, url, error) {
+        debugLog.image(url, operation: 'ERROR', error: error.toString());
+        return errorWidget ?? _buildDefaultError();
+      },
       imageBuilder: (context, imageProvider) {
         return Image(
           image: imageProvider,
           width: width,
           height: height,
           fit: fit,
-          filterQuality: FilterQuality.medium, // Balance between quality and performance
+          filterQuality: FilterQuality.medium,
         );
       },
     );
   }
 
-  Widget _buildPlaceholder() {
-    return Container(
-      width: width,
-      height: height,
-      color: Colors.grey[900],
-      child: Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: (width ?? height ?? 48) * 0.3,
-          color: Colors.grey[700],
-        ),
-      ),
-    );
+  int? _cacheExtent(BuildContext context, double? logicalExtent) {
+    if (logicalExtent == null || logicalExtent <= 0) return null;
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    return (logicalExtent * devicePixelRatio).round();
   }
 
   Widget _buildDefaultPlaceholder() {
-    return Container(
-      width: width,
-      height: height,
-      color: Colors.grey[900],
-      child: Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: (width ?? height ?? 48) * 0.3,
-          color: Colors.grey[700],
-        ),
-      ),
-    );
+    return _ShimmerBox(width: width, height: height);
   }
 
   Widget _buildDefaultError() {
@@ -87,18 +95,16 @@ class OptimizedImage extends StatelessWidget {
       width: width,
       height: height,
       color: Colors.grey[900],
-      child: Center(
-        child: Icon(
-          Icons.broken_image_outlined,
-          size: (width ?? height ?? 48) * 0.3,
-          color: Colors.grey[600],
-        ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.image_outlined,
+        size: (width ?? height ?? 48) * 0.3,
+        color: Colors.grey[600],
       ),
     );
   }
 }
 
-/// Optimized avatar component
 class OptimizedAvatar extends StatelessWidget {
   final String? imageUrl;
   final double radius;
@@ -115,58 +121,63 @@ class OptimizedAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: Colors.grey[800],
-        backgroundImage: CachedNetworkImageProvider(
-          imageUrl!,
-          cacheKey: 'avatar_$imageUrl',
-        ),
-        onBackgroundImageError: (exception, stackTrace) {
-          debugPrint('❌ [OptimizedAvatar] Failed to load avatar: $imageUrl');
-        },
-        child: null,
-      );
-    }
+    final size = radius * 2;
+    final normalizedUrl = OptimizedImage.normalizeImageUrl(imageUrl);
 
-    // Fallback to initials or custom widget
+    return ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: normalizedUrl == null
+            ? _buildFallback()
+            : OptimizedImage(
+                imageUrl: normalizedUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholder: _ShimmerBox(width: size, height: size),
+                errorWidget: _buildFallback(),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
     if (fallback != null) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: Colors.grey[800],
-        child: fallback!,
+      return ColoredBox(
+        color: Colors.grey.shade800,
+        child: Center(child: fallback),
       );
     }
 
-    // Generate initials from name
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.grey[800],
-      child: Text(
-        _getInitials(name ?? 'User'),
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: radius * 0.6,
-          fontWeight: FontWeight.w500,
+    return ColoredBox(
+      color: Colors.grey.shade800,
+      child: Center(
+        child: Text(
+          _getInitials(name ?? 'User'),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: radius * 0.62,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  String _getInitials(String name) {
-    final parts = name.trim().split(' ');
+  String _getInitials(String value) {
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
-    
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    } else {
-      return parts[0].substring(0, 1).toUpperCase();
-    }
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return '${parts.first.characters.first}${parts[1].characters.first}'
+        .toUpperCase();
   }
 }
 
-/// Optimized profile header image
 class OptimizedProfileImage extends StatelessWidget {
   final String imageUrl;
   final double size;
@@ -186,7 +197,6 @@ class OptimizedProfileImage extends StatelessWidget {
       height: size,
       child: Stack(
         children: [
-          // Main image
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(size * 0.1),
@@ -195,11 +205,9 @@ class OptimizedProfileImage extends StatelessWidget {
                 width: size,
                 height: size,
                 fit: BoxFit.cover,
-                useMemCache: true,
               ),
             ),
           ),
-          // Optional overlay (like edit button)
           if (overlay != null)
             Positioned(
               bottom: 0,
@@ -212,7 +220,6 @@ class OptimizedProfileImage extends StatelessWidget {
   }
 }
 
-/// Optimized story image with aspect ratio
 class OptimizedStoryImage extends StatelessWidget {
   final String imageUrl;
   final double? width;
@@ -241,7 +248,6 @@ class OptimizedStoryImage extends StatelessWidget {
             width: width,
             height: height,
             fit: BoxFit.cover,
-            useMemCache: true,
           ),
           if (overlay != null) overlay!,
         ],
@@ -250,7 +256,6 @@ class OptimizedStoryImage extends StatelessWidget {
   }
 }
 
-/// Optimized grid image with loading states
 class OptimizedGridImage extends StatelessWidget {
   final String imageUrl;
   final double size;
@@ -267,24 +272,42 @@ class OptimizedGridImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedBorderRadius = borderRadius ?? BorderRadius.circular(4);
+
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: SizedBox(
         width: size,
         height: size,
-        decoration: BoxDecoration(
-          borderRadius: borderRadius ?? BorderRadius.circular(4),
-        ),
         child: ClipRRect(
-          borderRadius: borderRadius ?? BorderRadius.circular(4),
+          borderRadius: resolvedBorderRadius,
           child: OptimizedImage(
             imageUrl: imageUrl,
             width: size,
             height: size,
             fit: BoxFit.cover,
-            useMemCache: true,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ShimmerBox extends StatelessWidget {
+  final double? width;
+  final double? height;
+
+  const _ShimmerBox({this.width, this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade900,
+      highlightColor: Colors.grey.shade700,
+      child: Container(
+        width: width,
+        height: height,
+        color: Colors.white,
       ),
     );
   }

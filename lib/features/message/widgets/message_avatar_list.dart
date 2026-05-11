@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/message_avatar.dart';
 import '../presentation/provider/user_provider.dart';
+import '../utils/user_display_helper.dart';
 import '../../../../widgets/message_avatar_skeleton.dart';
 
 class MessageAvatarList extends StatefulWidget {
@@ -123,12 +124,10 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
                   // Show user avatar
                   final user = p.users[index];
                   return MessageAvatar(
-                    name: user.username,
-                    imageUrl:
-                        user.profilePicture ??
-                        '', // empty string = null fallback handled in MessageAvatar
-                    isOnline:
-                        false, // API doesn't return isOnline, default false
+                    name: UserDisplayHelper.getDisplayNameForUserEntity(user),
+                    imageUrl: UserDisplayHelper.getProfileImageForUser(user) ?? '',
+                    userId: UserDisplayHelper.getUserIdForUser(user),
+                    isOnline: false, // API doesn't return isOnline, default false
                   );
                 },
               ),

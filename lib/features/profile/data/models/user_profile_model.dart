@@ -99,7 +99,14 @@ class UserProfile {
         userId:         user['id']?.toString() ?? '',
         username:       user['username']?.toString() ?? '',
         fullName:       user['full_name']?.toString() ?? '',
-        profilePicture: user['profile_picture']?.toString() ?? '',
+        profilePicture: _pickString(user, const [
+          'profile_picture',
+          'profileImage',
+          'profile_image',
+          'avatar',
+          'photo',
+          'image',
+        ]),
         bio:            user['bio']?.toString() ?? '',
         followersCount: stats['subscribers_count'] as int? ?? 0,
         followingCount: stats['likes_count'] as int? ?? 0,
@@ -121,4 +128,16 @@ class UserProfile {
   String toString() {
     return 'UserProfile(userId: $userId, username: $username, fullName: $fullName, followersCount: $followersCount, followingCount: $followingCount, postsCount: $postsCount, isPrivate: $isPrivate, isFollowing: $isFollowing, hasActiveStory: $hasActiveStory, highlights: ${highlights.length}, allPosts: ${allPosts.length}, likedPosts: ${likedPosts.length})';
   }
+}
+
+String _pickString(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) continue;
+    final stringValue = value.toString().trim();
+    if (stringValue.isNotEmpty && stringValue.toLowerCase() != 'null') {
+      return stringValue;
+    }
+  }
+  return '';
 }

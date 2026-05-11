@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/assets.dart';
+import '../../../core/widgets/optimized/optimized_image.dart';
 import '../models/conversation_model.dart';
+import '../utils/user_display_helper.dart';
 
 class MessageCard extends StatelessWidget {
   final ConversationModel conversation;
@@ -38,7 +38,7 @@ class MessageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          conversation.otherUserName,
+                          UserDisplayHelper.getDisplayNameForConversation(conversation),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -113,24 +113,10 @@ class MessageCard extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    final avatarUrl = conversation.otherUserAvatar;
-
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 30,
-        backgroundImage: CachedNetworkImageProvider(avatarUrl),
-        backgroundColor: Colors.grey[300],
-        child: const Icon(
-          Icons.person,
-          color: Colors.grey,
-          size: 20,
-        ),
-      );
-    }
-
-    return CircleAvatar(
+    return OptimizedAvatar(
+      imageUrl: UserDisplayHelper.getProfileImageForUser(conversation),
+      name: UserDisplayHelper.getDisplayNameForConversation(conversation),
       radius: 30,
-      backgroundImage: const AssetImage(AppAssets.profile),
     );
   }
 }

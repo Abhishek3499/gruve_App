@@ -1,65 +1,79 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../../core/assets.dart';
-import '../models/conversation_model.dart';
-import 'chat_header_menu.dart';
-import '../../../features/user_profiles/widgets/screens/user_profile_screen2.dart';
+import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/widgets/optimized/optimized_image.dart';
+import 'package:gruve_app/features/message/models/conversation_model.dart';
+import 'package:gruve_app/features/message/widgets/chat_header_menu.dart';
+import 'package:gruve_app/features/user_profiles/widgets/screens/user_profile_screen2.dart';
+import '../utils/user_display_helper.dart';
 
 class ChatHeader extends StatelessWidget {
-  // Support both old ChatUser and new ConversationModel for backward compatibility
   final dynamic userOrConversation;
+  final String? explicitUserName;
+  final String? explicitUserId;
+  final String? explicitProfileImage;
   final VoidCallback onBack;
 
   const ChatHeader({
     super.key,
     required this.userOrConversation,
+    this.explicitUserName,
+    this.explicitUserId,
+    this.explicitProfileImage,
     required this.onBack,
   });
 
-  // Helper getters for backward compatibility
   bool get _isConversationModel => userOrConversation is ConversationModel;
+
   String get _userName {
-    if (_isConversationModel) {
-      return (userOrConversation as ConversationModel).otherUserName;
+    final explicitName = explicitUserName?.trim();
+    if (explicitName != null && explicitName.isNotEmpty) {
+      return explicitName;
     }
-    return (userOrConversation as dynamic).name ?? 'Unknown';
+
+    if (_isConversationModel) {
+      final conversation = userOrConversation as ConversationModel;
+      return UserDisplayHelper.getDisplayNameForConversation(conversation);
+    }
+
+    // Handle legacy user data
+    return UserDisplayHelper.getDisplayNameForLegacyUser(userOrConversation);
   }
 
   String get _userId {
-    if (_isConversationModel) {
-      return (userOrConversation as ConversationModel).otherUser.id;
+    final explicitId = explicitUserId?.trim();
+    if (explicitId != null && explicitId.isNotEmpty) {
+      return explicitId;
     }
-    return (userOrConversation as dynamic).id ?? '';
+
+    return UserDisplayHelper.getUserIdForUser(userOrConversation);
   }
 
   String? get _userAvatar {
-    if (_isConversationModel) {
-      return (userOrConversation as ConversationModel).otherUserAvatar;
+    // Priority 1: Explicit profile image parameter
+    if (explicitProfileImage != null) {
+      return explicitProfileImage;
     }
-    return (userOrConversation as dynamic).avatar;
+
+    // Priority 2: Use centralized helper
+    return UserDisplayHelper.getProfileImageForUser(userOrConversation);
   }
 
   void showChatHeaderMenu(BuildContext context) {
-    debugPrint('📋 [ChatHeader] Showing header menu for: $_userName');
     OverlayEntry? overlayEntry;
 
     overlayEntry = OverlayEntry(
       builder: (context) => GestureDetector(
-        onTap: () {
-          overlayEntry?.remove();
-        },
+        onTap: () => overlayEntry?.remove(),
         child: Material(
           color: Colors.transparent,
           child: Stack(
             children: [
-              // Full screen transparent barrier
               Positioned.fill(child: Container(color: Colors.transparent)),
-              // Menu positioned at top right
               Positioned(
-                top: 60, // Position below header
-                right: 16, // Align to right side
+                top: 60,
+                right: 16,
                 child: GestureDetector(
-                  onTap: () {}, // Prevent tap through to menu
+                  onTap: () {},
                   child: ChatHeaderMenu(onClose: () => overlayEntry?.remove()),
                 ),
               ),
@@ -73,7 +87,6 @@ class ChatHeader extends StatelessWidget {
   }
 
   void _navigateToUserProfile(BuildContext context) {
-    debugPrint('👤 [ChatHeader] Navigating to user profile: $_userName ($_userId)');
     Navigator.push(
       context,
       PageRouteBuilder(
@@ -81,19 +94,18 @@ class ChatHeader extends StatelessWidget {
         reverseTransitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (context, animation, secondaryAnimation) =>
             UserProfileScreen2(
-              userId: _userId,
-              userName: _userName,
-              profileImageUrl: _userAvatar,
-            ),
+          userId: _userId,
+          userName: _userName,
+          profileImageUrl: _userAvatar,
+        ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                ),
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            ),
             child: child,
           );
         },
@@ -106,10 +118,8 @@ class ChatHeader extends StatelessWidget {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: const BoxDecoration(),
       child: Row(
         children: [
-          /// Back Button
           GestureDetector(
             onTap: onBack,
             child: Image.asset(
@@ -119,40 +129,31 @@ class ChatHeader extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-
           const SizedBox(width: 16),
-
-          /// User Avatar (Clickable)
           GestureDetector(
             onTap: () => _navigateToUserProfile(context),
-            child: _buildAvatar(),
+            child: OptimizedAvatar(
+              imageUrl: _userAvatar,
+              name: _userName,
+              radius: 20,
+            ),
           ),
-
           const SizedBox(width: 12),
-
-          /// User Name (Clickable)
           Expanded(
             child: GestureDetector(
               onTap: () => _navigateToUserProfile(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _userName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                ],
+              child: Text(
+                _userName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-
-          /// More Options
           IconButton(
             onPressed: () => showChatHeaderMenu(context),
             icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
@@ -160,28 +161,5 @@ class ChatHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// Build avatar widget with network image support and fallback
-  Widget _buildAvatar() {
-    final avatarUrl = _userAvatar;
-    debugPrint('👤 [ChatHeader] Building avatar for: $_userName - URL: $avatarUrl');
-    
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 20,
-        backgroundImage: CachedNetworkImageProvider(
-          avatarUrl,
-        ),
-        backgroundColor: Colors.grey[300],
-        child: const Icon(Icons.person, color: Colors.grey, size: 20),
-      );
-    } else {
-      // Fallback to asset image
-      return CircleAvatar(
-        radius: 20,
-        backgroundImage: const AssetImage(AppAssets.profile),
-      );
-    }
   }
 }

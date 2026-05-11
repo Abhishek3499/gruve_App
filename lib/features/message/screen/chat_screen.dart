@@ -15,13 +15,26 @@ import '../widgets/pinned_message_banner.dart';
 import '../widgets/reply_preview_bar.dart';
 
 class ChatScreen extends StatefulWidget {
-  // Supports both the new ConversationModel flow and the older ChatUser flow.
+  // New explicit parameters for direct user data passing
+  final String? conversationId;
+  final String? receiverId;
+  final String? userName;
+  final String? profileImage;
+
+  // Legacy support for existing ConversationModel flow
   final dynamic userOrConversation;
 
   const ChatScreen({
     super.key,
-    required this.userOrConversation,
-  });
+    this.conversationId,
+    this.receiverId,
+    this.userName,
+    this.profileImage,
+    this.userOrConversation,
+  }) : assert(
+         conversationId != null || userOrConversation != null,
+         'Either conversationId or userOrConversation must be provided',
+       );
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -48,7 +61,14 @@ class _ChatScreenState extends State<ChatScreen> {
   bool get _isConversationModel =>
       widget.userOrConversation is ConversationModel;
 
+  bool get _useExplicitData => widget.conversationId != null;
+
   String get _userName {
+    final explicitName = widget.userName?.trim();
+    if (explicitName != null && explicitName.isNotEmpty) {
+      return explicitName;
+    }
+
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUserName;
     }
@@ -56,6 +76,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String get _userId {
+    final explicitId = widget.receiverId?.trim();
+    if (explicitId != null && explicitId.isNotEmpty) {
+      return explicitId;
+    }
+
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUser.id;
     }
@@ -63,16 +88,35 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String get _conversationId {
+    // Priority 1: Explicit conversationId parameter
+    if (_useExplicitData && widget.conversationId != null) {
+      return widget.conversationId!;
+    }
+
+    // Priority 2: ConversationModel data
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).id;
     }
 
+    // Priority 3: Legacy user data
     try {
       final dynamic legacyUser = widget.userOrConversation;
       return legacyUser.conversationId?.toString() ?? '';
     } catch (_) {
       return '';
     }
+  }
+
+  String? get _userAvatar {
+    // Priority 1: Explicit profile image parameter
+    if (_useExplicitData && widget.profileImage != null) {
+      return widget.profileImage;
+    }
+
+    if (_isConversationModel) {
+      return (widget.userOrConversation as ConversationModel).otherUserAvatar;
+    }
+    return (widget.userOrConversation as dynamic).profileImage;
   }
 
   List<MessageModel> get _messages => _messageController.messages;
@@ -329,6 +373,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     ChatHeader(
                       userOrConversation: widget.userOrConversation,
+                      explicitUserName: _userName,
+                      explicitUserId: _userId,
+                      explicitProfileImage: _userAvatar,
                       onBack: () {
                         if (_isDeleteMode) {
                           _exitDeleteMode();
