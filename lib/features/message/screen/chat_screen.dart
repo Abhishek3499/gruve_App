@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/message_model.dart';
+import '../models/conversation_model.dart';
 import '../models/reply_message_model.dart';
-import '../data/dummy_messages.dart';
 import '../widgets/chat_header.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/chat_input_field.dart';
@@ -11,8 +11,13 @@ import '../widgets/reply_preview_bar.dart';
 import '../widgets/pinned_message_banner.dart';
 
 class ChatScreen extends StatefulWidget {
-  final ChatUser user;
-  const ChatScreen({super.key, required this.user});
+  // Support both old ChatUser and new ConversationModel for backward compatibility
+  final dynamic userOrConversation;
+  
+  const ChatScreen({
+    super.key, 
+    required this.userOrConversation,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -35,16 +40,44 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isDeleteMode = false;
   final Set<String> _selectedMessageIds = {};
 
+  // Helper getters for backward compatibility
+  bool get _isConversationModel => widget.userOrConversation is ConversationModel;
+  String get _userName {
+    if (_isConversationModel) {
+      return (widget.userOrConversation as ConversationModel).otherUserName;
+    }
+    return (widget.userOrConversation as dynamic).name ?? 'Unknown';
+  }
+  
+  String get _userId {
+    if (_isConversationModel) {
+      return (widget.userOrConversation as ConversationModel).otherUser.id;
+    }
+    return (widget.userOrConversation as dynamic).id ?? '';
+  }
+  
+  String? get _userAvatar {
+    if (_isConversationModel) {
+      return (widget.userOrConversation as ConversationModel).otherUserAvatar;
+    }
+    return (widget.userOrConversation as dynamic).avatar;
+  }
+
   @override
   void initState() {
     super.initState();
+    debugPrint('💬 [ChatScreen] Screen initialized for: $_userName');
     _loadMessages();
   }
 
   void _loadMessages() {
+    debugPrint('📋 [ChatScreen] Loading messages for user: $_userName ($_userId)');
     setState(() {
-      _messages = DummyMessages.getChatMessages(widget.user.id);
+      // TODO: Implement real chat messages API
+      // For now, initialize with empty list
+      _messages = [];
     });
+    debugPrint('📭 [ChatScreen] Messages loaded (empty for now)');
   }
 
   // ── Show popup on long press ──
@@ -115,6 +148,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
+    debugPrint('📤 [ChatScreen] Sending message: $text');
     final newMessage = MessageModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       text: text,
@@ -128,12 +162,15 @@ class _ChatScreenState extends State<ChatScreen> {
       _isLoading = true;
       _activeReply = null;
     });
+    debugPrint('✅ [ChatScreen] Message added to local state');
     Future.delayed(const Duration(seconds: 1), () {
       setState(() => _isLoading = false);
+      debugPrint('⏳ [ChatScreen] Message sending completed');
     });
   }
 
   void _sendImage(String imagePath) {
+    debugPrint('🖼️ [ChatScreen] Sending image: $imagePath');
     final newMessage = MessageModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       text: '',
@@ -148,58 +185,74 @@ class _ChatScreenState extends State<ChatScreen> {
       _isLoading = true;
       _activeReply = null;
     });
+    debugPrint('✅ [ChatScreen] Image message added to local state');
     Future.delayed(const Duration(seconds: 1), () {
       setState(() => _isLoading = false);
+      debugPrint('⏳ [ChatScreen] Image sending completed');
     });
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
+    debugPrint('⚙️ [ChatScreen] Handling message action: $action for message: ${message.id}');
     _dismissPopup();
     switch (action) {
       case MessageAction.reply:
+        debugPrint('↩️ [ChatScreen] Setting up reply to message: ${message.id}');
         setState(() {
           _activeReply = ReplyMessageModel(
             originalMessage: message,
-            username: message.isSent ? 'yourself' : widget.user.name,
+            username: message.isSent ? 'yourself' : _userName,
             previewText: message.text.isNotEmpty ? message.text : 'Image',
           );
         });
+        debugPrint('✅ [ChatScreen] Reply setup completed');
         break;
       case MessageAction.forward:
+        debugPrint('↗️ [ChatScreen] Forward feature requested (not implemented)');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Forward feature coming soon!')),
         );
         break;
       case MessageAction.pin:
+        debugPrint('📌 [ChatScreen] Pinning message: ${message.id}');
         setState(() {
           if (_pinnedMessage != null) {
             final idx = _messages.indexWhere((m) => m.id == _pinnedMessage!.id);
             if (idx != -1) {
               _messages[idx] = _messages[idx].copyWith(isPinned: false);
+              debugPrint('📍 [ChatScreen] Unpinned previous message: ${_pinnedMessage!.id}');
             }
           }
           final idx = _messages.indexWhere((m) => m.id == message.id);
           if (idx != -1) {
             _messages[idx] = _messages[idx].copyWith(isPinned: true);
             _pinnedMessage = _messages[idx];
+            debugPrint('📌 [ChatScreen] Pinned message: ${message.id}');
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${widget.user.name} pinned a message')),
+          SnackBar(content: Text('$_userName pinned a message')),
         );
+        debugPrint('✅ [ChatScreen] Pin action completed');
         break;
       case MessageAction.report:
+        debugPrint('🚨 [ChatScreen] Report feature requested (not implemented)');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Report feature coming soon!')),
         );
         break;
       case MessageAction.delete:
+        debugPrint('🗑️ [ChatScreen] Delete mode activated');
         _enterDeleteMode();
         break;
     }
+    debugPrint('✅ [ChatScreen] Message action handling completed');
   }
 
-  void _clearReply() => setState(() => _activeReply = null);
+  void _clearReply() {
+    debugPrint('❌ [ChatScreen] Clearing reply');
+    setState(() => _activeReply = null);
+  }
 
   List<MessageModel> _getSortedMessages() {
     final sorted = List<MessageModel>.from(_messages);
@@ -240,7 +293,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Column(
                   children: [
                     ChatHeader(
-                      user: widget.user,
+                      userOrConversation: widget.userOrConversation,
                       onBack: () {
                         if (_isDeleteMode) {
                           _exitDeleteMode();
@@ -285,7 +338,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 bubble,
                                 PinnedMessageBanner(
                                   pinnedMessage: message,
-                                  username: widget.user.name,
+                                  username: _userName,
                                 ),
                               ],
                             );

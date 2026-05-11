@@ -1,0 +1,278 @@
+import 'package:flutter/foundation.dart';
+import '../models/conversation_model.dart';
+import '../services/message_service.dart';
+
+/// Provider for managing conversation state
+/// 
+/// This provider handles:
+/// - Loading state management
+/// - Conversation list management
+/// - API calls and error handling
+/// - Real-time updates (socket-ready structure)
+/// - Pagination support (future enhancement)
+class MessageProvider extends ChangeNotifier {
+  final MessageService _messageService;
+  
+  MessageProvider(this._messageService) {
+    debugPrint('🏗️ [MessageProvider] Provider initialized');
+  }
+
+  // State variables
+  List<ConversationModel> _conversations = [];
+  bool _isLoading = false;
+  bool _isRefreshing = false;
+  String? _error;
+  
+  // Pagination support (for future implementation)
+  int _currentPage = 1;
+  bool _hasMoreData = true;
+  static const int _pageSize = 20;
+
+  // Getters
+  List<ConversationModel> get conversations => List.unmodifiable(_conversations);
+  bool get isLoading => _isLoading;
+  bool get isRefreshing => _isRefreshing;
+  String? get error => _error;
+  bool get hasError => _error != null;
+  bool get hasMoreData => _hasMoreData;
+  int get currentPage => _currentPage;
+  
+  /// Get conversations count
+  int get conversationCount => _conversations.length;
+  
+  /// Get total unread count across all conversations
+  int get totalUnreadCount {
+    return _conversations.fold(0, (sum, conversation) => sum + conversation.unreadCount);
+  }
+  
+  /// Check if there are any conversations
+  bool get hasConversations => _conversations.isNotEmpty;
+  
+  /// Get conversation by ID
+  ConversationModel? getConversationById(String id) {
+    try {
+      return _conversations.firstWhere((conversation) => conversation.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Clear any existing error
+  void clearError() {
+    if (_error != null) {
+      _error = null;
+      notifyListeners();
+    }
+  }
+
+  /// Set loading state for initial load
+  void _setLoading(bool loading) {
+    if (_isLoading != loading) {
+      _isLoading = loading;
+      debugPrint('⏳ [MessageProvider] Loading state changed: $loading');
+      notifyListeners();
+    }
+  }
+
+  /// Set loading state for refresh
+  void _setRefreshing(bool refreshing) {
+    if (_isRefreshing != refreshing) {
+      _isRefreshing = refreshing;
+      debugPrint('🔄 [MessageProvider] Refresh state changed: $refreshing');
+      notifyListeners();
+    }
+  }
+
+  /// Set error state
+  void _setError(String? error) {
+    if (_error != error) {
+      _error = error;
+      debugPrint('❌ [MessageProvider] Error state changed: $error');
+      notifyListeners();
+    }
+  }
+
+  /// Fetch conversations from API
+  /// 
+  /// [refresh] - If true, will clear existing data and fetch fresh data
+  /// [page] - Page number for pagination (default: 1)
+  Future<void> fetchConversations({
+    bool refresh = false,
+    int? page,
+  }) async {
+    if (refresh) {
+      _currentPage = 1;
+      _hasMoreData = true;
+      _conversations.clear();
+      _setRefreshing(true);
+    } else {
+      _setLoading(true);
+    }
+
+    clearError();
+
+    try {
+      debugPrint('📡 [MessageProvider] Fetching conversations - Page: $_currentPage, Refresh: $refresh');
+      
+      final conversations = await _messageService.getConversationList();
+      
+      if (refresh) {
+        // Replace all conversations on refresh
+        _conversations = conversations;
+      } else {
+        // Append conversations for pagination
+        _conversations.addAll(conversations);
+      }
+      
+      // Sort conversations by updated_at (most recent first)
+      _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      
+      // Update pagination state
+      _hasMoreData = conversations.length >= _pageSize;
+      if (!refresh) {
+        _currentPage++;
+      }
+      
+      debugPrint('✅ [MessageProvider] Successfully fetched ${conversations.length} conversations');
+      debugPrint('📊 [MessageProvider] Total conversations: ${_conversations.length}');
+      
+    } catch (e) {
+      debugPrint('💥 [MessageProvider] Error fetching conversations: $e');
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+      _setRefreshing(false);
+    }
+  }
+
+  /// Pull-to-refresh functionality
+  Future<void> refreshConversations() async {
+    debugPrint('🔄 [MessageProvider] Refresh conversations requested');
+    await fetchConversations(refresh: true);
+  }
+
+  /// Load more conversations (pagination)
+  Future<void> loadMoreConversations() async {
+    if (_isLoading || _isRefreshing || !_hasMoreData) {
+      debugPrint('⏸️ [MessageProvider] Skipping load more - Loading: $_isLoading, Refreshing: $_isRefreshing, HasMore: $_hasMoreData');
+      return;
+    }
+    
+    debugPrint('⬇️ [MessageProvider] Loading more conversations...');
+    await fetchConversations(refresh: false, page: _currentPage);
+  }
+
+  /// Mark a conversation as read
+  /// 
+  /// [conversationId] - The ID of the conversation to mark as read
+  /// Returns true if successful
+  Future<bool> markConversationAsRead(String conversationId) async {
+    try {
+      debugPrint('👁️ [MessageProvider] Marking conversation as read: $conversationId');
+      
+      final success = await _messageService.markConversationAsRead(conversationId);
+      
+      if (success) {
+        // Update local state
+        final index = _conversations.indexWhere((c) => c.id == conversationId);
+        if (index != -1) {
+          final updatedConversation = _conversations[index].copyWith(unreadCount: 0);
+          _conversations[index] = updatedConversation;
+          notifyListeners();
+          debugPrint('✅ [MessageProvider] Successfully marked conversation as read locally');
+        }
+      }
+      
+      return success;
+    } catch (e) {
+      debugPrint('💥 [MessageProvider] Error marking conversation as read: $e');
+      return false;
+    }
+  }
+
+  /// Delete a conversation
+  /// 
+  /// [conversationId] - The ID of the conversation to delete
+  /// Returns true if successful
+  Future<bool> deleteConversation(String conversationId) async {
+    try {
+      debugPrint('🗑️ [MessageProvider] Deleting conversation: $conversationId');
+      
+      final success = await _messageService.deleteConversation(conversationId);
+      
+      if (success) {
+        // Remove from local state
+        _conversations.removeWhere((c) => c.id == conversationId);
+        notifyListeners();
+        debugPrint('✅ [MessageProvider] Successfully deleted conversation locally');
+      }
+      
+      return success;
+    } catch (e) {
+      debugPrint('💥 [MessageProvider] Error deleting conversation: $e');
+      return false;
+    }
+  }
+
+  /// Update a single conversation (for socket updates)
+  /// 
+  /// [conversation] - The updated conversation data
+  void updateConversation(ConversationModel conversation) {
+    try {
+      final index = _conversations.indexWhere((c) => c.id == conversation.id);
+      
+      if (index != -1) {
+        // Update existing conversation
+        _conversations[index] = conversation;
+        debugPrint('🔄 [MessageProvider] Updated existing conversation: ${conversation.id}');
+      } else {
+        // Add new conversation at the beginning
+        _conversations.insert(0, conversation);
+        debugPrint('➕ [MessageProvider] Added new conversation: ${conversation.id}');
+      }
+      
+      // Sort to maintain order
+      _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('💥 [MessageProvider] Error updating conversation: $e');
+    }
+  }
+
+  /// Add a new conversation (for socket updates)
+  /// 
+  /// [conversation] - The new conversation to add
+  void addConversation(ConversationModel conversation) {
+    _conversations.insert(0, conversation);
+    notifyListeners();
+    debugPrint('➕ [MessageProvider] Added new conversation: ${conversation.id}');
+  }
+
+  /// Remove a conversation locally (for socket updates)
+  /// 
+  /// [conversationId] - The ID of the conversation to remove
+  void removeConversation(String conversationId) {
+    _conversations.removeWhere((c) => c.id == conversationId);
+    notifyListeners();
+    debugPrint('➖ [MessageProvider] Removed conversation: $conversationId');
+  }
+
+  /// Reset provider state
+  void reset() {
+    _conversations.clear();
+    _error = null;
+    _isLoading = false;
+    _isRefreshing = false;
+    _currentPage = 1;
+    _hasMoreData = true;
+    notifyListeners();
+    debugPrint('🔄 [MessageProvider] Provider state reset');
+  }
+
+  @override
+  void dispose() {
+    debugPrint('🗑️ [MessageProvider] Provider disposed');
+    super.dispose();
+  }
+}

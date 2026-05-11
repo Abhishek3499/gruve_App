@@ -1,42 +1,33 @@
 import 'package:flutter/material.dart';
-import '../../../core/assets.dart';
-import '../models/message_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../models/conversation_model.dart';
 import '../screen/chat_screen.dart';
+import '../../../core/assets.dart';
 
 class MessageCard extends StatelessWidget {
-  final String title;
-  final String message;
-  final String time;
-  final String avatar;
-  final int unreadCount;
+  final ConversationModel conversation;
+  final VoidCallback? onTap;
 
   const MessageCard({
     super.key,
-    required this.title,
-    required this.message,
-    required this.time,
-    this.avatar = AppAssets.profile,
-    this.unreadCount = 0,
+    required this.conversation,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('💬 [MessageCard] Building card for: ${conversation.otherUserName}');
     return GestureDetector(
-      onTap: () {
-        // Create ChatUser from MessageCard data
-        final chatUser = ChatUser(
-          id: title.hashCode.toString(), // Generate unique ID from title
-          name: title,
-          avatar: avatar,
-          lastMessage: message,
-          lastMessageTime: time,
-          unreadCount: unreadCount,
-        );
-
-        // Navigate to ChatScreen
+      onTap: onTap ?? () {
+        // Navigate to ChatScreen with conversation data
+        debugPrint('🔗 [MessageCard] Tapped to open chat with: ${conversation.otherUserName}');
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ChatScreen(user: chatUser)),
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              userOrConversation: conversation,
+            ),
+          ),
         );
       },
       child: Container(
@@ -50,7 +41,7 @@ class MessageCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             /// Avatar
-            CircleAvatar(radius: 30, backgroundImage: AssetImage(avatar)),
+            _buildAvatar(),
 
             const SizedBox(width: 14),
 
@@ -67,7 +58,7 @@ class MessageCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              title,
+                              conversation.otherUserName,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -76,7 +67,9 @@ class MessageCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              message,
+                              conversation.lastMessageContent,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
@@ -93,7 +86,7 @@ class MessageCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              time,
+                              conversation.lastMessageTimeAgo,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               softWrap: false,
@@ -106,7 +99,7 @@ class MessageCard extends StatelessWidget {
 
                             SizedBox(
                               height: 22, // fixed height space
-                              child: unreadCount > 0
+                              child: conversation.hasUnreadMessages
                                   ? Container(
                                       width: 22,
                                       height: 22,
@@ -116,7 +109,9 @@ class MessageCard extends StatelessWidget {
                                         shape: BoxShape.circle,
                                       ),
                                       child: Text(
-                                        unreadCount.toString(),
+                                        conversation.unreadCount > 99 
+                                            ? '99+' 
+                                            : conversation.unreadCount.toString(),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
@@ -138,5 +133,32 @@ class MessageCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Build avatar widget with network image support and fallback
+  Widget _buildAvatar() {
+    final avatarUrl = conversation.otherUserAvatar;
+    debugPrint('👤 [MessageCard] Building avatar for: ${conversation.otherUserName} - URL: $avatarUrl');
+    
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: CachedNetworkImageProvider(
+          avatarUrl,
+        ),
+        backgroundColor: Colors.grey[300],
+        child: const Icon(
+          Icons.person,
+          color: Colors.grey,
+          size: 20,
+        ),
+      );
+    } else {
+      // Fallback to asset image
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: const AssetImage(AppAssets.profile),
+      );
+    }
   }
 }

@@ -98,12 +98,12 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
           );
         } else {
           // Users loaded - show list with pagination
-          return RefreshIndicator(
-            onRefresh: _handleRefresh,
-            color: Colors.white,
-            backgroundColor: const Color(0xFF42174C),
-            child: SizedBox(
-              height: 90,
+          return SizedBox(
+            height: 90,
+            child: RefreshIndicator(
+              onRefresh: _handleRefresh,
+              color: Colors.white,
+              backgroundColor: const Color(0xFF42174C),
               child: ListView.separated(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),

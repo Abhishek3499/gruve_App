@@ -79,7 +79,10 @@ class MessageHeader extends StatelessWidget {
           const SizedBox(height: 45),
 
           /// ===== AVATAR LIST =====
-          const MessageAvatarList(),
+          SizedBox(
+            height: 90,
+            child: const MessageAvatarList(),
+          ),
         ],
       ),
     );

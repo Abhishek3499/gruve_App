@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
 import '../../search/widgets/search_bar.dart';
 import '../widgets/user_list_item.dart';
-import '../data/dummy_search_users.dart';
 
 class SearchUsersScreen extends StatelessWidget {
   const SearchUsersScreen({super.key});
@@ -55,17 +54,23 @@ class SearchUsersScreen extends StatelessWidget {
 
             // User List
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: DummySearchUsers.getSearchUsers().length,
-
-                itemBuilder: (context, index) {
-                  final user = DummySearchUsers.getSearchUsers()[index];
-                  return UserListItem(user: user, onTap: () {});
-                },
-
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, color: Colors.white54, size: 48),
+                    SizedBox(height: 16),
+                    Text(
+                      'Search functionality coming soon',
+                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Use the conversation list to chat',
+                      style: TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

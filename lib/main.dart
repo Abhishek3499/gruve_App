@@ -13,6 +13,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/splash_screen.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
+import 'package:gruve_app/features/message/providers/message_provider.dart';
+import 'package:gruve_app/features/message/services/message_service.dart';
+import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
+import 'package:gruve_app/features/message/data/repository/user_repository_impl.dart';
+import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
+import 'package:gruve_app/core/network/api_client.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -42,6 +48,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BlockProvider()),
         ChangeNotifierProvider(create: (_) => SavePostProvider()),
         ChangeNotifierProvider(create: (_) => LogoutProvider()),
+        ChangeNotifierProvider(create: (_) => MessageProvider(MessageService())),
+        ChangeNotifierProvider(create: (_) => UserProvider(UserRepositoryImpl(UserRemoteDataSource(ApiClient())))),
       ],
       child: MaterialApp(
         title: 'Gruve',
