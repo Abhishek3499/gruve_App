@@ -113,7 +113,12 @@ class SocketService {
 
   /// Send message through enhanced socket with timeout protection
   /// Returns true if message was successfully queued, false otherwise
-  bool sendMessage({required String conversationId, required String message}) {
+  bool sendMessage({
+    required String conversationId, 
+    required String message,
+    String? senderId,
+    Map<String, dynamic>? additionalData,
+  }) {
     if (message.trim().isEmpty) {
       debugPrint("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
       return false;
@@ -133,17 +138,20 @@ class SocketService {
       "💬 [SocketService] 💬 Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}",
     );
 
-    final data = {
-      "type": "send_message",
-      "conversation_id": conversationId,
-      "content": message,
-      "timestamp": DateTime.now().millisecondsSinceEpoch,
+    // 🚨 PRODUCTION FIX: Use correct event structure for backend
+    final messageData = {
+      'type': 'send_message', // ✅ Correct event type
+      'conversation_id': conversationId, // ✅ Required: UUID string
+      'content': message, // ✅ Required: message content
+      'sender_id': senderId ?? 'current_user', // ✅ Required: sender ID
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      ...?additionalData,
     };
 
     try {
       debugPrint("🚀 [SocketService] 🚀 Attempting to send via WebSocket...");
-      final sent = _reconnectManager.sendMessage(data);
-      
+      final sent = _reconnectManager.sendMessage(messageData);
+
       if (sent) {
         debugPrint("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");
       } else {

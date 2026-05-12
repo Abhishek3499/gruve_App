@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../services/socket_service.dart';
+import '../../../core/socket/socket_reconnect_manager.dart';
 import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
@@ -53,9 +54,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _showPopup = false;
   MessageModel? _popupMessage;
-  double _popupMessageBottom = 0;
-  double _popupMessageTop = 0;
-  Size _popupBubbleSize = Size.zero;
+  double _popupMenuTop = 0;
 
   bool _isDeleteMode = false;
   final Set<String> _selectedMessageIds = {};
@@ -126,25 +125,39 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Heartbeat / reconnect manager: register thread as soon as the route opens.
+    SocketReconnectManager().setConversationId(_conversationId);
+
     debugPrint('[ChatScreen] init user=$_userName conversation=$_conversationId');
 
     _messageController = MessageController(
       messageService: MessageService(),
       conversationId: _conversationId,
       receiverUserId: _userId,
-    )..addListener(_handleMessageStateChanged);
+    )..addListener(_onMessageControllerTick);
 
     // Requirement: the messages API is called only after ChatScreen opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       debugPrint('[ChatScreen] Fetch messages requested for $_conversationId');
       _hasCompletedInitialScroll = false;
       _messageController.fetchInitialMessages();
     });
   }
 
-  void _handleMessageStateChanged() {
+  @override
+  void didUpdateWidget(covariant ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.conversationId != oldWidget.conversationId ||
+        widget.userOrConversation != oldWidget.userOrConversation) {
+      SocketReconnectManager().setConversationId(_conversationId);
+    }
+  }
+
+  /// Scroll-only reactions — message list rebuilds via [ListenableBuilder].
+  void _onMessageControllerTick() {
     if (!mounted) return;
-    setState(() {});
 
     if (!_messageController.isInitialLoading &&
         !_messageController.hasError &&
@@ -171,18 +184,19 @@ class _ChatScreenState extends State<ChatScreen> {
     Offset globalPosition,
     Size bubbleSize,
   ) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
+    if (!mounted) return;
+    final topInset = MediaQuery.of(context).padding.top;
+    final menuTop =
+        (globalPosition.dy - topInset) + bubbleSize.height + 10;
     setState(() {
       _showPopup = true;
       _popupMessage = message;
-      _popupBubbleSize = bubbleSize;
-      _popupMessageTop = globalPosition.dy - statusBarHeight;
-      _popupMessageBottom =
-          globalPosition.dy + bubbleSize.height - statusBarHeight + 10;
+      _popupMenuTop = menuTop;
     });
   }
 
   void _dismissPopup() {
+    if (!mounted) return;
     setState(() {
       _showPopup = false;
       _popupMessage = null;
@@ -190,18 +204,21 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _enterDeleteMode() {
+    if (!mounted) return;
     setState(() {
       _showPopup = false;
       _isDeleteMode = true;
       _selectedMessageIds.clear();
-      if (_popupMessage != null) {
-        _selectedMessageIds.add(_popupMessage!.id);
+      final fromPopup = _popupMessage;
+      if (fromPopup != null) {
+        _selectedMessageIds.add(fromPopup.id);
       }
       _popupMessage = null;
     });
   }
 
   void _exitDeleteMode() {
+    if (!mounted) return;
     setState(() {
       _isDeleteMode = false;
       _selectedMessageIds.clear();
@@ -209,6 +226,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _toggleMessageSelection(String messageId) {
+    if (!mounted) return;
     setState(() {
       if (_selectedMessageIds.contains(messageId)) {
         _selectedMessageIds.remove(messageId);
@@ -219,6 +237,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _deleteSelectedMessages() {
+    if (!mounted) return;
     _messageController.removeMessages(_selectedMessageIds);
     setState(() {
       _isDeleteMode = false;
@@ -241,6 +260,7 @@ class _ChatScreenState extends State<ChatScreen> {
       replyTo: _activeReply?.originalMessage,
     );
 
+    if (!mounted) return;
     setState(() {
       _isSending = true;
       _activeReply = null;
@@ -357,6 +377,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     switch (action) {
       case MessageAction.reply:
+        if (!mounted) return;
         setState(() {
           _activeReply = ReplyMessageModel(
             originalMessage: message,
@@ -393,6 +414,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final pinned = message.copyWith(isPinned: true);
     _messageController.replaceMessage(pinned);
+    if (!mounted) return;
     setState(() => _pinnedMessage = pinned);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -401,18 +423,21 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _clearReply() {
+    if (!mounted) return;
     setState(() => _activeReply = null);
   }
 
-  List<MessageModel> _getSortedMessages() {
-    final sorted = List<MessageModel>.from(_messages)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  /// Never sort [MessageController.messages] in place — it is unmodifiable.
+  List<MessageModel> _sortedMessagesCopy() {
+    final sorted = List<MessageModel>.from(_messages);
+    sorted.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return sorted;
   }
 
   @override
   void dispose() {
-    _messageController.removeListener(_handleMessageStateChanged);
+    SocketReconnectManager().clearConversationContext();
+    _messageController.removeListener(_onMessageControllerTick);
     _messageController.dispose();
     _scrollController.dispose();
     debugPrint('[ChatScreen] dispose conversation=$_conversationId');
@@ -421,8 +446,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sortedMessages = _getSortedMessages();
-
     return PopScope(
       canPop: !_isDeleteMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -459,7 +482,15 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
                       },
                     ),
-                    Expanded(child: _buildMessageBody(sortedMessages)),
+                    Expanded(
+                      child: ListenableBuilder(
+                        listenable: _messageController,
+                        builder: (context, _) {
+                          final sortedMessages = _sortedMessagesCopy();
+                          return _buildMessageBody(sortedMessages);
+                        },
+                      ),
+                    ),
                     if (_activeReply != null && !_isDeleteMode)
                       ReplyPreviewBar(
                         replyMessage: _activeReply!,
@@ -478,32 +509,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (_showPopup)
                   Positioned.fill(
                     child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: _dismissPopup,
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.15),
+                      child: ClipRect(
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                          child: Container(
+                            color: Colors.black.withValues(alpha: 0.15),
+                          ),
                         ),
                       ),
                     ),
                   ),
+                // Menu only (no duplicate bubble — avoids tight-height relayout crashes).
                 if (_showPopup && _popupMessage != null)
                   Positioned(
-                    top: _popupMessageTop,
-                    left: 0,
-                    right: 0,
-                    height: _popupBubbleSize.height,
-                    child: IgnorePointer(
-                      child: MessageBubble(
-                        message: _popupMessage!,
-                        onActionSelected: null,
-                        onLongPress: null,
-                      ),
-                    ),
-                  ),
-                if (_showPopup && _popupMessage != null)
-                  Positioned(
-                    top: _popupMessageBottom + 4,
+                    top: _popupMenuTop + 4,
                     left: 16,
                     child: MessagePopupMenu(
                       selectedAction: null,

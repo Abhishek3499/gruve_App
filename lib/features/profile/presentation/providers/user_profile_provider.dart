@@ -34,7 +34,7 @@ class UserProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchProfile(String userId) async {
+  Future<void> fetchProfile(String userId, {bool silent = false}) async {
     _log('🔄 [UserProfileProvider] Fetch profile START for userId: $userId');
 
     // Skip duplicate API call if same userId already loaded
@@ -46,7 +46,9 @@ class UserProfileProvider extends ChangeNotifier {
     _currentUserId = userId;
     _state = UserProfileState.loading;
     _errorMessage = null;
-    notifyListeners();
+    
+    // Only notify if not silent (prevents build-time notifications)
+    if (!silent) notifyListeners();
 
     try {
       _log('🌐 [UserProfileProvider] Calling service for userId: $userId');
@@ -57,7 +59,6 @@ class UserProfileProvider extends ChangeNotifier {
       _errorMessage = null;
       
       _log('✅ [UserProfileProvider] Profile loaded successfully: ${userProfile.username}');
-      _log('📊 [UserProfileProvider] Stats: ${userProfile.followersCount} followers, ${userProfile.followingCount} following, ${userProfile.postsCount} posts');
     } catch (e) {
       _log('❌ [UserProfileProvider] Error loading profile: $e');
       _state = UserProfileState.error;

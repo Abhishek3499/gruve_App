@@ -16,14 +16,17 @@ class EnvironmentConfig {
   /// Initialize environment configuration
   static Future<void> initialize() async {
     await dotenv.load(fileName: ".env");
-    
+
     // Detect environment from dart-define
-    const environment = String.fromEnvironment('ENVIRONMENT', defaultValue: 'development');
+    const environment = String.fromEnvironment(
+      'ENVIRONMENT',
+      defaultValue: 'development',
+    );
     _environment = _parseEnvironment(environment);
-    
+
     // Load configuration based on environment
     _loadConfiguration();
-    
+
     debugPrint('🌍 [Environment] Initialized: ${_environment.name}');
     debugPrint('🔗 [Environment] Base URL: $_baseUrl');
     debugPrint('📊 [Environment] Logging enabled: $_enableLogging');
@@ -49,29 +52,39 @@ class EnvironmentConfig {
   static void _loadConfiguration() {
     switch (_environment) {
       case Environment.production:
-        _baseUrl = dotenv.env['PROD_BASE_URL'] ?? 'https://gruve-api.hardkore.tech/api/v1';
-        _wsUrl = dotenv.env['PROD_WS_URL'] ??  'wss://gruve-api.hardkore.tech/ws';
+        _baseUrl =
+            dotenv.env['PROD_BASE_URL'] ??
+            'https://gruve-api.hardkore.tech/api/v1';
+        _wsUrl =
+            dotenv.env['PROD_WS_URL'] ?? 'wss://gruve-api.hardkore.tech/ws';
         _enableLogging = false;
         _enableDebugTools = false;
         _enableCrashReporting = true;
         _apiTimeout = 30;
         _wsTimeout = 15;
         break;
-        
+
       case Environment.staging:
-        _baseUrl = dotenv.env['STAGING_BASE_URL'] ?? 'https://staging-api.gruveapp.com';
-        _wsUrl = dotenv.env['STAGING_WS_URL'] ?? 'wss://staging-ws.gruveapp.com';
+        _baseUrl =
+            dotenv.env['STAGING_BASE_URL'] ??
+            'https://staging-api.gruveapp.com';
+        _wsUrl =
+            dotenv.env['STAGING_WS_URL'] ?? 'wss://staging-ws.gruveapp.com';
         _enableLogging = true;
         _enableDebugTools = false;
         _enableCrashReporting = true;
         _apiTimeout = 25;
         _wsTimeout = 12;
         break;
-        
+
       case Environment.development:
       default:
-        _baseUrl = dotenv.env['DEV_BASE_URL'] ?? 'http://localhost:8000';
-        _wsUrl = dotenv.env['DEV_WS_URL'] ?? 'ws://localhost:8000';
+        _baseUrl =
+            dotenv.env['DEV_BASE_URL'] ??
+            'https://zg7h02xx-8001.inc1.devtunnels.ms/api/v1/';
+        _wsUrl =
+            dotenv.env['DEV_WS_URL'] ??
+            'ws://zg7h02xx-8001.inc1.devtunnels.ms/ws';
         _enableLogging = true;
         _enableDebugTools = true;
         _enableCrashReporting = false;
@@ -100,12 +113,12 @@ class EnvironmentConfig {
   /// Get environment-specific headers
   static Map<String, String> get headers {
     final headers = <String, String>{};
-    
+
     if (!isProduction) {
       headers['X-Environment'] = _environment.name;
       headers['X-Debug-Mode'] = 'true';
     }
-    
+
     return headers;
   }
 
@@ -124,9 +137,15 @@ class EnvironmentConfig {
 
   /// Get environment-specific app version
   static String get appVersion {
-    const version = String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0');
-    final buildNumber = String.fromEnvironment('BUILD_NUMBER', defaultValue: '1');
-    
+    const version = String.fromEnvironment(
+      'APP_VERSION',
+      defaultValue: '1.0.0',
+    );
+    final buildNumber = String.fromEnvironment(
+      'BUILD_NUMBER',
+      defaultValue: '1',
+    );
+
     if (isProduction) {
       return version;
     } else {
@@ -143,14 +162,14 @@ class EnvironmentConfig {
       'analytics': !isDevelopment,
       'crash_reporting': _enableCrashReporting,
     };
-    
+
     return featureFlags[featureName] ?? false;
   }
 
   /// Log environment info
   static void logEnvironmentInfo() {
     if (!_enableLogging) return;
-    
+
     debugPrint('🌍 [Environment] Configuration:');
     debugPrint('  Environment: ${_environment.name}');
     debugPrint('  Base URL: $_baseUrl');
@@ -166,11 +185,7 @@ class EnvironmentConfig {
 }
 
 /// Environment enum
-enum Environment {
-  development,
-  staging,
-  production,
-}
+enum Environment { development, staging, production }
 
 /// Extension for environment utilities
 extension EnvironmentExtension on Environment {
