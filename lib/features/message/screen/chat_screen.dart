@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../../services/socket_service.dart';
 import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
@@ -224,13 +226,14 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _sendMessage(String text) {
+  void _sendMessage(String text) async {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
-    debugPrint('[ChatScreen] Sending local message to $_conversationId');
+    debugPrint('[ChatScreen] 📤 SEND FLOW START: conversation=$_conversationId');
+    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
     final newMessage = MessageModel(
-      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+      id: localId,
       text: trimmedText,
       timestamp: DateTime.now(),
       isSent: true,
@@ -242,38 +245,110 @@ class _ChatScreenState extends State<ChatScreen> {
       _isSending = true;
       _activeReply = null;
     });
+    
+    // Step 1: Optimistic local append
+    debugPrint('[ChatScreen] 📝 Step 1: Local message appended id=$localId');
     _messageController.appendLocalMessage(newMessage);
     _scrollToBottom();
 
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isSending = false);
-    });
+    // Step 2: Attempt backend persistence with timeout protection
+    try {
+      debugPrint('[ChatScreen] 🌐 Step 2: Starting backend send...');
+      
+      final sendFuture = _sendToBackend(trimmedText);
+      final timeoutFuture = Future.delayed(
+        const Duration(seconds: 5),
+        () => throw TimeoutException('Send timeout after 5s'),
+      );
+      
+      await Future.any([sendFuture, timeoutFuture]);
+      
+      debugPrint('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
+    } catch (e) {
+      debugPrint('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+      debugPrint('[ChatScreen] 🏁 SEND FLOW COMPLETE');
+    }
+  }
+
+  Future<void> _sendToBackend(String content) async {
+    debugPrint('[ChatScreen] 🔄 Backend send: Trying WebSocket first...');
+    
+    // Step 2a: Try WebSocket send with timeout
+    final wsSuccess = await _tryWebSocketSend(content).timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        debugPrint('[ChatScreen] ⏱️ WebSocket send TIMEOUT after 3s');
+        return false;
+      },
+    );
+    
+    if (wsSuccess) {
+      debugPrint('[ChatScreen] ✅ WebSocket send SUCCESS');
+      return;
+    }
+    
+    // Step 2b: WebSocket failed/timeout - use REST fallback
+    debugPrint('[ChatScreen] 🔄 WebSocket failed, using REST fallback...');
+    await _sendViaREST(content);
+  }
+
+  Future<bool> _tryWebSocketSend(String content) async {
+    try {
+      debugPrint('[ChatScreen] 📡 WebSocket send attempt start');
+      final socketService = SocketService();
+      
+      if (!socketService.isConnected) {
+        debugPrint('[ChatScreen] ⚠️ WebSocket NOT CONNECTED');
+        return false;
+      }
+      
+      final sent = socketService.sendMessage(
+        conversationId: _conversationId,
+        message: content,
+      );
+      
+      debugPrint('[ChatScreen] 📡 WebSocket send result: $sent');
+      return sent;
+    } catch (e) {
+      debugPrint('[ChatScreen] ❌ WebSocket send exception: $e');
+      return false;
+    }
+  }
+
+  Future<void> _sendViaREST(String content) async {
+    debugPrint('[ChatScreen] 🌐 REST API send start');
+    try {
+      final sentMessage = await _messageController.sendMessage(content);
+      
+      if (sentMessage != null) {
+        debugPrint('[ChatScreen] ✅ REST API send SUCCESS: ${sentMessage.id}');
+      } else {
+        debugPrint('[ChatScreen] ⚠️ REST API returned null');
+        throw Exception('REST API returned null');
+      }
+    } catch (e) {
+      debugPrint('[ChatScreen] ❌ REST API send FAILED: $e');
+      rethrow;
+    }
   }
 
   void _sendImage(String imagePath) {
-    debugPrint('[ChatScreen] Sending local image message to $_conversationId');
-    final newMessage = MessageModel(
-      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
-      text: '',
-      timestamp: DateTime.now(),
-      isSent: true,
-      senderId: 'me',
-      imagePath: imagePath,
-      replyTo: _activeReply?.originalMessage,
+    debugPrint('[ChatScreen] 🖼️ Image send not yet implemented: $imagePath');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Image sending coming soon!')),
     );
-
-    setState(() {
-      _isSending = true;
-      _activeReply = null;
-    });
-    _messageController.appendLocalMessage(newMessage);
-    _scrollToBottom();
-
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isSending = false);
-    });
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {

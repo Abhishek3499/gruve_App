@@ -200,9 +200,17 @@ class MessageController extends ChangeNotifier {
     debugPrint('🔄 [MessageController] Message replaced: ${message.id}');
   }
 
+  /// Send message via REST API with comprehensive logging
+  /// Returns the sent message on success, null on failure
   Future<MessageModel?> sendMessage(String content) async {
+    debugPrint('[MessageController] 🚀 REST send START for conversation: $conversationId');
+    
     try {
+      debugPrint('[MessageController] 🔑 Fetching current user ID...');
       final currentUserId = await TokenStorage.getCurrentUserId();
+      debugPrint('[MessageController] 👤 Current user ID: $currentUserId');
+      
+      debugPrint('[MessageController] 🌐 Calling MessageService.sendMessage...');
       final sentMessage = await _messageService.sendMessage(
         conversationId: conversationId,
         content: content,
@@ -211,13 +219,18 @@ class MessageController extends ChangeNotifier {
       );
 
       if (sentMessage != null) {
+        debugPrint('[MessageController] ✅ REST send SUCCESS: message ID=${sentMessage.id}');
+        debugPrint('[MessageController] 💾 Upserting message to local state...');
         _upsertMessage(sentMessage);
         _notify();
+        debugPrint('[MessageController] ✅ Message persisted locally');
+      } else {
+        debugPrint('[MessageController] ⚠️ REST send returned NULL');
       }
 
       return sentMessage;
     } catch (error) {
-      debugPrint('❌ [MessageController] Send message failed: $error');
+      debugPrint('[MessageController] ❌ REST send FAILED: $error');
       _setError(error.toString());
       rethrow;
     }

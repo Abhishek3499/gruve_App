@@ -49,8 +49,8 @@ class EnvironmentConfig {
   static void _loadConfiguration() {
     switch (_environment) {
       case Environment.production:
-        _baseUrl = dotenv.env['PROD_BASE_URL'] ?? 'https://api.gruveapp.com';
-        _wsUrl = dotenv.env['PROD_WS_URL'] ?? 'wss://ws.gruveapp.com';
+        _baseUrl = dotenv.env['PROD_BASE_URL'] ?? 'https://gruve-api.hardkore.tech/api/v1';
+        _wsUrl = dotenv.env['PROD_WS_URL'] ??  'wss://gruve-api.hardkore.tech/ws';
         _enableLogging = false;
         _enableDebugTools = false;
         _enableCrashReporting = true;

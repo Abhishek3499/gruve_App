@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/debug/debug_logger.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -47,7 +48,8 @@ class SocketReconnectManager with WidgetsBindingObserver {
     _initializeConnectivityListener();
   }
 
-  static const String _baseUrl = 'wss://zg7h02xx-8000.inc1.devtunnels.ms/ws';
+  // Use centralized WebSocket URL from EnvironmentConfig
+  static String get _baseUrl => EnvironmentConfig.wsUrl;
   static const Duration _heartbeatInterval = Duration(seconds: 25);
   static const Duration _connectionTimeout = Duration(seconds: 15);
   static const Duration _baseReconnectDelay = Duration(seconds: 1);
@@ -198,7 +200,20 @@ class SocketReconnectManager with WidgetsBindingObserver {
       }
 
       final socketUrl = '$_baseUrl?token=$token';
-      debugLog.socket('CONNECTING', properties: {'fullUrl': socketUrl});
+      
+      // Enhanced logging for WebSocket URL debugging
+      debugLog.socket('CONFIG_CHECK', properties: {
+        'environment': EnvironmentConfig.environment.name,
+        'wsUrl': _baseUrl,
+        'baseUrl': EnvironmentConfig.baseUrl,
+        'isProduction': EnvironmentConfig.isProduction,
+      });
+      
+      debugLog.socket('CONNECTING', properties: {
+        'fullUrl': socketUrl,
+        'wsUrl': _baseUrl,
+        'tokenLength': token.length,
+      });
 
       _connectionTimeoutTimer = Timer(_connectionTimeout, () {
         debugLog.socket('CONNECT_TIMEOUT', properties: {

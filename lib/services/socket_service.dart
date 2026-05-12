@@ -111,7 +111,8 @@ class SocketService {
     await _reconnectManager.connect();
   }
 
-  /// Send message through enhanced socket
+  /// Send message through enhanced socket with timeout protection
+  /// Returns true if message was successfully queued, false otherwise
   bool sendMessage({required String conversationId, required String message}) {
     if (message.trim().isEmpty) {
       debugPrint("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
@@ -140,12 +141,15 @@ class SocketService {
     };
 
     try {
+      debugPrint("🚀 [SocketService] 🚀 Attempting to send via WebSocket...");
       final sent = _reconnectManager.sendMessage(data);
-      debugPrint(
-        sent
-            ? "✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY"
-            : "❌ [SocketService] ❌ MESSAGE NOT QUEUED",
-      );
+      
+      if (sent) {
+        debugPrint("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");
+      } else {
+        debugPrint("❌ [SocketService] ❌ MESSAGE NOT QUEUED");
+      }
+      
       return sent;
     } catch (e) {
       debugPrint("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");
