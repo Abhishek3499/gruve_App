@@ -31,7 +31,7 @@ class NotificationScreen extends StatelessWidget {
 
                 Header(),
 
-                SizedBox(height: 24),
+                SizedBox(height: 30),
 
                 TodaySection(),
 
