@@ -291,7 +291,7 @@ class ProfileGrid extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            post.media.toLowerCase().contains('.mp4')
+            post.isVideo
                 ? Container(
                     color: Colors.black,
                     child: const Center(

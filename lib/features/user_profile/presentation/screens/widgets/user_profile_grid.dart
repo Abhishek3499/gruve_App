@@ -27,6 +27,7 @@ class UserProfileGrid extends StatelessWidget {
       id: post.id,
       caption: post.caption,
       media: post.media,
+      mediaType: post.mediaType,
       userId: userProfile.id.isNotEmpty ? userProfile.id : post.userId,
       likesCount: post.likesCount,
       commentsCount: post.commentsCount,
@@ -90,7 +91,7 @@ class UserProfileGrid extends StatelessWidget {
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(18),
-            child: post.media.toLowerCase().contains('.mp4')
+            child: enrichedPost.isVideo
                 ? Container(
                     color: Colors.black,
                     child: const Center(

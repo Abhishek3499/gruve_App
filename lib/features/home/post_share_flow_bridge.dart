@@ -86,44 +86,52 @@ class PostShareFlowBridge {
     String mediaPath,
   ) async {
     try {
+      final isVideo = mediaPath.toLowerCase().endsWith('.mp4') || 
+                      mediaPath.toLowerCase().endsWith('.mov');
+      if (kDebugMode) {
+        debugPrint("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
+        debugPrint("📁 [Bridge] Path: $mediaPath");
+      }
+      
       notifyShareStartProcessing();
       await _waitForProcessingOverlayFrame();
+      
       await PostService().createPost(caption: caption, mediaPath: mediaPath);
+      
       if (kDebugMode) {
-        debugPrint("✅ API call completed successfully");
+        debugPrint("✅ [Bridge] ${isVideo ? 'Video' : 'Image'} upload completed");
       }
+      
       await notifyPostCreated();
+      
       if (kDebugMode) {
-        debugPrint("🔔 Post created notification finished");
+        debugPrint("🔔 [Bridge] Post created notification finished");
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint("❌ POST ERROR: $e");
+        debugPrint("❌ [Bridge] POST ERROR: $e");
       }
       onShareUploadError?.call();
     }
   }
 
-  /// Refreshes via the same [VideoFeedController.initVideos] used on first home open.
-  /// Logs success only after GET completes successfully. Calls [markProcessingCompleted]
-  /// after refresh so the overlay can close after the feed is updated.
   static Future<void> notifyPostCreated() async {
     if (kDebugMode) {
-      debugPrint("🔔 Bridge: notifyPostCreated called");
+      debugPrint("🔔 [Bridge] notifyPostCreated called");
     }
 
     if (_videoControllerRef != null) {
       if (kDebugMode) {
-        debugPrint("🔔 Bridge: Refreshing video feed (awaiting GET)...");
+        debugPrint("🔄 [Bridge] Refreshing feed to show new post...");
       }
       final result = await _videoControllerRef!.initVideos(refresh: true);
       if (kDebugMode) {
         if (result == true) {
-          debugPrint("✅ Bridge: Video feed refreshed successfully");
+          debugPrint("✅ [Bridge] Feed refreshed - new post should be visible");
         } else if (result == false) {
-          debugPrint("❌ Bridge: Video feed refresh failed");
+          debugPrint("❌ [Bridge] Feed refresh failed");
         } else {
-          debugPrint("🔔 Bridge: Video feed refresh superseded by newer load");
+          debugPrint("🔔 [Bridge] Feed refresh superseded by newer load");
         }
       }
       if (result == true) {
@@ -133,9 +141,9 @@ class PostShareFlowBridge {
       }
     } else {
       if (kDebugMode) {
-        debugPrint("❌ Bridge: No refresh method available, setting flag");
+        debugPrint("❌ [Bridge] No controller available, setting refresh flag");
         debugPrint(
-          "🔄 Bridge: Refresh flag set, will refresh when home tab is accessed",
+          "🔄 [Bridge] Will refresh when home tab is accessed",
         );
       }
       _needsRefresh = true;

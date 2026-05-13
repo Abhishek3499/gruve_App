@@ -40,7 +40,7 @@ class FeedProvider extends ChangeNotifier {
     }
 
     _stateManager.setFirstLoad();
-    debugPrint('📡 [FeedProvider] Fetching feed: type=$_currentType, page=$_currentPage');
+    debugPrint('📡 feed API [FeedProvider] type=$_currentType, page=$_currentPage');
 
     try {
       final response = await _repository.fetchFeed(
@@ -51,8 +51,12 @@ class FeedProvider extends ChangeNotifier {
 
       _stateManager.setIdle(response.posts);
       _hasMoreData = response.hasMore;
-      
-      debugPrint('✅ [FeedProvider] Feed loaded: ${response.posts.length} posts');
+
+      final videoPosts =
+          response.posts.where((p) => p.mediaType == MediaType.video).length;
+      debugPrint(
+        '✅ [FeedProvider] Feed loaded: ${response.posts.length} posts (🎥 $videoPosts videos)',
+      );
     } catch (e) {
       _stateManager.setError(e.toString());
       debugPrint('❌ [FeedProvider] Error loading feed: $e');
@@ -65,7 +69,7 @@ class FeedProvider extends ChangeNotifier {
     _hasMoreData = true;
     _stateManager.setRefreshing();
     
-    debugPrint('🔄 [FeedProvider] Refreshing feed');
+    debugPrint('🔄 feed refresh [FeedProvider]');
 
     try {
       final response = await _repository.fetchFeed(
@@ -76,8 +80,12 @@ class FeedProvider extends ChangeNotifier {
 
       _stateManager.setIdle(response.posts);
       _hasMoreData = response.hasMore;
-      
-      debugPrint('✅ [FeedProvider] Feed refreshed: ${response.posts.length} posts');
+
+      final videoPosts =
+          response.posts.where((p) => p.mediaType == MediaType.video).length;
+      debugPrint(
+        '✅ [FeedProvider] Feed refreshed: ${response.posts.length} posts (🎥 $videoPosts videos)',
+      );
     } catch (e) {
       _stateManager.setError(e.toString());
       debugPrint('❌ [FeedProvider] Error refreshing feed: $e');

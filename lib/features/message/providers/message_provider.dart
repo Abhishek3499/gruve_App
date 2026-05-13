@@ -173,6 +173,18 @@ class MessageProvider extends ChangeNotifier {
       final conversations = await _messageService.getConversationList();
       final apiTime = DateTime.now().difference(apiStart);
 
+      debugPrint('📩 [MessageProvider] API response received in ${apiTime.inMilliseconds}ms');
+      debugPrint('📊 [MessageProvider] API returned ${conversations.length} conversations');
+
+      if (conversations.isEmpty) {
+        debugPrint('⚠️ [MessageProvider] API returned EMPTY conversation list');
+      } else {
+        final ids = conversations.map((c) => c.id).take(5).toList();
+        final unreadList = conversations.take(5).map((c) => '${c.id.substring(0, 6)}:unread=${c.unreadCount}').toList();
+        debugPrint('💬 [MessageProvider] conversationIDs (first 5): $ids');
+        debugPrint('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
+      }
+
       if (refresh) {
         // Replace all conversations on refresh
         _conversations = conversations;
@@ -198,12 +210,7 @@ class MessageProvider extends ChangeNotifier {
         name: 'MessageProvider',
       );
 
-      debugPrint(
-        '✅ [MessageProvider] Successfully fetched ${conversations.length} conversations',
-      );
-      debugPrint(
-        '📊 [MessageProvider] Total conversations: ${_conversations.length}',
-      );
+      debugPrint('✅ [MessageProvider] Fetch complete — total: ${_conversations.length} | totalUnread: $totalUnreadCount | hasMore: $_hasMoreData');
     } catch (e) {
       debugPrint('💥 [MessageProvider] Error fetching conversations: $e');
       _setError(e.toString());

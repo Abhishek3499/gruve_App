@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../story_preview/api/create_post_api/model/post_model.dart';
 import '../controllers/video_feed_controller.dart';
 import 'optimized_video_overlay.dart';
 import 'video_top_bar.dart';
@@ -81,7 +83,9 @@ class _VideoFeedState extends State<VideoFeed> {
   Future<void> _refreshFeed() async {
     // Prevent multiple simultaneous refreshes
     if (_controller.isRefreshing) {
-      debugPrint('⏳ [VideoFeed] Refresh already in progress, skipping');
+      if (kDebugMode) {
+        debugPrint('⏳ [VideoFeed] Refresh already in progress, skipping');
+      }
       return;
     }
 
@@ -112,37 +116,51 @@ class _VideoFeedState extends State<VideoFeed> {
 
   Widget _buildFeedItem(int index) {
     final url = _controller.mediaUrls[index].trim();
-    final isVideo = url.toLowerCase().contains(".mp4");
+    final post = _controller.posts[index];
+    final effectiveVideo = post.isVideo || Post.mediaUrlLooksLikeVideo(url);
     final isValidNetworkUrl = _isNetworkMediaUrl(url);
     final videoController = _controller.controllerForMediaIndex(index);
     final hasVideoLoadFailed = _controller.hasVideoLoadFailed(index);
 
-    return GestureDetector(
-      onTap: _onVideoTap,
-      child: Stack(
-        children: [
-          Container(
-            color: Colors.black,
-            child: _buildMediaContent(
-              url: url,
-              isVideo: isVideo,
-              isValidNetworkUrl: isValidNetworkUrl,
-              videoController: videoController,
-              hasVideoLoadFailed: hasVideoLoadFailed,
+    if (kDebugMode) {
+      if (effectiveVideo) {
+        debugPrint(
+          '🎥 video detected — rendering slot index=$index post=${post.id}',
+        );
+      } else {
+        debugPrint(
+          '🖼 image detected — rendering slot index=$index post=${post.id}',
+        );
+      }
+    }
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: _onVideoTap,
+        child: Stack(
+          children: [
+            Container(
+              color: Colors.black,
+              child: _buildMediaContent(
+                url: url,
+                isVideo: effectiveVideo,
+                isValidNetworkUrl: isValidNetworkUrl,
+                videoController: videoController,
+                hasVideoLoadFailed: hasVideoLoadFailed,
+              ),
             ),
-          ),
-          // ✅ Only rebuild overlay when currentIndex changes, not on every frame
-          ValueListenableBuilder<int>(
-            valueListenable: _controller.currentIndex,
-            builder: (context, currentIdx, _) => OptimizedVideoOverlay(
-              selectedTab: selectedContentTab,
-              onTabChanged: _onTabChanged,
-              controller: _controller,
-              onOwnProfileTap: () => widget.onTabChanged(4),
-              currentIndex: currentIdx,
+            ValueListenableBuilder<int>(
+              valueListenable: _controller.currentIndex,
+              builder: (context, currentIdx, _) => OptimizedVideoOverlay(
+                selectedTab: selectedContentTab,
+                onTabChanged: _onTabChanged,
+                controller: _controller,
+                onOwnProfileTap: () => widget.onTabChanged(4),
+                currentIndex: currentIdx,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -155,19 +173,29 @@ class _VideoFeedState extends State<VideoFeed> {
     required bool hasVideoLoadFailed,
   }) {
     if (isVideo) {
-      if (hasVideoLoadFailed) return _brokenMediaIcon();
+      if (hasVideoLoadFailed) {
+        if (kDebugMode) {
+          debugPrint('❌ video filtered/skipped — player failed: $url');
+        }
+        return _brokenMediaIcon();
+      }
 
       if (videoController != null && videoController.value.isInitialized) {
-        return AnimatedOpacity(
-          opacity: 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: SizedBox.expand(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: videoController.value.size.width,
-                height: videoController.value.size.height,
-                child: VideoPlayer(videoController),
+        if (kDebugMode) {
+          debugPrint('✅ rendered in feed — video ready url=$url');
+        }
+        return RepaintBoundary(
+          child: AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: videoController.value.size.width,
+                  height: videoController.value.size.height,
+                  child: VideoPlayer(videoController),
+                ),
               ),
             ),
           ),
@@ -177,21 +205,32 @@ class _VideoFeedState extends State<VideoFeed> {
       return Container(color: Colors.black);
     }
 
-    if (!isValidNetworkUrl) return _brokenMediaIcon();
+    if (!isValidNetworkUrl) {
+      if (kDebugMode) {
+        debugPrint('❌ image filtered/skipped — bad network URL url=$url');
+      }
+      return _brokenMediaIcon();
+    }
 
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      memCacheWidth: 200,
-      memCacheHeight: 400,
-      maxWidthDiskCache: 300,
-      maxHeightDiskCache: 600,
-      fadeInDuration: const Duration(milliseconds: 200),
-      fadeOutDuration: const Duration(milliseconds: 100),
-      placeholder: (context, url) => Container(color: Colors.black),
-      errorWidget: (context, url, error) => _brokenMediaIcon(),
+    if (kDebugMode) {
+      debugPrint('✅ rendered in feed — image url=$url');
+    }
+
+    return RepaintBoundary(
+      child: CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        memCacheWidth: 200,
+        memCacheHeight: 400,
+        maxWidthDiskCache: 300,
+        maxHeightDiskCache: 600,
+        fadeInDuration: const Duration(milliseconds: 200),
+        fadeOutDuration: const Duration(milliseconds: 100),
+        placeholder: (context, url) => Container(color: Colors.black),
+        errorWidget: (context, url, error) => _brokenMediaIcon(),
+      ),
     );
   }
 

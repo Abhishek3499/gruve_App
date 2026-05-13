@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import '../models/conversation_model.dart';
 import '../providers/message_provider.dart';
@@ -6,7 +7,7 @@ import '../widgets/message_header.dart';
 import '../widgets/message_card.dart';
 import '../widgets/swipe_delete_background.dart';
 import '../screen/chat_screen.dart';
-import '../utils/user_display_helper.dart';
+
 import '../../../core/widgets/shimmer/chat_shimmer.dart';
 
 class MessageScreen extends StatefulWidget {
@@ -29,9 +30,14 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    debugPrint('🔄 [MessageScreen] Pull-to-refresh triggered');
-    await context.read<MessageProvider>().refreshConversations();
-    debugPrint('✅ [MessageScreen] Pull-to-refresh completed');
+    debugPrint('🔄 [MessageScreen] Refresh started');
+
+    await Future.wait([
+      context.read<MessageProvider>().refreshConversations(),
+      context.read<UserProvider>().refreshUsers(),
+    ]);
+
+    debugPrint('✅ [MessageScreen] Refresh completed');
   }
 
   void _showDeleteConfirmation(ConversationModel conversation) {
@@ -98,7 +104,7 @@ class _MessageScreenState extends State<MessageScreen> {
                   child: Stack(
                     children: [
                       /// HEADER
-                      const MessageHeader(),
+                      MessageHeader(),
 
                       /// MESSAGE LIST
                       Positioned(
@@ -131,31 +137,60 @@ class _MessageScreenState extends State<MessageScreen> {
 
   Widget _buildConversationList(MessageProvider messageProvider) {
     debugPrint(
-      '📋 [MessageScreen] Building conversation list - Loading: ${messageProvider.isLoading}, Conversations: ${messageProvider.conversationCount}',
+      '🔍 [buildConversationList] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     );
+    debugPrint(
+      '🔍 [buildConversationList] isLoading: ${messageProvider.isLoading} | isRefreshing: ${messageProvider.isRefreshing}',
+    );
+    debugPrint(
+      '📊 [buildConversationList] conversationCount: ${messageProvider.conversationCount} | hasMore: ${messageProvider.hasMoreData} | page: ${messageProvider.currentPage}',
+    );
+    debugPrint(
+      '📩 [buildConversationList] totalUnread: ${messageProvider.totalUnreadCount}',
+    );
+
+    if (messageProvider.hasError) {
+      debugPrint('❌ [buildConversationList] error: ${messageProvider.error}');
+    }
+    if (!messageProvider.hasConversations && !messageProvider.isLoading) {
+      debugPrint('⚠️ [buildConversationList] conversations list is NULL/EMPTY');
+    }
+    if (messageProvider.hasConversations) {
+      final ids = messageProvider.conversations
+          .map((c) => c.id)
+          .take(5)
+          .toList();
+      final unreadCounts = messageProvider.conversations
+          .take(5)
+          .map((c) => '${c.id.substring(0, 6)}:${c.unreadCount}')
+          .toList();
+      debugPrint('💬 [buildConversationList] conversationIDs (first 5): $ids');
+      debugPrint(
+        '🔔 [buildConversationList] unreadCounts (first 5): $unreadCounts',
+      );
+    }
+
     // Show loading shimmer on initial load
     if (messageProvider.isLoading && !messageProvider.hasConversations) {
-      debugPrint('✨ [MessageScreen] Showing shimmer loading state');
+      debugPrint('🚀 [buildConversationList] → showing shimmer (initial load)');
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show error state
     if (messageProvider.hasError && !messageProvider.hasConversations) {
-      debugPrint(
-        '❌ [MessageScreen] Showing error state: ${messageProvider.error}',
-      );
+      debugPrint('❌ [buildConversationList] → showing error state');
       return _buildErrorState(messageProvider);
     }
 
     // Show empty state
     if (!messageProvider.hasConversations && !messageProvider.isLoading) {
-      debugPrint('📭 [MessageScreen] Showing empty state');
+      debugPrint('⚠️ [buildConversationList] → showing empty state');
       return _buildEmptyState();
     }
 
     // Show conversation list
     debugPrint(
-      '📱 [MessageScreen] Showing conversation list with ${messageProvider.conversationCount} items',
+      '✅ [buildConversationList] → rendering ${messageProvider.conversationCount} conversations',
     );
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {

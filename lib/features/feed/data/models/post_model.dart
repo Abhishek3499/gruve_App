@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Unified post model for feed functionality
 /// Consolidates post-related data from various parts of the app
 class PostModel {
@@ -41,14 +43,23 @@ class PostModel {
 
   /// Create from JSON
   factory PostModel.fromJson(Map<String, dynamic> json) {
+    final mediaUrl = json['media_url']?.toString() ?? json['mediaUrl']?.toString();
+    var mediaType = _parseMediaType(json['media_type'] ?? json['mediaType']);
+    if (mediaType == MediaType.image && _urlLooksLikeVideo(mediaUrl)) {
+      mediaType = MediaType.video;
+      if (kDebugMode) {
+        debugPrint('🎥 video detected — inferred from URL in PostModel');
+      }
+    }
+
     return PostModel(
       id: json['id']?.toString() ?? '',
       userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
       username: json['username']?.toString() ?? json['user']['username']?.toString() ?? '',
       userAvatar: json['user_avatar']?.toString() ?? json['user']['avatar']?.toString(),
       content: json['content']?.toString() ?? '',
-      mediaUrl: json['media_url']?.toString() ?? json['mediaUrl']?.toString(),
-      mediaType: _parseMediaType(json['media_type']?.toString() ?? json['mediaType']),
+      mediaUrl: mediaUrl,
+      mediaType: mediaType,
       likesCount: json['likes_count'] ?? json['likesCount'] ?? 0,
       commentsCount: json['comments_count'] ?? json['commentsCount'] ?? 0,
       sharesCount: json['shares_count'] ?? json['sharesCount'] ?? 0,
@@ -126,17 +137,35 @@ class PostModel {
     );
   }
 
-  static MediaType _parseMediaType(String? type) {
-    switch (type?.toLowerCase()) {
+  static MediaType _parseMediaType(dynamic raw) {
+    final s = raw?.toString().toLowerCase().trim() ?? '';
+    switch (s) {
       case 'image':
+      case 'photo':
+      case '1':
+      case '0':
         return MediaType.image;
       case 'video':
+      case 'reel':
+      case 'clip':
+      case '2':
+      case '3':
         return MediaType.video;
       case 'carousel':
         return MediaType.carousel;
       default:
         return MediaType.image;
     }
+  }
+
+  static bool _urlLooksLikeVideo(String? url) {
+    if (url == null || url.isEmpty) return false;
+    final path = url.toLowerCase().trim().split('?').first.split('#').first;
+    const hints = ['.mp4', '.mov', '.m4v', '.webm', '.mkv', '.avi', '.m3u8', '.3gp'];
+    for (final h in hints) {
+      if (path.contains(h)) return true;
+    }
+    return false;
   }
 }
 

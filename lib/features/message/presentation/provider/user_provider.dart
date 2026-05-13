@@ -68,17 +68,22 @@ class UserProvider extends ChangeNotifier {
       final repo = repository as UserRepositoryImpl;
       final response = await repo.fetchUsersPaginated(page: _currentPage);
 
+      debugPrint('📩 [UserProvider] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}');
+
+      if (response.users.isEmpty) {
+        debugPrint('⚠️ [UserProvider] API returned EMPTY user list');
+      } else {
+        final ids = response.users.map((u) => u.userId).take(5).toList();
+        debugPrint('👤 [UserProvider] userIDs (first 5): $ids');
+      }
+
       // Update users list
       if (loadMore) {
         _users.addAll(response.users.map((m) => m.toEntity()));
-        debugPrint(
-          '➕ [UserProvider] Appended ${response.users.length} users to existing list',
-        );
+        debugPrint('➕ [UserProvider] Appended ${response.users.length} users — total: ${_users.length}');
       } else {
         _users = response.users.map((m) => m.toEntity()).toList();
-        debugPrint(
-          '🔄 [UserProvider] Replaced list with ${response.users.length} users',
-        );
+        debugPrint('🔄 [UserProvider] Replaced list with ${response.users.length} users');
       }
 
       // Update pagination state
@@ -87,12 +92,7 @@ class UserProvider extends ChangeNotifier {
         _currentPage = response.page + 1;
       }
 
-      debugPrint('📦 [UserProvider] Users fetched: ${response.users.length}');
-      debugPrint('➡️ [UserProvider] Has next: $_hasNext');
-      debugPrint('👥 [UserProvider] Total users: ${_users.length}');
-      debugPrint(
-        '📄 [UserProvider] Current page: ${response.page}, Next page: $_currentPage',
-      );
+      debugPrint('✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage');
     } catch (e) {
       _errorMessage = e.toString();
       debugPrint('❌ [UserProvider] Error: $e');

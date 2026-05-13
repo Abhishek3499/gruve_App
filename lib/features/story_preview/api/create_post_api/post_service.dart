@@ -67,36 +67,88 @@ class PostService {
     throw lastError ?? StateError('GET request failed for $path');
   }
 
+  /// Returns true if the path points to a video file.
+  static bool _isVideo(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.avi') ||
+        lower.endsWith('.mkv');
+  }
+
+  /// Builds a fresh [FormData] every call — never reuse an instance.
+  /// Videos skip image compression to avoid decode errors.
+  Future<FormData> _buildFormData({
+    required String caption,
+    required File file,
+  }) async {
+    final isVideo = _isVideo(file.path);
+    final fileName = file.path.replaceAll(r'\', '/').split('/').last;
+
+    debugPrint('🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName');
+
+    final fileSizeKB = await file.length() ~/ 1024;
+    debugPrint('📏 [PostService] Upload file size: ${fileSizeKB}KB');
+
+    // Always create a fresh FormData — reusing a finalized instance causes errors
+    return FormData.fromMap({
+      'caption': caption,
+      'file': await MultipartFile.fromFile(
+        file.path,
+        filename: fileName,
+        contentType: isVideo
+            ? DioMediaType('video', 'mp4')
+            : DioMediaType('image', 'jpeg'),
+      ),
+    });
+  }
+
   Future<CreatePostResponse> createPost({
     required String caption,
     required String mediaPath,
   }) async {
     try {
+      final isVideo = _isVideo(mediaPath);
+      debugPrint('\n🚀 [PostService] ===== CREATE POST START =====');
+      debugPrint('🎥 [PostService] Type: ${isVideo ? "VIDEO" : "IMAGE"}');
+      debugPrint('📁 [PostService] mediaPath: $mediaPath');
+      debugPrint('📝 [PostService] caption: $caption');
+
       final token = await TokenStorage.getAccessToken();
       final file = File(mediaPath);
 
-      final formData = FormData.fromMap({
-        "caption": caption,
-        "file": await MultipartFile.fromFile(
-          file.path,
-          filename: file.path.replaceAll(r'\', '/').split('/').last,
-        ),
-      });
+      if (!file.existsSync()) {
+        debugPrint('❌ [PostService] File not found at path!');
+        throw Exception('File not found');
+      }
+
+      final formData = await _buildFormData(caption: caption, file: file);
+
+      debugPrint('🌐 [PostService] POST posts/create-post/');
 
       final res = await _dio.post(
-        "posts/create-post/",
+        'posts/create-post/',
         data: formData,
         options: Options(
-          headers: {"Authorization": "Bearer $token"},
+          headers: {'Authorization': 'Bearer $token'},
           sendTimeout: const Duration(minutes: 10),
           receiveTimeout: const Duration(minutes: 5),
         ),
       );
-      debugPrint("✅ CREATE RESPONSE: ${res.data}");
+
+      debugPrint('✅ [PostService] Status: ${res.statusCode}');
+      debugPrint('📥 [PostService] Response: ${res.data}');
+      debugPrint('🏁 [PostService] ===== ${isVideo ? "VIDEO" : "IMAGE"} POST SUCCESS =====\n');
 
       return CreatePostResponse.fromJson(res.data);
+    } on DioException catch (e) {
+      debugPrint('\n❌ [PostService] DIO ERROR');
+      debugPrint('⚠️ [PostService] type: ${e.type}');
+      debugPrint('📊 [PostService] status: ${e.response?.statusCode}');
+      debugPrint('📥 [PostService] response: ${e.response?.data}');
+      rethrow;
     } catch (e) {
-      debugPrint("❌ CREATE ERROR: $e");
+      debugPrint('\n💥 [PostService] UNKNOWN ERROR: $e');
       rethrow;
     }
   }
@@ -139,12 +191,20 @@ class PostService {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
+      debugPrint('📡 [PostService] Raw API response: ${res.data}');
+
       final responseData = res.data['data'] ?? res.data;
       final posts =
           (responseData['posts'] as List<dynamic>?)
               ?.map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
               .toList() ??
           [];
+
+      final videoCount = posts.where((p) => p.isVideo).length;
+      final imageCount = posts.length - videoCount;
+      debugPrint(
+        '📡 feed API: get-post parsed ${posts.length} posts (🎥 $videoCount videos, 🖼 $imageCount images)',
+      );
 
       final nextCursor = responseData['next_cursor'] != null
           ? CursorModel.fromJson(

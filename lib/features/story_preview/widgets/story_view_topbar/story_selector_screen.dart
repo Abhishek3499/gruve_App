@@ -189,19 +189,49 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
 
           // Input
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: TextField(
               controller: _nameController,
+
+              maxLines: 1,
+              style: const TextStyle(
+                color: Colors.black, // typed text color
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
-                hintText: 'Highlights',
+                hintText: 'Enter Highlights',
+                hintStyle: const TextStyle(
+                  color: Color.fromARGB(255, 59, 59, 59),
+                ),
                 filled: true,
-                fillColor: Colors.grey[100],
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                hintStyle: const TextStyle(color: Colors.grey),
+                fillColor: Colors.grey.shade100,
+
+                prefixIcon: const Icon(
+                  Icons.edit_note_rounded,
+                  color: Colors.grey,
+                ),
+
+                // IMPORTANT
+                isDense: true,
+
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Colors.blue, width: 1.3),
+                ),
+
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
+                  horizontal: 14,
                   vertical: 14,
                 ),
               ),
