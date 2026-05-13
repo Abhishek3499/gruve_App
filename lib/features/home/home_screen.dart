@@ -35,10 +35,10 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isDisposed = false;
   VideoFeedController? _videoController;
   VideoService? _currentVideoService;
-  
+
   // ✅ CRITICAL: Cache screens to prevent rebuilds
   late final List<Widget> _screens;
-  
+
   // 🚀 PERFORMANCE: Track rebuild metrics
   int _rebuildCount = 0;
   DateTime? _lastRebuildTime;
@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (kDebugMode) {
       debugPrint("🏠 Home Screen initState called");
     }
-    
+
     // ✅ Initialize screens ONCE
     _screens = [
       VideoFeed(
@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen>
       const SizedBox.shrink(),
       const ProfileScreen(),
     ];
-    
+
     PostShareFlowBridge.onShareStartProcessing = () {
       if (kDebugMode) {
         debugPrint("🏠 Home Screen: Share start processing callback triggered");
@@ -122,21 +122,21 @@ class _HomeScreenState extends State<HomeScreen>
   // 🚀 OPTIMIZED: Use ValueNotifier for efficient state updates
   void _ensureHomeFeedTab() {
     if (!mounted || _isDisposed || _currentIndex.value == 0) return;
-    
+
     // 🚀 BATCH UPDATE: Update all notifiers at once
     _previousIndex.value = _currentIndex.value;
     _currentIndex.value = 0;
-    
+
     _handleTabChange(0);
   }
 
   void _ensureProfileTab() {
     if (!mounted || _isDisposed || _currentIndex.value == 4) return;
-    
+
     // 🚀 BATCH UPDATE: Update all notifiers at once
     _previousIndex.value = _currentIndex.value;
     _currentIndex.value = 4;
-    
+
     _handleTabChange(4);
   }
 
@@ -335,8 +335,8 @@ class _HomeScreenState extends State<HomeScreen>
               );
             }
             // 🚀 OPTIMIZED: Force refresh without full rebuild
-            _screens.clear();
-            _initializeScreens();
+            // _screens.clear();
+            // _initializeScreens();
           }
         }
       });
@@ -352,8 +352,11 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _pauseVideo(String reason) => _videoController?.pauseCurrentVideo();
-  void _resumeVideo(String reason) =>
-      _videoController?.playVideo(_videoController!.currentIndex.value);
+  void _resumeVideo(String reason) {
+    if (_videoController == null) return;
+
+    _videoController!.playVideo(_videoController!.currentIndex.value);
+  }
 
   // Smooth scroll to top functionality
   Future<void> _scrollToTop() async {
@@ -390,8 +393,6 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-
-
   // 🚀 OPTIMIZED: Initialize screens method
   void _initializeScreens() {
     _screens = [
@@ -417,17 +418,19 @@ class _HomeScreenState extends State<HomeScreen>
       const ProfileScreen(),
     ];
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // 🚀 PERFORMANCE: Track rebuild metrics
     if (kDebugMode) {
       _rebuildCount++;
       _lastRebuildTime = DateTime.now();
-      debugPrint("🏠 Home Screen build #$_rebuildCount, _isDisposed: $_isDisposed");
+      debugPrint(
+        "🏠 Home Screen build #$_rebuildCount, _isDisposed: $_isDisposed",
+      );
     }
     if (_isDisposed) return const SizedBox.shrink();
-    
+
     // 🚀 OPTIMIZED: Use RepaintBoundary for selective repaints
     return RepaintBoundary(
       child: Scaffold(
@@ -462,13 +465,13 @@ class _HomeScreenState extends State<HomeScreen>
     PostShareFlowBridge.clearCallbacks();
     _isDisposed = true;
     _currentVideoService?.dispose();
-    
+
     // 🚀 CLEANUP: Dispose ValueNotifiers
     _currentIndex.dispose();
     _previousIndex.dispose();
     _isInBackground.dispose();
     _isNavigatingAway.dispose();
-    
+
     // [VideoFeedController] is owned and disposed by [VideoFeed]; do not dispose here
     // or ValueNotifiers are disposed twice when IndexedStack children unmount.
     _videoController = null;

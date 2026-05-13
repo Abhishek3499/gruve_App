@@ -41,6 +41,13 @@ class _VideoFeedState extends State<VideoFeed> {
 
     _controller.initVideos();
 
+    // ✅ FIX: Auto-play first video after initial load
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _controller.playVideo(0);
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onControllerReady?.call(_controller);
     });
@@ -136,7 +143,7 @@ class _VideoFeedState extends State<VideoFeed> {
 
     return RepaintBoundary(
       child: GestureDetector(
-        onTap: _onVideoTap,
+        onTap: effectiveVideo ? _onVideoTap : null,
         child: Stack(
           children: [
             Container(
@@ -180,29 +187,38 @@ class _VideoFeedState extends State<VideoFeed> {
         return _brokenMediaIcon();
       }
 
-      if (videoController != null && videoController.value.isInitialized) {
-        if (kDebugMode) {
-          debugPrint('✅ rendered in feed — video ready url=$url');
-        }
-        return RepaintBoundary(
-          child: AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(milliseconds: 200),
-            child: SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: videoController.value.size.width,
-                  height: videoController.value.size.height,
-                  child: VideoPlayer(videoController),
-                ),
-              ),
-            ),
-          ),
+      if (videoController == null) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
         );
       }
 
-      return Container(color: Colors.black);
+      if (!videoController.value.isInitialized) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      }
+
+      if (kDebugMode) {
+        debugPrint('✅ rendered in feed — video ready url=$url');
+      }
+
+      return RepaintBoundary(
+        child: AnimatedOpacity(
+          opacity: 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: videoController.value.size.width,
+                height: videoController.value.size.height,
+                child: VideoPlayer(videoController),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     if (!isValidNetworkUrl) {

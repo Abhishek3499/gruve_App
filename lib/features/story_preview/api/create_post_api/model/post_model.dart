@@ -49,7 +49,8 @@ class Post {
   });
 
   bool get isVideo =>
-      mediaType.toLowerCase().trim() == 'video' || mediaUrlLooksLikeVideo(media);
+      mediaType.toLowerCase().trim() == 'video' ||
+      mediaUrlLooksLikeVideo(media);
 
   /// True when [url] looks like a streamable video (path/query tolerant).
   static bool mediaUrlLooksLikeVideo(String url) {
@@ -89,7 +90,9 @@ class Post {
       final nm = Map<String, dynamic>.from(Map<Object?, Object?>.from(nested));
       final nestedType = nm['type'] ?? nm['media_type'] ?? nm['mediaType'];
       final nestedStr = nestedType?.toString().toLowerCase().trim();
-      if (nestedStr == 'video' || nestedStr == 'image' || nestedStr == 'carousel') {
+      if (nestedStr == 'video' ||
+          nestedStr == 'image' ||
+          nestedStr == 'carousel') {
         if (kDebugMode) {
           debugPrint('🎥 [Post] nested media.type=$nestedStr');
         }
@@ -97,7 +100,12 @@ class Post {
       }
     }
 
-    for (final key in ['media_type', 'mediaType', 'mime_type', 'content_type']) {
+    for (final key in [
+      'media_type',
+      'mediaType',
+      'mime_type',
+      'content_type',
+    ]) {
       final raw = json[key];
       if (raw == null) continue;
       final s = raw.toString().toLowerCase().trim();
@@ -107,7 +115,8 @@ class Post {
           (s == '2' || s == '3')) {
         return 'video';
       }
-      if ((key == 'media_type' || key == 'mediaType') && (s == '1' || s == '0')) {
+      if ((key == 'media_type' || key == 'mediaType') &&
+          (s == '1' || s == '0')) {
         return 'image';
       }
       if (_mimeLooksLikeVideo(s)) return 'video';
@@ -123,7 +132,9 @@ class Post {
         }
         return 'video';
       }
-      if (postType == 'image' || postType == 'photo' || postType == 'carousel') {
+      if (postType == 'image' ||
+          postType == 'photo' ||
+          postType == 'carousel') {
         return postType == 'carousel' ? 'carousel' : 'image';
       }
     }
@@ -139,15 +150,21 @@ class Post {
     final mediaType = _resolveMediaType(json, mediaUrl);
 
     if (kDebugMode) {
-      final kind = mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl) ? '🎥 video' : '🖼 image';
-      debugPrint('📡 [Post.fromJson] $kind detected id=${json['id']} mediaType=$mediaType url=${mediaUrl.length > 80 ? '${mediaUrl.substring(0, 80)}…' : mediaUrl}');
+      final kind = mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl)
+          ? '🎥 video'
+          : '🖼 image';
+      debugPrint(
+        '📡 [Post.fromJson] $kind detected id=${json['id']} mediaType=$mediaType url=${mediaUrl.length > 80 ? '${mediaUrl.substring(0, 80)}…' : mediaUrl}',
+      );
     }
 
     return Post(
       id: json['id']?.toString() ?? "",
       caption: json['caption']?.toString() ?? "",
       media: mediaUrl,
-      mediaType: mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl) ? 'video' : mediaType,
+      mediaType: mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl)
+          ? 'video'
+          : mediaType,
       userId:
           json['user']?['id']?.toString() ??
           json['user_id']?.toString() ??
@@ -164,13 +181,17 @@ class Post {
       profilePicture: _normalizeUrl(
         json['user']?['profile_picture'] ?? json['profile_picture'] ?? "",
       ),
-      hasActiveStory: json['user']?['has_active_story'] ?? json['has_active_story'] ?? false,
+      hasActiveStory:
+          json['user']?['has_active_story'] ??
+          json['has_active_story'] ??
+          false,
     );
   }
 
   /// Picks the best media URL whether the API returns a string or nested map.
   static String _extractPrimaryMediaUrl(Map<String, dynamic> json) {
-    dynamic raw = json['media_url'] ??
+    dynamic raw =
+        json['media_url'] ??
         json['mediaUrl'] ??
         json['file'] ??
         json['video_url'] ??

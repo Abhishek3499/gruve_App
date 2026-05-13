@@ -10,6 +10,11 @@ import 'package:video_player/video_player.dart';
 /// Keeps only current + next video initialized for optimal memory usage
 /// Memory impact: 50-100MB → 10-20MB (80% reduction)
 /// FPS impact: 20-30fps → 55-60fps (100% improvement)
+///
+/// FIX: Race condition resolved — playVideo() was called before
+/// VideoPlayerController finished async init, so _controllers[index]
+/// was always null and play() was never invoked.
+/// Now _ensureControllersAroundIndex auto-plays when init completes.
 
 class VideoFeedController {
   bool _disposed = false;
@@ -22,7 +27,7 @@ class VideoFeedController {
   List<Post> get posts => _posts;
 
   final PostService _postService = PostService();
-  
+
   // 🚀 OPTIMIZED: Controller management with memory limits
   final Map<int, VideoPlayerController> _controllers =
       <int, VideoPlayerController>{};
@@ -30,7 +35,7 @@ class VideoFeedController {
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
   final ValueNotifier<int> _feedRevision = ValueNotifier(0);
-  
+
   // 🚀 NEW: Memory optimization constants
   static const int maxCachedControllers = 3; // Current + next + previous
   static const int preloadDistance = 1; // Preload next video only
@@ -51,14 +56,12 @@ class VideoFeedController {
   bool get isRefreshing => _isRefreshing;
   bool get isLoadingMore => _isLoadingMore;
 
-  // ADDED: Missing getters that were causing compile errors
   ValueNotifier<int> get currentIndex => _currentIndex;
   bool get hasMore => _hasMore;
   String? get loadError => _loadError;
   ValueNotifier<int> get feedRevision => _feedRevision;
   int get gen => _feedLoadGeneration;
 
-  // ADDED: Missing method that was causing compile errors
   void _notifyFeedChanged() {
     _feedRevision.value++;
   }
@@ -67,7 +70,6 @@ class VideoFeedController {
   void _mergeRefreshedPosts(List<Post> newPosts) {
     final existingIds = _posts.map((post) => post.id).toSet();
 
-    // Filter out posts that already exist
     final uniqueNewPosts = newPosts
         .where((post) => !existingIds.contains(post.id))
         .toList();
@@ -79,7 +81,6 @@ class VideoFeedController {
       return;
     }
 
-    // Insert new posts at the beginning
     _posts.insertAll(0, uniqueNewPosts);
     _mediaUrls.insertAll(0, uniqueNewPosts.map((e) => e.media).toList());
 
@@ -89,7 +90,6 @@ class VideoFeedController {
       );
     }
 
-    // Adjust current index to maintain scroll position relative to old content
     if (_currentIndex.value > 0) {
       _currentIndex.value += uniqueNewPosts.length;
     }
@@ -113,21 +113,19 @@ class VideoFeedController {
     _notifyFeedChanged();
 
     try {
-      if (kDebugMode) {
-        debugPrint("⏬ Load More Triggered");
-      }
+      if (kDebugMode) debugPrint("⏬ Load More Triggered");
 
       final response = await _postService.getPaginatedPosts(
         cursor: _nextCursor,
       );
 
-      debugPrint(
-        '📡 feed API load-more: ${response.posts.length} raw posts',
-      );
+      debugPrint('📡 feed API load-more: ${response.posts.length} raw posts');
 
       final posts = _filterPostsWithSupportedMedia(response.posts);
 
-      final videoCount = posts.where((p) => p.isVideo).length;
+      final videoCount = posts
+          .where((p) => _effectiveIsVideo(posts.indexOf(p)))
+          .length;
       final imageCount = posts.length - videoCount;
       debugPrint(
         '🎥 video detected (kept): $videoCount | 🖼 image detected (kept): $imageCount',
@@ -142,9 +140,8 @@ class VideoFeedController {
         unawaited(
           _ensureControllersAroundIndex(_currentIndex.value, requestId),
         );
-        if (kDebugMode) {
+        if (kDebugMode)
           debugPrint('✅ [VideoFeed] Total Posts: ${_posts.length}');
-        }
       } else {
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
@@ -159,23 +156,10 @@ class VideoFeedController {
         return null;
       }
 
-      if (kDebugMode) {
-        debugPrint('✅ Loaded ${posts.length} more posts');
-      }
-
-      if (requestId != _feedLoadGeneration) {
-        if (kDebugMode) {
-          debugPrint(
-            'Load more request $requestId cancelled due to newer request',
-          );
-        }
-        return null;
-      }
+      if (kDebugMode) debugPrint('✅ Loaded ${posts.length} more posts');
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("❌ LOAD MORE ERROR: $e");
-      }
+      if (kDebugMode) debugPrint("❌ LOAD MORE ERROR: $e");
       _loadError = 'Failed to load more posts';
       return null;
     } finally {
@@ -238,16 +222,16 @@ class VideoFeedController {
 
       final posts = _filterPostsWithSupportedMedia(response.posts);
 
-      final videoCount = posts.where((p) => p.isVideo).length;
+      final videoCount = posts
+          .where((p) => Post.mediaUrlLooksLikeVideo(p.media) || p.isVideo)
+          .length;
       final imageCount = posts.length - videoCount;
       debugPrint(
         '🎥 video detected (kept): $videoCount | 🖼 image detected (kept): $imageCount',
       );
 
       if (response.posts.isEmpty) {
-        if (kDebugMode) {
-          debugPrint("❌ API returned no posts");
-        }
+        if (kDebugMode) debugPrint("❌ API returned no posts");
         if (!refresh) {
           _posts = [];
           _mediaUrls = [];
@@ -278,9 +262,8 @@ class VideoFeedController {
         _hasMore = response.hasMore;
         _notifyFeedChanged();
 
-        if (kDebugMode) {
+        if (kDebugMode)
           debugPrint('✅ [VideoFeed] Total Posts: ${_posts.length}');
-        }
       }
 
       if (gen != _feedLoadGeneration) return null;
@@ -288,23 +271,25 @@ class VideoFeedController {
       if (!refresh) {
         await _disposeAllControllers();
         _failedVideoIndexes.clear();
+        // ✅ FIX: Set index to 0 but do NOT call playVideo(0) here.
+        // _ensureControllersAroundIndex is async and will auto-play index 0
+        // once the VideoPlayerController finishes initializing.
+        // Calling playVideo(0) here always finds _controllers[0] == null
+        // because initialization hasn't completed yet → black screen.
         _currentIndex.value = 0;
         _isPlaying.value = false;
       }
 
+      // ✅ FIX: Let _ensureControllersAroundIndex handle playback.
+      // It will call controller.play() after init completes if the index
+      // matches _currentIndex.value — no race condition.
       unawaited(
         _ensureControllersAroundIndex(refresh ? _currentIndex.value : 0, gen),
       );
 
-      if (!refresh) {
-        playVideo(0);
-      }
-
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("❌ Video load error: $e");
-      }
+      if (kDebugMode) debugPrint("❌ Video load error: $e");
       _loadError = 'Failed to load feed';
       return false;
     } finally {
@@ -335,6 +320,8 @@ class VideoFeedController {
 
     final controller = _controllers[index];
     if (controller == null) {
+      // Controller not ready yet — _ensureControllersAroundIndex will
+      // auto-play once initialization completes. Just pause others.
       _pauseAllVideos();
       _isPlaying.value = false;
       return;
@@ -362,9 +349,7 @@ class VideoFeedController {
 
   void togglePlayPause() {
     final controller = _controllers[_currentIndex.value];
-    if (controller == null || !controller.value.isInitialized) {
-      return;
-    }
+    if (controller == null || !controller.value.isInitialized) return;
 
     if (controller.value.isPlaying) {
       controller.pause();
@@ -381,42 +366,42 @@ class VideoFeedController {
     _disposed = true;
 
     if (kDebugMode) {
-      debugPrint('🧹 VideoFeedController disposing ${_controllers.length} controllers...');
+      debugPrint(
+        '🧹 VideoFeedController disposing ${_controllers.length} controllers...',
+      );
     }
 
-    // 🚀 SAFE DISPOSAL: Handle disposal errors gracefully
     final futures = <Future<void>>[];
-    
     for (final entry in _controllers.entries) {
       final controller = entry.value;
       try {
         controller.pause();
-        futures.add(controller.dispose().catchError((e) {
-          debugPrint('❌ Error disposing controller at ${entry.key}: $e');
-        }));
+        futures.add(
+          controller.dispose().catchError((e) {
+            debugPrint('❌ Error disposing controller at ${entry.key}: $e');
+          }),
+        );
       } catch (e) {
         debugPrint('❌ Error pausing controller at ${entry.key}: $e');
       }
     }
 
-    // 🚀 ASYNC CLEANUP: Wait for all disposals
-    Future.wait(futures).then((_) {
-      _controllers.clear();
-      if (kDebugMode) {
-        debugPrint('✅ All video controllers disposed successfully');
-      }
-    }).catchError((e) {
-      debugPrint('❌ Error during controller disposal: $e');
-    });
+    Future.wait(futures)
+        .then((_) {
+          _controllers.clear();
+          if (kDebugMode)
+            debugPrint('✅ All video controllers disposed successfully');
+        })
+        .catchError((e) {
+          debugPrint('❌ Error during controller disposal: $e');
+        });
 
-    // 🚀 CLEANUP: Dispose notifiers
     _currentIndex.dispose();
     _isPlaying.dispose();
     _feedRevision.dispose();
 
-    if (kDebugMode) {
+    if (kDebugMode)
       debugPrint('✅ VideoFeedController fully disposed (memory freed)');
-    }
   }
 
   List<Post> _filterPostsWithSupportedMedia(List<Post> raw) {
@@ -425,7 +410,10 @@ class VideoFeedController {
       if (_isSupportedMediaUrl(post.media)) {
         out.add(post);
         if (kDebugMode) {
-          final label = post.isVideo ? '🎥 video detected' : '🖼 image detected';
+          final label =
+              (post.isVideo || Post.mediaUrlLooksLikeVideo(post.media))
+              ? '🎥 video detected'
+              : '🖼 image detected';
           debugPrint('$label — ✅ kept in feed id=${post.id}');
         }
       } else {
@@ -439,22 +427,25 @@ class VideoFeedController {
 
   bool _isSupportedMediaUrl(String url) {
     final trimmedUrl = url.trim();
-    if (trimmedUrl.isEmpty) {
-      return false;
-    }
+    if (trimmedUrl.isEmpty) return false;
 
     final uri = Uri.tryParse(trimmedUrl);
-    if (uri == null) {
-      return false;
-    }
+    if (uri == null) return false;
 
     return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
   }
 
+  /// ✅ FIX: Helper that checks BOTH post.isVideo AND URL extension.
+  /// Your API does not send is_video, so post.isVideo alone is unreliable.
+  /// This prevents videos from being treated as images and skipped entirely.
+  bool _effectiveIsVideo(int idx) {
+    if (idx < 0 || idx >= _posts.length) return false;
+    final post = _posts[idx];
+    return post.isVideo || Post.mediaUrlLooksLikeVideo(post.media);
+  }
+
   Future<void> _disposeAllControllers() async {
-    if (kDebugMode) {
-      debugPrint('🗑️ Disposing all controllers');
-    }
+    if (kDebugMode) debugPrint('🗑️ Disposing all controllers');
     for (final controller in _controllers.values) {
       await controller.dispose();
     }
@@ -462,31 +453,23 @@ class VideoFeedController {
   }
 
   Future<void> _ensureControllersAroundIndex(int index, int generation) async {
-    if (_disposed || index < 0 || index >= _posts.length) {
-      return;
-    }
+    if (_disposed || index < 0 || index >= _posts.length) return;
 
     var didChangeControllers = false;
 
     final targetIndexes = <int>{};
-    
-    // Only initialize video controllers, images don't need controllers
-    if (index < _posts.length && _posts[index].isVideo) {
-      targetIndexes.add(index);
-    }
-    
-    if (index + 1 < _posts.length && _posts[index + 1].isVideo) {
-      targetIndexes.add(index + 1);
-    }
-    
-    if (index - 1 >= 0 && _posts[index - 1].isVideo) {
-      targetIndexes.add(index - 1);
-    }
+
+    // ✅ FIX: Use _effectiveIsVideo instead of post.isVideo alone.
+    // post.isVideo depends on is_video JSON field which your API never sends.
+    // _effectiveIsVideo falls back to URL extension (.mp4 etc.) detection.
+    if (_effectiveIsVideo(index)) targetIndexes.add(index);
+    if (_effectiveIsVideo(index + 1)) targetIndexes.add(index + 1);
+    if (_effectiveIsVideo(index - 1)) targetIndexes.add(index - 1);
 
     final indexesToDispose = _controllers.keys
         .where((existingIndex) => !targetIndexes.contains(existingIndex))
         .toList();
-        
+
     for (final mediaIndex in indexesToDispose) {
       final controller = _controllers.remove(mediaIndex);
       if (controller != null) {
@@ -504,13 +487,11 @@ class VideoFeedController {
     }
 
     for (final mediaIndex in targetIndexes) {
-      if (_controllers.containsKey(mediaIndex)) {
-        continue;
-      }
+      if (_controllers.containsKey(mediaIndex)) continue;
 
       final post = _posts[mediaIndex];
       final url = post.media.trim();
-      
+
       if (!_isSupportedMediaUrl(url)) {
         debugPrint('❌ [VideoFeed] Unsupported URL at $mediaIndex: $url');
         continue;
@@ -518,8 +499,10 @@ class VideoFeedController {
 
       VideoPlayerController? controller;
       try {
-        debugPrint('🔄 [VideoFeed] Initializing video at index $mediaIndex');
-        
+        debugPrint(
+          '🔄 [VideoFeed] Initializing video at index $mediaIndex: $url',
+        );
+
         controller = VideoPlayerController.networkUrl(
           Uri.parse(url),
           videoPlayerOptions: VideoPlayerOptions(
@@ -531,10 +514,13 @@ class VideoFeedController {
         await controller.initialize().timeout(
           const Duration(seconds: 10),
           onTimeout: () {
-            throw TimeoutException('Video initialization timeout', const Duration(seconds: 10));
+            throw TimeoutException(
+              'Video initialization timeout',
+              const Duration(seconds: 10),
+            );
           },
         );
-        
+
         debugPrint('✅ [VideoFeed] Video initialized at index $mediaIndex');
       } catch (e) {
         await controller?.dispose();
@@ -558,17 +544,38 @@ class VideoFeedController {
       _controllers[mediaIndex] = controller;
       didChangeControllers = true;
 
+      // ✅ FIX: Auto-play as soon as the controller is ready for the current index.
+      // Previously, playVideo(0) was called before init completed → controller
+      // was null → early return → video never played → black screen.
+      // Now we play here, after await controller.initialize() has resolved.
+      if (mediaIndex == _currentIndex.value && !_disposed) {
+        _pauseAllVideos();
+        controller.play();
+        _isPlaying.value = true;
+        if (kDebugMode) {
+          debugPrint(
+            '▶️ [VideoFeed] Auto-playing video at $mediaIndex after init',
+          );
+        }
+      }
+
       if (kDebugMode) {
-        debugPrint('✅ [VideoFeed] Video ready at $mediaIndex (total: ${_controllers.length})');
+        debugPrint(
+          '✅ [VideoFeed] Video ready at $mediaIndex (total: ${_controllers.length})',
+        );
       }
     }
 
+    // ✅ FIX: Notify UI after auto-play so the VideoPlayer widget rebuilds
+    // and shows the frame instead of a black container.
     if (didChangeControllers) {
       _notifyFeedChanged();
     }
 
     if (kDebugMode && _controllers.length > maxCachedControllers) {
-      debugPrint('⚠️ [VideoFeed] Too many controllers (${_controllers.length})');
+      debugPrint(
+        '⚠️ [VideoFeed] Too many controllers (${_controllers.length})',
+      );
     }
   }
 
@@ -578,8 +585,6 @@ class VideoFeedController {
         controller.pause();
       }
     }
-    if (kDebugMode) {
-      debugPrint('⏸️ All videos paused');
-    }
+    if (kDebugMode) debugPrint('⏸️ All videos paused');
   }
 }

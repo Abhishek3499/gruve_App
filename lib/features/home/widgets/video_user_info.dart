@@ -5,7 +5,7 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music_screen/music_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/subscribe_controller.dart';
 import 'subscribe_button.dart';
 
@@ -76,7 +76,8 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   }
 
   Future<void> _openProfile(BuildContext context) async {
-    final resolution = _identityResolution ??
+    final resolution =
+        _identityResolution ??
         await ProfileIdentityService.instance.resolveProfileIdentity(
           widget.userId,
         );
@@ -166,7 +167,9 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
     }
 
     // Hide button if already subscribed
-    final isSubscribed = widget.subscribeController.isUserSubscribed(widget.userId);
+    final isSubscribed = widget.subscribeController.isUserSubscribed(
+      widget.userId,
+    );
     if (isSubscribed) {
       return const SizedBox.shrink();
     }
@@ -202,19 +205,21 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                   clipBehavior: Clip.antiAlias,
                   child:
                       (widget.profilePicture != null &&
-                              widget.profilePicture!.isNotEmpty &&
-                              widget.profilePicture!.startsWith('http'))
-                          ? Image.network(
-                              widget.profilePicture!,
+                          widget.profilePicture!.isNotEmpty &&
+                          widget.profilePicture!.startsWith('http'))
+                      ? CachedNetworkImage(
+                          imageUrl: widget.profilePicture!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) {
+                            return Image.asset(
+                              AppAssets.user,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  AppAssets.user,
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            )
-                          : Image.asset(AppAssets.user, fit: BoxFit.cover),
+                            );
+                          },
+                        )
+                      : Image.asset(AppAssets.user, fit: BoxFit.cover),
                 ),
               ),
               const SizedBox(width: 8),

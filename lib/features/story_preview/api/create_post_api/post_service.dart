@@ -85,7 +85,9 @@ class PostService {
     final isVideo = _isVideo(file.path);
     final fileName = file.path.replaceAll(r'\', '/').split('/').last;
 
-    debugPrint('🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName');
+    debugPrint(
+      '🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
+    );
 
     final fileSizeKB = await file.length() ~/ 1024;
     debugPrint('📏 [PostService] Upload file size: ${fileSizeKB}KB');
@@ -138,7 +140,9 @@ class PostService {
 
       debugPrint('✅ [PostService] Status: ${res.statusCode}');
       debugPrint('📥 [PostService] Response: ${res.data}');
-      debugPrint('🏁 [PostService] ===== ${isVideo ? "VIDEO" : "IMAGE"} POST SUCCESS =====\n');
+      debugPrint(
+        '🏁 [PostService] ===== ${isVideo ? "VIDEO" : "IMAGE"} POST SUCCESS =====\n',
+      );
 
       return CreatePostResponse.fromJson(res.data);
     } on DioException catch (e) {
@@ -194,11 +198,27 @@ class PostService {
       debugPrint('📡 [PostService] Raw API response: ${res.data}');
 
       final responseData = res.data['data'] ?? res.data;
-      final posts =
-          (responseData['posts'] as List<dynamic>?)
-              ?.map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
-              .toList() ??
-          [];
+      final rawPosts = responseData['posts'] as List<dynamic>? ?? [];
+
+      final posts = <Post>[];
+
+      for (final raw in rawPosts) {
+        try {
+          final post = Post.fromJson(Map<String, dynamic>.from(raw));
+
+          posts.add(post);
+
+          debugPrint(
+            '✅ Parsed post: ${post.id} '
+            'video=${post.isVideo} '
+            'media=${post.media}',
+          );
+        } catch (e, stack) {
+          debugPrint('❌ Failed parsing post: $e');
+          debugPrint('❌ Raw post: $raw');
+          debugPrint(stack.toString());
+        }
+      }
 
       final videoCount = posts.where((p) => p.isVideo).length;
       final imageCount = posts.length - videoCount;
@@ -345,17 +365,14 @@ class PostService {
       );
 
       debugPrint("✅ [PostService] SAVE TOGGLE SUCCESS: ${res.data}");
-      
+
       final data = res.data['data'];
       final isSaved = data['is_saved'] as bool;
       final returnedPostId = data['post_id'] as String;
-      
+
       debugPrint('✅ [PostService] isSaved=$isSaved postId=$returnedPostId');
-      
-      return {
-        'is_saved': isSaved,
-        'post_id': returnedPostId,
-      };
+
+      return {'is_saved': isSaved, 'post_id': returnedPostId};
     } catch (e) {
       debugPrint("❌ [PostService] SAVE TOGGLE ERROR: $e");
       if (e is DioException) {
@@ -380,16 +397,16 @@ class PostService {
       );
 
       debugPrint("✅ [PostService] SAVED POSTS SUCCESS: ${res.data}");
-      
+
       final data = res.data['data'];
       final List<dynamic> postsJson = data['posts'] ?? data['results'] ?? [];
-      
+
       final posts = postsJson
           .map((json) => Post.fromJson(Map<String, dynamic>.from(json)))
           .toList();
-      
+
       debugPrint('✅ [PostService] Fetched ${posts.length} saved posts');
-      
+
       return posts;
     } catch (e) {
       debugPrint("❌ [PostService] FETCH SAVED POSTS ERROR: $e");
