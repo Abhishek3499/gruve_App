@@ -44,17 +44,23 @@ class MessageController extends ChangeNotifier {
 
     // Enhanced duplicate prevention with multiple checks
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint('🔒 [MessageController] Operation locked: $operationKey for $conversationId');
+      debugPrint(
+        '🔒 [MessageController] Operation locked: $operationKey for $conversationId',
+      );
       return;
     }
 
     if (_activeFetch != null) {
-      debugPrint('⏳ [MessageController] Active fetch in progress for $conversationId');
+      debugPrint(
+        '⏳ [MessageController] Active fetch in progress for $conversationId',
+      );
       return _activeFetch!;
     }
 
     if (_isInitialLoading) {
-      debugPrint('🔄 [MessageController] Already loading initial messages for $conversationId');
+      debugPrint(
+        '🔄 [MessageController] Already loading initial messages for $conversationId',
+      );
       return;
     }
 
@@ -65,17 +71,25 @@ class MessageController extends ChangeNotifier {
     _currentPage = 1;
     _hasMoreData = true;
 
-    debugPrint('🚀 [MessageController] Starting initial fetch for $conversationId');
+    debugPrint(
+      '🚀 [MessageController] Starting initial fetch for $conversationId',
+    );
 
-    _activeFetch = _fetchMessages(page: _currentPage, replace: true).then((_) {
-      _lockedOperations.remove(operationKey);
-      _requestTimestamps.remove(operationKey);
-      debugPrint('✅ [MessageController] Initial fetch completed for $conversationId');
-    }).catchError((e) {
-      _lockedOperations.remove(operationKey);
-      _requestTimestamps.remove(operationKey);
-      debugPrint('❌ [MessageController] Initial fetch failed for $conversationId: $e');
-    });
+    _activeFetch = _fetchMessages(page: _currentPage, replace: true)
+        .then((_) {
+          _lockedOperations.remove(operationKey);
+          _requestTimestamps.remove(operationKey);
+          debugPrint(
+            '✅ [MessageController] Initial fetch completed for $conversationId',
+          );
+        })
+        .catchError((e) {
+          _lockedOperations.remove(operationKey);
+          _requestTimestamps.remove(operationKey);
+          debugPrint(
+            '❌ [MessageController] Initial fetch failed for $conversationId: $e',
+          );
+        });
 
     return _activeFetch!;
   }
@@ -85,7 +99,9 @@ class MessageController extends ChangeNotifier {
 
     // Enhanced duplicate prevention
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint('🔒 [MessageController] Operation locked: $operationKey for $conversationId');
+      debugPrint(
+        '🔒 [MessageController] Operation locked: $operationKey for $conversationId',
+      );
       return;
     }
 
@@ -100,17 +116,25 @@ class MessageController extends ChangeNotifier {
     _lockedOperations.add(operationKey);
     _requestTimestamps[operationKey] = DateTime.now();
 
-    debugPrint('🚀 [MessageController] Starting load more for $conversationId (page ${_currentPage + 1})');
+    debugPrint(
+      '🚀 [MessageController] Starting load more for $conversationId (page ${_currentPage + 1})',
+    );
 
-    _activeFetch = _fetchMessages(page: _currentPage + 1, replace: false).then((_) {
-      _lockedOperations.remove(operationKey);
-      _requestTimestamps.remove(operationKey);
-      debugPrint('✅ [MessageController] Load more completed for $conversationId');
-    }).catchError((e) {
-      _lockedOperations.remove(operationKey);
-      _requestTimestamps.remove(operationKey);
-      debugPrint('❌ [MessageController] Load more failed for $conversationId: $e');
-    });
+    _activeFetch = _fetchMessages(page: _currentPage + 1, replace: false)
+        .then((_) {
+          _lockedOperations.remove(operationKey);
+          _requestTimestamps.remove(operationKey);
+          debugPrint(
+            '✅ [MessageController] Load more completed for $conversationId',
+          );
+        })
+        .catchError((e) {
+          _lockedOperations.remove(operationKey);
+          _requestTimestamps.remove(operationKey);
+          debugPrint(
+            '❌ [MessageController] Load more failed for $conversationId: $e',
+          );
+        });
 
     return _activeFetch!;
   }
@@ -118,29 +142,39 @@ class MessageController extends ChangeNotifier {
   Future<void> retry() => fetchInitialMessages();
 
   void appendLocalMessage(MessageModel message) {
-    final operationKey = 'appendLocal';
+    final alreadyExists = _messages.any((m) => m.id == message.id);
 
-    // Prevent duplicate local message operations
-    if (_lockedOperations.contains(operationKey)) {
-      debugPrint('🔒 [MessageController] Local message append locked for $conversationId');
+    if (alreadyExists) {
+      debugPrint('⚠️ Duplicate message skipped: ${message.id}');
+
       return;
     }
 
-    _lockedOperations.add(operationKey);
-    _upsertMessage(message);
-    _notify();
-    _lockedOperations.remove(operationKey);
+    _messages.add(message);
 
-    debugPrint('📝 [MessageController] Local message appended: ${message.id} for $conversationId');
+    _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    debugPrint(
+      '📝 MESSAGE ADDED => '
+      'id=${message.id} '
+      'text=${message.text}',
+    );
+
+    _notify();
   }
 
   /// Socket-ready entry point for future realtime updates.
-  void addRealtimeMessage(Map<String, dynamic> payload, {String? currentUserId}) {
+  void addRealtimeMessage(
+    Map<String, dynamic> payload, {
+    String? currentUserId,
+  }) {
     final operationKey = 'addRealtime';
 
     // Prevent duplicate realtime operations
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint('🔒 [MessageController] Realtime message add locked for $conversationId');
+      debugPrint(
+        '🔒 [MessageController] Realtime message add locked for $conversationId',
+      );
       return;
     }
 
@@ -155,7 +189,9 @@ class MessageController extends ChangeNotifier {
       _upsertMessage(message);
       _notify();
 
-      debugPrint('📡 [MessageController] Realtime message added: ${message.id} for $conversationId');
+      debugPrint(
+        '📡 [MessageController] Realtime message added: ${message.id} for $conversationId',
+      );
     } catch (e) {
       debugPrint('❌ [MessageController] Failed to add realtime message: $e');
     } finally {
@@ -167,7 +203,9 @@ class MessageController extends ChangeNotifier {
     final operationKey = 'removeMessages';
 
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint('🔒 [MessageController] Remove messages locked for $conversationId');
+      debugPrint(
+        '🔒 [MessageController] Remove messages locked for $conversationId',
+      );
       return;
     }
 
@@ -176,14 +214,18 @@ class MessageController extends ChangeNotifier {
     _notify();
     _lockedOperations.remove(operationKey);
 
-    debugPrint('🗑️ [MessageController] Removed ${ids.length} messages for $conversationId');
+    debugPrint(
+      '🗑️ [MessageController] Removed ${ids.length} messages for $conversationId',
+    );
   }
 
   void replaceMessage(MessageModel message) {
     final operationKey = 'replaceMessage_${message.id}';
 
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint('🔒 [MessageController] Message replace locked for ${message.id}');
+      debugPrint(
+        '🔒 [MessageController] Message replace locked for ${message.id}',
+      );
       return;
     }
 
@@ -203,14 +245,18 @@ class MessageController extends ChangeNotifier {
   /// Send message via REST API with comprehensive logging
   /// Returns the sent message on success, null on failure
   Future<MessageModel?> sendMessage(String content) async {
-    debugPrint('[MessageController] 🚀 REST send START for conversation: $conversationId');
-    
+    debugPrint(
+      '[MessageController] 🚀 REST send START for conversation: $conversationId',
+    );
+
     try {
       debugPrint('[MessageController] 🔑 Fetching current user ID...');
       final currentUserId = await TokenStorage.getCurrentUserId();
       debugPrint('[MessageController] 👤 Current user ID: $currentUserId');
-      
-      debugPrint('[MessageController] 🌐 Calling MessageService.sendMessage...');
+
+      debugPrint(
+        '[MessageController] 🌐 Calling MessageService.sendMessage...',
+      );
       final sentMessage = await _messageService.sendMessage(
         conversationId: conversationId,
         content: content,
@@ -219,8 +265,12 @@ class MessageController extends ChangeNotifier {
       );
 
       if (sentMessage != null) {
-        debugPrint('[MessageController] ✅ REST send SUCCESS: message ID=${sentMessage.id}');
-        debugPrint('[MessageController] 💾 Upserting message to local state...');
+        debugPrint(
+          '[MessageController] ✅ REST send SUCCESS: message ID=${sentMessage.id}',
+        );
+        debugPrint(
+          '[MessageController] 💾 Upserting message to local state...',
+        );
         _upsertMessage(sentMessage);
         _notify();
         debugPrint('[MessageController] ✅ Message persisted locally');
@@ -342,7 +392,9 @@ class MessageController extends ChangeNotifier {
     _requestTimestamps.clear();
     _activeFetch = null;
 
-    debugPrint('🗑️ [MessageController] Disposed for $conversationId (cleared ${_lockedOperations.length} locks)');
+    debugPrint(
+      '🗑️ [MessageController] Disposed for $conversationId (cleared ${_lockedOperations.length} locks)',
+    );
     super.dispose();
   }
 
@@ -357,7 +409,9 @@ class MessageController extends ChangeNotifier {
       'hasError': _error != null,
       'currentPage': _currentPage,
       'lockedOperations': _lockedOperations.toList(),
-      'requestTimestamps': _requestTimestamps.map((k, v) => MapEntry(k, v.toIso8601String())),
+      'requestTimestamps': _requestTimestamps.map(
+        (k, v) => MapEntry(k, v.toIso8601String()),
+      ),
       'disposed': _disposed,
     };
   }

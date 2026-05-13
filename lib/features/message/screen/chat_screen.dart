@@ -46,6 +46,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   late final MessageController _messageController;
   final ScrollController _scrollController = ScrollController();
+  final SocketService _socketService = SocketService();
+
+  StreamSubscription? _socketSubscription;
 
   bool _isSending = false;
   bool _hasCompletedInitialScroll = false;
@@ -73,13 +76,13 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUserName;
     }
-    
+
     // Handle Map object from MessageAvatar
     final dynamic userData = widget.userOrConversation;
     if (userData is Map) {
       return userData['name']?.toString() ?? 'Unknown';
     }
-    
+
     return userData.name?.toString() ?? 'Unknown';
   }
 
@@ -92,13 +95,13 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUser.id;
     }
-    
+
     // Handle Map object from MessageAvatar
     final dynamic userData = widget.userOrConversation;
     if (userData is Map) {
       return userData['id']?.toString() ?? '';
     }
-    
+
     return userData.id?.toString() ?? '';
   }
 
@@ -131,13 +134,13 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUserAvatar;
     }
-    
+
     // Handle Map object from MessageAvatar
     final dynamic userData = widget.userOrConversation;
     if (userData is Map) {
       return userData['profileImage']?.toString();
     }
-    
+
     return userData.profileImage?.toString();
   }
 
@@ -149,13 +152,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Socket connection is now managed automatically without heartbeat context
 
-    debugPrint('[ChatScreen] init user=$_userName conversation=$_conversationId');
+    debugPrint(
+      '[ChatScreen] init user=$_userName conversation=$_conversationId',
+    );
 
     _messageController = MessageController(
       messageService: MessageService(),
       conversationId: _conversationId,
       receiverUserId: _userId,
     )..addListener(_onMessageControllerTick);
+    _initializeSocketListener();
 
     // Requirement: the messages API is called only after ChatScreen opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -199,6 +205,33 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _initializeSocketListener() {
+    debugPrint('🎧 SOCKET LISTENER STARTED');
+
+    _socketSubscription?.cancel();
+
+    _socketSubscription = _socketService.messageStream.listen((data) {
+      debugPrint('🔥 SOCKET DATA => $data');
+
+      try {
+        final incomingConversationId = data['conversation_id'];
+
+        if (incomingConversationId != _conversationId) {
+          return;
+        }
+        final incomingMessage = MessageModel.fromJson(data['data']);
+
+        _messageController.appendLocalMessage(incomingMessage);
+
+        debugPrint('✅ REALTIME MESSAGE ADDED');
+
+        _scrollToBottom();
+      } catch (e) {
+        debugPrint('💥 SOCKET ERROR => $e');
+      }
+    });
+  }
+
   void _showMessagePopup(
     MessageModel message,
     Offset globalPosition,
@@ -206,8 +239,7 @@ class _ChatScreenState extends State<ChatScreen> {
   ) {
     if (!mounted) return;
     final topInset = MediaQuery.of(context).padding.top;
-    final menuTop =
-        (globalPosition.dy - topInset) + bubbleSize.height + 10;
+    final menuTop = (globalPosition.dy - topInset) + bubbleSize.height + 10;
     setState(() {
       _showPopup = true;
       _popupMessage = message;
@@ -269,7 +301,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
-    debugPrint('[ChatScreen] 📤 SEND FLOW START: conversation=$_conversationId');
+    debugPrint(
+      '[ChatScreen] 📤 SEND FLOW START: conversation=$_conversationId',
+    );
     final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
     final newMessage = MessageModel(
       id: localId,
@@ -285,7 +319,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _isSending = true;
       _activeReply = null;
     });
-    
+
     // Step 1: Optimistic local append
     debugPrint('[ChatScreen] 📝 Step 1: Local message appended id=$localId');
     _messageController.appendLocalMessage(newMessage);
@@ -294,15 +328,15 @@ class _ChatScreenState extends State<ChatScreen> {
     // Step 2: Attempt backend persistence with timeout protection
     try {
       debugPrint('[ChatScreen] 🌐 Step 2: Starting backend send...');
-      
+
       final sendFuture = _sendToBackend(trimmedText);
       final timeoutFuture = Future.delayed(
         const Duration(seconds: 5),
         () => throw TimeoutException('Send timeout after 5s'),
       );
-      
+
       await Future.any([sendFuture, timeoutFuture]);
-      
+
       debugPrint('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
     } catch (e) {
       debugPrint('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
@@ -324,7 +358,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _sendToBackend(String content) async {
     debugPrint('[ChatScreen] 🔄 Backend send: Trying WebSocket first...');
-    
+
     // Step 2a: Try WebSocket send with timeout
     final wsSuccess = await _tryWebSocketSend(content).timeout(
       const Duration(seconds: 3),
@@ -333,12 +367,12 @@ class _ChatScreenState extends State<ChatScreen> {
         return false;
       },
     );
-    
+
     if (wsSuccess) {
       debugPrint('[ChatScreen] ✅ WebSocket send SUCCESS');
       return;
     }
-    
+
     // Step 2b: WebSocket failed/timeout - use REST fallback
     debugPrint('[ChatScreen] 🔄 WebSocket failed, using REST fallback...');
     await _sendViaREST(content);
@@ -348,17 +382,17 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       debugPrint('[ChatScreen] 📡 WebSocket send attempt start');
       final socketService = SocketService();
-      
+
       if (!socketService.isConnected) {
         debugPrint('[ChatScreen] ⚠️ WebSocket NOT CONNECTED');
         return false;
       }
-      
+
       final sent = socketService.sendMessage(
         conversationId: _conversationId,
         message: content,
       );
-      
+
       debugPrint('[ChatScreen] 📡 WebSocket send result: $sent');
       return sent;
     } catch (e) {
@@ -371,7 +405,7 @@ class _ChatScreenState extends State<ChatScreen> {
     debugPrint('[ChatScreen] 🌐 REST API send start');
     try {
       final sentMessage = await _messageController.sendMessage(content);
-      
+
       if (sentMessage != null) {
         debugPrint('[ChatScreen] ✅ REST API send SUCCESS: ${sentMessage.id}');
       } else {
@@ -386,9 +420,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendImage(String imagePath) {
     debugPrint('[ChatScreen] 🖼️ Image send not yet implemented: $imagePath');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Image sending coming soon!')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Image sending coming soon!')));
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
@@ -437,9 +471,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!mounted) return;
     setState(() => _pinnedMessage = pinned);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$_userName pinned a message')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$_userName pinned a message')));
   }
 
   void _clearReply() {
@@ -456,7 +490,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    // Heartbeat context cleanup is no longer needed
+    _socketSubscription?.cancel();
     _messageController.removeListener(_onMessageControllerTick);
     _messageController.dispose();
     _scrollController.dispose();
@@ -613,10 +647,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (index > 0) const SizedBox(height: 10),
         bubble,
         if (message.isPinned)
-          PinnedMessageBanner(
-            pinnedMessage: message,
-            username: _userName,
-          ),
+          PinnedMessageBanner(pinnedMessage: message, username: _userName),
       ],
     );
   }
