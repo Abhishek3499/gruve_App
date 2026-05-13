@@ -17,8 +17,11 @@ class ProfileProvider extends ChangeNotifier {
   final ProfileController controller;
   final HighlightService _highlightService;
 
-  bool isLoading = true;
+  /// False until a fetch actually starts — avoids "loading forever" when no request runs.
+  bool isLoading = false;
   String? errorMessage;
+
+  Future<void>? _profileFetchInFlight;
 
   ProfileModel? user;
   ProfileStatsModel stats = const ProfileStatsModel.empty();
@@ -33,7 +36,21 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchProfileData() async {
+  Future<void> fetchProfileData({
+    String fetchUserReason = 'profile_provider_opened',
+  }) async {
+    if (_profileFetchInFlight != null) return _profileFetchInFlight!;
+
+    final future = _runProfileFetch(fetchUserReason: fetchUserReason);
+    _profileFetchInFlight = future;
+    try {
+      await future;
+    } finally {
+      _profileFetchInFlight = null;
+    }
+  }
+
+  Future<void> _runProfileFetch({required String fetchUserReason}) async {
     _log('[Profile] Fetch start');
 
     isLoading = true;
@@ -41,7 +58,7 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final results = await Future.wait([
-        controller.fetchUser(reason: 'profile_provider_opened'),
+        controller.fetchUser(reason: fetchUserReason),
         _highlightService.fetchMyHighlights(),
       ]);
 
@@ -115,38 +132,8 @@ class ProfileProvider extends ChangeNotifier {
   /// Refresh profile data (used on login)
   Future<void> refreshProfile() async {
     debugPrint('🔄 [ProfileProvider] Refreshing profile data...');
-    
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
-    
-    try {
-      final results = await Future.wait([
-        controller.fetchUser(reason: 'login_refresh'),
-        _highlightService.fetchMyHighlights(),
-      ]);
-
-      final highlightsResponse = results[1] as HighlightsResponse;
-      
-      user = controller.user;
-      stats = controller.stats;
-      posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
-      highlights = List<HighlightModel>.unmodifiable(
-        highlightsResponse.success
-            ? highlightsResponse.data.highlights
-            : const [],
-      );
-      
-      debugPrint('✅ [ProfileProvider] Profile data refreshed successfully');
-      debugPrint('✅ [ProfileProvider] Highlights count: ${highlights.length}');
-    } catch (error, stackTrace) {
-      errorMessage = 'Failed to refresh profile';
-      debugPrint('❌ [ProfileProvider] Refresh failed: $error');
-      debugPrint('$stackTrace');
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
+    await fetchProfileData(fetchUserReason: 'login_refresh');
+    debugPrint('✅ [ProfileProvider] refreshProfile completed');
   }
 
   /// Reset all profile data on logout

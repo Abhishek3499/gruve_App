@@ -73,7 +73,14 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUserName;
     }
-    return (widget.userOrConversation as dynamic).name ?? 'Unknown';
+    
+    // Handle Map object from MessageAvatar
+    final dynamic userData = widget.userOrConversation;
+    if (userData is Map) {
+      return userData['name']?.toString() ?? 'Unknown';
+    }
+    
+    return userData.name?.toString() ?? 'Unknown';
   }
 
   String get _userId {
@@ -85,7 +92,14 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUser.id;
     }
-    return (widget.userOrConversation as dynamic).id ?? '';
+    
+    // Handle Map object from MessageAvatar
+    final dynamic userData = widget.userOrConversation;
+    if (userData is Map) {
+      return userData['id']?.toString() ?? '';
+    }
+    
+    return userData.id?.toString() ?? '';
   }
 
   String get _conversationId {
@@ -117,7 +131,14 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isConversationModel) {
       return (widget.userOrConversation as ConversationModel).otherUserAvatar;
     }
-    return (widget.userOrConversation as dynamic).profileImage;
+    
+    // Handle Map object from MessageAvatar
+    final dynamic userData = widget.userOrConversation;
+    if (userData is Map) {
+      return userData['profileImage']?.toString();
+    }
+    
+    return userData.profileImage?.toString();
   }
 
   List<MessageModel> get _messages => _messageController.messages;
@@ -126,8 +147,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
 
-    // Heartbeat / reconnect manager: register thread as soon as the route opens.
-    SocketReconnectManager().setConversationId(_conversationId);
+    // Socket connection is now managed automatically without heartbeat context
 
     debugPrint('[ChatScreen] init user=$_userName conversation=$_conversationId');
 
@@ -151,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.didUpdateWidget(oldWidget);
     if (widget.conversationId != oldWidget.conversationId ||
         widget.userOrConversation != oldWidget.userOrConversation) {
-      SocketReconnectManager().setConversationId(_conversationId);
+      // Socket connection context is no longer needed for heartbeats
     }
   }
 
@@ -436,7 +456,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    SocketReconnectManager().clearConversationContext();
+    // Heartbeat context cleanup is no longer needed
     _messageController.removeListener(_onMessageControllerTick);
     _messageController.dispose();
     _scrollController.dispose();

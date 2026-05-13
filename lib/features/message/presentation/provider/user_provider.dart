@@ -6,7 +6,7 @@ import '../../data/repository/user_repository_impl.dart';
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;
   UserProvider(this.repository) {
-    // Auto-fetch users when provider is created
+    debugPrint('🔥 UserProvider CONSTRUCTOR CALLED');
     _initializeUsers();
   }
 
@@ -29,7 +29,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> _initializeUsers() async {
     if (_hasInitialized) return;
     _hasInitialized = true;
-    
+
     debugPrint('🔄 [UserProvider] Initializing - auto-fetching users...');
     await fetchUsers();
   }
@@ -37,7 +37,9 @@ class UserProvider extends ChangeNotifier {
   Future<void> fetchUsers({bool loadMore = false}) async {
     // Prevent duplicate calls
     if (loadMore && (_isFetchingMore || !_hasNext)) {
-      debugPrint('⏸️ [UserProvider] Skipping fetchMore - isFetchingMore: $_isFetchingMore, hasNext: $_hasNext');
+      debugPrint(
+        '⏸️ [UserProvider] Skipping fetchMore - isFetchingMore: $_isFetchingMore, hasNext: $_hasNext',
+      );
       return;
     }
 
@@ -46,7 +48,9 @@ class UserProvider extends ChangeNotifier {
       return;
     }
 
-    debugPrint('🚀 [UserProvider] Fetching page: $_currentPage (loadMore: $loadMore)');
+    debugPrint(
+      '🚀 [UserProvider] Fetching page: $_currentPage (loadMore: $loadMore)',
+    );
 
     // Set loading states
     if (loadMore) {
@@ -63,14 +67,18 @@ class UserProvider extends ChangeNotifier {
     try {
       final repo = repository as UserRepositoryImpl;
       final response = await repo.fetchUsersPaginated(page: _currentPage);
-      
+
       // Update users list
       if (loadMore) {
         _users.addAll(response.users.map((m) => m.toEntity()));
-        debugPrint('➕ [UserProvider] Appended ${response.users.length} users to existing list');
+        debugPrint(
+          '➕ [UserProvider] Appended ${response.users.length} users to existing list',
+        );
       } else {
         _users = response.users.map((m) => m.toEntity()).toList();
-        debugPrint('🔄 [UserProvider] Replaced list with ${response.users.length} users');
+        debugPrint(
+          '🔄 [UserProvider] Replaced list with ${response.users.length} users',
+        );
       }
 
       // Update pagination state
@@ -82,8 +90,9 @@ class UserProvider extends ChangeNotifier {
       debugPrint('📦 [UserProvider] Users fetched: ${response.users.length}');
       debugPrint('➡️ [UserProvider] Has next: $_hasNext');
       debugPrint('👥 [UserProvider] Total users: ${_users.length}');
-      debugPrint('📄 [UserProvider] Current page: ${response.page}, Next page: $_currentPage');
-
+      debugPrint(
+        '📄 [UserProvider] Current page: ${response.page}, Next page: $_currentPage',
+      );
     } catch (e) {
       _errorMessage = e.toString();
       debugPrint('❌ [UserProvider] Error: $e');

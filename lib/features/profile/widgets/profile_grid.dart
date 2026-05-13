@@ -113,11 +113,13 @@ class ProfileGrid extends StatelessWidget {
     final filteredPosts = posts;
 
     if (selectedTab == 0) {
-      // 🚀 PRODUCTION OPTIMIZED: Use CustomScrollView with proper constraints
+      // Nested inside profile SingleChildScrollView — must not use [Expanded]
+      // (unbounded height); shrinkWrap joins the outer scroll.
       return _withPagingFooter(
-        Expanded(
-          child: CustomScrollView(
-            slivers: [
+        CustomScrollView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          slivers: [
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
                 sliver: SliverGrid(
@@ -175,7 +177,6 @@ class ProfileGrid extends StatelessWidget {
               ),
             ],
           ),
-        ),
       );
     }
 
@@ -229,32 +230,31 @@ class ProfileGrid extends StatelessWidget {
       );
     }
 
-    // 🚀 PRODUCTION OPTIMIZED: SliverGrid with proper constraints
-    return Expanded(
-      child: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 14,
-                childAspectRatio: 0.75,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final post = posts[index];
-                  return RepaintBoundary(
-                    child: _buildPostItem(post, context, posts, index),
-                  );
-                },
-                childCount: posts.length,
-              ),
+    return CustomScrollView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: 0.75,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final post = posts[index];
+                return RepaintBoundary(
+                  child: _buildPostItem(post, context, posts, index),
+                );
+              },
+              childCount: posts.length,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

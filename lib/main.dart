@@ -8,6 +8,8 @@ import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
+import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:gruve_app/features/profile/data/services/user_profile_service.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
@@ -51,6 +53,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => StoryController()),
         ChangeNotifierProvider(create: (_) => HighlightFlowProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(
+          create: (_) => UserProfileProvider(service: UserProfileService()),
+        ),
         ChangeNotifierProvider(create: (_) => BlockProvider()),
         ChangeNotifierProvider(create: (_) => SavePostProvider()),
         ChangeNotifierProvider(create: (_) => LogoutProvider()),
@@ -58,6 +63,8 @@ class MyApp extends StatelessWidget {
           create: (_) => MessageProvider(MessageService()),
         ),
         ChangeNotifierProvider(
+          lazy: false,
+
           create: (_) => UserProvider(
             UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
           ),

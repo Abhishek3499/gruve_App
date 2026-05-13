@@ -6,8 +6,6 @@ import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
 import '../data/models/user_profile_model.dart';
-import 'package:gruve_app/core/loading/loading_state_manager.dart';
-import 'package:gruve_app/core/widgets/skeletons/profile_skeleton.dart';
 import 'package:gruve_app/widgets/stats_row_skeleton.dart';
 import 'package:gruve_app/widgets/profile_grid_skeleton.dart';
 
@@ -32,6 +30,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isRefreshing = false;
 
+  /// Own-profile tab stays mounted under [IndexedStack]; listen for logout clears.
+  ProfileProvider? _ownProfileProvider;
+
   void _log(String message) {
     if (kDebugMode) {
       debugPrint(message);
@@ -44,13 +45,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
     _log('[ProfileScreen] Initializing profile screen with userId: ${widget.userId}');
 
-    // Handle both own profile (userId is null) and other users (userId is provided)
+    // Own profile: fetch whenever session has no user yet (fixes stuck loader when
+    // init ran while provider falsely reported loading, and refetch after logout).
     if (widget.userId == null) {
-      // Own profile - use existing ProfileProvider
-      final provider = context.read<ProfileProvider>();
-      if (provider.user == null) {
-        provider.fetchProfileData();
-      }
+      _ownProfileProvider = context.read<ProfileProvider>();
+      _ownProfileProvider!.addListener(_ensureOwnProfileLoaded);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureOwnProfileLoaded());
     } else {
       // Other user's profile - fetch using UserProfileProvider after first frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -61,6 +61,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     _scrollController.addListener(_onProfileScroll);
+  }
+
+  void _ensureOwnProfileLoaded() {
+    if (!mounted || widget.userId != null) return;
+    final p = _ownProfileProvider ?? context.read<ProfileProvider>();
+    if (p.user != null || p.errorMessage != null || p.isLoading) return;
+    _log('[ProfileScreen] Fetching profile (empty session, idle)');
+    p.fetchProfileData();
   }
 
   Future<void> _onBridgeRefreshRequested(String reason) async {
@@ -74,6 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
+    _ownProfileProvider?.removeListener(_ensureOwnProfileLoaded);
     ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
@@ -109,23 +118,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
         extendBody: true,
         backgroundColor: const Color(0xFF42174C),
         endDrawer: ProfileMenuDrawer(profileImage: provider.user?.profileImage),
-        body: Stack(
-          children: [
-            /// 🔹 MAIN UI (only if data exists)
-            if (provider.user != null) _buildMainContentForOwnProfile(provider),
-
-            /// 🔹 SKELETON (first load only)
-            if (provider.user == null) _buildSkeleton(),
-
-            /// 🔹 ERROR OVERLAY
-            if (provider.errorMessage != null)
-              Center(
-                child: Text(
-                  provider.errorMessage!,
-                  style: const TextStyle(color: Colors.white),
+        body: Builder(
+          builder: (context) {
+            _log('[ProfileScreen] Build state - user: ${provider.user != null}, isLoading: ${provider.isLoading}, error: ${provider.errorMessage}');
+            
+            if (provider.errorMessage != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      provider.errorMessage!,
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => provider.fetchProfileData(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD42BC2),
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
-              ),
-          ],
+              );
+            }
+            
+            if (provider.user == null) {
+              return _buildSkeleton();
+            }
+
+            return _buildMainContentForOwnProfile(provider);
+          },
         ),
       );
     } else {
@@ -135,19 +160,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return Scaffold(
             extendBody: true,
             backgroundColor: const Color(0xFF42174C),
-            body: Stack(
-              children: [
-                /// 🔹 LOADING STATE
-                if (userProfileProvider.isLoading)
-                  const Center(
+            body: Builder(
+              builder: (context) {
+                if (userProfileProvider.isLoading) {
+                  return const Center(
                     child: CircularProgressIndicator(
                       color: Colors.white,
                     ),
-                  ),
+                  );
+                }
 
-                /// 🔹 ERROR STATE
-                if (userProfileProvider.hasError)
-                  Center(
+                if (userProfileProvider.hasError) {
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -168,12 +192,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                  ),
+                  );
+                }
 
-                /// 🔹 MAIN UI (only if data exists)
-                if (userProfileProvider.hasData) 
-                  _buildMainContentForOtherUser(userProfileProvider.profile!),
-              ],
+                if (userProfileProvider.hasData) {
+                  return _buildMainContentForOtherUser(userProfileProvider.profile!);
+                }
+
+                return const SizedBox.shrink();
+              },
             ),
           );
         },

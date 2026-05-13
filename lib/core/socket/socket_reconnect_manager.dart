@@ -65,7 +65,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
     return 'ws://zg7h02xx-8001.inc1.devtunnels.ms/ws';
   }
 
-  static const Duration _heartbeatInterval = Duration(seconds: 30);
   static const Duration _connectionTimeout = Duration(seconds: 10);
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
   static const Duration _maxReconnectDelay = Duration(seconds: 60);
@@ -77,7 +76,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
   // 🚀 OPTIMIZED: Comprehensive subscription tracking
   StreamSubscription? _socketSubscription;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-  Timer? _heartbeatTimer;
   Timer? _reconnectTimer;
   Timer? _connectionTimeoutTimer;
 
@@ -91,9 +89,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
   bool _isOnline = true;
   bool _isAppInForeground = true;
   DateTime? _lastConnectedAt;
-  DateTime? _lastHeartbeatSent;
-  DateTime? _lastHeartbeatReceived;
-  String? _activeConversationId;
 
   // 🚀 MEMORY MONITORING: Track subscription health
   final Set<StreamSubscription> _activeSubscriptions = <StreamSubscription>{};
@@ -117,17 +112,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
   Stream<SocketEvent> get events => _eventController.stream;
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
 
-  /// Active chat thread for heartbeat payloads. Empty / whitespace clears it.
-  void setConversationId(String? conversationId) {
-    final trimmed = conversationId?.trim();
-    _activeConversationId =
-        (trimmed != null && trimmed.isNotEmpty) ? trimmed : null;
-  }
-
-  /// Call when leaving [ChatScreen] so heartbeats are not tied to a stale thread.
-  void clearConversationContext() {
-    _activeConversationId = null;
-  }
 
   Future<void> connect() async {
     if (_isDisposed) {
@@ -354,18 +338,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
       final data = _decodeMessage(message);
       if (data == null) return;
 
-      // Handle pong response
-      if (data['type'] == 'pong') {
-        _lastHeartbeatReceived = DateTime.now();
-        if (kDebugMode) {
-          final responseTime = data['response_time'] ?? 0;
-          debugLog.socket(
-            'HEARTBEAT_RECEIVED',
-            properties: {'responseTime': responseTime},
-          );
-        }
-        return;
-      }
 
       // Handle errors
       if (data['type'] == 'error') {
@@ -402,7 +374,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
     debugLog.socket('DISCONNECTED', properties: {'reason': 'stream_done'});
     _setState(SocketState.disconnected);
-    _clearHeartbeatTimer();
     _clearConnectionTimeoutTimer();
     _emitEvent(SocketEvent(type: SocketEventType.disconnected));
     _scheduleReconnect();
@@ -533,40 +504,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
         : exponentialDelay;
   }
 
-  void _startHeartbeat() {
-    _clearHeartbeatTimer();
-
-    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (timer) {
-      if (!isConnected) {
-        timer.cancel();
-        return;
-      }
-      _sendHeartbeat();
-    });
-  }
-
-  void _sendHeartbeat() {
-    final id = _activeConversationId;
-    if (id == null || id.isEmpty) {
-      // Normal before any chat is open; avoid noisy production logs.
-      return;
-    }
-
-    final heartbeatData = {
-      'type': 'heartbeat',
-      'action': 'ping',
-      'conversation_id': id,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    };
-
-    final sent = sendMessage(heartbeatData);
-    _lastHeartbeatSent = DateTime.now();
-
-    if (kDebugMode) {
-      print("💓 HEARTBEAT conversationId => $_activeConversationId");
-      debugLog.socket('HEARTBEAT_SENT', properties: {'sent': sent});
-    }
-  }
 
   void _initializeConnectivityListener() {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
@@ -587,7 +524,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
         _scheduleReconnect();
       } else if (!_isOnline) {
         _clearReconnectTimer();
-        _clearHeartbeatTimer();
         if (isConnected) {
           _setState(SocketState.disconnected);
           _emitEvent(SocketEvent(type: SocketEventType.disconnected));
@@ -612,15 +548,12 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
     if (!_isAppInForeground) {
       _clearReconnectTimer();
-      _clearHeartbeatTimer();
       return;
     }
 
     if (!wasInForeground && !_manualDisconnect && !isConnected) {
       _reconnectAttempts = 0;
       _scheduleReconnect();
-    } else if (isConnected) {
-      _startHeartbeat();
     }
   }
 
@@ -656,7 +589,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
     if (newState == SocketState.connected) {
       _reconnectAttempts = 0;
       _clearConnectionTimeoutTimer();
-      _startHeartbeat();
       _emitEvent(SocketEvent(type: SocketEventType.connected));
 
       SocketLogger.logEvent(
@@ -678,10 +610,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
     _reconnectTimer = null;
   }
 
-  void _clearHeartbeatTimer() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-  }
 
   void _clearConnectionTimeoutTimer() {
     _connectionTimeoutTimer?.cancel();
@@ -716,7 +644,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
       },
     );
 
-    _clearHeartbeatTimer();
     _clearConnectionTimeoutTimer();
     _clearMemoryCleanupTimer();
     _clearConnectionHealthCheck();
