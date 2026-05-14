@@ -139,6 +139,9 @@ class CacheInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // Skip caching for certain requests
     if (_shouldSkipCaching(options)) {
+      if (_isBlockListEndpoint(options.path)) {
+        await _cacheManager.invalidatePattern('profile/block/list');
+      }
       handler.next(options);
       return;
     }
@@ -193,6 +196,9 @@ class CacheInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) async {
     // Skip caching for certain responses
     if (_shouldSkipCaching(response.requestOptions)) {
+      if (_isBlockListEndpoint(response.requestOptions.path)) {
+        await _cacheManager.invalidatePattern('profile/block/list');
+      }
       handler.next(response);
       return;
     }
@@ -225,6 +231,16 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (_isBlockListEndpoint(err.requestOptions.path)) {
+      handler.next(err);
+      return;
+    }
+
+    if (_shouldSkipCaching(err.requestOptions)) {
+      handler.next(err);
+      return;
+    }
+
     // Try to return stale data on network errors
     if (_shouldReturnStaleOnError(err)) {
       debugPrint('🔄 [CacheInterceptor] 🔍 Attempting to return stale data on error: ${err.requestOptions.path}');
@@ -321,8 +337,16 @@ class CacheInterceptor extends Interceptor {
     final isWriteOperation = method == 'POST' || method == 'PUT' || method == 'DELETE' || method == 'PATCH';
 
     return isWriteOperation ||
+           _isBlockListEndpoint(options.path) ||
            skipPaths.any((path) => options.path.contains(path)) ||
-           options.extra['skipCache'] == true;
+           options.extra['skipCache'] == true ||
+           options.extra['bypassCache'] == true ||
+           options.extra['noCache'] == true;
+  }
+
+  bool _isBlockListEndpoint(String path) {
+    final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
+    return normalizedPath.startsWith('profile/block/list');
   }
 
   /// Creates appropriate CacheData wrapper based on response type

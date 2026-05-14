@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import '../models/block_toggle_response_model.dart';
@@ -20,15 +21,32 @@ class BlockApiService {
     _log('Initialized shared Dio client');
   }
 
-  Future<List<BlockedUserModel>> fetchBlockedUsers() async {
+  Future<List<BlockedUserModel>> fetchBlockedUsers({
+    bool forceRefresh = true,
+  }) async {
     try {
       _log('🚀 API START - fetchBlockedUsers');
       final token = await TokenStorage.getAccessToken();
       _log('📡 GET $_listEndpoint');
 
+      await CacheManager().invalidatePattern(_listEndpoint);
+
       final response = await _dio.get(
         _listEndpoint,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+          extra: {
+            'skipCache': true,
+            'bypassCache': true,
+            'noCache': true,
+            'forceRefresh': forceRefresh,
+          },
+        ),
       );
 
       _log('✅ API SUCCESS - status=${response.statusCode}');
@@ -41,13 +59,17 @@ class BlockApiService {
         if (data is Map<String, dynamic>) {
           final results = data['results'];
           if (results is List) {
-            final users = results.map((json) => BlockedUserModel.fromJson(json)).toList();
-            _log('🎯 parsed ${users.length} blocked users (count: ${data['count']})');
+            final users = results
+                .map((json) => BlockedUserModel.fromJson(json))
+                .toList();
+            _log(
+              '🎯 parsed ${users.length} blocked users (count: ${data['count']})',
+            );
             return users;
           }
         }
       }
-      
+
       _log('⚠️ Unexpected response format, returning empty list');
       return [];
     } on DioException catch (e) {
@@ -75,7 +97,14 @@ class BlockApiService {
       final response = await _dio.post(
         _toggleEndpoint,
         data: {'user_id': userId},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          extra: {
+            'skipCache': true,
+            'bypassCache': true,
+            'noCache': true,
+          },
+        ),
       );
 
       _log('✅ API SUCCESS - status=${response.statusCode}');
@@ -83,6 +112,8 @@ class BlockApiService {
 
       final result = BlockToggleResponseModel.fromJson(response.data);
       _log('🎯 parsed isBlocked=${result.data?.isBlocked}');
+
+      await CacheManager().invalidatePattern(_listEndpoint);
 
       return result;
     } on DioException catch (e) {

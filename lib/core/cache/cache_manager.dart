@@ -282,6 +282,7 @@ class CacheManager {
 
   /// Invalidate cache entry
   Future<void> invalidate(String key) async {
+    await initialize();
     _memoryCache.remove(key);
     await _prefs?.remove(key);
     debugPrint('🗑️ [CacheManager] Invalidated: $key');
@@ -289,6 +290,7 @@ class CacheManager {
 
   /// Invalidate cache entries by pattern
   Future<void> invalidatePattern(String pattern) async {
+    await initialize();
     final keysToRemove = <String>[];
     
     // Remove from memory cache

@@ -288,15 +288,13 @@ class _MessageScreenState extends State<MessageScreen> {
     );
   }
 
-  void _navigateToChat(ConversationModel conversation) {
+  void _navigateToChat(ConversationModel conversation) async {
     debugPrint(
       '💬 [MessageScreen] Navigating to chat with: ${conversation.otherUserName} (${conversation.id})',
     );
-    // Mark conversation as read when opening
     context.read<MessageProvider>().markConversationAsRead(conversation.id);
 
-    // Navigate to ChatScreen with conversation data
-    Navigator.push(
+    final shouldRefresh = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => ChatScreen(
@@ -308,5 +306,14 @@ class _MessageScreenState extends State<MessageScreen> {
         ),
       ),
     );
+
+    if (shouldRefresh == true && mounted) {
+      debugPrint('🔄 [MessageScreen] Refreshing after block action');
+      context.read<MessageProvider>().removeConversation(conversation.id);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await _handleRefresh();
+      });
+    }
   }
 }

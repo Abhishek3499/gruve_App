@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/assets.dart';
 import '../../video_options/sheets/simple_report_sheet.dart';
 import 'block/block_user_widget.dart';
@@ -6,7 +7,20 @@ import 'block/block_user_widget.dart';
 class ChatHeaderMenu extends StatefulWidget {
   final VoidCallback? onClose;
 
-  const ChatHeaderMenu({super.key, this.onClose});
+  /// Navigator that owns [ChatScreen] (used to pop the chat with a result after block succeeds).
+  final NavigatorState chatNavigator;
+  final String userId;
+  final String userName;
+  final bool isBlocked;
+
+  const ChatHeaderMenu({
+    super.key,
+    this.onClose,
+    required this.chatNavigator,
+    required this.userId,
+    required this.userName,
+    required this.isBlocked,
+  });
 
   @override
   State<ChatHeaderMenu> createState() => _ChatHeaderMenuState();
@@ -17,10 +31,13 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late final bool _initialBlockState;
 
   @override
   void initState() {
     super.initState();
+    _initialBlockState = widget.isBlocked;
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 250),
       vsync: this,
@@ -34,7 +51,6 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    // Start animation when widget is created
     _animationController.forward();
   }
 
@@ -45,8 +61,8 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
   }
 
   void _handleMenuAction(String action) {
-    debugPrint(action); // Print action to console
-    
+    debugPrint(action);
+
     if (action == "Report user") {
       _showReportSheet();
     } else if (action == "Block user") {
@@ -65,20 +81,27 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
     );
   }
 
-  void _showBlockDialog() {
-    showDialog(
+  void _showBlockDialog() async {
+    final didBlock = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (context) {
-        return BlockUserWidget(
-          name: "User Name",
-          username: "@username",
-          onConfirm: () {
-            debugPrint("User Blocked");
-          },
-        );
-      },
+      builder: (dialogContext) => BlockUserWidget(
+        name: widget.userName,
+        username: "@${widget.userName}",
+        userId: widget.userId,
+      ),
     );
+
+    if (didBlock != true || !mounted) return;
+
+    if (widget.chatNavigator.mounted) {
+      widget.chatNavigator.pop(true);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    widget.onClose?.call();
   }
 
   @override
@@ -98,18 +121,17 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
                 colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
               ),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Color(0x99000000),
                   blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Restrict option
                 _buildMenuItem(
                   icon: Image.asset(AppAssets.ree, width: 22, height: 22),
                   label: 'Restrict',
@@ -117,9 +139,8 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
                   onTap: () => _handleMenuAction("Restrict user"),
                 ),
 
-                const SizedBox(height: 01),
+                const SizedBox(height: 1),
 
-                // Report option
                 _buildMenuItem(
                   icon: Image.asset(AppAssets.repor, width: 22, height: 22),
                   label: 'Report',
@@ -127,16 +148,11 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
                   onTap: () => _handleMenuAction("Report user"),
                 ),
 
-                const SizedBox(height: 01),
+                const SizedBox(height: 1),
 
-                // Block option
                 _buildMenuItem(
-                  icon: Image.asset(
-                    AppAssets.blockIcon,
-                    width: 20,
-                    height: 20,
-                  ),
-                  label: 'Block',
+                  icon: Image.asset(AppAssets.blockIcon, width: 20, height: 20),
+                  label: _initialBlockState ? 'Unblock' : 'Block',
                   textColor: Colors.redAccent,
                   onTap: () => _handleMenuAction("Block user"),
                 ),

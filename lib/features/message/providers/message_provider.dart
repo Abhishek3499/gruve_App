@@ -174,7 +174,9 @@ class MessageProvider extends ChangeNotifier {
       );
 
       final apiStart = DateTime.now();
-      final conversations = await _messageService.getConversationList();
+      final conversations = await _messageService.getConversationList(
+        forceRefresh: refresh,
+      );
       final apiTime = DateTime.now().difference(apiStart);
 
       debugPrint('📩 [MessageProvider] API response received in ${apiTime.inMilliseconds}ms');

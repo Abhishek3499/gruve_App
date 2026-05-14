@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
+import 'package:provider/provider.dart';
 
 import '../../../services/socket_service.dart';
 
@@ -145,6 +147,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   List<MessageModel> get _messages => _messageController.messages;
+  bool _isBlocked(BuildContext context) {
+    return context.watch<BlockProvider>().isBlocked(_userId);
+  }
 
   @override
   void initState() {
@@ -162,7 +167,21 @@ class _ChatScreenState extends State<ChatScreen> {
       receiverUserId: _userId,
     )..addListener(_onMessageControllerTick);
     _initializeSocketListener();
-
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final blockProvider = context.read<BlockProvider>();
+      try {
+        await blockProvider.fetchBlockedUsers(forceRefresh: true);
+        if (!mounted) return;
+        final isBlocked = blockProvider.blockedUsers.any(
+          (user) => user.userId == _userId,
+        );
+        blockProvider.setBlockState(_userId, isBlocked);
+        debugPrint('🔒 [ChatScreen] Block state synced from backend = $isBlocked');
+      } catch (e) {
+        debugPrint('⚠️ [ChatScreen] Failed to sync block state: $e');
+      }
+    });
     // Requirement: the messages API is called only after ChatScreen opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -225,8 +244,12 @@ class _ChatScreenState extends State<ChatScreen> {
         final incomingMessage = MessageModel.fromJson(data['data']);
 
         // Prevent duplicate message insertion
-        if (_messageController.messages.any((m) => m.id == incomingMessage.id)) {
-          debugPrint('⚠️ DUPLICATE SOCKET MESSAGE SKIPPED: ${incomingMessage.id}');
+        if (_messageController.messages.any(
+          (m) => m.id == incomingMessage.id,
+        )) {
+          debugPrint(
+            '⚠️ DUPLICATE SOCKET MESSAGE SKIPPED: ${incomingMessage.id}',
+          );
           return;
         }
 
@@ -537,7 +560,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       explicitUserName: _userName,
                       explicitUserId: _userId,
                       explicitProfileImage: _userAvatar,
-                      onBack: () {
+                      onBack: () async {
                         if (_isDeleteMode) {
                           _exitDeleteMode();
                         } else {

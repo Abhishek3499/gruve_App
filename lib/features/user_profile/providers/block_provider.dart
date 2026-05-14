@@ -14,27 +14,43 @@ class BlockProvider extends ChangeNotifier {
   // Blocked users list
   List<BlockedUserModel> _blockedUsers = [];
   bool _isLoadingList = false;
+  Future<void>? _blockedUsersFetchFuture;
 
-  List<BlockedUserModel> get blockedUsers => _blockedUsers;
+  List<BlockedUserModel> get blockedUsers => List.unmodifiable(_blockedUsers);
   bool get isLoadingList => _isLoadingList;
 
   void _log(String message) {
     debugPrint('🔒 [BlockProvider] $message');
   }
 
-  /// Fetch blocked users list
-  Future<void> fetchBlockedUsers() async {
-    if (_isLoadingList) {
-      _log('⚠️ FETCH BLOCKED - Already loading');
-      return;
+  /// Fetch blocked users list. Concurrent callers without [forceRefresh] share one in-flight request.
+  /// When [forceRefresh] is true (e.g. after a successful block toggle), any prior in-flight fetch is
+  /// awaited first, then a new request runs so the list matches the backend after the mutation.
+  Future<void> fetchBlockedUsers({bool forceRefresh = false}) async {
+    if (_blockedUsersFetchFuture != null) {
+      _log('⚠️ FETCH BLOCKED - Joining in-flight request');
+      try {
+        await _blockedUsersFetchFuture!;
+      } catch (_) {}
+      if (!forceRefresh) return;
     }
 
+    _blockedUsersFetchFuture = _runFetchBlockedUsers();
+    try {
+      await _blockedUsersFetchFuture!;
+    } finally {
+      _blockedUsersFetchFuture = null;
+    }
+  }
+
+  Future<void> _runFetchBlockedUsers() async {
     _log('🔄 FETCH START - blocked users list');
     _isLoadingList = true;
     notifyListeners();
 
     try {
-      _blockedUsers = await _apiService.fetchBlockedUsers();
+      _blockedUsers = await _apiService.fetchBlockedUsers(forceRefresh: true);
+      _syncBlockStatesFromList();
       _log('✅ DATA LOADED - ${_blockedUsers.length} users');
     } catch (e) {
       _log('❌ ERROR - Failed to fetch blocked users: $e');
@@ -64,24 +80,29 @@ class BlockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Toggle block/unblock with optimistic UI update and rollback
-  Future<void> toggleBlockUser(String userId, {bool refreshList = false}) async {
+  /// Toggle block/unblock. When [optimistic] is false, local block state updates only after the server responds (backend is source of truth).
+  Future<void> toggleBlockUser(
+    String userId, {
+    bool refreshList = false,
+    bool optimistic = false,
+  }) async {
     // Guard: Prevent multiple simultaneous API calls
     if (_loadingStates[userId] == true) {
       _log('⚠️ TOGGLE BLOCKED - Already loading for userId=$userId');
       return;
     }
 
-    _log('🔄 TOGGLE START - userId=$userId');
-    
+    _log('🔄 TOGGLE START - userId=$userId optimistic=$optimistic');
+
     // Store previous state for rollback
     final previousState = _blockStates[userId] ?? false;
     _log('💾 Previous state: $previousState');
 
-    // Optimistic UI update
     _loadingStates[userId] = true;
-    _blockStates[userId] = !previousState;
-    _log('🔁 OPTIMISTIC UPDATE - New state: ${_blockStates[userId]}');
+    if (optimistic) {
+      _blockStates[userId] = !previousState;
+      _log('🔁 OPTIMISTIC UPDATE - New state: ${_blockStates[userId]}');
+    }
     notifyListeners();
 
     try {
@@ -92,20 +113,26 @@ class BlockProvider extends ChangeNotifier {
         // Update with actual server state
         _blockStates[userId] = response.data!.isBlocked;
         _log('✅ STATE UPDATED - Server confirmed: ${_blockStates[userId]}');
-        
+
         // Refresh blocked users list if requested
         if (refreshList) {
           _log('🔄 Refreshing blocked users list...');
-          await fetchBlockedUsers();
+          await fetchBlockedUsers(forceRefresh: true);
+        } else {
+          await _refreshSingleStateFromBackend(userId);
         }
       } else {
-        // Rollback on failure
-        _blockStates[userId] = previousState;
+        // Rollback on failure (only if we changed local state optimistically)
+        if (optimistic) {
+          _blockStates[userId] = previousState;
+        }
         _log('❌ ROLLBACK - API returned success=false');
+        throw StateError('Block toggle rejected by server');
       }
     } catch (e) {
-      // Rollback on error
-      _blockStates[userId] = previousState;
+      if (optimistic) {
+        _blockStates[userId] = previousState;
+      }
       _log('❌ ROLLBACK - Error occurred: $e');
       rethrow;
     } finally {
@@ -129,6 +156,7 @@ class BlockProvider extends ChangeNotifier {
     _loadingStates.clear();
     _blockedUsers.clear();
     _isLoadingList = false;
+    _blockedUsersFetchFuture = null;
     notifyListeners();
     debugPrint('✅ [BlockProvider] Block data reset complete');
   }
@@ -138,5 +166,22 @@ class BlockProvider extends ChangeNotifier {
     _blockStates.clear();
     _loadingStates.clear();
     notifyListeners();
+  }
+
+  void _syncBlockStatesFromList() {
+    final blockedIds = _blockedUsers.map((user) => user.userId).toSet();
+
+    for (final userId in _blockStates.keys.toList()) {
+      _blockStates[userId] = blockedIds.contains(userId);
+    }
+
+    for (final userId in blockedIds) {
+      _blockStates[userId] = true;
+    }
+  }
+
+  Future<void> _refreshSingleStateFromBackend(String userId) async {
+    await fetchBlockedUsers(forceRefresh: true);
+    _blockStates[userId] = _blockedUsers.any((user) => user.userId == userId);
   }
 }

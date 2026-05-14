@@ -21,11 +21,29 @@ class MessageService {
   /// Returns a list of [ConversationModel] on success
   /// Throws [DioException] on API errors
   /// Throws [Exception] on other errors
-  Future<List<ConversationModel>> getConversationList() async {
+  Future<List<ConversationModel>> getConversationList({
+    bool forceRefresh = false,
+  }) async {
     try {
       debugPrint('📡 [MessageService] 🚀 Fetching conversations from $_conversationsEndpoint');
       
-      final response = await _dio.get<dynamic>(_conversationsEndpoint);
+      final response = await _dio.get<dynamic>(
+        _conversationsEndpoint,
+        options: forceRefresh
+            ? Options(
+                headers: {
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'Pragma': 'no-cache',
+                  'Expires': '0',
+                },
+                extra: {
+                  'skipCache': true,
+                  'bypassCache': true,
+                  'noCache': true,
+                },
+              )
+            : null,
+      );
       
       // Log detailed response information for debugging
       SafeParsingHelpers.logResponseInfo(response.data, '💬 Conversations API Response');

@@ -18,7 +18,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BlockProvider>().fetchBlockedUsers();
+      context.read<BlockProvider>().fetchBlockedUsers(forceRefresh: true);
     });
   }
 

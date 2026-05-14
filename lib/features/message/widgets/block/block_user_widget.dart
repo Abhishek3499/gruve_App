@@ -1,26 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
+import 'package:provider/provider.dart';
 
-class BlockUserWidget extends StatelessWidget {
+class BlockUserWidget extends StatefulWidget {
   final String name;
   final String username;
-  final VoidCallback onConfirm;
+  final String userId;
 
   const BlockUserWidget({
     super.key,
     required this.name,
     required this.username,
-    required this.onConfirm,
+    required this.userId,
   });
 
   @override
+  State<BlockUserWidget> createState() => _BlockUserWidgetState();
+}
+
+class _BlockUserWidgetState extends State<BlockUserWidget> {
+  bool _isLoading = false;
+
+  Future<void> _handleBlock() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final blockProvider = context.read<BlockProvider>();
+      await blockProvider.toggleBlockUser(
+        widget.userId,
+        refreshList: true,
+        optimistic: false,
+      );
+      if (!mounted) return;
+
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
+    return PopScope(
+      canPop: !_isLoading,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
+          children: [
           /// MAIN CARD
           Container(
             margin: const EdgeInsets.only(top: 30),
@@ -35,7 +66,7 @@ class BlockUserWidget extends StatelessWidget {
                     const SizedBox(height: 20),
 
                     Text(
-                      "Block $name",
+                      "Block ${widget.name}",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -46,7 +77,7 @@ class BlockUserWidget extends StatelessWidget {
                     const SizedBox(height: 9),
 
                     Text(
-                      "($username) ?",
+                      "(${widget.username}) ?",
                       style: const TextStyle(
                         color: Color(0xFFD9C7E0),
                         fontSize: 14,
@@ -65,10 +96,8 @@ class BlockUserWidget extends StatelessWidget {
 
                     /// YES BUTTON
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        onConfirm();
-                      },
+                      onTap: _isLoading ? null : _handleBlock,
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -85,14 +114,23 @@ class BlockUserWidget extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Text(
-                            "Yes",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        child: Center(
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  "Yes",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -106,7 +144,7 @@ class BlockUserWidget extends StatelessWidget {
           Positioned(
             top: 53,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: _isLoading ? null : () => Navigator.pop(context),
               child: Container(
                 height: 50,
                 width: 50,
@@ -121,6 +159,7 @@ class BlockUserWidget extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

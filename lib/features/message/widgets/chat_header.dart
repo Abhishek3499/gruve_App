@@ -3,7 +3,9 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/message/models/conversation_model.dart';
 import 'package:gruve_app/features/message/widgets/chat_header_menu.dart';
+import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/user_profiles/widgets/screens/user_profile_screen2.dart';
+import 'package:provider/provider.dart';
 import '../utils/user_display_helper.dart';
 
 class ChatHeader extends StatelessWidget {
@@ -60,9 +62,12 @@ class ChatHeader extends StatelessWidget {
 
   void showChatHeaderMenu(BuildContext context) {
     OverlayEntry? overlayEntry;
+    // Capture live block state from the widget-tree context BEFORE entering overlay
+    final bool currentIsBlocked =
+        context.read<BlockProvider>().isBlocked(_userId);
 
     overlayEntry = OverlayEntry(
-      builder: (context) => GestureDetector(
+      builder: (overlayContext) => GestureDetector(
         onTap: () => overlayEntry?.remove(),
         child: Material(
           color: Colors.transparent,
@@ -74,7 +79,13 @@ class ChatHeader extends StatelessWidget {
                 right: 16,
                 child: GestureDetector(
                   onTap: () {},
-                  child: ChatHeaderMenu(onClose: () => overlayEntry?.remove()),
+                  child: ChatHeaderMenu(
+                    onClose: () => overlayEntry?.remove(),
+                    chatNavigator: Navigator.of(context),
+                    userId: _userId,
+                    userName: _userName,
+                    isBlocked: currentIsBlocked,
+                  ),
                 ),
               ),
             ],
@@ -94,18 +105,19 @@ class ChatHeader extends StatelessWidget {
         reverseTransitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (context, animation, secondaryAnimation) =>
             UserProfileScreen2(
-          userId: _userId,
-          userName: _userName,
-          profileImageUrl: _userAvatar,
-        ),
+              userId: _userId,
+              userName: _userName,
+              profileImageUrl: _userAvatar,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },
