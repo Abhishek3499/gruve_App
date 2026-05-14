@@ -14,11 +14,12 @@ class MessageScreen extends StatefulWidget {
   const MessageScreen({super.key});
 
   @override
-  
   State<MessageScreen> createState() => _MessageScreenState();
 }
 
 class _MessageScreenState extends State<MessageScreen> {
+  bool _isLoadingMoreConversations = false;
+
   @override
   void initState() {
     super.initState();
@@ -41,11 +42,11 @@ class _MessageScreenState extends State<MessageScreen> {
     debugPrint('✅ [MessageScreen] Refresh completed');
   }
 
-  void _showDeleteConfirmation(ConversationModel conversation) {
+  Future<bool> _showDeleteConfirmation(ConversationModel conversation) async {
     debugPrint(
       '🗑️ [MessageScreen] Showing delete confirmation for: ${conversation.otherUserName}',
     );
-    showDialog(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF311B36),
@@ -66,10 +67,7 @@ class _MessageScreenState extends State<MessageScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteConversation(conversation);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text(
               'Delete',
               style: TextStyle(color: Color(0xFFF51829), fontSize: 16),
@@ -78,13 +76,15 @@ class _MessageScreenState extends State<MessageScreen> {
         ],
       ),
     );
+
+    return confirmed ?? false;
   }
 
-  void _deleteConversation(ConversationModel conversation) {
+  Future<bool> _deleteConversation(ConversationModel conversation) {
     debugPrint(
       '🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}',
     );
-    context.read<MessageProvider>().deleteConversation(conversation.id);
+    return context.read<MessageProvider>().deleteConversation(conversation.id);
   }
 
   @override
@@ -193,41 +193,62 @@ class _MessageScreenState extends State<MessageScreen> {
     debugPrint(
       '✅ [buildConversationList] → rendering ${messageProvider.conversationCount} conversations',
     );
-    
-    bool _isLoadingMore = false;
-    
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
         // Prevent pagination spam with threshold and loading guard
-        if (!_isLoadingMore &&
+        if (!_isLoadingMoreConversations &&
             messageProvider.hasMoreData &&
             !messageProvider.isLoading &&
-            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-          _isLoadingMore = true;
-          debugPrint(
-            '⬇️ [MessageScreen] Loading more conversations',
-          );
+            !messageProvider.isLoadingMore &&
+            scrollInfo.metrics.pixels >=
+                scrollInfo.metrics.maxScrollExtent - 200) {
+          _isLoadingMoreConversations = true;
+          debugPrint('⬇️ [MessageScreen] Loading more conversations');
           messageProvider.loadMoreConversations().then((_) {
-            _isLoadingMore = false;
+            if (mounted) {
+              _isLoadingMoreConversations = false;
+            }
           });
         }
         return false;
       },
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         padding: const EdgeInsets.all(16),
-        itemCount: messageProvider.conversations.length,
+        itemCount:
+            messageProvider.conversations.length +
+            (messageProvider.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index >= messageProvider.conversations.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 18),
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+            );
+          }
+
           final conversation = messageProvider.conversations[index];
           return Dismissible(
             key: ValueKey(conversation.id),
             direction: DismissDirection.endToStart,
-            background: SwipeDeleteBackground(
-              onDelete: () => _showDeleteConfirmation(conversation),
-            ),
-            onDismissed: (direction) {
+            background: SwipeDeleteBackground(onDelete: () {}),
+            confirmDismiss: (direction) async {
               if (direction == DismissDirection.endToStart) {
-                _showDeleteConfirmation(conversation);
+                final confirmed = await _showDeleteConfirmation(conversation);
+                if (!confirmed || !mounted) return false;
+                return _deleteConversation(conversation);
               }
+              return false;
             },
             child: MessageCard(
               conversation: conversation,

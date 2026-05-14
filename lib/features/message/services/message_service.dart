@@ -23,12 +23,19 @@ class MessageService {
   /// Throws [Exception] on other errors
   Future<List<ConversationModel>> getConversationList({
     bool forceRefresh = false,
+    int page = 1,
+    int pageSize = 20,
   }) async {
     try {
-      debugPrint('📡 [MessageService] 🚀 Fetching conversations from $_conversationsEndpoint');
-      
+      debugPrint(
+        '📡 [MessageService] 🚀 Fetching conversations from $_conversationsEndpoint',
+      );
+
       final response = await _dio.get<dynamic>(
         _conversationsEndpoint,
+        queryParameters: page > 1
+            ? {'page': page, 'page_size': pageSize}
+            : null,
         options: forceRefresh
             ? Options(
                 headers: {
@@ -44,37 +51,60 @@ class MessageService {
               )
             : null,
       );
-      
+
       // Log detailed response information for debugging
-      SafeParsingHelpers.logResponseInfo(response.data, '💬 Conversations API Response');
-      
+      SafeParsingHelpers.logResponseInfo(
+        response.data,
+        '💬 Conversations API Response',
+      );
+
       if (response.statusCode == 200) {
         // Safely parse response data
-        final responseData = SafeParsingHelpers.safeListParse(response.data, context: '📋 getConversationList');
-        
+        final responseData = SafeParsingHelpers.safeListParse(
+          response.data,
+          context: '📋 getConversationList',
+        );
+
         final conversations = <ConversationModel>[];
         for (int i = 0; i < responseData.length; i++) {
           try {
-            debugPrint('🔄 [MessageService] 📝 Processing conversation at index $i');
-            final conversationJson = SafeParsingHelpers.safeMapParse(responseData[i], context: '💬 getConversationList[$i]');
+            debugPrint(
+              '🔄 [MessageService] 📝 Processing conversation at index $i',
+            );
+            final conversationJson = SafeParsingHelpers.safeMapParse(
+              responseData[i],
+              context: '💬 getConversationList[$i]',
+            );
             if (conversationJson.isNotEmpty) {
               final conversation = ConversationModel.fromJson(conversationJson);
               conversations.add(conversation);
-              debugPrint('✅ [MessageService] ✨ Successfully parsed conversation ${conversation.id}');
+              debugPrint(
+                '✅ [MessageService] ✨ Successfully parsed conversation ${conversation.id}',
+              );
             } else {
-              debugPrint('⚠️ [MessageService] 🚫 Skipping empty conversation data at index $i');
+              debugPrint(
+                '⚠️ [MessageService] 🚫 Skipping empty conversation data at index $i',
+              );
             }
           } catch (e) {
-            debugPrint('💥 [MessageService] ❌ Failed to parse conversation at index $i: $e');
-            debugPrint('📄 [MessageService] 📋 Problematic data: ${responseData[i]}');
+            debugPrint(
+              '💥 [MessageService] ❌ Failed to parse conversation at index $i: $e',
+            );
+            debugPrint(
+              '📄 [MessageService] 📋 Problematic data: ${responseData[i]}',
+            );
             // Continue processing other conversations instead of failing completely
           }
         }
-        
-        debugPrint('🎉 [MessageService] 🏆 Successfully parsed ${conversations.length}/${responseData.length} conversations');
+
+        debugPrint(
+          '🎉 [MessageService] 🏆 Successfully parsed ${conversations.length}/${responseData.length} conversations',
+        );
         return conversations;
       } else {
-        throw Exception('Failed to fetch conversations: Status code ${response.statusCode}');
+        throw Exception(
+          'Failed to fetch conversations: Status code ${response.statusCode}',
+        );
       }
     } on DioException catch (e) {
       debugPrint('💥 [MessageService] DioException: ${e.message}');
@@ -141,18 +171,26 @@ class MessageService {
       debugPrint(
         '[MessageService] 📊 Messages response status=${response.statusCode}',
       );
-      
+
       // Log detailed response information for debugging
-      SafeParsingHelpers.logResponseInfo(response.data, '💬 Messages API Response');
-      
+      SafeParsingHelpers.logResponseInfo(
+        response.data,
+        '💬 Messages API Response',
+      );
+
       final rawMessages = _extractMessageList(response.data);
-      debugPrint('[MessageService] 📋 Extracted ${rawMessages.length} 📨 raw message items');
-      
+      debugPrint(
+        '[MessageService] 📋 Extracted ${rawMessages.length} 📨 raw message items',
+      );
+
       final messages = <MessageModel>[];
       for (int i = 0; i < rawMessages.length; i++) {
         try {
           debugPrint('🔄 [MessageService] 📝 Processing message at index $i');
-          final messageJson = SafeParsingHelpers.safeMapParse(rawMessages[i], context: '💬 getMessages[$i]');
+          final messageJson = SafeParsingHelpers.safeMapParse(
+            rawMessages[i],
+            context: '💬 getMessages[$i]',
+          );
           if (messageJson.isNotEmpty) {
             final message = MessageModel.fromJson(
               messageJson,
@@ -160,26 +198,36 @@ class MessageService {
               receiverUserId: receiverUserId,
             );
             messages.add(message);
-            debugPrint('✅ [MessageService] ✨ Successfully parsed message ${message.id}');
+            debugPrint(
+              '✅ [MessageService] ✨ Successfully parsed message ${message.id}',
+            );
           } else {
-            debugPrint('⚠️ [MessageService] 🚫 Skipping empty message data at index $i');
+            debugPrint(
+              '⚠️ [MessageService] 🚫 Skipping empty message data at index $i',
+            );
           }
         } catch (e) {
-          debugPrint('💥 [MessageService] ❌ Failed to parse message at index $i: $e');
-          debugPrint('📄 [MessageService] 📋 Problematic data: ${rawMessages[i]}');
+          debugPrint(
+            '💥 [MessageService] ❌ Failed to parse message at index $i: $e',
+          );
+          debugPrint(
+            '📄 [MessageService] 📋 Problematic data: ${rawMessages[i]}',
+          );
           // Continue processing other messages instead of failing completely
         }
       }
-      
+
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      
+
       debugPrint(
         '[MessageService] 🎉 🏆 Parsed ${messages.length}/${rawMessages.length} 📨 messages for $conversationId',
       );
       return messages;
     } on DioException catch (e) {
       debugPrint('[MessageService] Messages DioException: ${e.message}');
-      debugPrint('[MessageService] Messages error response: ${e.response?.data}');
+      debugPrint(
+        '[MessageService] Messages error response: ${e.response?.data}',
+      );
       throw Exception(_mapDioException(e));
     } catch (e) {
       debugPrint('[MessageService] Messages unexpected error: $e');
@@ -190,38 +238,46 @@ class MessageService {
   List<dynamic> _extractMessageList(dynamic data) {
     debugPrint('🔍 [MessageService] 🚀 Starting message list extraction');
     SafeParsingHelpers.logResponseInfo(data, '📋 _extractMessageList input');
-    
+
     if (data is List) {
-      debugPrint('✅ [_extractMessageList] 📋 Data is List with ${data.length} 📨 items');
+      debugPrint(
+        '✅ [_extractMessageList] 📋 Data is List with ${data.length} 📨 items',
+      );
       return data;
     }
-    
+
     if (data is Map<String, dynamic>) {
       final results = data['results'] ?? data['data'] ?? data['messages'];
       if (results is List) {
-        debugPrint('✅ [_extractMessageList] 🎯 Found nested list with key: ${results == data['results'] ? '📋 results' : results == data['data'] ? '💾 data' : '📨 messages'}');
+        debugPrint(
+          '✅ [_extractMessageList] 🎯 Found nested list with key: ${results == data['results']
+              ? '📋 results'
+              : results == data['data']
+              ? '💾 data'
+              : '📨 messages'}',
+        );
         return results;
       }
     }
-    
+
     // Try safe parsing for edge cases
-    final safeMap = SafeParsingHelpers.safeMapParse(data, context: '🔄 _extractMessageList');
+    final safeMap = SafeParsingHelpers.safeMapParse(
+      data,
+      context: '🔄 _extractMessageList',
+    );
     if (safeMap.isNotEmpty) {
-      final results = safeMap['results'] ?? safeMap['data'] ?? safeMap['messages'];
+      final results =
+          safeMap['results'] ?? safeMap['data'] ?? safeMap['messages'];
       if (results is List) {
         debugPrint('🔄 [_extractMessageList] ✨ Found list after safe parsing');
         return results;
       }
     }
-    
-    debugPrint('⚠️ [_extractMessageList] 🚫 No list found, returning empty list');
-    return const [];
-  }
 
-  String _responsePreview(dynamic data) {
-    final value = data.toString();
-    if (value.length <= 500) return value;
-    return '${value.substring(0, 500)}...';
+    debugPrint(
+      '⚠️ [_extractMessageList] 🚫 No list found, returning empty list',
+    );
+    return const [];
   }
 
   String _mapDioException(DioException e) {
@@ -234,7 +290,9 @@ class MessageService {
         final statusCode = e.response?.statusCode;
         final responseData = e.response?.data;
         final message = responseData is Map<String, dynamic>
-            ? responseData['message'] ?? responseData['detail'] ?? 'Unknown error'
+            ? responseData['message'] ??
+                  responseData['detail'] ??
+                  'Unknown error'
             : 'Unknown error';
         return 'API Error ($statusCode): $message';
       case DioExceptionType.cancel:
@@ -271,7 +329,9 @@ class MessageService {
 
     try {
       debugPrint('[MessageService] 📤 POST $endpoint');
-      debugPrint('[MessageService] 📦 Request body: {"content": "${trimmedContent.substring(0, trimmedContent.length.clamp(0, 50))}${trimmedContent.length > 50 ? "..." : ""}"}');
+      debugPrint(
+        '[MessageService] 📦 Request body: {"content": "${trimmedContent.substring(0, trimmedContent.length.clamp(0, 50))}${trimmedContent.length > 50 ? "..." : ""}"}',
+      );
       final response = await _dio.post<dynamic>(
         endpoint,
         data: {'content': trimmedContent},
@@ -341,9 +401,15 @@ class MessageService {
 
       if (response.statusCode == 200) {
         // Log detailed response information for debugging
-        SafeParsingHelpers.logResponseInfo(response.data, '💬 Conversation by ID Response');
-        
-        final conversationData = SafeParsingHelpers.safeMapParse(response.data, context: '🔍 getConversationById');
+        SafeParsingHelpers.logResponseInfo(
+          response.data,
+          '💬 Conversation by ID Response',
+        );
+
+        final conversationData = SafeParsingHelpers.safeMapParse(
+          response.data,
+          context: '🔍 getConversationById',
+        );
         if (conversationData.isNotEmpty) {
           final conversation = ConversationModel.fromJson(conversationData);
           debugPrint(
@@ -351,7 +417,9 @@ class MessageService {
           );
           return conversation;
         } else {
-          debugPrint('❌ [MessageService] 🚫 Conversation data is empty after parsing');
+          debugPrint(
+            '❌ [MessageService] 🚫 Conversation data is empty after parsing',
+          );
           throw Exception('Conversation data is empty');
         }
       } else {
@@ -406,11 +474,8 @@ class MessageService {
         '✅ [MessageService] Conversation marked as read locally (backend API not implemented)',
       );
       return true;
-      
     } catch (e) {
-      debugPrint(
-        '💥 [MessageService] Error marking conversation as read: $e',
-      );
+      debugPrint('💥 [MessageService] Error marking conversation as read: $e');
       return false;
     }
   }
@@ -433,9 +498,7 @@ class MessageService {
 
       final response = await _dio.post<Map<String, dynamic>>(
         '/conversations/',
-        data: {
-          'receiver_id': receiverId,
-        },
+        data: {'receiver_id': receiverId},
       );
 
       debugPrint(
@@ -444,9 +507,15 @@ class MessageService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Log detailed response information for debugging
-        SafeParsingHelpers.logResponseInfo(response.data, '💬 Create/Get Conversation Response');
-        
-        final conversationData = SafeParsingHelpers.safeMapParse(response.data, context: '🚀 createOrGetConversation');
+        SafeParsingHelpers.logResponseInfo(
+          response.data,
+          '💬 Create/Get Conversation Response',
+        );
+
+        final conversationData = SafeParsingHelpers.safeMapParse(
+          response.data,
+          context: '🚀 createOrGetConversation',
+        );
         if (conversationData.isNotEmpty) {
           final conversation = ConversationModel.fromJson(conversationData);
           debugPrint(
@@ -457,7 +526,9 @@ class MessageService {
           );
           return conversation;
         } else {
-          debugPrint('❌ [MessageService] 🚫 Conversation data is empty after parsing');
+          debugPrint(
+            '❌ [MessageService] 🚫 Conversation data is empty after parsing',
+          );
           throw Exception('Conversation data is empty');
         }
       } else {
@@ -475,7 +546,10 @@ class MessageService {
           final statusCode = e.response?.statusCode;
           final responseData = e.response?.data;
           final message = responseData is Map<String, dynamic>
-              ? responseData['message'] ?? responseData['detail'] ?? responseData['error'] ?? 'Unknown error'
+              ? responseData['message'] ??
+                    responseData['detail'] ??
+                    responseData['error'] ??
+                    'Unknown error'
               : 'Unknown error';
           debugPrint('🚫 [MessageService] API Error: $statusCode - $message');
           throw Exception('API Error ($statusCode): $message');
@@ -483,7 +557,9 @@ class MessageService {
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
           debugPrint('⏰ [MessageService] Connection timeout error');
-          throw Exception('Connection timeout. Please check your internet connection.');
+          throw Exception(
+            'Connection timeout. Please check your internet connection.',
+          );
         case DioExceptionType.cancel:
           debugPrint('❌ [MessageService] Request was cancelled');
           throw Exception('Request was cancelled');
@@ -514,7 +590,9 @@ class MessageService {
     }
 
     try {
-      debugPrint('🗑️ [MessageService] Deleting conversation locally: $conversationId');
+      debugPrint(
+        '🗑️ [MessageService] Deleting conversation locally: $conversationId',
+      );
 
       // TODO: Implement backend API call when endpoint is available
       // For now, just return true to simulate successful deletion
@@ -522,11 +600,8 @@ class MessageService {
         '✅ [MessageService] Conversation deleted locally (backend API not implemented)',
       );
       return true;
-      
     } catch (e) {
-      debugPrint(
-        '💥 [MessageService] Error deleting conversation: $e',
-      );
+      debugPrint('💥 [MessageService] Error deleting conversation: $e');
       return false;
     }
   }

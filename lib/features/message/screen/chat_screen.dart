@@ -18,6 +18,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/message_popup_menu.dart';
 import '../widgets/pinned_message_banner.dart';
 import '../widgets/reply_preview_bar.dart';
+import '../../../core/widgets/shimmer/chat_shimmer.dart';
 
 class ChatScreen extends StatefulWidget {
   // New explicit parameters for direct user data passing
@@ -53,6 +54,7 @@ class _ChatScreenState extends State<ChatScreen> {
   StreamSubscription? _socketSubscription;
 
   bool _isSending = false;
+  bool _isLoadingOlderMessages = false;
   bool _hasCompletedInitialScroll = false;
   ReplyMessageModel? _activeReply;
   MessageModel? _pinnedMessage;
@@ -166,6 +168,7 @@ class _ChatScreenState extends State<ChatScreen> {
       conversationId: _conversationId,
       receiverUserId: _userId,
     )..addListener(_onMessageControllerTick);
+    _scrollController.addListener(_onMessageScroll);
     _initializeSocketListener();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -177,7 +180,9 @@ class _ChatScreenState extends State<ChatScreen> {
           (user) => user.userId == _userId,
         );
         blockProvider.setBlockState(_userId, isBlocked);
-        debugPrint('🔒 [ChatScreen] Block state synced from backend = $isBlocked');
+        debugPrint(
+          '🔒 [ChatScreen] Block state synced from backend = $isBlocked',
+        );
       } catch (e) {
         debugPrint('⚠️ [ChatScreen] Failed to sync block state: $e');
       }
@@ -188,6 +193,44 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('[ChatScreen] Fetch messages requested for $_conversationId');
       _hasCompletedInitialScroll = false;
       _messageController.fetchInitialMessages();
+    });
+  }
+
+  void _onMessageScroll() {
+    if (!_scrollController.hasClients ||
+        _isLoadingOlderMessages ||
+        _messageController.isLoadingMore ||
+        !_messageController.hasMoreData ||
+        _messageController.isInitialLoading) {
+      return;
+    }
+
+    if (_scrollController.position.pixels <= 80) {
+      _loadOlderMessages();
+    }
+  }
+
+  Future<void> _loadOlderMessages() async {
+    if (!_scrollController.hasClients) return;
+
+    _isLoadingOlderMessages = true;
+    final beforeMaxExtent = _scrollController.position.maxScrollExtent;
+    final beforePixels = _scrollController.position.pixels;
+
+    await _messageController.loadMoreMessages();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) {
+        _isLoadingOlderMessages = false;
+        return;
+      }
+
+      final extentDelta =
+          _scrollController.position.maxScrollExtent - beforeMaxExtent;
+      if (extentDelta > 0) {
+        _scrollController.jumpTo(beforePixels + extentDelta);
+      }
+      _isLoadingOlderMessages = false;
     });
   }
 
@@ -513,6 +556,15 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _activeReply = null);
   }
 
+  Future<void> _unblockUser() async {
+    final blockProvider = context.read<BlockProvider>();
+    await blockProvider.toggleBlockUser(
+      _userId,
+      refreshList: true,
+      optimistic: false,
+    );
+  }
+
   /// Never sort [MessageController.messages] in place — it is unmodifiable.
   List<MessageModel> _sortedMessagesCopy() {
     final sorted = List<MessageModel>.from(_messages);
@@ -524,6 +576,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _socketSubscription?.cancel();
     _messageController.removeListener(_onMessageControllerTick);
+    _scrollController.removeListener(_onMessageScroll);
     _messageController.dispose();
     _scrollController.dispose();
     debugPrint('[ChatScreen] dispose conversation=$_conversationId');
@@ -532,6 +585,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isBlocked = _isBlocked(context);
+
     return PopScope(
       canPop: !_isDeleteMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -584,6 +639,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     if (_isDeleteMode)
                       _buildDeleteBottomBar()
+                    else if (isBlocked)
+                      _buildBlockedBottomBar()
                     else
                       ChatInputField(
                         onSendMessage: _sendMessage,
@@ -630,9 +687,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageBody(List<MessageModel> sortedMessages) {
     if (_messageController.isInitialLoading && sortedMessages.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const ChatBubbleShimmer(itemCount: 8);
     }
 
     if (_messageController.hasError && sortedMessages.isEmpty) {
@@ -647,10 +702,28 @@ class _ChatScreenState extends State<ChatScreen> {
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 16),
       physics: const BouncingScrollPhysics(),
-      itemCount: sortedMessages.length,
+      itemCount:
+          sortedMessages.length + (_messageController.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final message = sortedMessages[index];
-        return _buildMessageRow(message, index);
+        if (_messageController.isLoadingMore && index == 0) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final messageIndex = index - (_messageController.isLoadingMore ? 1 : 0);
+        final message = sortedMessages[messageIndex];
+        return _buildMessageRow(message, messageIndex);
       },
     );
   }
@@ -767,6 +840,38 @@ class _ChatScreenState extends State<ChatScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockedBottomBar() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.18),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'You blocked $_userName',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          TextButton(
+            onPressed: _unblockUser,
+            child: const Text(
+              'Unblock',
+              style: TextStyle(color: Color(0xFFCD72E3)),
             ),
           ),
         ],

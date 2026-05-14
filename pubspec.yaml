@@ -1,36 +1,23 @@
 name: gruve_app
 
-
-
 description: "A new Flutter project."
-
-
 
 publish_to: "none"
 
-
-
 version: 1.0.0+1
 
-
-
 environment:
-
   sdk: ^3.10.8
 
-
-
 dependencies:
-
   flutter:
-
     sdk: flutter
 
   video_player: ^2.10.1
 
   sms_autofill: ^2.3.0
 
-  camera: ^0.11.0+2
+  # camera: ^0.11.0+2
 
   http: ^0.13.6
 
@@ -64,7 +51,7 @@ dependencies:
 
   sqflite: ^2.3.0
 
-  google_mlkit_face_detection: ^0.10.0
+  # google_mlkit_face_detection: ^0.10.0
 
   web_socket_channel: ^2.4.0
 
@@ -72,23 +59,16 @@ dependencies:
 
   timeago: ^3.6.1
 
-
 dev_dependencies:
-
   flutter_test:
-
     sdk: flutter
 
   flutter_lints: ^6.0.0
 
-
-
 flutter:
-
   uses-material-design: true
 
   assets:
-
     - .env
 
     - assets/splash_screen_logo/
@@ -140,11 +120,9 @@ flutter:
     - assets/icons/
 
   fonts:
-
     - family: Raleway
 
       fonts:
-
         - asset: assets/fonts/Raleway/Raleway-VariableFont_wght.ttf
 
         - asset: assets/fonts/Raleway/Raleway-Italic-VariableFont_wght.ttf
@@ -154,7 +132,6 @@ flutter:
     - family: Syncopate
 
       fonts:
-
         - asset: assets/fonts/Syncopate/Syncopate-Regular.ttf
 
         - asset: assets/fonts/Syncopate/Syncopate-Bold.ttf
@@ -162,8 +139,6 @@ flutter:
     - family: montserrat
 
       fonts:
-
         - asset: assets/fonts/montserrat/MontserratAlternates-Bold.ttf
 
         - asset: assets/fonts/montserrat/MontserratAlternates-Regular.ttf
-

@@ -6,12 +6,14 @@ class BlockUserWidget extends StatefulWidget {
   final String name;
   final String username;
   final String userId;
+  final bool isBlocked;
 
   const BlockUserWidget({
     super.key,
     required this.name,
     required this.username,
     required this.userId,
+    this.isBlocked = false,
   });
 
   @override
@@ -21,7 +23,7 @@ class BlockUserWidget extends StatefulWidget {
 class _BlockUserWidgetState extends State<BlockUserWidget> {
   bool _isLoading = false;
 
-  Future<void> _handleBlock() async {
+  Future<void> _handleToggleBlock() async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
 
@@ -34,7 +36,7 @@ class _BlockUserWidgetState extends State<BlockUserWidget> {
       );
       if (!mounted) return;
 
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(blockProvider.isBlocked(widget.userId));
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -52,114 +54,121 @@ class _BlockUserWidgetState extends State<BlockUserWidget> {
           clipBehavior: Clip.none,
           alignment: Alignment.topCenter,
           children: [
-          /// MAIN CARD
-          Container(
-            margin: const EdgeInsets.only(top: 30),
-            child: ClipPath(
-              clipper: TopCurveClipper(),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 55, 24, 28),
-                color: const Color(0xFF5A1E67),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 20),
+            /// MAIN CARD
+            Container(
+              margin: const EdgeInsets.only(top: 30),
+              child: ClipPath(
+                clipper: TopCurveClipper(),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(24, 55, 24, 28),
+                  color: const Color(0xFF5A1E67),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 20),
 
-                    Text(
-                      "Block ${widget.name}",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
+                      Text(
+                        "${widget.isBlocked ? 'Unblock' : 'Block'} ${widget.name}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 9),
+                      const SizedBox(height: 9),
 
-                    Text(
-                      "(${widget.username}) ?",
-                      style: const TextStyle(
-                        color: Color(0xFFD9C7E0),
-                        fontSize: 14,
+                      Text(
+                        "(${widget.username}) ?",
+                        style: const TextStyle(
+                          color: Color(0xFFD9C7E0),
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 19),
+                      const SizedBox(height: 19),
 
-                    const Text(
-                      "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
+                      Text(
+                        widget.isBlocked
+                            ? "You will be able to message each other again after unblocking."
+                            : "They will not be able to message you or see this chat.",
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
 
-                    const SizedBox(height: 27),
+                      const SizedBox(height: 27),
 
-                    /// YES BUTTON
-                    GestureDetector(
-                      onTap: _isLoading ? null : _handleBlock,
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.purpleAccent.withValues(alpha: 0.6),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                      /// YES BUTTON
+                      GestureDetector(
+                        onTap: _isLoading ? null : _handleToggleBlock,
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  "Yes",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.purpleAccent.withValues(
+                                  alpha: 0.6,
                                 ),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Yes",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          /// FLOATING CLOSE BUTTON
-          Positioned(
-            top: 53,
-            child: GestureDetector(
-              onTap: _isLoading ? null : () => Navigator.pop(context),
-              child: Container(
-                height: 50,
-                width: 50,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
+                    ],
                   ),
                 ),
-                child: const Icon(Icons.close, color: Colors.white),
               ),
             ),
-          ),
-        ],
-      ),
+
+            /// FLOATING CLOSE BUTTON
+            Positioned(
+              top: 53,
+              child: GestureDetector(
+                onTap: _isLoading ? null : () => Navigator.pop(context),
+                child: Container(
+                  height: 50,
+                  width: 50,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
+                    ),
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

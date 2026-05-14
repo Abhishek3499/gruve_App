@@ -25,7 +25,7 @@ class MessageProvider extends ChangeNotifier {
     debugPrint('🏗️ [MessageProvider] Provider initialized');
     _initializeSocketListener();
   }
-  
+
   void _initializeSocketListener() {
     if (_socketSubscription != null) {
       debugPrint('🎧 [MessageProvider] Socket listener already active');
@@ -74,6 +74,7 @@ class MessageProvider extends ChangeNotifier {
   // State variables
   List<ConversationModel> _conversations = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   bool _isRefreshing = false;
   String? _error;
 
@@ -86,6 +87,7 @@ class MessageProvider extends ChangeNotifier {
   List<ConversationModel> get conversations =>
       List.unmodifiable(_conversations);
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
   bool get isRefreshing => _isRefreshing;
   String? get error => _error;
   bool get hasError => _error != null;
@@ -132,6 +134,17 @@ class MessageProvider extends ChangeNotifier {
     }
   }
 
+  /// Set loading state for pagination.
+  void _setLoadingMore(bool loadingMore) {
+    if (_isLoadingMore != loadingMore) {
+      _isLoadingMore = loadingMore;
+      debugPrint(
+        '⬇️ [MessageProvider] Loading more state changed: $loadingMore',
+      );
+      notifyListeners();
+    }
+  }
+
   /// Set loading state for refresh
   void _setRefreshing(bool refreshing) {
     if (_isRefreshing != refreshing) {
@@ -156,12 +169,15 @@ class MessageProvider extends ChangeNotifier {
   /// [page] - Page number for pagination (default: 1)
   Future<void> fetchConversations({bool refresh = false, int? page}) async {
     final fetchStart = DateTime.now();
+    final requestedPage = page ?? (refresh ? 1 : _currentPage);
+    final isPagination = !refresh && requestedPage > 1;
 
     if (refresh) {
       _currentPage = 1;
       _hasMoreData = true;
-      _conversations.clear();
       _setRefreshing(true);
+    } else if (isPagination) {
+      _setLoadingMore(true);
     } else {
       _setLoading(true);
     }
@@ -176,17 +192,26 @@ class MessageProvider extends ChangeNotifier {
       final apiStart = DateTime.now();
       final conversations = await _messageService.getConversationList(
         forceRefresh: refresh,
+        page: requestedPage,
+        pageSize: _pageSize,
       );
       final apiTime = DateTime.now().difference(apiStart);
 
-      debugPrint('📩 [MessageProvider] API response received in ${apiTime.inMilliseconds}ms');
-      debugPrint('📊 [MessageProvider] API returned ${conversations.length} conversations');
+      debugPrint(
+        '📩 [MessageProvider] API response received in ${apiTime.inMilliseconds}ms',
+      );
+      debugPrint(
+        '📊 [MessageProvider] API returned ${conversations.length} conversations',
+      );
 
       if (conversations.isEmpty) {
         debugPrint('⚠️ [MessageProvider] API returned EMPTY conversation list');
       } else {
         final ids = conversations.map((c) => c.id).take(5).toList();
-        final unreadList = conversations.take(5).map((c) => '${c.id.substring(0, 6)}:unread=${c.unreadCount}').toList();
+        final unreadList = conversations
+            .take(5)
+            .map((c) => '${c.id.substring(0, 6)}:unread=${c.unreadCount}')
+            .toList();
         debugPrint('💬 [MessageProvider] conversationIDs (first 5): $ids');
         debugPrint('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
       }
@@ -196,9 +221,16 @@ class MessageProvider extends ChangeNotifier {
       } else {
         // Deduplicate by conversation.id before appending
         final existingIds = _conversations.map((c) => c.id).toSet();
-        final newConversations = conversations.where((c) => !existingIds.contains(c.id)).toList();
+        final newConversations = conversations
+            .where((c) => !existingIds.contains(c.id))
+            .toList();
         _conversations.addAll(newConversations);
-        debugPrint('📊 [MessageProvider] Added ${newConversations.length} new conversations (${conversations.length - newConversations.length} duplicates skipped)');
+        debugPrint(
+          '📊 [MessageProvider] Added ${newConversations.length} new conversations (${conversations.length - newConversations.length} duplicates skipped)',
+        );
+        if (isPagination && newConversations.isEmpty) {
+          _hasMoreData = false;
+        }
       }
 
       // Sort conversations by updated_at (most recent first)
@@ -207,9 +239,9 @@ class MessageProvider extends ChangeNotifier {
       final sortTime = DateTime.now().difference(sortStart);
 
       // Update pagination state
-      _hasMoreData = conversations.length >= _pageSize;
+      _hasMoreData = _hasMoreData && conversations.length >= _pageSize;
       if (!refresh) {
-        _currentPage++;
+        _currentPage = requestedPage + 1;
       }
 
       final totalTime = DateTime.now().difference(fetchStart);
@@ -218,12 +250,15 @@ class MessageProvider extends ChangeNotifier {
         name: 'MessageProvider',
       );
 
-      debugPrint('✅ [MessageProvider] Fetch complete — total: ${_conversations.length} | totalUnread: $totalUnreadCount | hasMore: $_hasMoreData');
+      debugPrint(
+        '✅ [MessageProvider] Fetch complete — total: ${_conversations.length} | totalUnread: $totalUnreadCount | hasMore: $_hasMoreData',
+      );
     } catch (e) {
       debugPrint('💥 [MessageProvider] Error fetching conversations: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
+      _setLoadingMore(false);
       _setRefreshing(false);
     }
   }
@@ -236,9 +271,9 @@ class MessageProvider extends ChangeNotifier {
 
   /// Load more conversations (pagination)
   Future<void> loadMoreConversations() async {
-    if (_isLoading || _isRefreshing || !_hasMoreData) {
+    if (_isLoading || _isLoadingMore || _isRefreshing || !_hasMoreData) {
       debugPrint(
-        '⏸️ [MessageProvider] Skipping load more - Loading: $_isLoading, Refreshing: $_isRefreshing, HasMore: $_hasMoreData',
+        '⏸️ [MessageProvider] Skipping load more - Loading: $_isLoading, LoadingMore: $_isLoadingMore, Refreshing: $_isRefreshing, HasMore: $_hasMoreData',
       );
       return;
     }
@@ -366,6 +401,7 @@ class MessageProvider extends ChangeNotifier {
     _conversations.clear();
     _error = null;
     _isLoading = false;
+    _isLoadingMore = false;
     _isRefreshing = false;
     _currentPage = 1;
     _hasMoreData = true;

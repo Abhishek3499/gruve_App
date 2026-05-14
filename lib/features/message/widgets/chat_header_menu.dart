@@ -82,7 +82,7 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
   }
 
   void _showBlockDialog() async {
-    final didBlock = await showDialog<bool>(
+    final isBlockedAfterToggle = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.7),
@@ -90,12 +90,13 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
         name: widget.userName,
         username: "@${widget.userName}",
         userId: widget.userId,
+        isBlocked: _initialBlockState,
       ),
     );
 
-    if (didBlock != true || !mounted) return;
+    if (isBlockedAfterToggle == null || !mounted) return;
 
-    if (widget.chatNavigator.mounted) {
+    if (isBlockedAfterToggle && widget.chatNavigator.mounted) {
       widget.chatNavigator.pop(true);
     }
 
