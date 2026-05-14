@@ -193,14 +193,23 @@ class _MessageScreenState extends State<MessageScreen> {
     debugPrint(
       '✅ [buildConversationList] → rendering ${messageProvider.conversationCount} conversations',
     );
+    
+    bool _isLoadingMore = false;
+    
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
-        // Load more when reaching near bottom
-        if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
+        // Prevent pagination spam with threshold and loading guard
+        if (!_isLoadingMore &&
+            messageProvider.hasMoreData &&
+            !messageProvider.isLoading &&
+            scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+          _isLoadingMore = true;
           debugPrint(
-            '⬇️ [MessageScreen] Reached bottom, loading more conversations',
+            '⬇️ [MessageScreen] Loading more conversations',
           );
-          messageProvider.loadMoreConversations();
+          messageProvider.loadMoreConversations().then((_) {
+            _isLoadingMore = false;
+          });
         }
         return false;
       },
@@ -210,7 +219,7 @@ class _MessageScreenState extends State<MessageScreen> {
         itemBuilder: (context, index) {
           final conversation = messageProvider.conversations[index];
           return Dismissible(
-            key: Key(conversation.id),
+            key: ValueKey(conversation.id),
             direction: DismissDirection.endToStart,
             background: SwipeDeleteBackground(
               onDelete: () => _showDeleteConfirmation(conversation),

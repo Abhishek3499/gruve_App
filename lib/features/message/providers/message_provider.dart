@@ -25,10 +25,14 @@ class MessageProvider extends ChangeNotifier {
     debugPrint('🏗️ [MessageProvider] Provider initialized');
     _initializeSocketListener();
   }
+  
   void _initializeSocketListener() {
-    debugPrint('🎧 [MessageProvider] Socket listener initialized');
+    if (_socketSubscription != null) {
+      debugPrint('🎧 [MessageProvider] Socket listener already active');
+      return;
+    }
 
-    _socketSubscription?.cancel();
+    debugPrint('🎧 [MessageProvider] Socket listener initialized');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
       debugPrint('🔥 FULL SOCKET DATA => $data');
@@ -186,11 +190,13 @@ class MessageProvider extends ChangeNotifier {
       }
 
       if (refresh) {
-        // Replace all conversations on refresh
         _conversations = conversations;
       } else {
-        // Append conversations for pagination
-        _conversations.addAll(conversations);
+        // Deduplicate by conversation.id before appending
+        final existingIds = _conversations.map((c) => c.id).toSet();
+        final newConversations = conversations.where((c) => !existingIds.contains(c.id)).toList();
+        _conversations.addAll(newConversations);
+        debugPrint('📊 [MessageProvider] Added ${newConversations.length} new conversations (${conversations.length - newConversations.length} duplicates skipped)');
       }
 
       // Sort conversations by updated_at (most recent first)
@@ -368,9 +374,8 @@ class MessageProvider extends ChangeNotifier {
   @override
   void dispose() {
     _socketSubscription?.cancel();
-
-    debugPrint('🗑️ [MessageProvider] Provider disposed');
-
+    _socketSubscription = null;
+    debugPrint('🗑️ [MessageProvider] Disposed and socket listener cancelled');
     super.dispose();
   }
 }

@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../services/socket_service.dart';
-import '../../../core/socket/socket_reconnect_manager.dart';
+
 import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
@@ -206,9 +206,12 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _initializeSocketListener() {
-    debugPrint('🎧 SOCKET LISTENER STARTED');
+    if (_socketSubscription != null) {
+      debugPrint('🎧 SOCKET LISTENER ALREADY ACTIVE');
+      return;
+    }
 
-    _socketSubscription?.cancel();
+    debugPrint('🎧 SOCKET LISTENER STARTED');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
       debugPrint('🔥 SOCKET DATA => $data');
@@ -220,6 +223,12 @@ class _ChatScreenState extends State<ChatScreen> {
           return;
         }
         final incomingMessage = MessageModel.fromJson(data['data']);
+
+        // Prevent duplicate message insertion
+        if (_messageController.messages.any((m) => m.id == incomingMessage.id)) {
+          debugPrint('⚠️ DUPLICATE SOCKET MESSAGE SKIPPED: ${incomingMessage.id}');
+          return;
+        }
 
         _messageController.appendLocalMessage(incomingMessage);
 
@@ -627,6 +636,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final isSelected = _selectedMessageIds.contains(message.id);
 
     Widget bubble = MessageBubble(
+      key: ValueKey(message.id),
       message: message,
       onActionSelected: (action) => _handleMessageAction(action, message),
       onLongPress: (globalPos, size) =>

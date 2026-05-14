@@ -142,16 +142,12 @@ class MessageController extends ChangeNotifier {
   Future<void> retry() => fetchInitialMessages();
 
   void appendLocalMessage(MessageModel message) {
-    final alreadyExists = _messages.any((m) => m.id == message.id);
-
-    if (alreadyExists) {
+    if (_messages.any((m) => m.id == message.id)) {
       debugPrint('⚠️ Duplicate message skipped: ${message.id}');
-
       return;
     }
 
     _messages.add(message);
-
     _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     debugPrint(
@@ -168,24 +164,19 @@ class MessageController extends ChangeNotifier {
     Map<String, dynamic> payload, {
     String? currentUserId,
   }) {
-    final operationKey = 'addRealtime';
-
-    // Prevent duplicate realtime operations
-    if (_lockedOperations.contains(operationKey)) {
-      debugPrint(
-        '🔒 [MessageController] Realtime message add locked for $conversationId',
-      );
-      return;
-    }
-
     try {
-      _lockedOperations.add(operationKey);
-
       final message = MessageModel.fromJson(
         payload,
         currentUserId: currentUserId,
         receiverUserId: receiverUserId,
       );
+      
+      // Check for duplicate before adding
+      if (_messages.any((m) => m.id == message.id)) {
+        debugPrint('🔒 [MessageController] Duplicate realtime message skipped: ${message.id}');
+        return;
+      }
+      
       _upsertMessage(message);
       _notify();
 
@@ -194,25 +185,12 @@ class MessageController extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint('❌ [MessageController] Failed to add realtime message: $e');
-    } finally {
-      _lockedOperations.remove(operationKey);
     }
   }
 
   void removeMessages(Set<String> ids) {
-    final operationKey = 'removeMessages';
-
-    if (_lockedOperations.contains(operationKey)) {
-      debugPrint(
-        '🔒 [MessageController] Remove messages locked for $conversationId',
-      );
-      return;
-    }
-
-    _lockedOperations.add(operationKey);
     _messages.removeWhere((message) => ids.contains(message.id));
     _notify();
-    _lockedOperations.remove(operationKey);
 
     debugPrint(
       '🗑️ [MessageController] Removed ${ids.length} messages for $conversationId',
@@ -220,24 +198,11 @@ class MessageController extends ChangeNotifier {
   }
 
   void replaceMessage(MessageModel message) {
-    final operationKey = 'replaceMessage_${message.id}';
-
-    if (_lockedOperations.contains(operationKey)) {
-      debugPrint(
-        '🔒 [MessageController] Message replace locked for ${message.id}',
-      );
-      return;
-    }
-
-    _lockedOperations.add(operationKey);
     final index = _messages.indexWhere((item) => item.id == message.id);
-    if (index == -1) {
-      _lockedOperations.remove(operationKey);
-      return;
-    }
+    if (index == -1) return;
+    
     _messages[index] = message;
     _notify();
-    _lockedOperations.remove(operationKey);
 
     debugPrint('🔄 [MessageController] Message replaced: ${message.id}');
   }
@@ -326,8 +291,11 @@ class MessageController extends ChangeNotifier {
           ..clear()
           ..addAll(fetchedMessages);
       } else {
+        // Deduplicate by message.id before adding
         for (final message in fetchedMessages) {
-          _upsertMessage(message);
+          if (!_messages.any((m) => m.id == message.id)) {
+            _messages.add(message);
+          }
         }
       }
 
