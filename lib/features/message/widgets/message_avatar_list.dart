@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/services/socket_service.dart';
 import 'package:provider/provider.dart';
 
 import '../widgets/message_avatar.dart';
@@ -14,6 +15,7 @@ class MessageAvatarList extends StatefulWidget {
 }
 
 class _MessageAvatarListState extends State<MessageAvatarList> {
+  final SocketService _socketService = SocketService();
   late final ScrollController _scrollController;
 
   @override
@@ -80,82 +82,91 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserProvider>(
-      builder: (context, p, child) {
-        debugPrint(
-          '🔄 [MessageAvatarList] REBUILD | '
-          'users: ${p.users.length} | '
-          'loading: ${p.isLoading} | '
-          'fetchingMore: ${p.isFetchingMore}',
-        );
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _socketService.onlineUsers,
+      builder: (context, onlineUsers, _) {
+        return Consumer<UserProvider>(
+          builder: (context, p, child) {
+            debugPrint(
+              '🔄 [MessageAvatarList] REBUILD | '
+              'users: ${p.users.length} | '
+              'loading: ${p.isLoading} | '
+              'fetchingMore: ${p.isFetchingMore}',
+            );
 
-        // Initial Loading
-        if (p.isLoading && p.users.isEmpty) {
-          debugPrint('⏳ [MessageAvatarList] Showing skeleton loader');
+            // Initial Loading
+            if (p.isLoading && p.users.isEmpty) {
+              debugPrint('⏳ [MessageAvatarList] Showing skeleton loader');
 
-          return const MessageAvatarSkeleton(avatarCount: 6);
-        }
+              return const MessageAvatarSkeleton(avatarCount: 6);
+            }
 
-        // Empty State
-        if (p.users.isEmpty && !p.isLoading) {
-          debugPrint('📭 [MessageAvatarList] No users found');
+            // Empty State
+            if (p.users.isEmpty && !p.isLoading) {
+              debugPrint('📭 [MessageAvatarList] No users found');
 
-          return const SizedBox(
-            height: 90,
-            child: Center(
-              child: Text(
-                'No users found',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          );
-        }
-
-        // Success State
-        return SizedBox(
-          height: 90,
-          child: ListView.separated(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-
-            physics: const BouncingScrollPhysics(),
-
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-
-            cacheExtent: 300,
-
-            separatorBuilder: (_, _) => const SizedBox(width: 16),
-
-            itemCount: p.users.length + (p.isFetchingMore ? 1 : 0),
-
-            itemBuilder: (context, index) {
-              // Pagination Loader
-              if (index == p.users.length && p.isFetchingMore) {
-                debugPrint('⏳ [MessageAvatarList] Showing pagination loader');
-
-                return const MessageAvatarPaginationSkeleton();
-              }
-
-              final user = p.users[index];
-
-              debugPrint(
-                '👤 [MessageAvatarList] Rendering avatar: ${user.userId}',
-              );
-
-              return RepaintBoundary(
-                child: MessageAvatar(
-                  name: UserDisplayHelper.getDisplayNameForUserEntity(user),
-
-                  imageUrl:
-                      UserDisplayHelper.getProfileImageForUser(user) ?? '',
-
-                  userId: UserDisplayHelper.getUserIdForUser(user),
-
-                  isOnline: false,
+              return const SizedBox(
+                height: 90,
+                child: Center(
+                  child: Text(
+                    'No users found',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               );
-            },
-          ),
+            }
+
+            // Success State
+            return SizedBox(
+              height: 90,
+              child: ListView.separated(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+
+                physics: const BouncingScrollPhysics(),
+
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+
+                cacheExtent: 300,
+
+                separatorBuilder: (_, _) => const SizedBox(width: 16),
+
+                itemCount: p.users.length + (p.isFetchingMore ? 1 : 0),
+
+                itemBuilder: (context, index) {
+                  // Pagination Loader
+                  if (index == p.users.length && p.isFetchingMore) {
+                    debugPrint(
+                      '⏳ [MessageAvatarList] Showing pagination loader',
+                    );
+
+                    return const MessageAvatarPaginationSkeleton();
+                  }
+
+                  final user = p.users[index];
+                  final isOnline = onlineUsers.contains(
+                    UserDisplayHelper.getUserIdForUser(user),
+                  );
+                  debugPrint(
+                    '👤 [MessageAvatarList] Rendering avatar: ${user.userId}',
+                  );
+
+                  return RepaintBoundary(
+                    child: MessageAvatar(
+                      name: UserDisplayHelper.getDisplayNameForUserEntity(user),
+
+                      imageUrl:
+                          UserDisplayHelper.getProfileImageForUser(user) ?? '',
+
+                      userId: UserDisplayHelper.getUserIdForUser(user),
+
+                      isOnline: isOnline,
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         );
       },
     );

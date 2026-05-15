@@ -29,7 +29,11 @@ class SocketService {
 
   bool get isConnected => _reconnectManager.isConnected;
   Stream<Map<String, dynamic>> get messageStream => _reconnectManager.messages;
+  // =========================
+  // ONLINE USERS
+  // =========================
 
+  final ValueNotifier<Set<String>> onlineUsers = ValueNotifier({});
   // =========================
   // EVENT LISTENERS
   // =========================
@@ -55,7 +59,10 @@ class SocketService {
           _onError(event.data.toString());
           break;
         case SocketEventType.message:
-          // Messages are handled by messageStream
+          if (event.data != null && event.data is Map<String, dynamic>) {
+            _handleSocketMessage(event.data as Map<String, dynamic>);
+          }
+
           break;
       }
     });
@@ -95,6 +102,64 @@ class SocketService {
     debugPrint("❌ [SocketService] ❌ Connection error occurred");
   }
 
+  // ADD HERE 👇👇👇
+
+  void _handleSocketMessage(Map<String, dynamic> data) {
+    final type = data['type'];
+
+    debugPrint("📩 [SocketService] Message Type => $type");
+
+    switch (type) {
+      case 'connected':
+        final updatedUsers = <String>{};
+
+        final users = data['users'];
+
+        if (users != null && users is List) {
+          for (var user in users) {
+            if (user['is_online'] == true) {
+              updatedUsers.add(user['user_id']);
+            }
+          }
+        }
+
+        onlineUsers.value = updatedUsers;
+
+        debugPrint("🟢 ONLINE USERS => ${onlineUsers.value}");
+
+        break;
+      case 'user_online':
+        final userId = data['user_id'];
+
+        if (userId != null) {
+          final updatedUsers = Set<String>.from(onlineUsers.value);
+
+          updatedUsers.add(userId);
+
+          onlineUsers.value = updatedUsers;
+
+          debugPrint("🟢 USER ONLINE => $userId");
+        }
+
+        break;
+
+      case 'user_offline':
+        final userId = data['user_id'];
+
+        if (userId != null) {
+          final updatedUsers = Set<String>.from(onlineUsers.value);
+
+          updatedUsers.remove(userId);
+
+          onlineUsers.value = updatedUsers;
+
+          debugPrint("🔴 USER OFFLINE => $userId");
+        }
+
+        break;
+    }
+  }
+
   // =========================
   // PUBLIC METHODS
   // =========================
@@ -114,7 +179,7 @@ class SocketService {
   /// Send message through enhanced socket with timeout protection
   /// Returns true if message was successfully queued, false otherwise
   bool sendMessage({
-    required String conversationId, 
+    required String conversationId,
     required String message,
     String? senderId,
     Map<String, dynamic>? additionalData,
@@ -157,7 +222,7 @@ class SocketService {
       } else {
         debugPrint("❌ [SocketService] ❌ MESSAGE NOT QUEUED");
       }
-      
+
       return sent;
     } catch (e) {
       debugPrint("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");

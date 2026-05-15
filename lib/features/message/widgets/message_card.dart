@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 import '../../../core/widgets/optimized/optimized_image.dart';
 import '../models/conversation_model.dart';
 import '../utils/user_display_helper.dart';
 
 class MessageCard extends StatelessWidget {
+  final SocketService _socketService = SocketService();
   final ConversationModel conversation;
   final VoidCallback? onTap;
 
-  const MessageCard({
-    super.key,
-    required this.conversation,
-    this.onTap,
-  });
+  MessageCard({super.key, required this.conversation, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +36,9 @@ class MessageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          UserDisplayHelper.getDisplayNameForConversation(conversation),
+                          UserDisplayHelper.getDisplayNameForConversation(
+                            conversation,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -113,10 +113,42 @@ class MessageCard extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    return OptimizedAvatar(
-      imageUrl: UserDisplayHelper.getProfileImageForUser(conversation),
-      name: UserDisplayHelper.getDisplayNameForConversation(conversation),
-      radius: 30,
+    final userId = conversation.otherUser.id;
+
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _socketService.onlineUsers,
+      builder: (context, onlineUsers, _) {
+        final isOnline = onlineUsers.contains(userId);
+
+        return Stack(
+          children: [
+            OptimizedAvatar(
+              imageUrl: UserDisplayHelper.getProfileImageForUser(conversation),
+
+              name: UserDisplayHelper.getDisplayNameForConversation(
+                conversation,
+              ),
+
+              radius: 30,
+            ),
+
+            if (isOnline)
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  height: 14,
+                  width: 14,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
