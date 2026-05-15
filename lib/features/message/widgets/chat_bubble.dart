@@ -1,7 +1,8 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/message_model.dart';
-import '../../../core/assets.dart';
 import 'message_popup_menu.dart';
 
 class ChatBubble extends MessageBubble {
@@ -64,7 +65,7 @@ class MessageBubble extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        CircleAvatar(radius: 18, backgroundImage: AssetImage(AppAssets.user)),
+        _SenderAvatar(avatarUrl: message.senderAvatar, name: message.senderName),
         const SizedBox(width: 8),
         CustomPaint(
           painter: ChatBubblePainter(
@@ -94,7 +95,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  /// ✅ SENT (RIGHT - FIXED)
+  /// ✅ SENT (RIGHT - NO AVATAR)
   Widget _buildSentBubble(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -124,8 +125,6 @@ class MessageBubble extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        CircleAvatar(radius: 18, backgroundImage: AssetImage(AppAssets.user)),
       ],
     );
   }
@@ -182,6 +181,55 @@ class MessageBubble extends StatelessWidget {
     if (action != null && onActionSelected != null) {
       onActionSelected!(action);
     }
+  }
+}
+
+/// Cached avatar with shimmer placeholder and fallback initials.
+class _SenderAvatar extends StatelessWidget {
+  final String? avatarUrl;
+  final String? name;
+
+  const _SenderAvatar({this.avatarUrl, this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    const double radius = 18;
+    const double size = radius * 2;
+
+    final url = (avatarUrl?.trim().isNotEmpty == true) ? avatarUrl! : null;
+
+    if (url == null) return _fallback(size);
+
+    return CachedNetworkImage(
+      imageUrl: url,
+      imageBuilder: (_, imageProvider) => CircleAvatar(
+        radius: radius,
+        backgroundImage: imageProvider,
+      ),
+      placeholder: (_, __) => Shimmer.fromColors(
+        baseColor: Colors.white12,
+        highlightColor: Colors.white24,
+        child: CircleAvatar(radius: radius, backgroundColor: Colors.white12),
+      ),
+      errorWidget: (_, __, ___) => _fallback(size),
+      fadeInDuration: const Duration(milliseconds: 200),
+      memCacheWidth: size.toInt() * 2,
+      memCacheHeight: size.toInt() * 2,
+    );
+  }
+
+  Widget _fallback(double size) {
+    final initial = (name?.trim().isNotEmpty == true)
+        ? name![0].toUpperCase()
+        : '?';
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: const Color(0xFF6A008A),
+      child: Text(
+        initial,
+        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+    );
   }
 }
 

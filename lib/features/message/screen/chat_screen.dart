@@ -284,19 +284,9 @@ class _ChatScreenState extends State<ChatScreen> {
         if (incomingConversationId != _conversationId) {
           return;
         }
-        final incomingMessage = MessageModel.fromJson(data['data']);
 
-        // Prevent duplicate message insertion
-        if (_messageController.messages.any(
-          (m) => m.id == incomingMessage.id,
-        )) {
-          debugPrint(
-            '⚠️ DUPLICATE SOCKET MESSAGE SKIPPED: ${incomingMessage.id}',
-          );
-          return;
-        }
-
-        _messageController.appendLocalMessage(incomingMessage);
+        final messageData = data['data'] as Map<String, dynamic>? ?? data;
+        _messageController.addRealtimeMessage(messageData);
 
         debugPrint('✅ REALTIME MESSAGE ADDED');
 
@@ -501,7 +491,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
-    debugPrint('[ChatScreen] Message action=$action id=${message.id}');
+    debugPrint('[ChatScreen] 🎯 Message action=$action id=${message.id}');
     _dismissPopup();
 
     switch (action) {
@@ -529,7 +519,19 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         break;
       case MessageAction.delete:
-        _enterDeleteMode();
+        // Check if it's user's own message
+        if (message.isSent) {
+          debugPrint('[ChatScreen] 🗑️ 👤 Own message - showing delete confirmation');
+          _showDeleteConfirmation(message);
+        } else {
+          debugPrint('[ChatScreen] ⚠️ 🚫 Not own message - cannot delete');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You can only delete your own messages'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         break;
     }
   }
@@ -549,6 +551,109 @@ class _ChatScreenState extends State<ChatScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$_userName pinned a message')));
+  }
+
+  /// Show delete confirmation dialog
+  Future<void> _showDeleteConfirmation(MessageModel message) async {
+    debugPrint('🗑️ [ChatScreen] 💬 Showing delete confirmation for message: ${message.id}');
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF311B36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Message?',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'This message will be deleted for you. This action cannot be undone.',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              debugPrint('🗑️ [ChatScreen] ❌ Delete cancelled by user');
+              Navigator.pop(context, false);
+            },
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              debugPrint('🗑️ [ChatScreen] ✅ Delete confirmed by user');
+              Navigator.pop(context, true);
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFFF51829).withValues(alpha: 0.15),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Color(0xFFF51829), fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      debugPrint('🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete');
+      await _deleteSingleMessage(message);
+    } else {
+      debugPrint('🗑️ [ChatScreen] ⚠️ Delete not confirmed or context unmounted');
+    }
+  }
+
+  /// Delete a single message
+  Future<void> _deleteSingleMessage(MessageModel message) async {
+    debugPrint('🗑️ [ChatScreen] 🚀 Starting delete process for message: ${message.id}');
+    debugPrint('💬 [ChatScreen] 📝 Message text: ${message.text.substring(0, message.text.length.clamp(0, 50))}${message.text.length > 50 ? "..." : ""}');
+    
+    try {
+      debugPrint('📡 [ChatScreen] 🌐 Calling MessageController.deleteMessage...');
+      final success = await _messageController.deleteMessage(message.id);
+
+      if (!mounted) {
+        debugPrint('⚠️ [ChatScreen] ❌ Context unmounted after delete');
+        return;
+      }
+
+      if (success) {
+        debugPrint('✅ [ChatScreen] 🎉 Message deleted successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Message deleted'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        debugPrint('❌ [ChatScreen] ⚠️ Delete failed - showing error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete message'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('💥 [ChatScreen] ❌ Error deleting message: $e');
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _clearReply() {
@@ -675,6 +780,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           _handleMessageAction(action, _popupMessage!),
                       onDeleteMode: _enterDeleteMode,
                       onDismiss: _dismissPopup,
+                      isOwnMessage: _popupMessage!.isSent,
                     ),
                   ),
               ],

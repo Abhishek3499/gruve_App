@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../utils/conversation_utils.dart';
+import 'package:provider/provider.dart';
+import '../controllers/conversation_controller.dart';
+import '../providers/message_provider.dart';
 import '../screen/chat_screen.dart';
 
 class MessageAvatar extends StatelessWidget {
@@ -38,7 +40,6 @@ class MessageAvatar extends StatelessWidget {
                     : null,
               ),
 
-              /// Online green dot
               if (isOnline)
                 Positioned(
                   bottom: 2,
@@ -55,32 +56,126 @@ class MessageAvatar extends StatelessWidget {
                 ),
             ],
           ),
-
           const SizedBox(height: 6),
-
           Text(name, style: const TextStyle(color: Colors.white, fontSize: 12)),
         ],
       ),
     );
   }
 
-  void _handleTap(BuildContext context) {
-    debugPrint('👤 [MessageAvatar] Navigating to chat - userId: $userId, name: $name');
+  Future<void> _handleTap(BuildContext context) async {
+    debugPrint('👆 [MessageAvatar] 🎯 Avatar clicked - userId: $userId, name: $name');
+    debugPrint('🖼️ [MessageAvatar] 📸 Profile image: ${imageUrl.isNotEmpty ? imageUrl : "none"}');
+    debugPrint('🟢 [MessageAvatar] 📡 Online status: $isOnline');
+
+    final messageProvider = context.read<MessageProvider>();
+    final conversationController = context.read<ConversationController>();
+
+    debugPrint('🔍 [MessageAvatar] 🔎 Checking for existing conversation with user: $userId');
+    debugPrint('📊 [MessageAvatar] 💬 Total conversations in provider: ${messageProvider.conversationCount}');
     
-    // Create user data object for ChatScreen navigation
-    final userData = {
-      'id': userId,
-      'name': name,
-      'profileImage': imageUrl.isNotEmpty ? imageUrl : null,
-    };
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          userOrConversation: userData,
+    // Check if conversation exists
+    final existingConversation = messageProvider.getConversationByUserId(userId);
+
+    if (existingConversation != null) {
+      debugPrint('✅ [MessageAvatar] 🎉 Existing conversation found!');
+      debugPrint('💬 [MessageAvatar] 🆔 Conversation ID: ${existingConversation.id}');
+      debugPrint('👤 [MessageAvatar] 👥 Other user: ${existingConversation.otherUser.name}');
+      debugPrint('📨 [MessageAvatar] 💭 Last message: ${existingConversation.lastMessage.content}');
+      debugPrint('🔔 [MessageAvatar] 📬 Unread count: ${existingConversation.unreadCount}');
+      debugPrint('🧭 [MessageAvatar] 🚀 Navigating to existing chat screen...');
+      
+      if (!context.mounted) {
+        debugPrint('⚠️ [MessageAvatar] ❌ Context unmounted, aborting navigation');
+        return;
+      }
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            conversationId: existingConversation.id,
+            receiverId: userId,
+            userName: name,
+            profileImage: imageUrl.isNotEmpty ? imageUrl : null,
+            userOrConversation: existingConversation,
+          ),
         ),
-      ),
-    );
+      );
+      debugPrint('✅ [MessageAvatar] 🎊 Navigation to existing chat completed');
+    } else {
+      debugPrint('🔍 [MessageAvatar] ❌ No existing conversation found');
+      debugPrint('🚀 [MessageAvatar] 🆕 Creating new conversation with user: $name ($userId)');
+      debugPrint('📡 [MessageAvatar] 🌐 Calling API to create conversation...');
+      
+      if (!context.mounted) {
+        debugPrint('⚠️ [MessageAvatar] ❌ Context unmounted, aborting');
+        return;
+      }
+      
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+      
+      try {
+        debugPrint('📡 [MessageAvatar] 📶 Creating conversation via API...');
+        final conversation = await conversationController.createOrGetConversation(userId);
+        
+        debugPrint('✅ [MessageAvatar] 🎉 Conversation created successfully!');
+        debugPrint('💬 [MessageAvatar] 🆔 Conversation ID: ${conversation.id}');
+        
+        // Add to provider
+        final existingInProvider = messageProvider.getConversationById(conversation.id);
+        if (existingInProvider == null) {
+          debugPrint('➕ [MessageAvatar] 💾 Adding conversation to MessageProvider');
+          messageProvider.addConversation(conversation);
+        }
+        
+        if (!context.mounted) {
+          debugPrint('⚠️ [MessageAvatar] ❌ Context unmounted after API call');
+          return;
+        }
+        
+        // Close loading dialog
+        Navigator.pop(context);
+        
+        debugPrint('🧭 [MessageAvatar] 🚀 Navigating to chat screen...');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              conversationId: conversation.id,
+              receiverId: userId,
+              userName: name,
+              profileImage: imageUrl.isNotEmpty ? imageUrl : null,
+              userOrConversation: conversation,
+            ),
+          ),
+        );
+        debugPrint('✅ [MessageAvatar] 🎊 Navigation completed successfully');
+      } catch (e) {
+        debugPrint('❌ [MessageAvatar] 💥 Error creating conversation: $e');
+        debugPrint('🔥 [MessageAvatar] 📋 Error details: ${e.toString()}');
+        
+        if (!context.mounted) return;
+        
+        // Close loading dialog
+        Navigator.pop(context);
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start conversation: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }

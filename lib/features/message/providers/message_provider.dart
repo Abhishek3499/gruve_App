@@ -108,6 +108,27 @@ class MessageProvider extends ChangeNotifier {
   /// Check if there are any conversations
   bool get hasConversations => _conversations.isNotEmpty;
 
+  /// Get conversation by user ID (other user)
+  ConversationModel? getConversationByUserId(String userId) {
+    debugPrint('🔍 [MessageProvider] 🔎 Searching conversation by userId: $userId');
+    debugPrint('📊 [MessageProvider] 💬 Total conversations to search: ${_conversations.length}');
+    
+    try {
+      final conversation = _conversations.firstWhere(
+        (conversation) => conversation.otherUser.id == userId,
+      );
+      debugPrint('✅ [MessageProvider] 🎉 Conversation found!');
+      debugPrint('💬 [MessageProvider] 🆔 Conversation ID: ${conversation.id}');
+      debugPrint('👤 [MessageProvider] 👥 Other user: ${conversation.otherUser.name}');
+      debugPrint('📨 [MessageProvider] 💭 Last message: ${conversation.lastMessage.content}');
+      return conversation;
+    } catch (e) {
+      debugPrint('❌ [MessageProvider] 🚫 No conversation found with userId: $userId');
+      debugPrint('📊 [MessageProvider] 📉 Searched through ${_conversations.length} conversations');
+      return null;
+    }
+  }
+
   /// Get conversation by ID
   ConversationModel? getConversationById(String id) {
     try {

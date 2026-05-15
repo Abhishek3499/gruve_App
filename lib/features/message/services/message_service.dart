@@ -237,47 +237,39 @@ class MessageService {
 
   List<dynamic> _extractMessageList(dynamic data) {
     debugPrint('🔍 [MessageService] 🚀 Starting message list extraction');
+
     SafeParsingHelpers.logResponseInfo(data, '📋 _extractMessageList input');
 
+    // Direct list
     if (data is List) {
-      debugPrint(
-        '✅ [_extractMessageList] 📋 Data is List with ${data.length} 📨 items',
-      );
       return data;
     }
 
+    // Map response
     if (data is Map<String, dynamic>) {
-      final results = data['results'] ?? data['data'] ?? data['messages'];
-      if (results is List) {
-        debugPrint(
-          '✅ [_extractMessageList] 🎯 Found nested list with key: ${results == data['results']
-              ? '📋 results'
-              : results == data['data']
-              ? '💾 data'
-              : '📨 messages'}',
-        );
-        return results;
+      // CASE 1: results
+      if (data['results'] is List) {
+        return data['results'];
+      }
+
+      // CASE 2: messages directly
+      if (data['messages'] is List) {
+        return data['messages'];
+      }
+
+      // CASE 3: nested data.messages
+      if (data['data'] is Map<String, dynamic>) {
+        final nestedData = data['data'] as Map<String, dynamic>;
+
+        if (nestedData['messages'] is List) {
+          return nestedData['messages'];
+        }
       }
     }
 
-    // Try safe parsing for edge cases
-    final safeMap = SafeParsingHelpers.safeMapParse(
-      data,
-      context: '🔄 _extractMessageList',
-    );
-    if (safeMap.isNotEmpty) {
-      final results =
-          safeMap['results'] ?? safeMap['data'] ?? safeMap['messages'];
-      if (results is List) {
-        debugPrint('🔄 [_extractMessageList] ✨ Found list after safe parsing');
-        return results;
-      }
-    }
+    debugPrint('⚠️ [_extractMessageList] 🚫 No list found');
 
-    debugPrint(
-      '⚠️ [_extractMessageList] 🚫 No list found, returning empty list',
-    );
-    return const [];
+    return [];
   }
 
   String _mapDioException(DioException e) {
@@ -603,6 +595,99 @@ class MessageService {
     } catch (e) {
       debugPrint('💥 [MessageService] Error deleting conversation: $e');
       return false;
+    }
+  }
+
+  /// Deletes a specific message from a conversation
+  ///
+  /// [conversationId] - The ID of the conversation
+  /// [messageId] - The ID of the message to delete
+  /// Returns true if successful, false otherwise
+  Future<bool> deleteMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    if (conversationId.isEmpty) {
+      throw ArgumentError('Conversation ID cannot be empty');
+    }
+    if (messageId.isEmpty) {
+      throw ArgumentError('Message ID cannot be empty');
+    }
+
+    final endpoint = '/conversations/$conversationId/messages/$messageId';
+
+    try {
+      debugPrint('🗑️ [MessageService] 🚀 DELETE $endpoint');
+      debugPrint('💬 [MessageService] 🆔 Conversation: $conversationId');
+      debugPrint('📨 [MessageService] 🆔 Message: $messageId');
+
+      final response = await _dio.delete<dynamic>(endpoint);
+
+      debugPrint(
+        '📊 [MessageService] ✅ Delete response status: ${response.statusCode}',
+      );
+
+      // Accept both 200 and 204 as success
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        debugPrint('✅ [MessageService] 🎉 Message deleted successfully');
+        return true;
+      } else {
+        debugPrint(
+          '⚠️ [MessageService] ❌ Unexpected status code: ${response.statusCode}',
+        );
+        throw Exception(
+          'Failed to delete message: Status code ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        '💥 [MessageService] ❌ DioException deleting message: ${e.message}',
+      );
+      debugPrint('📄 [MessageService] 📋 Response: ${e.response?.data}');
+
+      switch (e.type) {
+        case DioExceptionType.badResponse:
+          final statusCode = e.response?.statusCode;
+          if (statusCode == 404) {
+            debugPrint('🚫 [MessageService] ⚠️ Message not found (404)');
+            throw Exception('Message not found');
+          }
+          if (statusCode == 403) {
+            debugPrint(
+              '🚫 [MessageService] 🔒 Forbidden - not your message (403)',
+            );
+            throw Exception('You can only delete your own messages');
+          }
+          final message = e.response?.data is Map<String, dynamic>
+              ? e.response?.data['message'] ??
+                    e.response?.data['detail'] ??
+                    'Unknown error'
+              : 'Unknown error';
+          debugPrint('🚫 [MessageService] ❌ API Error: $statusCode - $message');
+          throw Exception('API Error ($statusCode): $message');
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          debugPrint('⏰ [MessageService] ⏱️ Connection timeout error');
+          throw Exception(
+            'Connection timeout. Please check your internet connection.',
+          );
+        case DioExceptionType.cancel:
+          debugPrint('❌ [MessageService] 🚫 Request was cancelled');
+          throw Exception('Request was cancelled');
+        case DioExceptionType.connectionError:
+          debugPrint('📶 [MessageService] 📡 No internet connection');
+          throw Exception('No internet connection');
+        case DioExceptionType.unknown:
+        default:
+          debugPrint(
+            '❓ [MessageService] ❌ Unknown network error: ${e.message}',
+          );
+          throw Exception('Network error: ${e.message}');
+      }
+    } catch (e) {
+      debugPrint('💥 [MessageService] ❌ Unexpected error deleting message: $e');
+      throw Exception('Failed to delete message: $e');
     }
   }
 }

@@ -11,6 +11,8 @@ class MessageModel {
   final MessageModel? replyTo;
   final bool isPinned;
   final bool isRead;
+  final String? senderAvatar;
+  final String? senderName;
 
   const MessageModel({
     required this.id,
@@ -22,6 +24,8 @@ class MessageModel {
     this.replyTo,
     this.isPinned = false,
     this.isRead = false,
+    this.senderAvatar,
+    this.senderName,
   });
 
   factory MessageModel.fromJson(
@@ -33,12 +37,21 @@ class MessageModel {
     final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📨 MessageModel.fromJson');
     debugPrint('📨 [MessageModel] 🗺️ Message keys: ${safeJson.keys.toList()}');
     
-    final senderId = SafeParsingHelpers.safeString(safeJson, const [
-      'sender_id',
-      'senderId', 
-      'sender.id',
-      'user.id',
-    ], fallback: '');
+    // Parse nested sender object if present
+    final senderObj = safeJson['sender'] is Map<String, dynamic>
+        ? safeJson['sender'] as Map<String, dynamic>
+        : null;
+
+    final senderId = senderObj?['id']?.toString() ??
+        SafeParsingHelpers.safeString(safeJson, const [
+          'sender_id',
+          'senderId',
+          'sender.id',
+          'user.id',
+        ], fallback: '');
+
+    final senderAvatar = senderObj?['avatar']?.toString();
+    final senderName = senderObj?['name']?.toString() ?? senderObj?['username']?.toString();
 
     final isSent = currentUserId != null && currentUserId.isNotEmpty
         ? senderId == currentUserId
@@ -59,6 +72,8 @@ class MessageModel {
         const ['image', 'image_url', 'media_url', 'file'],
       ),
       isRead: SafeParsingHelpers.safeBool(safeJson, const ['is_read', 'isRead'], fallback: false),
+      senderAvatar: senderAvatar,
+      senderName: senderName,
     );
   }
 
@@ -86,6 +101,8 @@ class MessageModel {
     MessageModel? replyTo,
     bool? isPinned,
     bool? isRead,
+    String? senderAvatar,
+    String? senderName,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -97,6 +114,8 @@ class MessageModel {
       replyTo: replyTo ?? this.replyTo,
       isPinned: isPinned ?? this.isPinned,
       isRead: isRead ?? this.isRead,
+      senderAvatar: senderAvatar ?? this.senderAvatar,
+      senderName: senderName ?? this.senderName,
     );
   }
 

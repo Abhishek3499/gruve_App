@@ -21,6 +21,7 @@ import 'package:gruve_app/screens/splash_screen.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/message/providers/message_provider.dart';
 import 'package:gruve_app/features/message/services/message_service.dart';
+import 'package:gruve_app/features/message/controllers/conversation_controller.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:gruve_app/features/message/data/repository/user_repository_impl.dart';
 import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
@@ -61,6 +62,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LogoutProvider()),
         ChangeNotifierProvider(
           create: (_) => MessageProvider(MessageService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ConversationController(MessageService()),
         ),
         ChangeNotifierProvider(
           lazy: false,

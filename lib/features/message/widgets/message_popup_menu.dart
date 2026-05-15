@@ -13,6 +13,7 @@ class MessagePopupMenu extends StatefulWidget {
   final int selectedCount;
   final Function(int)? onMessageToggle;
   final VoidCallback? onDismiss;
+  final bool isOwnMessage;
 
   const MessagePopupMenu({
     super.key,
@@ -24,6 +25,7 @@ class MessagePopupMenu extends StatefulWidget {
     this.selectedCount = 0,
     this.onMessageToggle,
     this.onDismiss,
+    this.isOwnMessage = false,
   });
 
   @override
@@ -120,13 +122,15 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
                   onTap: () =>
                       widget.onActionSelected?.call(MessageAction.report),
                 ),
-                _buildMenuItem(
-                  icon: AppAssets.deleted,
-                  label: 'Delete',
-                  color: const Color(0xFFF51829),
-                  isSelected: widget.selectedAction == MessageAction.delete,
-                  onTap: () => widget.onDeleteMode?.call(),
-                ),
+                // Only show delete for own messages
+                if (widget.isOwnMessage)
+                  _buildMenuItem(
+                    icon: AppAssets.deleted,
+                    label: 'Delete',
+                    color: const Color(0xFFF51829),
+                    isSelected: widget.selectedAction == MessageAction.delete,
+                    onTap: () => widget.onActionSelected?.call(MessageAction.delete),
+                  ),
               ],
             ),
           ),

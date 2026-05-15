@@ -197,6 +197,69 @@ class MessageController extends ChangeNotifier {
     );
   }
 
+  /// Delete a single message with optimistic UI update
+  ///
+  /// [messageId] - The ID of the message to delete
+  /// Returns true if successful, false otherwise
+  Future<bool> deleteMessage(String messageId) async {
+    if (messageId.isEmpty) {
+      debugPrint('⚠️ [MessageController] ❌ Empty message ID provided');
+      return false;
+    }
+
+    debugPrint('🗑️ [MessageController] 🚀 Starting delete for message: $messageId');
+    debugPrint('💬 [MessageController] 🆔 Conversation: $conversationId');
+
+    // Store original message for rollback
+    final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+    if (messageIndex == -1) {
+      debugPrint('⚠️ [MessageController] ❌ Message not found in local state');
+      return false;
+    }
+
+    final originalMessage = _messages[messageIndex];
+    debugPrint('💾 [MessageController] 📝 Stored original message for rollback');
+
+    // Optimistic UI update - remove immediately
+    debugPrint('⚡ [MessageController] 🗑️ Optimistic delete - removing from UI');
+    _messages.removeAt(messageIndex);
+    _notify();
+    debugPrint('✅ [MessageController] 👀 UI updated - message removed');
+
+    try {
+      debugPrint('📡 [MessageController] 🌐 Calling API to delete message...');
+      final success = await _messageService.deleteMessage(
+        conversationId: conversationId,
+        messageId: messageId,
+      );
+
+      if (success) {
+        debugPrint('✅ [MessageController] 🎉 Message deleted successfully from backend');
+        debugPrint('📊 [MessageController] 📉 Total messages: ${_messages.length}');
+        return true;
+      } else {
+        debugPrint('❌ [MessageController] ⚠️ Backend delete failed - rolling back');
+        // Rollback - restore message
+        _messages.insert(messageIndex, originalMessage);
+        _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _notify();
+        debugPrint('🔄 [MessageController] ✅ Rollback complete - message restored');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('💥 [MessageController] ❌ Error deleting message: $e');
+      debugPrint('🔄 [MessageController] 🔙 Rolling back optimistic update...');
+
+      // Rollback - restore message
+      _messages.insert(messageIndex, originalMessage);
+      _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _notify();
+      debugPrint('✅ [MessageController] 🔄 Rollback complete - message restored');
+
+      rethrow;
+    }
+  }
+
   void replaceMessage(MessageModel message) {
     final index = _messages.indexWhere((item) => item.id == message.id);
     if (index == -1) return;

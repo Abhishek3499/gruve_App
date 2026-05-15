@@ -1,13 +1,16 @@
-import 'dart:async'; // Added for Timer debounce
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../models/search_history_model.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/search_history_item.dart';
 import '../data/services/recent_search_service.dart';
-import '../../user_profile/presentation/screens/user_profile_screen.dart';
 import '../../../../core/widgets/shimmer/search_shimmer.dart';
+import '../../message/controllers/conversation_controller.dart';
+import '../../message/providers/message_provider.dart';
+import '../../message/screen/chat_screen.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -147,25 +150,79 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _navigateToUserProfile(SearchUser user) async {
-    // Save user to recent searches
     await _recentSearchService.addRecentSearch(user);
-
-    // Navigate immediately to profile screen using same screen as video overlay
     if (!mounted) return;
-    
-    debugPrint('🔍 [SearchPage] Navigating to profile for user: ${user.username} (ID: ${user.id})');
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => UserProfileScreen(
-          profileUserId: user.id,
-          userName: user.name,
-          profileImageUrl: user.avatar.isNotEmpty ? user.avatar : null,
-          initialHasActiveStory: user.isOnline, // Use isOnline as story indicator
+
+    debugPrint('💬 [SearchPage] Opening chat for user: ${user.username} (ID: ${user.id})');
+
+    final messageProvider = context.read<MessageProvider>();
+    final conversationController = context.read<ConversationController>();
+
+    final existingConversation = messageProvider.getConversationByUserId(user.id);
+
+    if (existingConversation != null) {
+      debugPrint('✅ [SearchPage] Existing conversation found: ${existingConversation.id}');
+      if (!mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            conversationId: existingConversation.id,
+            receiverId: user.id,
+            userName: user.name,
+            profileImage: user.avatar.isNotEmpty ? user.avatar : null,
+            userOrConversation: existingConversation,
+          ),
         ),
-      ),
-    ).then((_) => _loadRecentSearches()); // refresh recent searches on back
+      ).then((_) => _loadRecentSearches());
+    } else {
+      debugPrint('🆕 [SearchPage] Creating new conversation with user: ${user.name}');
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+
+      try {
+        final conversation = await conversationController.createOrGetConversation(user.id);
+        
+        final existingInProvider = messageProvider.getConversationById(conversation.id);
+        if (existingInProvider == null) {
+          messageProvider.addConversation(conversation);
+        }
+
+        if (!mounted) return;
+        Navigator.pop(context);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              conversationId: conversation.id,
+              receiverId: user.id,
+              userName: user.name,
+              profileImage: user.avatar.isNotEmpty ? user.avatar : null,
+              userOrConversation: conversation,
+            ),
+          ),
+        ).then((_) => _loadRecentSearches());
+      } catch (e) {
+        debugPrint('❌ [SearchPage] Error creating conversation: $e');
+        if (!mounted) return;
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start conversation: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
