@@ -4,31 +4,41 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../models/search_history_model.dart';
+import '../models/search_navigation_type.dart';
 import '../widgets/search_bar.dart';
-import '../widgets/search_history_item.dart';
+
 import '../data/services/recent_search_service.dart';
 import '../../../../core/widgets/shimmer/search_shimmer.dart';
 import '../../message/controllers/conversation_controller.dart';
 import '../../message/providers/message_provider.dart';
 import '../../message/screen/chat_screen.dart';
+import '../../user_profile/presentation/screens/user_profile_screen.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final SearchNavigationType navigationType;
+
+  const SearchPage({
+    super.key,
+    this.navigationType = SearchNavigationType.profile,
+  });
 
   @override
   State<SearchPage> createState() => _SearchPageState();
 }
 
 class _SearchPageState extends State<SearchPage> {
+  SearchNavigationType get _navigationType => widget.navigationType;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  final DebouncedUserSearch _userSearch = DebouncedUserSearch(); // Changed delay to 400ms in service
+  final DebouncedUserSearch _userSearch =
+      DebouncedUserSearch(); // Changed delay to 400ms in service
   final RecentSearchService _recentSearchService = RecentSearchService();
 
   List<SearchHistoryModel> _searchHistory = [];
   List<SearchUser> _recentSearches = [];
   List<SearchUser> _users = [];
   bool _isSearching = false;
+  bool _isNavigating = false;
   String? _searchError;
   Timer? _debounceTimer; // Added for custom debounce control
 
@@ -80,18 +90,6 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
-  void _removeFromHistory(String id) {
-    setState(() {
-      _searchHistory.removeWhere((item) => item.id == id);
-    });
-  }
-
-  void _clearAllHistory() {
-    setState(() {
-      _searchHistory.clear();
-    });
-  }
-
   void _onSearchSubmitted(String query) {
     if (query.trim().isEmpty) return;
 
@@ -101,12 +99,14 @@ class _SearchPageState extends State<SearchPage> {
   void _onSearchChanged(String query) {
     // Cancel existing debounce timer
     _debounceTimer?.cancel();
-    
+
     // CHANGED: Clear results immediately when user types, set searching state
     setState(() {
       _users = []; // Clear previous results instantly
       _searchError = null; // Clear any previous errors
-      _isSearching = query.trim().isNotEmpty; // Only show loader when there's text
+      _isSearching = query
+          .trim()
+          .isNotEmpty; // Only show loader when there's text
     });
 
     // CHANGED: Handle empty query case - clear debounced search
@@ -118,7 +118,7 @@ class _SearchPageState extends State<SearchPage> {
     // CHANGED: Add 400ms debounce using Timer instead of relying on service debounce
     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
       if (!mounted) return; // Safety check
-      
+
       // Only proceed if still searching (user hasn't cleared the query)
       if (query.trim().isNotEmpty) {
         _userSearch.search(
@@ -143,85 +143,113 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
-  void _onHistoryItemTap(String query) {
-    _searchController.text = query;
-    _onSearchChanged(query);
-    _onSearchSubmitted(query);
-  }
-
   Future<void> _navigateToUserProfile(SearchUser user) async {
-    await _recentSearchService.addRecentSearch(user);
-    if (!mounted) return;
+    if (_isNavigating) return;
+    _isNavigating = true;
 
-    debugPrint('💬 [SearchPage] Opening chat for user: ${user.username} (ID: ${user.id})');
-
-    final messageProvider = context.read<MessageProvider>();
-    final conversationController = context.read<ConversationController>();
-
-    final existingConversation = messageProvider.getConversationByUserId(user.id);
-
-    if (existingConversation != null) {
-      debugPrint('✅ [SearchPage] Existing conversation found: ${existingConversation.id}');
-      if (!mounted) return;
-      
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(
-            conversationId: existingConversation.id,
-            receiverId: user.id,
-            userName: user.name,
-            profileImage: user.avatar.isNotEmpty ? user.avatar : null,
-            userOrConversation: existingConversation,
-          ),
-        ),
-      ).then((_) => _loadRecentSearches());
-    } else {
-      debugPrint('🆕 [SearchPage] Creating new conversation with user: ${user.name}');
+    try {
+      await _recentSearchService.addRecentSearch(user);
       if (!mounted) return;
 
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
-      );
-
-      try {
-        final conversation = await conversationController.createOrGetConversation(user.id);
-        
-        final existingInProvider = messageProvider.getConversationById(conversation.id);
-        if (existingInProvider == null) {
-          messageProvider.addConversation(conversation);
-        }
-
-        if (!mounted) return;
-        Navigator.pop(context);
-
+      if (_navigationType == SearchNavigationType.profile) {
+        debugPrint(
+          '👤 [SearchPage] Opening profile for user: ${user.username}',
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              conversationId: conversation.id,
-              receiverId: user.id,
+            builder: (_) => UserProfileScreen(
+              profileUserId: user.id,
               userName: user.name,
-              profileImage: user.avatar.isNotEmpty ? user.avatar : null,
-              userOrConversation: conversation,
+              profileImageUrl: user.avatar.isNotEmpty ? user.avatar : null,
             ),
           ),
         ).then((_) => _loadRecentSearches());
-      } catch (e) {
-        debugPrint('❌ [SearchPage] Error creating conversation: $e');
-        if (!mounted) return;
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to start conversation: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+      } else {
+        debugPrint(
+          '💬 [SearchPage] Opening chat for user: ${user.username} (ID: ${user.id})',
         );
+
+        final messageProvider = context.read<MessageProvider>();
+        final conversationController = context.read<ConversationController>();
+
+        final existingConversation = messageProvider.getConversationByUserId(
+          user.id,
+        );
+
+        if (existingConversation != null) {
+          debugPrint(
+            '✅ [SearchPage] Existing conversation found: ${existingConversation.id}',
+          );
+          if (!mounted) return;
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                conversationId: existingConversation.id,
+                receiverId: user.id,
+                userName: user.name,
+                profileImage: user.avatar.isNotEmpty ? user.avatar : null,
+                userOrConversation: existingConversation,
+              ),
+            ),
+          ).then((_) => _loadRecentSearches());
+        } else {
+          debugPrint(
+            '🆕 [SearchPage] Creating new conversation with user: ${user.name}',
+          );
+          if (!mounted) return;
+
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+
+          try {
+            final conversation = await conversationController
+                .createOrGetConversation(user.id);
+
+            final existingInProvider = messageProvider.getConversationById(
+              conversation.id,
+            );
+            if (existingInProvider == null) {
+              messageProvider.addConversation(conversation);
+            }
+
+            if (!mounted) return;
+            Navigator.pop(context);
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ChatScreen(
+                  conversationId: conversation.id,
+                  receiverId: user.id,
+                  userName: user.name,
+                  profileImage: user.avatar.isNotEmpty ? user.avatar : null,
+                  userOrConversation: conversation,
+                ),
+              ),
+            ).then((_) => _loadRecentSearches());
+          } catch (e) {
+            debugPrint('❌ [SearchPage] Error creating conversation: $e');
+            if (!mounted) return;
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to start conversation: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       }
+    } finally {
+      _isNavigating = false;
     }
   }
 
@@ -233,7 +261,9 @@ class _SearchPageState extends State<SearchPage> {
     final bool isLoading = _isSearching;
     final bool hasError = _searchError != null;
     final bool hasRecentSearches = _recentSearches.isNotEmpty;
-    final bool showEmptyState = isEmptySearch && !hasRecentSearches; // Only show empty when no searches and no recents
+    final bool showEmptyState =
+        isEmptySearch &&
+        !hasRecentSearches; // Only show empty when no searches and no recents
 
     return Scaffold(
       body: Container(
@@ -276,7 +306,7 @@ class _SearchPageState extends State<SearchPage> {
                 child: ListView(
                   children: [
                     // CHANGED: Single if-else if chain - only ONE state shows at a time
-                    
+
                     // STATE 1: Empty search with no recent searches - show empty hint
                     if (showEmptyState) ...[
                       const Padding(
@@ -309,7 +339,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                       ),
-                    ] 
+                    ]
                     // STATE 2: Empty search with recent searches - show recent searches only
                     else if (isEmptySearch && hasRecentSearches) ...[
                       Padding(
@@ -362,7 +392,9 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                           trailing: GestureDetector(
                             onTap: () async {
-                              await _recentSearchService.removeRecentSearch(user.id);
+                              await _recentSearchService.removeRecentSearch(
+                                user.id,
+                              );
                               _loadRecentSearches();
                             },
                             child: const Icon(
@@ -424,7 +456,10 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ]
                     // STATE 6: No results found - when search completed but returned empty
-                    else if (!isEmptySearch && !isLoading && !hasError && !hasResults) ...[
+                    else if (!isEmptySearch &&
+                        !isLoading &&
+                        !hasError &&
+                        !hasResults) ...[
                       const Padding(
                         padding: EdgeInsets.all(24),
                         child: Center(

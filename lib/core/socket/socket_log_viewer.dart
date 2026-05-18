@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'socket_logger.dart';
@@ -152,7 +152,7 @@ class _SocketLogViewerState extends State<SocketLogViewer> {
         backgroundColor: const Color(0xFF1C0B21),
         actions: [
           IconButton(
-            icon: Icon(_autoScroll ? Icons.auto_scroll : Icons.stop_screen_share),
+            icon: Icon(_autoScroll ? Icons.pause_circle_outline : Icons.play_circle_outline),
             onPressed: () {
               setState(() {
                 _autoScroll = !_autoScroll;
@@ -407,7 +407,7 @@ Socket Log Summary:
       final logs = SocketLogger.getLogs().join('\n\n');
       await Clipboard.setData(ClipboardData(text: logs));
     } catch (e) {
-      print('Failed to copy logs to clipboard: $e');
+      debugPrint('Failed to copy logs to clipboard: $e');
     }
   }
 }

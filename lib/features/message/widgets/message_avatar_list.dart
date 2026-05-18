@@ -94,8 +94,8 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
               'fetchingMore: ${p.isFetchingMore}',
             );
 
-            // Initial Loading
-            if (p.isLoading && p.users.isEmpty) {
+            // Initial Loading or Refreshing
+            if (p.isLoading) {
               debugPrint('⏳ [MessageAvatarList] Showing skeleton loader');
 
               return const MessageAvatarSkeleton(avatarCount: 6);
@@ -127,7 +127,9 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
 
                 padding: const EdgeInsets.symmetric(horizontal: 16),
 
-                cacheExtent: 300,
+                cacheExtent: 500,
+                addAutomaticKeepAlives: true,
+                addRepaintBoundaries: true,
 
                 separatorBuilder: (_, _) => const SizedBox(width: 16),
 
@@ -147,12 +149,10 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
                   final isOnline = onlineUsers.contains(
                     UserDisplayHelper.getUserIdForUser(user),
                   );
-                  debugPrint(
-                    '👤 [MessageAvatarList] Rendering avatar: ${user.userId}',
-                  );
 
                   return RepaintBoundary(
                     child: MessageAvatar(
+                      key: ValueKey(user.userId),
                       name: UserDisplayHelper.getDisplayNameForUserEntity(user),
 
                       imageUrl:

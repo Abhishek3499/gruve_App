@@ -1,0 +1,4 @@
+enum SearchNavigationType {
+  profile,
+  chat,
+}

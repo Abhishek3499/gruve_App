@@ -3,7 +3,6 @@ import '../controllers/conversation_controller.dart';
 import '../services/message_service.dart';
 import '../models/conversation_model.dart';
 import 'conversation_error_handler.dart';
-import 'user_display_helper.dart';
 
 /// Utility class for handling conversation creation across the app
 /// 
@@ -88,12 +87,12 @@ class ConversationUtils {
         source: source,
       );
       
-      if (context.mounted) {
-        ConversationErrorHandler.showSuccess(
-          context: context,
-          message: 'Chat opened successfully',
-        );
-      }
+      if (!context.mounted) return;
+      
+      ConversationErrorHandler.showSuccess(
+        context: context,
+        message: 'Chat opened successfully',
+      );
     } catch (e) {
       ConversationErrorHandler.logResult(
         operation: 'Conversation navigation',

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 /// Centralized error handling for conversation operations
 /// 
@@ -127,7 +126,7 @@ class ConversationErrorHandler {
     String? source,
   }) {
     final sourceInfo = source != null ? '[$source] ' : '';
-    debugPrint('🔄 [ConversationErrorHandler]${sourceInfo}$operation: $receiverName ($receiverId)');
+    debugPrint('🔄 [ConversationErrorHandler]$sourceInfo$operation: $receiverName ($receiverId)');
   }
   
   /// Log conversation operation result
@@ -146,6 +145,6 @@ class ConversationErrorHandler {
     final status = success ? '✅ SUCCESS' : '❌ FAILED';
     final convInfo = conversationId != null ? ' (conv: $conversationId)' : '';
     
-    debugPrint('📊 [ConversationErrorHandler]${sourceInfo}$operation: $status$convInfo');
+    debugPrint('📊 [ConversationErrorHandler]$sourceInfo$operation: $status$convInfo');
   }
 }

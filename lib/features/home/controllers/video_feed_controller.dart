@@ -19,6 +19,7 @@ import 'package:video_player/video_player.dart';
 class VideoFeedController {
   bool _disposed = false;
   int _feedLoadGeneration = 0;
+  bool _isAnyOperationInProgress = false;
 
   List<String> _mediaUrls = [];
   List<String> get mediaUrls => _mediaUrls;
@@ -46,10 +47,6 @@ class VideoFeedController {
   bool _hasMore = true;
   String? _loadError;
   CursorModel? _nextCursor;
-
-  // Request deduplication
-  int _lastRefreshRequestId = 0;
-  int _lastLoadMoreRequestId = 0;
 
   // Separate loading states for better UX
   bool get isInitialLoading => _isInitialLoading;
@@ -104,11 +101,16 @@ class VideoFeedController {
   }
 
   Future<bool?> loadMorePosts() async {
+    if (_isAnyOperationInProgress) {
+      debugPrint('⏸️ [VideoFeed] Operation already in progress, skipping loadMore');
+      return null;
+    }
+    
     if (_isLoadingMore || !_hasMore || _isRefreshing) return null;
 
     final requestId = ++_feedLoadGeneration;
-    _lastLoadMoreRequestId = requestId;
     _isLoadingMore = true;
+    _isAnyOperationInProgress = true;
     _loadError = null;
     _notifyFeedChanged();
 
@@ -140,8 +142,9 @@ class VideoFeedController {
         unawaited(
           _ensureControllersAroundIndex(_currentIndex.value, requestId),
         );
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('✅ [VideoFeed] Total Posts: ${_posts.length}');
+        }
       } else {
         _nextCursor = response.nextCursor;
         _hasMore = response.hasMore;
@@ -164,12 +167,18 @@ class VideoFeedController {
       return null;
     } finally {
       _isLoadingMore = false;
+      _isAnyOperationInProgress = false;
       _notifyFeedChanged();
     }
   }
 
   Future<bool?> initVideos({bool refresh = false}) async {
     final requestId = ++_feedLoadGeneration;
+
+    if (_isAnyOperationInProgress) {
+      debugPrint('⏸️ [VideoFeed] Operation already in progress, skipping init');
+      return null;
+    }
 
     if (refresh) {
       if (_isRefreshing) {
@@ -180,7 +189,6 @@ class VideoFeedController {
         }
         return null;
       }
-      _lastRefreshRequestId = requestId;
       _isRefreshing = true;
     } else {
       if (_isInitialLoading) {
@@ -194,6 +202,7 @@ class VideoFeedController {
       _isInitialLoading = _mediaUrls.isEmpty;
     }
 
+    _isAnyOperationInProgress = true;
     _loadError = null;
     _notifyFeedChanged();
 
@@ -262,8 +271,9 @@ class VideoFeedController {
         _hasMore = response.hasMore;
         _notifyFeedChanged();
 
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('✅ [VideoFeed] Total Posts: ${_posts.length}');
+        }
       }
 
       if (gen != _feedLoadGeneration) return null;
@@ -295,6 +305,7 @@ class VideoFeedController {
     } finally {
       _isInitialLoading = false;
       _isRefreshing = false;
+      _isAnyOperationInProgress = false;
       _notifyFeedChanged();
     }
   }
@@ -389,8 +400,9 @@ class VideoFeedController {
     Future.wait(futures)
         .then((_) {
           _controllers.clear();
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('✅ All video controllers disposed successfully');
+          }
         })
         .catchError((e) {
           debugPrint('❌ Error during controller disposal: $e');
@@ -400,8 +412,9 @@ class VideoFeedController {
     _isPlaying.dispose();
     _feedRevision.dispose();
 
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('✅ VideoFeedController fully disposed (memory freed)');
+    }
   }
 
   List<Post> _filterPostsWithSupportedMedia(List<Post> raw) {
@@ -585,6 +598,8 @@ class VideoFeedController {
         controller.pause();
       }
     }
-    if (kDebugMode) debugPrint('⏸️ All videos paused');
+    if (kDebugMode) {
+      debugPrint('⏸️ All videos paused');
+    }
   }
 }

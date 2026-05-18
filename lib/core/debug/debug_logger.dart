@@ -1,4 +1,4 @@
-import 'dart:async';
+
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/production_logger.dart';
@@ -24,7 +24,7 @@ class DebugLogger {
 
     if (type != null) parts.add('[$type]');
     if (source != null) parts.add('($source)');
-    if (hit != null) parts.add(hit! ? 'HIT' : 'MISS');
+    if (hit != null) parts.add(hit ? 'HIT' : 'MISS');
     if (size != null) parts.add('${size}B');
     if (duration != null) parts.add('${duration.inMilliseconds}ms');
 
@@ -50,7 +50,7 @@ class DebugLogger {
   }) {
     final parts = <String>['[NET]', method, endpoint];
 
-    if (statusCode != null) parts.add('(${statusCode})');
+    if (statusCode != null) parts.add('($statusCode)');
     if (duration != null) parts.add('${duration.inMilliseconds}ms');
     if (responseSize != null) parts.add('${responseSize}B');
     if (fromCache == true) parts.add('[CACHE]');
@@ -111,7 +111,7 @@ class DebugLogger {
   }) {
     final parts = <String>['[PERF]', operation, '${duration.inMilliseconds}ms'];
 
-    if (frameTime != null) parts.add('${frameTime}μs');
+    if (frameTime != null) parts.add('$frameTimeμs');
     if (fps != null) parts.add('${fps.toStringAsFixed(1)}fps');
     if (droppedFrames != null) parts.add('dropped:$droppedFrames');
     if (metadata != null) {
@@ -341,7 +341,7 @@ class DebugLogger {
 
     final message = parts.join(' ');
     
-    logger.error(message, error: errorObj ?? error, stackTrace: stackTraceObj ?? (stackTrace != null ? StackTrace.fromString(stackTrace!) : null));
+    logger.error(message, error: errorObj ?? error, stackTrace: stackTraceObj ?? (stackTrace != null ? StackTrace.fromString(stackTrace) : null));
     
     if (fatal == true) {
       developer.log('🚨 FATAL ERROR: $message', name: 'DebugLogger');
@@ -379,17 +379,16 @@ class DebugLogger {
   }
 
   /// Create specialized logger for a component
-  _ComponentLogger forComponent(String componentName) {
-    return _ComponentLogger(componentName);
+  ComponentLogger forComponent(String componentName) {
+    return ComponentLogger(componentName);
   }
 }
 
 /// Component-specific logger
-class _ComponentLogger {
+class ComponentLogger {
   final String componentName;
-  final DebugLogger _logger = DebugLogger();
 
-  _ComponentLogger(this.componentName);
+  ComponentLogger(this.componentName);
 
   void debug(String message, {Map<String, dynamic>? properties}) {
     if (kDebugMode) {

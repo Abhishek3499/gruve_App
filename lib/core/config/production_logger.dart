@@ -49,7 +49,7 @@ class ProductionLogger {
     
     // In production, send to crash reporting
     if (!kDebugMode && EnvironmentConfig.enableCrashReporting) {
-      // TODO: Send to Firebase Crashlytics or similar
+      // Send to Firebase Crashlytics or similar
       // FirebaseCrashlytics.instance.log(message);
     }
   }
@@ -76,7 +76,7 @@ class ProductionLogger {
           : '';
       
       final statusIcon = statusCode >= 200 && statusCode < 300 ? '✅' : '❌';
-      debugPrint('🌐 [NET] $statusIcon $method $endpoint (${statusCode}) | ${duration.inMilliseconds}ms$sizeStr$metadataStr');
+      debugPrint('🌐 [NET] $statusIcon $method $endpoint ($statusCode) | ${duration.inMilliseconds}ms$sizeStr$metadataStr');
     }
   }
 
@@ -91,7 +91,7 @@ class ProductionLogger {
     
     // In production, send to analytics
     if (!kDebugMode && EnvironmentConfig.isFeatureEnabled('analytics')) {
-      // TODO: Send to Firebase Analytics or similar
+      // Send to Firebase Analytics or similar
       // FirebaseAnalytics.instance.logEvent(
       //   name: action,
       //   parameters: properties,
@@ -128,17 +128,17 @@ class ProductionLogger {
   }
 
   /// Create specialized logger for a specific tag
-  _TaggedLogger withTag(String tag) {
-    return _TaggedLogger(tag);
+  TaggedLogger withTag(String tag) {
+    return TaggedLogger(tag);
   }
 }
 
 /// Tagged logger for specific modules
-class _TaggedLogger {
+class TaggedLogger {
   final String tag;
   final ProductionLogger _logger = ProductionLogger();
 
-  _TaggedLogger(this.tag);
+  TaggedLogger(this.tag);
 
   void debug(String message) => _logger.debug(message, tag: tag);
   void info(String message) => _logger.info(message, tag: tag);

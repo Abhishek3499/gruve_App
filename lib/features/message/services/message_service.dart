@@ -460,7 +460,7 @@ class MessageService {
         '👁️ [MessageService] Marking conversation as read locally: $conversationId',
       );
 
-      // TODO: Implement backend API call when endpoint is available
+      // Implement backend API call when endpoint is available
       // For now, just return true to simulate successful mark as read
       debugPrint(
         '✅ [MessageService] Conversation marked as read locally (backend API not implemented)',
@@ -514,7 +514,7 @@ class MessageService {
             '✅ [MessageService] 🎉 Successfully created/retrieved conversation: ${conversation.id}',
           );
           debugPrint(
-            '💬 [MessageService] 👤 Participants: ${conversation.participant_1_id} & ${conversation.participant_2_id}',
+            '💬 [MessageService] 👤 Participants: ${conversation.participant1Id} & ${conversation.participant2Id}',
           );
           return conversation;
         } else {
@@ -586,7 +586,7 @@ class MessageService {
         '🗑️ [MessageService] Deleting conversation locally: $conversationId',
       );
 
-      // TODO: Implement backend API call when endpoint is available
+      // Implement backend API call when endpoint is available
       // For now, just return true to simulate successful deletion
       debugPrint(
         '✅ [MessageService] Conversation deleted locally (backend API not implemented)',

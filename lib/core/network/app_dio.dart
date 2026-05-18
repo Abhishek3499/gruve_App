@@ -7,6 +7,7 @@ import 'package:gruve_app/core/network/token_refresh_service.dart';
 import 'package:gruve_app/core/network/request_deduplication_manager.dart';
 import 'package:gruve_app/core/cache/cache_interceptor.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
+import 'package:gruve_app/core/monitoring/network_monitor.dart';
 
 class AppDio {
   static CancelToken? _logoutCancelToken;
@@ -64,6 +65,8 @@ class AppDio {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          options.extra['request_start_time'] = DateTime.now();
+          
           final hasAuthorizationHeader =
               options.headers.containsKey('Authorization') &&
               (options.headers['Authorization']?.toString().trim().isNotEmpty ??
@@ -80,7 +83,31 @@ class AppDio {
           options.cancelToken = options.cancelToken ?? _cancelToken;
           handler.next(options);
         },
+        onResponse: (response, handler) {
+          final startTime = response.requestOptions.extra['request_start_time'] as DateTime?;
+          if (startTime != null) {
+            final duration = DateTime.now().difference(startTime);
+            NetworkMonitor().logApiCall(
+              method: response.requestOptions.method,
+              endpoint: response.requestOptions.path,
+              duration: duration,
+              statusCode: response.statusCode ?? 0,
+            );
+          }
+          handler.next(response);
+        },
         onError: (error, handler) {
+          final startTime = error.requestOptions.extra['request_start_time'] as DateTime?;
+          if (startTime != null) {
+            final duration = DateTime.now().difference(startTime);
+            NetworkMonitor().logApiCall(
+              method: error.requestOptions.method,
+              endpoint: error.requestOptions.path,
+              duration: duration,
+              statusCode: error.response?.statusCode ?? 0,
+              error: error.message,
+            );
+          }
           handler.next(error);
         },
       ),

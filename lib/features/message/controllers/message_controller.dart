@@ -27,7 +27,6 @@ class MessageController extends ChangeNotifier {
   // Enhanced request tracking
   final Map<String, DateTime> _requestTimestamps = {};
   final Set<String> _lockedOperations = {};
-  static const Duration _requestTimeout = Duration(seconds: 30);
 
   static const int _pageSize = 20;
 
@@ -40,7 +39,7 @@ class MessageController extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> fetchInitialMessages() async {
-    final operationKey = 'fetchInitial';
+    const operationKey = 'fetchInitial';
 
     // Enhanced duplicate prevention with multiple checks
     if (_lockedOperations.contains(operationKey)) {
@@ -318,8 +317,6 @@ class MessageController extends ChangeNotifier {
     required int page,
     required bool replace,
   }) async {
-    final operationKey = 'fetch_${page}_$replace';
-
     if (conversationId.isEmpty) {
       _error = 'Conversation ID is missing';
       _activeFetch = null;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'socket_logger.dart';
-import 'socket_test_utility.dart';
 import 'socket_log_viewer.dart';
 
 /// Simple debug test widget to verify socket logging

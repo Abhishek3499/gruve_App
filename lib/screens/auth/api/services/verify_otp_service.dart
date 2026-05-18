@@ -11,7 +11,7 @@ class VerifyOtpService {
   Future<VerifyOtpResponse> verifyOtp({
     required String identifier,
     required String email,
-    required String phone_number,
+    required String phoneNumber,
     required String type,
     required String otp,
     bool isLogin = false,
@@ -23,7 +23,7 @@ class VerifyOtpService {
       debugPrint("isLogin: $isLogin");
       debugPrint("type: $type");
       debugPrint("email: $email");
-      debugPrint("phone: $phone_number");
+      debugPrint("phone: $phoneNumber");
 
       Map<String, dynamic> body;
       String endpoint;
@@ -34,7 +34,7 @@ class VerifyOtpService {
         body = {"email": email, "otp": otp};
       } else if (isLogin) {
         endpoint = "auth/verify-phone-login-otp/";
-        body = {"phone_number": phone_number, "otp": otp};
+        body = {"phone_number": phoneNumber, "otp": otp};
       } else {
         endpoint = "auth/verify-otp/";
 

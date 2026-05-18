@@ -269,6 +269,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   SnackBar(content: Text(message)),
                                 );
 
+                                if (!mounted) return false;
+
                                 Navigator.pushAndRemoveUntil(
                                   context,
 

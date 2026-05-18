@@ -8,7 +8,6 @@ import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.d
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
-import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 
 class LogoutProvider extends ChangeNotifier {
@@ -34,7 +33,7 @@ class LogoutProvider extends ChangeNotifier {
       await AuthStateManager().logout();
 
       // Reset local providers if context is available
-      if (context != null) {
+      if (context != null && context.mounted) {
         final profileProvider = _tryGetProvider<ProfileProvider>(context);
         final storyController = _tryGetProvider<StoryController>(context);
         final highlightProvider = _tryGetProvider<HighlightFlowProvider>(
@@ -99,50 +98,7 @@ class LogoutProvider extends ChangeNotifier {
     }
   }
 
-  /// Reset all providers to clear user data
-  Future<void> _resetAllProviders(BuildContext context) async {
-    debugPrint('🔄 [LogoutProvider] Resetting all providers...');
 
-    try {
-      // Store all provider references before async operations
-      final profileProvider = Provider.of<ProfileProvider>(
-        context,
-        listen: false,
-      );
-      final storyController = Provider.of<StoryController>(
-        context,
-        listen: false,
-      );
-      final highlightProvider = Provider.of<HighlightFlowProvider>(
-        context,
-        listen: false,
-      );
-      final blockProvider = Provider.of<BlockProvider>(context, listen: false);
-      final saveProvider = Provider.of<SavePostProvider>(
-        context,
-        listen: false,
-      );
-
-      // Reset ProfileProvider
-      profileProvider.reset();
-
-      // Reset StoryController
-      storyController.reset();
-
-      // Reset HighlightFlowProvider
-      highlightProvider.reset();
-
-      // Reset BlockProvider
-      blockProvider.reset();
-
-      // Reset SavePostProvider
-      saveProvider.reset();
-
-      debugPrint('✅ [LogoutProvider] All providers reset successfully');
-    } catch (e) {
-      debugPrint('❌ [LogoutProvider] Error resetting providers: $e');
-    }
-  }
 
   /// Clear any error messages
   void clearError() {

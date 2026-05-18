@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gruve_app/core/debug/debug_logger.dart';
@@ -57,18 +56,7 @@ class CacheConfig {
     this.maxMemoryEntries = 100,
   });
 
-  /// Helper method to get data size
-  int _getDataSize(dynamic data) {
-    try {
-      if (data == null) return 0;
-      if (data is String) return (data as String).length;
-      if (data is Map) return (data as Map).toString().length;
-      if (data is List) return (data as List).toString().length;
-      return data.toString().length;
-    } catch (e) {
-      return 0;
-    }
-  }
+
 }
 
 /// Predefined cache configurations
@@ -165,7 +153,6 @@ class CacheManager {
     final memoryEntry = _memoryCache[key];
     if (memoryEntry != null) {
       if (memoryEntry.isValid) {
-        final age = memoryEntry.age;
         debugLog.cache('GET', key, 
           type: 'MEMORY', 
           hit: true, 
@@ -200,7 +187,7 @@ class CacheManager {
       if (staleData != null) {
         debugLog.cache('GET', key, 
           type: 'STALE', 
-          hit: memoryEntry?.isValid == true ? true : diskEntry?.isValid == true ? true : false,
+          hit: memoryEntry?.isValid == true || diskEntry?.isValid == true,
           size: _getDataSize(staleData));
         return staleData as T;
       }

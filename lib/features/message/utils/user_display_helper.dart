@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../models/conversation_model.dart';
-import '../presentation/provider/user_provider.dart';
 import '../domain/entities/user_entity.dart';
 import '../../profile/data/models/user_profile_model.dart';
 
@@ -74,7 +73,7 @@ class UserDisplayHelper {
       return name;
     }
     
-    final fallback = 'User ${profile.userId ?? 'Unknown'}';
+    final fallback = 'User ${profile.userId}';
     debugPrint('👤 [UserDisplayHelper] UserProfile displayName: "$fallback" (using ID fallback)');
     return fallback;
   }
@@ -108,22 +107,22 @@ class UserDisplayHelper {
       }
       
       // Try fullName first (for UserEntity, UserProfile, etc.)
-      final fullName = user.fullName?.toString().trim() ?? '';
-      if (fullName.isNotEmpty && fullName != 'Unknown') {
+      final fullName = user.fullName?.toString().trim();
+      if (fullName != null && fullName.isNotEmpty && fullName != 'Unknown') {
         debugPrint('👤 [UserDisplayHelper] LegacyUser displayName: "$fullName" (using fullName)');
         return fullName;
       }
       
       // Try name field
-      final name = user.name?.toString().trim() ?? '';
-      if (name.isNotEmpty && name != 'Unknown') {
+      final name = user.name?.toString().trim();
+      if (name != null && name.isNotEmpty && name != 'Unknown') {
         debugPrint('👤 [UserDisplayHelper] LegacyUser displayName: "$name" (using name)');
         return name;
       }
       
       // Fallback to ID
-      final id = user.id?.toString() ?? 'Unknown';
-      final fallback = 'User $id';
+      final id = user.id?.toString();
+      final fallback = 'User ${id ?? 'Unknown'}';
       debugPrint('👤 [UserDisplayHelper] LegacyUser displayName: "$fallback" (using ID fallback)');
       return fallback;
     } catch (e) {
@@ -146,12 +145,12 @@ class UserDisplayHelper {
       }
       
       if (user is UserProfile) {
-        return (user.userId ?? '').trim();
+        return user.userId.trim();
       }
       
       // Legacy dynamic user
-      final id = user.id?.toString() ?? user.userId?.toString() ?? '';
-      if (id.isNotEmpty) {
+      final id = user.id?.toString();
+      if (id != null && id.isNotEmpty) {
         return id.trim();
       }
       
@@ -177,7 +176,8 @@ class UserDisplayHelper {
       }
       
       if (user is UserProfile) {
-        return user.profilePicture?.trim();
+        final pic = user.profilePicture.trim();
+        return pic.isEmpty ? null : pic;
       }
       
       // Legacy dynamic user

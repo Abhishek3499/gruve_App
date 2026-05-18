@@ -77,6 +77,8 @@ class MessageProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _isRefreshing = false;
   String? _error;
+  DateTime? _lastFetchTime;
+  static const _cacheValidDuration = Duration(minutes: 5);
 
   // Pagination support (for future implementation)
   int _currentPage = 1;
@@ -189,6 +191,15 @@ class MessageProvider extends ChangeNotifier {
   /// [refresh] - If true, will clear existing data and fetch fresh data
   /// [page] - Page number for pagination (default: 1)
   Future<void> fetchConversations({bool refresh = false, int? page}) async {
+    // Check cache validity - reduce cache time for better freshness
+    if (!refresh && 
+        _lastFetchTime != null && 
+        DateTime.now().difference(_lastFetchTime!) < const Duration(minutes: 2) &&
+        _conversations.isNotEmpty) {
+      debugPrint('✅ [MessageProvider] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)');
+      return;
+    }
+
     final fetchStart = DateTime.now();
     final requestedPage = page ?? (refresh ? 1 : _currentPage);
     final isPagination = !refresh && requestedPage > 1;
@@ -239,6 +250,7 @@ class MessageProvider extends ChangeNotifier {
 
       if (refresh) {
         _conversations = conversations;
+        _lastFetchTime = DateTime.now();
       } else {
         // Deduplicate by conversation.id before appending
         final existingIds = _conversations.map((c) => c.id).toSet();
@@ -278,9 +290,16 @@ class MessageProvider extends ChangeNotifier {
       debugPrint('💥 [MessageProvider] Error fetching conversations: $e');
       _setError(e.toString());
     } finally {
-      _setLoading(false);
-      _setLoadingMore(false);
-      _setRefreshing(false);
+      // Clear loading states properly
+      if (refresh) {
+        _setRefreshing(false);
+      } else if (isPagination) {
+        _setLoadingMore(false);
+      } else {
+        _setLoading(false);
+      }
+      
+      debugPrint('🏁 [MessageProvider] Loading states cleared - isLoading: $_isLoading, isRefreshing: $_isRefreshing, isLoadingMore: $_isLoadingMore');
     }
   }
 

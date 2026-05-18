@@ -33,13 +33,45 @@ class _SharePostScreenState extends State<SharePostScreen> {
   List<ChatUser> selectedUsers = [];
   List<ChatUser> taggedUsers = [];
   TextEditingController captionController = TextEditingController();
+  bool _isSharing = false;
   @override
   void initState() {
     super.initState();
-    // Initialize with tagged users if provided
     if (widget.taggedUsers != null) {
       taggedUsers = List.from(widget.taggedUsers!);
     }
+  }
+
+  @override
+  void dispose() {
+    captionController.dispose();
+    super.dispose();
+  }
+
+  void _handleShare() async {
+    if (_isSharing) return;
+
+    setState(() => _isSharing = true);
+
+    debugPrint("🔥 SHARE CLICKED");
+
+    final caption = captionController.text;
+    final mediaPath = widget.mediaPath;
+
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    if (!mounted) return;
+
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    if (widget.popPostPreviewRouteAfterShare && navigator.canPop()) {
+      navigator.pop();
+    }
+
+    PostShareFlowBridge.scheduleShareUploadAfterReturningHome(
+      caption: caption,
+      mediaPath: mediaPath,
+    );
   }
 
   @override
@@ -250,42 +282,32 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       child: SizedBox(
                         height: 42,
                         child: GestureDetector(
-                          onTap: () {
-                            debugPrint("🔥 SHARE CLICKED");
-
-                            final caption = captionController.text;
-                            final mediaPath = widget.mediaPath;
-
-                            final navigator = Navigator.of(context);
-                            navigator.pop();
-                            if (widget.popPostPreviewRouteAfterShare &&
-                                navigator.canPop()) {
-                              navigator.pop();
-                            }
-                            PostShareFlowBridge.scheduleShareUploadAfterReturningHome(
-                              caption: caption,
-                              mediaPath: mediaPath,
-                            );
-                          },
+                          onTap: _isSharing ? null : _handleShare,
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
-                              color: const Color.fromARGB(
-                                155,
-                                120,
-                                2,
-                                99,
-                              ), // 👈 same as Edit Video
+                              color: _isSharing
+                                  ? const Color.fromARGB(100, 120, 2, 99)
+                                  : const Color.fromARGB(155, 120, 2, 99),
                             ),
                             alignment: Alignment.center,
-                            child: const Text(
-                              "Share",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: _isSharing
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Share",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

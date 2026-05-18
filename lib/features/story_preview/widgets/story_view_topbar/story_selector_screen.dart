@@ -311,9 +311,8 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
 
                   if (!mounted) return;
 
-                  Navigator.pop(context);
-
                   if (context.mounted) {
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Highlight created successfully! 🎉'),

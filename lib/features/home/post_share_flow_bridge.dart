@@ -8,10 +8,13 @@ import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart
 
 class PostShareFlowBridge {
   /// Home registers: show the existing processing overlay (same as camera flow).
-  static Function()? onShareStartProcessing;
+  static Function(bool isVideo)? onShareStartProcessing;
 
   /// Home registers: dismiss overlay + cleanup [VideoService] if upload fails.
   static Function()? onShareUploadError;
+  
+  /// Home registers: show success snackbar with appropriate message
+  static Function(bool isVideo)? onShowSuccessSnackbar;
 
   /// Home registers: switch [IndexedStack] to the video feed tab (index 0) so
   /// share / processing never leaves the user on Profile or another tab.
@@ -26,9 +29,9 @@ class PostShareFlowBridge {
 
   static bool _needsRefresh = false;
 
-  static void notifyShareStartProcessing() {
+  static void notifyShareStartProcessing(bool isVideo) {
     onRequestShowHomeFeed?.call();
-    onShareStartProcessing?.call();
+    onShareStartProcessing?.call(isVideo);
   }
 
   static void notifyStorySharedNavigateToProfile() {
@@ -70,6 +73,12 @@ class PostShareFlowBridge {
     });
   }
 
+  static bool _isVideoPath(String path) {
+    return path.toLowerCase().endsWith('.mp4') ||
+        path.toLowerCase().endsWith('.mov') ||
+        path.toLowerCase().endsWith('.avi');
+  }
+
   /// Ensures the processing overlay route is committed before [createPost] runs.
   /// Otherwise a fast failure could call [onShareUploadError] while the dialog
   /// is not on the stack yet, and a stray [Navigator.pop] would remove [HomeScreen].
@@ -86,23 +95,22 @@ class PostShareFlowBridge {
     String mediaPath,
   ) async {
     try {
-      final isVideo = mediaPath.toLowerCase().endsWith('.mp4') || 
-                      mediaPath.toLowerCase().endsWith('.mov');
+      final isVideo = _isVideoPath(mediaPath);
       if (kDebugMode) {
         debugPrint("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
         debugPrint("📁 [Bridge] Path: $mediaPath");
       }
       
-      notifyShareStartProcessing();
+      notifyShareStartProcessing(isVideo);
       await _waitForProcessingOverlayFrame();
       
       await PostService().createPost(caption: caption, mediaPath: mediaPath);
       
       if (kDebugMode) {
-        debugPrint("✅ [Bridge] ${isVideo ? 'Video' : 'Image'} upload completed");
+        debugPrint("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");
       }
       
-      await notifyPostCreated();
+      await notifyPostCreated(isVideo: isVideo);
       
       if (kDebugMode) {
         debugPrint("🔔 [Bridge] Post created notification finished");
@@ -115,9 +123,9 @@ class PostShareFlowBridge {
     }
   }
 
-  static Future<void> notifyPostCreated() async {
+  static Future<void> notifyPostCreated({required bool isVideo}) async {
     if (kDebugMode) {
-      debugPrint("🔔 [Bridge] notifyPostCreated called");
+      debugPrint("🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo)");
     }
 
     if (_videoControllerRef != null) {
@@ -151,6 +159,9 @@ class PostShareFlowBridge {
 
     await ProfileCountRefreshBridge.notifyCountsChanged(reason: 'post_created');
     markProcessingCompleted();
+    
+    // Show success snackbar
+    onShowSuccessSnackbar?.call(isVideo);
   }
 
   static bool checkAndClearRefreshNeeded() {
@@ -167,6 +178,7 @@ class PostShareFlowBridge {
   static void clearCallbacks() {
     onShareStartProcessing = null;
     onShareUploadError = null;
+    onShowSuccessSnackbar = null;
     onRequestShowHomeFeed = null;
     onRequestShowProfileTab = null;
     _videoControllerRef = null;

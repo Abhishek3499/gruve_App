@@ -43,7 +43,7 @@ class EditProfileController {
           fullname: fullname,
           username: username,
           bio: bio,
-          profile_picture: profile_picture,
+          profilePicture: profile_picture,
         ),
       );
 
@@ -72,9 +72,9 @@ class EditProfileController {
 
   /// Get current profile picture URL or fallback
   String get currentProfilePicture {
-    if (profileResponse?.data.profile_picture != null &&
-        profileResponse!.data.profile_picture!.isNotEmpty) {
-      return profileResponse!.data.profile_picture!;
+    if (profileResponse?.data.profilePicture != null &&
+        profileResponse!.data.profilePicture!.isNotEmpty) {
+      return profileResponse!.data.profilePicture!;
     }
     return 'assets/search_screen_images/profile.png'; // Default fallback
   }

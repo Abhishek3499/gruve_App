@@ -97,9 +97,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     return false;
                   }
 
-                  // TODO: handle purchase logic
+                  // Purchase logic placeholder
 
-                  return true; // ✅ MUST ADD
+                  return true;
                 },
               ),
             ),

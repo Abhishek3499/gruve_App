@@ -249,7 +249,7 @@ class OptimizedStoryImage extends StatelessWidget {
             height: height,
             fit: BoxFit.cover,
           ),
-          if (overlay != null) overlay!,
+          ?overlay,
         ],
       ),
     );

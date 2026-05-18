@@ -299,10 +299,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           onComplete: () async {
 
                             final email = _emailController.text.trim();
-
+                            if (!mounted) return false;
+                            final messenger = ScaffoldMessenger.of(context);
+                            final nav = Navigator.of(context);
                             // Check real-time validation errors instead of duplicate validation
                             if (_emailError != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
                                 SnackBar(content: Text(_emailError!)),
                               );
                               return false;
@@ -328,10 +330,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
 
                               if (!mounted) return false;
-
-                              Navigator.push(
-
-                                context,
+                              nav.push(
 
                                 MaterialPageRoute(
 
@@ -354,7 +353,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     isForgot: true,
 
                                     onVerifiedWithToken: (token) {
-
+                                      if (!context.mounted) return;
                                       Navigator.push(
 
                                         context,
@@ -383,11 +382,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                               // ✅ LOADER STOP ON ERROR
 
+                              if (!mounted) return false;
                               setState(() => isLoading = false);
 
-
-
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              messenger.showSnackBar(
 
                                 SnackBar(
 

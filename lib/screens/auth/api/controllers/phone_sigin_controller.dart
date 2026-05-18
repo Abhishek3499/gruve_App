@@ -11,12 +11,12 @@ class PhoneSignInController {
   String? errorMessage;
   PhoneloginResponse? response;
 
-  Future<void> signIn({required String phone_number}) async {
+  Future<void> signIn({required String phoneNumber}) async {
     isLoading = true;
     errorMessage = null;
 
     try {
-      final res = await _service.signIn(phone_number: phone_number);
+      final res = await _service.signIn(phoneNumber: phoneNumber);
 
       response = res;
 

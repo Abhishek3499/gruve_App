@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
@@ -126,14 +125,11 @@ class RequestDeduplicator {
 class CacheInterceptor extends Interceptor {
   final CacheManager _cacheManager = CacheManager();
   final RequestDeduplicator _deduplicator = RequestDeduplicator();
-  final bool _enableMemoryCache;
-  final bool _enableDiskCache;
 
   CacheInterceptor({
     bool enableMemoryCache = true,
     bool enableDiskCache = true,
-  }) : _enableMemoryCache = enableMemoryCache,
-       _enableDiskCache = enableDiskCache;
+  });
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {

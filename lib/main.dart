@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
@@ -14,7 +13,6 @@ import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:developer' as developer;
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/screens/splash_screen.dart';
@@ -61,14 +59,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SavePostProvider()),
         ChangeNotifierProvider(create: (_) => LogoutProvider()),
         ChangeNotifierProvider(
+          lazy: true,
           create: (_) => MessageProvider(MessageService()),
         ),
         ChangeNotifierProvider(
+          lazy: true,
           create: (_) => ConversationController(MessageService()),
         ),
         ChangeNotifierProvider(
-          lazy: false,
-
+          lazy: true,
           create: (_) => UserProvider(
             UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
           ),

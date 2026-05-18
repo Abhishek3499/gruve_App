@@ -282,7 +282,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
       identifier: widget.identifier,
 
-      phone_number: widget.type == "phone" ? widget.identifier : "",
+      phoneNumber: widget.type == "phone" ? widget.identifier : "",
 
       email: widget.type == "email" ? widget.identifier : "",
 

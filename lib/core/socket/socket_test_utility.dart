@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'socket_reconnect_manager.dart';
 import 'socket_logger.dart';
 
@@ -19,7 +18,6 @@ class SocketTestUtility {
   /// Start comprehensive socket test
   static Future<void> startTest() async {
     if (_isTestRunning) {
-      print('🧪 [SOCKET TEST] Test already running');
       return;
     }
     
@@ -29,7 +27,6 @@ class SocketTestUtility {
     _errorsCount = 0;
     _testResults.clear();
     
-    print('🧪 [SOCKET TEST] Starting comprehensive socket test...');
     SocketLogger.logEvent('TEST_START', 'Comprehensive socket test started');
     
     // Test 1: Connection Test
@@ -53,20 +50,16 @@ class SocketTestUtility {
     await _generateTestReport();
     _isTestRunning = false;
     
-    print('🧪 [SOCKET TEST] Test completed');
     SocketLogger.logEvent('TEST_END', 'Comprehensive socket test completed');
   }
   
   /// Test connection establishment
   static Future<void> _testConnection() async {
-    print('🔗 [SOCKET TEST] Testing connection...');
-    
     try {
       final manager = SocketReconnectManager();
       
       // Test connection state
       final initialState = manager.state;
-      print('📊 [SOCKET TEST] Initial state: ${initialState.name}');
       
       // Try to connect
       await manager.connect();
@@ -75,7 +68,6 @@ class SocketTestUtility {
       await Future.delayed(const Duration(seconds: 5));
       
       final finalState = manager.state;
-      print('📊 [SOCKET TEST] Final state: ${finalState.name}');
       
       final success = finalState == SocketState.connected;
       
@@ -93,8 +85,6 @@ class SocketTestUtility {
         'finalState': finalState.name,
       });
       
-      print(success ? '✅ [SOCKET TEST] Connection test PASSED' : '❌ [SOCKET TEST] Connection test FAILED');
-      
     } catch (e) {
       _errorsCount++;
       _testResults.add({
@@ -105,19 +95,15 @@ class SocketTestUtility {
       });
       
       SocketLogger.logError('Connection test failed: $e', context: 'testConnection');
-      print('❌ [SOCKET TEST] Connection test FAILED: $e');
     }
   }
   
   /// Test heartbeat mechanism
   static Future<void> _testHeartbeat() async {
-    print('💓 [SOCKET TEST] Testing heartbeat...');
-    
     try {
       final manager = SocketReconnectManager();
       
       if (!manager.isConnected) {
-        print('⚠️ [SOCKET TEST] Cannot test heartbeat - not connected');
         return;
       }
       
@@ -146,8 +132,6 @@ class SocketTestUtility {
         'messagesSent': _messagesSent,
       });
       
-      print(success ? '✅ [SOCKET TEST] Heartbeat test PASSED' : '❌ [SOCKET TEST] Heartbeat test FAILED');
-      
     } catch (e) {
       _errorsCount++;
       _testResults.add({
@@ -158,19 +142,15 @@ class SocketTestUtility {
       });
       
       SocketLogger.logError('Heartbeat test failed: $e', context: 'testHeartbeat');
-      print('❌ [SOCKET TEST] Heartbeat test FAILED: $e');
     }
   }
   
   /// Test message sending
   static Future<void> _testMessageSending() async {
-    print('📤 [SOCKET TEST] Testing message sending...');
-    
     try {
       final manager = SocketReconnectManager();
       
       if (!manager.isConnected) {
-        print('⚠️ [SOCKET TEST] Cannot test message sending - not connected');
         return;
       }
       
@@ -200,8 +180,6 @@ class SocketTestUtility {
         'messagesSent': _messagesSent,
       });
       
-      print(success ? '✅ [SOCKET TEST] Message sending test PASSED' : '❌ [SOCKET TEST] Message sending test FAILED');
-      
     } catch (e) {
       _errorsCount++;
       _testResults.add({
@@ -212,19 +190,15 @@ class SocketTestUtility {
       });
       
       SocketLogger.logError('Message sending test failed: $e', context: 'testMessageSending');
-      print('❌ [SOCKET TEST] Message sending test FAILED: $e');
     }
   }
   
   /// Test message receiving
   static Future<void> _testMessageReceiving() async {
-    print('📥 [SOCKET TEST] Testing message receiving...');
-    
     try {
       final manager = SocketReconnectManager();
       
       if (!manager.isConnected) {
-        print('⚠️ [SOCKET TEST] Cannot test message receiving - not connected');
         return;
       }
       
@@ -235,8 +209,6 @@ class SocketTestUtility {
       subscription = manager.messages.listen((message) {
         _messagesReceived++;
         messageReceived = true;
-        
-        print('📨 [SOCKET TEST] Message received: ${message.toString()}');
         
         _testResults.add({
           'test': 'message_receiving',
@@ -266,9 +238,6 @@ class SocketTestUtility {
         });
         
         SocketLogger.logError('No messages received in 10 seconds', context: 'testMessageReceiving');
-        print('❌ [SOCKET TEST] Message receiving test FAILED - No messages received');
-      } else {
-        print('✅ [SOCKET TEST] Message receiving test PASSED');
       }
       
     } catch (e) {
@@ -281,19 +250,15 @@ class SocketTestUtility {
       });
       
       SocketLogger.logError('Message receiving test failed: $e', context: 'testMessageReceiving');
-      print('❌ [SOCKET TEST] Message receiving test FAILED: $e');
     }
   }
   
   /// Test error handling
   static Future<void> _testErrorHandling() async {
-    print('💥 [SOCKET TEST] Testing error handling...');
-    
     try {
       final manager = SocketReconnectManager();
       
       if (!manager.isConnected) {
-        print('⚠️ [SOCKET TEST] Cannot test error handling - not connected');
         return;
       }
       
@@ -322,8 +287,6 @@ class SocketTestUtility {
         'invalidMessage': invalidMessage,
       });
       
-      print(sent ? '✅ [SOCKET TEST] Error handling test PASSED' : '❌ [SOCKET TEST] Error handling test FAILED');
-      
     } catch (e) {
       _errorsCount++;
       _testResults.add({
@@ -334,14 +297,11 @@ class SocketTestUtility {
       });
       
       SocketLogger.logError('Error handling test failed: $e', context: 'testErrorHandling');
-      print('❌ [SOCKET TEST] Error handling test FAILED: $e');
     }
   }
   
   /// Test reconnection
   static Future<void> _testReconnection() async {
-    print('🔄 [SOCKET TEST] Testing reconnection...');
-    
     try {
       final manager = SocketReconnectManager();
       
@@ -365,8 +325,6 @@ class SocketTestUtility {
         'success': reconnected,
       });
       
-      print(reconnected ? '✅ [SOCKET TEST] Reconnection test PASSED' : '❌ [SOCKET TEST] Reconnection test FAILED');
-      
     } catch (e) {
       _errorsCount++;
       _testResults.add({
@@ -377,22 +335,23 @@ class SocketTestUtility {
       });
       
       SocketLogger.logError('Reconnection test failed: $e', context: 'testReconnection');
-      print('❌ [SOCKET TEST] Reconnection test FAILED: $e');
     }
   }
   
   /// Generate comprehensive test report
   static Future<void> _generateTestReport() async {
+    final testSummary = {
+      'totalTests': _testResults.length,
+      'passedTests': _testResults.where((r) => r['success'] == true).length,
+      'failedTests': _testResults.where((r) => r['success'] == false).length,
+      'messagesSent': _messagesSent,
+      'messagesReceived': _messagesReceived,
+      'errorsCount': _errorsCount,
+      'testDuration': DateTime.now().toIso8601String(),
+    };
+    
     final report = {
-      'testSummary': {
-        'totalTests': _testResults.length,
-        'passedTests': _testResults.where((r) => r['success'] == true).length,
-        'failedTests': _testResults.where((r) => r['success'] == false).length,
-        'messagesSent': _messagesSent,
-        'messagesReceived': _messagesReceived,
-        'errorsCount': _errorsCount,
-        'testDuration': DateTime.now().toIso8601String(),
-      },
+      'testSummary': testSummary,
       'testResults': _testResults,
       'socketLogs': SocketLogger.getLogs(),
     };
@@ -401,16 +360,7 @@ class SocketTestUtility {
     final reportFile = File('socket_test_report_${DateTime.now().millisecondsSinceEpoch}.json');
     await reportFile.writeAsString(jsonEncode(report));
     
-    // Print summary
-    print('📊 [SOCKET TEST REPORT]');
-    print('✅ Passed: ${report['testSummary']['passedTests']}');
-    print('❌ Failed: ${report['testSummary']['failedTests']}');
-    print('📤 Messages sent: ${report['testSummary']['messagesSent']}');
-    print('📥 Messages received: ${report['testSummary']['messagesReceived']}');
-    print('💥 Errors: ${report['testSummary']['errorsCount']}');
-    print('📁 Report saved to: ${reportFile.path}');
-    
-    SocketLogger.logEvent('TEST_REPORT', 'Test report generated', data: report['testSummary']);
+    SocketLogger.logEvent('TEST_REPORT', 'Test report generated', data: testSummary as Map<String, dynamic>?);
   }
   
   /// Get current test statistics
@@ -432,7 +382,6 @@ class SocketTestUtility {
     }
     
     _isTestRunning = false;
-    print('🧪 [SOCKET TEST] Test stopped');
     SocketLogger.logEvent('TEST_STOP', 'Socket test stopped');
   }
 }

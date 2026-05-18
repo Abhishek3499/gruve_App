@@ -118,9 +118,9 @@ class ProfileProvider extends ChangeNotifier {
       username: updated.username.trim().isEmpty
           ? currentUser.username
           : updated.username,
-      profileImage: (updated.profile_picture ?? '').trim().isEmpty
+      profileImage: (updated.profilePicture ?? '').trim().isEmpty
           ? currentUser.profileImage
-          : updated.profile_picture!,
+          : updated.profilePicture!,
       isFollowing: currentUser.isFollowing,
       hasActiveStory: currentUser.hasActiveStory,
       storyCount: currentUser.storyCount,

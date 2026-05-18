@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class ProcessingDialog extends StatelessWidget {
   final double progress;
   final VoidCallback onCancel;
+  final bool isVideo;
 
   const ProcessingDialog({
     super.key,
     required this.progress,
     required this.onCancel,
+    this.isVideo = true,
   });
 
   @override
@@ -32,9 +34,9 @@ class ProcessingDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-                  const Text(
-                    "Processing Video",
-                    style: TextStyle(
+                  Text(
+                    isVideo ? "Processing Video" : "Uploading Photo",
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -69,10 +71,12 @@ class ProcessingDialog extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 30),
-                  const Text(
-                    "Please wait while we\nprocess your video",
+                  Text(
+                    isVideo
+                        ? "Please wait while we\nprocess your video"
+                        : "Please wait while we\nupload your photo",
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 30),
 

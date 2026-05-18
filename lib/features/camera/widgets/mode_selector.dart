@@ -76,7 +76,11 @@ class _ModeSelectorState extends State<ModeSelector> {
               result.mediaPath,
             );
             if (shareResult == 'start_processing') {
-              PostShareFlowBridge.notifyShareStartProcessing();
+              // Detect media type from file path
+              final isVideo = result.mediaPath.toLowerCase().endsWith('.mp4') ||
+                  result.mediaPath.toLowerCase().endsWith('.mov') ||
+                  result.mediaPath.toLowerCase().endsWith('.avi');
+              PostShareFlowBridge.notifyShareStartProcessing(isVideo);
             }
           }
         }

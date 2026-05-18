@@ -5,11 +5,11 @@ import '../models/phone_login_model.dart';
 
 class PhoneSiginServices {
   final Dio _dio = AppDio.create();
-  Future<PhoneloginResponse> signIn({required String phone_number}) async {
+  Future<PhoneloginResponse> signIn({required String phoneNumber}) async {
     try {
       const endpoint = "auth/phone-login/";
       final requestData = {
-        "phone_number": phone_number,
+        "phone_number": phoneNumber,
       };
       
       debugPrint("=== PHONE LOGIN REQUEST ===");

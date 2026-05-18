@@ -1,6 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gruve_app/core/cache/cache_interceptor.dart';
-import 'package:gruve_app/features/message/services/message_service.dart';
 
 void main() {
   group('Cache Fixes Verification', () {
@@ -41,7 +41,7 @@ void main() {
       expect(deserialized.dataType, equals('list'));
       expect(deserialized.data, equals(messagesResponse));
       
-      print('✅ CacheData successfully handles List<dynamic> responses');
+      debugPrint('✅ CacheData successfully handles List<dynamic> responses');
     });
 
     test('CacheData should handle Map responses (profile API)', () {
@@ -59,7 +59,7 @@ void main() {
       expect(cacheData.data, equals(profileResponse));
       expect(cacheData.data, isA<Map<String, dynamic>>());
       
-      print('✅ CacheData successfully handles Map<String, dynamic> responses');
+      debugPrint('✅ CacheData successfully handles Map<String, dynamic> responses');
     });
 
     test('CacheData should handle nested responses (paginated API)', () {
@@ -88,7 +88,7 @@ void main() {
       expect(cacheData.data, equals(paginatedResponse));
       expect(cacheData.data, isA<Map<String, dynamic>>());
       
-      print('✅ CacheData successfully handles nested responses with results array');
+      debugPrint('✅ CacheData successfully handles nested responses with results array');
     });
 
     test('CacheData should handle empty responses', () {
@@ -97,7 +97,7 @@ void main() {
       expect(emptyCacheData.dataType, equals('empty'));
       expect(emptyCacheData.data, isNull);
       
-      print('✅ CacheData successfully handles empty responses');
+      debugPrint('✅ CacheData successfully handles empty responses');
     });
 
     test('RequestDeduplicator should prevent duplicate requests', () async {
@@ -128,7 +128,7 @@ void main() {
       expect(stats['inFlightRequests'], equals(0)); // Should be 0 after completion
       expect(stats['requests'], contains('test_key'));
       
-      print('✅ RequestDeduplicator successfully prevents duplicate requests');
+      debugPrint('✅ RequestDeduplicator successfully prevents duplicate requests');
       
       // Cleanup
       deduplicator.clear();
@@ -155,7 +155,7 @@ void main() {
       expect(result1, equals('result_key1'));
       expect(result2, equals('result_key2'));
       
-      print('✅ RequestDeduplicator allows different requests to proceed');
+      debugPrint('✅ RequestDeduplicator allows different requests to proceed');
       
       // Cleanup
       deduplicator.clear();
@@ -172,7 +172,7 @@ void main() {
       expect(stats, isA<Map<String, dynamic>>());
       expect(stats['inFlightRequests'], equals(0));
       
-      print('✅ CacheInterceptor integration works without crashes');
+      debugPrint('✅ CacheInterceptor integration works without crashes');
     });
   });
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
 import '../../search/widgets/search_bar.dart';
-import '../widgets/user_list_item.dart';
 
 class SearchUsersScreen extends StatelessWidget {
   const SearchUsersScreen({super.key});

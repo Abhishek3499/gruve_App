@@ -211,7 +211,7 @@ class _SenderAvatar extends StatelessWidget {
         highlightColor: Colors.white24,
         child: CircleAvatar(radius: radius, backgroundColor: Colors.white12),
       ),
-      errorWidget: (_, __, ___) => _fallback(size),
+      errorWidget: (_, _, _) => _fallback(size),
       fadeInDuration: const Duration(milliseconds: 200),
       memCacheWidth: size.toInt() * 2,
       memCacheHeight: size.toInt() * 2,

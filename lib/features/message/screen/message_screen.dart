@@ -24,19 +24,31 @@ class _MessageScreenState extends State<MessageScreen> {
   void initState() {
     super.initState();
     debugPrint('📱 [MessageScreen] Screen initialized');
-    // Fetch conversations on initial load
+    // Fetch both conversations and users in parallel on initial load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('🔄 [MessageScreen] Starting initial conversation fetch');
-      context.read<MessageProvider>().fetchConversations();
+      debugPrint('🔄 [MessageScreen] Starting parallel fetch');
+      _fetchInitialData();
     });
+  }
+
+  Future<void> _fetchInitialData() async {
+    await Future.wait([
+      context.read<MessageProvider>().fetchConversations(),
+      context.read<UserProvider>().fetchUsers(),
+    ]);
+    debugPrint('✅ [MessageScreen] Initial data loaded');
   }
 
   Future<void> _handleRefresh() async {
     debugPrint('🔄 [MessageScreen] Refresh started');
 
+    // Clear cache timestamps to force fresh data
+    final messageProvider = context.read<MessageProvider>();
+    final userProvider = context.read<UserProvider>();
+
     await Future.wait([
-      context.read<MessageProvider>().refreshConversations(),
-      context.read<UserProvider>().refreshUsers(),
+      messageProvider.refreshConversations(),
+      userProvider.refreshUsers(),
     ]);
 
     debugPrint('✅ [MessageScreen] Refresh completed');
@@ -177,6 +189,12 @@ class _MessageScreenState extends State<MessageScreen> {
       return const ChatListShimmer(itemCount: 7);
     }
 
+    // Show shimmer during refresh
+    if (messageProvider.isRefreshing) {
+      debugPrint('🔄 [buildConversationList] → showing shimmer (refreshing)');
+      return const ChatListShimmer(itemCount: 7);
+    }
+
     // Show error state
     if (messageProvider.hasError && !messageProvider.hasConversations) {
       debugPrint('❌ [buildConversationList] → showing error state');
@@ -217,6 +235,9 @@ class _MessageScreenState extends State<MessageScreen> {
           parent: BouncingScrollPhysics(),
         ),
         padding: const EdgeInsets.all(16),
+        cacheExtent: 1000,
+        addAutomaticKeepAlives: true,
+        addRepaintBoundaries: true,
         itemCount:
             messageProvider.conversations.length +
             (messageProvider.isLoadingMore ? 1 : 0),
@@ -238,21 +259,23 @@ class _MessageScreenState extends State<MessageScreen> {
           }
 
           final conversation = messageProvider.conversations[index];
-          return Dismissible(
-            key: ValueKey(conversation.id),
-            direction: DismissDirection.endToStart,
-            background: SwipeDeleteBackground(onDelete: () {}),
-            confirmDismiss: (direction) async {
-              if (direction == DismissDirection.endToStart) {
-                final confirmed = await _showDeleteConfirmation(conversation);
-                if (!confirmed || !mounted) return false;
-                return _deleteConversation(conversation);
-              }
-              return false;
-            },
-            child: MessageCard(
-              conversation: conversation,
-              onTap: () => _navigateToChat(conversation),
+          return RepaintBoundary(
+            child: Dismissible(
+              key: ValueKey(conversation.id),
+              direction: DismissDirection.endToStart,
+              background: SwipeDeleteBackground(onDelete: () {}),
+              confirmDismiss: (direction) async {
+                if (direction == DismissDirection.endToStart) {
+                  final confirmed = await _showDeleteConfirmation(conversation);
+                  if (!confirmed || !mounted) return false;
+                  return _deleteConversation(conversation);
+                }
+                return false;
+              },
+              child: MessageCard(
+                conversation: conversation,
+                onTap: () => _navigateToChat(conversation),
+              ),
             ),
           );
         },

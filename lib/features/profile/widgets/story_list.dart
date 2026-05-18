@@ -87,7 +87,8 @@ class StoryList extends StatelessWidget {
           }
 
           if (result == 'start_processing' && context.mounted) {
-            PostShareFlowBridge.notifyShareStartProcessing();
+            // For camera flow from story, assume video (most common case)
+            PostShareFlowBridge.notifyShareStartProcessing(true);
           }
         },
         child: const Column(

@@ -119,13 +119,6 @@ class MessageModel {
     );
   }
 
-  static String _stringValue(dynamic value) => value?.toString() ?? '';
-
-  static String? _nullableString(dynamic value) {
-    final parsed = value?.toString();
-    return parsed == null || parsed.isEmpty ? null : parsed;
-  }
-
   static DateTime _parseDateTime(dynamic value) {
     if (value is DateTime) return value;
     if (value is String && value.isNotEmpty) {

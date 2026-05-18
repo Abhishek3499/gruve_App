@@ -1,39 +1,40 @@
+// ignore_for_file: avoid_print
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/core/socket/socket_reconnect_manager.dart';
 
 /// Test script to verify WebSocket URL configuration
 /// Run with: dart run test_websocket_config.dart
 void main() async {
-  print('🔍 Testing WebSocket URL Configuration...\n');
+  debugPrint('🔍 Testing WebSocket URL Configuration...\n');
 
   // Load environment
   await dotenv.load(fileName: ".env");
   await EnvironmentConfig.initialize();
 
-  print('📊 Environment Configuration:');
-  print('  Environment: ${EnvironmentConfig.environment.name}');
-  print('  Base URL: ${EnvironmentConfig.baseUrl}');
-  print('  WebSocket URL: ${EnvironmentConfig.wsUrl}');
-  print('  Is Production: ${EnvironmentConfig.isProduction}');
-  print('  Logging Enabled: ${EnvironmentConfig.enableLogging}\n');
+  debugPrint('📊 Environment Configuration:');
+  debugPrint('  Environment: ${EnvironmentConfig.environment.name}');
+  debugPrint('  Base URL: ${EnvironmentConfig.baseUrl}');
+  debugPrint('  WebSocket URL: ${EnvironmentConfig.wsUrl}');
+  debugPrint('  Is Production: ${EnvironmentConfig.isProduction}');
+  debugPrint('  Logging Enabled: ${EnvironmentConfig.enableLogging}\n');
 
   // Test SocketReconnectManager URL
-  print('🔌 SocketReconnectManager Configuration:');
-  final reconnectManager = SocketReconnectManager();
-  print('  Uses EnvironmentConfig.wsUrl: ✅');
-  print('  Final WebSocket URL: ${SocketReconnectManager._baseUrl}');
+  debugPrint('🔌 SocketReconnectManager Configuration:');
+  debugPrint('  Uses EnvironmentConfig.wsUrl: ✅');
+  debugPrint('  Final WebSocket URL: ${EnvironmentConfig.wsUrl}');
 
   // Verify no hardcoded devtunnels URLs
   final wsUrl = EnvironmentConfig.wsUrl;
   final hasDevtunnels =
       wsUrl.contains('devtunnels') || wsUrl.contains('zg7h02xx');
 
-  print('\n🔍 URL Validation:');
+  debugPrint('\n🔍 URL Validation:');
   if (hasDevtunnels) {
-    print('  ❌ FAILED: Still contains devtunnels URL');
+    debugPrint('  ❌ FAILED: Still contains devtunnels URL');
   } else {
-    print('  ✅ PASSED: No devtunnels URLs found');
+    debugPrint('  ✅ PASSED: No devtunnels URLs found');
   }
 
   // Verify correct production URL
@@ -42,13 +43,13 @@ void main() async {
   final hasCorrectUrl = wsUrl == expectedProdUrl;
 
   if (hasCorrectUrl) {
-    print('  ✅ PASSED: Using correct production WebSocket URL');
+    debugPrint('  ✅ PASSED: Using correct production WebSocket URL');
   } else {
-    print('  ❌ FAILED: Expected $expectedProdUrl, got $wsUrl');
+    debugPrint('  ❌ FAILED: Expected $expectedProdUrl, got $wsUrl');
   }
 
-  print('\n🎯 Final WebSocket URL with token format:');
-  print('  ${wsUrl}?token=YOUR_TOKEN_HERE');
+  debugPrint('\n🎯 Final WebSocket URL with token format:');
+  debugPrint('  $wsUrl?token=YOUR_TOKEN_HERE');
 
-  print('\n✅ WebSocket URL Configuration Test Complete!');
+  debugPrint('\n✅ WebSocket URL Configuration Test Complete!');
 }

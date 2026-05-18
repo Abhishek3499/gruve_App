@@ -93,7 +93,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
   // 🚀 MEMORY MONITORING: Track subscription health
   final Set<StreamSubscription> _activeSubscriptions = <StreamSubscription>{};
   final Set<Timer> _activeTimers = <Timer>{};
-  int _lastSubscriptionCount = 0;
 
   final StreamController<SocketEvent> _eventController =
       StreamController<SocketEvent>.broadcast();
@@ -287,7 +286,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
       });
 
       // 🔥 DEBUG: Print active WebSocket URL before connection
-      print("🔥 ACTIVE WS URL => ${socketUri.toString()}");
+      debugPrint("🔥 ACTIVE WS URL => ${socketUri.toString()}");
 
       //  PRODUCTION: Connect with proper authentication
       try {
@@ -580,11 +579,11 @@ class SocketReconnectManager with WidgetsBindingObserver {
       data: stateChangeData,
     );
 
-    print(
+    debugPrint(
       '🔄 [SOCKET DEBUG] State changed: ${oldState.name} → ${newState.name}',
     );
-    print('📊 [SOCKET DEBUG] Reconnect attempts: $_reconnectAttempts');
-    print('🔗 [SOCKET DEBUG] Connection ID: $_connectionId');
+    debugPrint('📊 [SOCKET DEBUG] Reconnect attempts: $_reconnectAttempts');
+    debugPrint('🔗 [SOCKET DEBUG] Connection ID: $_connectionId');
 
     if (newState == SocketState.connected) {
       _reconnectAttempts = 0;
@@ -595,7 +594,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
         'CONNECTION_ESTABLISHED',
         'WebSocket connection established',
       );
-      print('✅ [SOCKET DEBUG] Connection established successfully');
+      debugPrint('✅ [SOCKET DEBUG] Connection established successfully');
     }
   }
 
@@ -805,12 +804,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
     }
   }
 
-  // 🚀 PRODUCTION: Generate WebSocket key for handshake
-  String _generateWebSocketKey() {
-    final bytes = List<int>.generate(16, (i) => math.Random().nextInt(256));
-    return base64.encode(bytes);
-  }
-
   // 🚀 HELPER METHODS: Timer management with tracking
   void _clearMemoryCleanupTimer() {
     _memoryCleanupTimer?.cancel();
@@ -822,29 +815,5 @@ class SocketReconnectManager with WidgetsBindingObserver {
     _connectionHealthCheck?.cancel();
     _activeTimers.remove(_connectionHealthCheck);
     _connectionHealthCheck = null;
-  }
-
-  // 🚀 MEMORY MONITORING: Track subscription health
-  void _trackSubscription(StreamSubscription? subscription, String name) {
-    if (subscription != null) {
-      _activeSubscriptions.add(subscription);
-      if (_activeSubscriptions.length != _lastSubscriptionCount) {
-        debugLog.socket(
-          'SUBSCRIPTION_TRACK',
-          properties: {'name': name, 'total': _activeSubscriptions.length},
-        );
-        _lastSubscriptionCount = _activeSubscriptions.length;
-      }
-    }
-  }
-
-  void _trackTimer(Timer? timer, String name) {
-    if (timer != null) {
-      _activeTimers.add(timer);
-      debugLog.socket(
-        'TIMER_TRACK',
-        properties: {'name': name, 'total': _activeTimers.length},
-      );
-    }
   }
 }

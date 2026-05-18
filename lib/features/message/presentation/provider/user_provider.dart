@@ -7,7 +7,6 @@ class UserProvider extends ChangeNotifier {
   final UserRepository repository;
   UserProvider(this.repository) {
     debugPrint('🔥 UserProvider CONSTRUCTOR CALLED');
-    _initializeUsers();
   }
 
   List<UserEntity> _users = [];
@@ -17,6 +16,8 @@ class UserProvider extends ChangeNotifier {
   int _currentPage = 1;
   String? _errorMessage;
   bool _hasInitialized = false;
+  DateTime? _lastFetchTime;
+  static const _cacheValidDuration = Duration(minutes: 2);
 
   // Getters
   List<UserEntity> get users => _users;
@@ -26,15 +27,16 @@ class UserProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
   String? get errorMessage => _errorMessage;
 
-  Future<void> _initializeUsers() async {
-    if (_hasInitialized) return;
-    _hasInitialized = true;
-
-    debugPrint('🔄 [UserProvider] Initializing - auto-fetching users...');
-    await fetchUsers();
-  }
-
   Future<void> fetchUsers({bool loadMore = false}) async {
+    // Check cache validity for initial load
+    if (!loadMore && 
+        _lastFetchTime != null && 
+        DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration &&
+        _users.isNotEmpty) {
+      debugPrint('✅ [UserProvider] Using cached users (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)');
+      return;
+    }
+
     // Prevent duplicate calls
     if (loadMore && (_isFetchingMore || !_hasNext)) {
       debugPrint(
@@ -83,6 +85,7 @@ class UserProvider extends ChangeNotifier {
         debugPrint('➕ [UserProvider] Appended ${response.users.length} users — total: ${_users.length}');
       } else {
         _users = response.users.map((m) => m.toEntity()).toList();
+        _lastFetchTime = DateTime.now();
         debugPrint('🔄 [UserProvider] Replaced list with ${response.users.length} users');
       }
 
@@ -103,6 +106,8 @@ class UserProvider extends ChangeNotifier {
       } else {
         _isLoading = false;
       }
+      
+      debugPrint('🏁 [UserProvider] Loading states cleared - isLoading: $_isLoading, isFetchingMore: $_isFetchingMore');
       notifyListeners();
     }
   }
@@ -110,6 +115,7 @@ class UserProvider extends ChangeNotifier {
   // Method to reset pagination state (for pull-to-refresh)
   Future<void> refreshUsers() async {
     debugPrint('🔄 [UserProvider] Refreshing users...');
+    _lastFetchTime = null; // Clear cache
     await fetchUsers(loadMore: false);
   }
 

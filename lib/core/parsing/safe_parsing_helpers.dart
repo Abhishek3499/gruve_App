@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// Safe parsing helpers for type-safe API response handling
 class SafeParsingHelpers {
-  /// Safely parse a dynamic value to Map<String, dynamic>
+  /// Safely parse a dynamic value to `Map<String, dynamic>`
   /// Returns empty map if parsing fails
   static Map<String, dynamic> safeMapParse(dynamic data, {String? context}) {
     if (data == null) {
@@ -30,7 +30,7 @@ class SafeParsingHelpers {
     return {};
   }
 
-  /// Safely parse a dynamic value to List<dynamic>
+  /// Safely parse a dynamic value to `List<dynamic>`
   /// Returns empty list if parsing fails
   static List<dynamic> safeListParse(dynamic data, {String? context}) {
     if (data == null) {
@@ -112,11 +112,11 @@ class SafeParsingHelpers {
     }
     
     if (data is Map) {
-      debugPrint('📊 [ResponseDebug] 🗺️ $context - Map keys: ${(data as Map).keys.toList()}');
-      debugPrint('📊 [ResponseDebug] 📏 $context - Map length: ${(data as Map).length}');
+      debugPrint('📊 [ResponseDebug] 🗺️ $context - Map keys: ${data.keys.toList()}');
+      debugPrint('📊 [ResponseDebug] 📏 $context - Map length: ${data.length}');
       
       // Log first few key-value pairs for inspection
-      final entries = (data as Map).entries.take(3).toList();
+      final entries = data.entries.take(3).toList();
       for (final entry in entries) {
         debugPrint('📊 [ResponseDebug] 🔑 $context - Sample: ${entry.key}: ${entry.value} (${entry.value.runtimeType})');
       }

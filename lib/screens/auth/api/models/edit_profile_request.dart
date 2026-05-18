@@ -4,17 +4,17 @@ class EditProfileRequest {
   final String fullname;
   final String username;
   final String? bio;
-  final String? profile_picture;
+  final String? profilePicture;
 
   EditProfileRequest({
     required this.fullname,
     required this.username,
     this.bio,
-    this.profile_picture,
+    this.profilePicture,
   }) {
     debugPrint("🏗️ [EditProfileRequest] Creating request object...");
     debugPrint(
-      "📝 [EditProfileRequest] Data: fullname='$fullname', username='$username', bio='$bio', profile_picture='$profile_picture'",
+      "📝 [EditProfileRequest] Data: fullname='$fullname', username='$username', bio='$bio', profile_picture='$profilePicture'",
     );
   }
 
@@ -30,10 +30,10 @@ class EditProfileRequest {
       debugPrint("📝 [EditProfileRequest] Bio omitted (null or empty)");
     }
 
-    if (profile_picture?.isNotEmpty == true) {
-      data['profile_picture'] = profile_picture;
+    if (profilePicture?.isNotEmpty == true) {
+      data['profile_picture'] = profilePicture;
       debugPrint(
-        "🖼️ [EditProfileRequest] Added profile_picture: '$profile_picture'",
+        "🖼️ [EditProfileRequest] Added profile_picture: '$profilePicture'",
       );
     } else {
       debugPrint(
@@ -47,6 +47,6 @@ class EditProfileRequest {
 
   @override
   String toString() {
-    return 'EditProfileRequest(fullname: $fullname, username: $username, bio: $bio, profile_picture: $profile_picture)';
+    return 'EditProfileRequest(fullname: $fullname, username: $username, bio: $bio, profile_picture: $profilePicture)';
   }
 }

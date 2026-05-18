@@ -245,8 +245,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
                   )
                 : LinearGradient(
                     colors: [
-                      AppColors.primaryPurple.withOpacity(0.5),
-                      AppColors.secondaryPurple.withOpacity(0.5),
+                      AppColors.primaryPurple.withValues(alpha: 0.5),
+                      AppColors.secondaryPurple.withValues(alpha: 0.5),
                     ],
                   ),
           ),

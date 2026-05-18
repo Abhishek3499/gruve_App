@@ -78,7 +78,6 @@ class EnvironmentConfig {
         break;
 
       case Environment.development:
-      default:
         _baseUrl =
             dotenv.env['DEV_BASE_URL'] ??
             'https://zg7h02xx-8001.inc1.devtunnels.ms/api/v1/';
@@ -130,7 +129,6 @@ class EnvironmentConfig {
       case Environment.staging:
         return 'Gruve (Staging)';
       case Environment.development:
-      default:
         return 'Gruve (Dev)';
     }
   }

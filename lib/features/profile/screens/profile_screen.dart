@@ -117,10 +117,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         extendBody: true,
         backgroundColor: const Color(0xFF42174C),
-        endDrawer: ProfileMenuDrawer(profileImage: provider.user?.profileImage),
+        endDrawer: provider.user != null 
+            ? ProfileMenuDrawer(profileImage: provider.user?.profileImage)
+            : null,
         body: Builder(
           builder: (context) {
             _log('[ProfileScreen] Build state - user: ${provider.user != null}, isLoading: ${provider.isLoading}, error: ${provider.errorMessage}');
+            
+            // Show skeleton immediately when user is null (logout or initial load)
+            if (provider.user == null) {
+              return _buildSkeleton();
+            }
             
             if (provider.errorMessage != null) {
               return Center(
@@ -143,10 +150,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               );
-            }
-            
-            if (provider.user == null) {
-              return _buildSkeleton();
             }
 
             return _buildMainContentForOwnProfile(provider);
@@ -367,7 +370,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: ElevatedButton(
                         onPressed: () {
-                          // TODO: Implement follow/unfollow functionality
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Follow functionality coming soon')),
                           );
@@ -398,7 +400,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (_scrollController.hasClients) {
                           _scrollController.jumpTo(0);
                         }
-                        // TODO: Load posts for other user
                       },
                     ),
                     Padding(
@@ -417,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fullName: userProfile.fullName.trim(),
                   username: _displayUsername(userProfile.username),
                   profileImage: userProfile.profilePicture,
-                  hasActiveStory: false, // TODO: Add story status to UserProfile model
+                  hasActiveStory: false,
                   onProfileUpdated: null, // Cannot edit other user's profile
                 ),
               ),

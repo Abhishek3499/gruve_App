@@ -67,7 +67,7 @@ class EditProfileService {
     final formData = FormData.fromMap(
       baseData.map((key, value) => MapEntry(key, value.toString())),
     );
-    final profilePicture = request.profile_picture?.trim();
+    final profilePicture = request.profilePicture?.trim();
 
     if (profilePicture != null && profilePicture.isNotEmpty) {
       if (_isLocalFilePath(profilePicture)) {
@@ -215,7 +215,7 @@ class EditProfileService {
         "  bio='${request.bio ?? 'null'}' ${request.bio != null ? 'length=${request.bio!.length}' : ''}",
       );
       debugPrint(
-        "  profile_picture='${request.profile_picture ?? 'null'}' isFile=${_isLocalFilePath(request.profile_picture)}",
+        "  profile_picture='${request.profilePicture ?? 'null'}' isFile=${_isLocalFilePath(request.profilePicture)}",
       );
 
       if (requestData is FormData) {

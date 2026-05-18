@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/conversation_model.dart';
@@ -101,8 +100,8 @@ class ConversationController extends ChangeNotifier {
       
       debugPrint('✅ [ConversationController] 🎉 Successfully created/retrieved conversation!');
       debugPrint('💬 [ConversationController] 🆔 Conversation ID: ${conversation.id}');
-      debugPrint('👤 [ConversationController] 👥 Participant 1: ${conversation.participant_1_id}');
-      debugPrint('👤 [ConversationController] 👥 Participant 2: ${conversation.participant_2_id}');
+      debugPrint('👤 [ConversationController] 👥 Participant 1: ${conversation.participant1Id}');
+      debugPrint('👤 [ConversationController] 👥 Participant 2: ${conversation.participant2Id}');
       debugPrint('👤 [ConversationController] 👨 Other user: ${conversation.otherUser.name}');
       
       return conversation;

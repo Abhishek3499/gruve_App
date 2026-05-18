@@ -13,7 +13,7 @@ class VerifyotpController {
   VerifyOtpResponse? verifyOtpResponse;
   Future<void> verifyOtp({
     required String identifier,
-    required String phone_number,
+    required String phoneNumber,
     required String email,
     required String type,
     required String otp,
@@ -28,12 +28,12 @@ class VerifyotpController {
     debugPrint("👉 isLogin: $isLogin");
     debugPrint("👉 identifier: $identifier");
     debugPrint("👉 email: $email");
-    debugPrint("👉 phone: $phone_number");
+    debugPrint("👉 phone: $phoneNumber");
 
     try {
       final response = await _service.verifyOtp(
         identifier: identifier,
-        phone_number: phone_number,
+        phoneNumber: phoneNumber,
         email: email,
         type: type,
         otp: otp,
@@ -66,7 +66,7 @@ class VerifyotpController {
 
           // ✅ FORGOT PASSWORD FLOW
           if (isForgot) {
-            final resetToken = response.data!.reset_token;
+            final resetToken = response.data!.resetToken;
 
             await TokenStorage.saveResetToken(resetToken!);
 

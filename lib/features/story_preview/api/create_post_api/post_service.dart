@@ -12,7 +12,6 @@ class PostService {
   late final Dio _dio;
 
   bool _isLoading = false;
-  CursorModel? _nextCursor;
   String? _lastRequestKey;
 
   PostService() {
@@ -234,10 +233,6 @@ class PostService {
 
       final hasMore = responseData['has_more'] as bool? ?? true;
 
-      if (!refresh) {
-        _nextCursor = nextCursor;
-      }
-
       debugPrint('📊 Has More: $hasMore');
       debugPrint('📊 API Posts Count: ${posts.length}');
 
@@ -321,7 +316,6 @@ class PostService {
   }
 
   void resetPagination() {
-    _nextCursor = null;
     _lastRequestKey = null;
     _isLoading = false;
   }

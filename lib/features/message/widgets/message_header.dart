@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import '../../search/models/search_navigation_type.dart';
 import '../../search/screens/search_page.dart';
 import 'message_avatar_list.dart';
 
@@ -60,7 +61,9 @@ class MessageHeader extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const SearchPage(),
+                          builder: (context) => const SearchPage(
+                            navigationType: SearchNavigationType.chat,
+                          ),
                         ),
                       );
                     },

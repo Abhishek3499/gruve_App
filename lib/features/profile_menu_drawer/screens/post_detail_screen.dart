@@ -236,17 +236,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         _buildActionButton(
                           icon: Icons.favorite,
                           count: post.likesCount,
-                          onTap: () {
-                            // TODO: Like functionality
-                          },
+                          onTap: () {},
                         ),
                         const SizedBox(width: 24),
                         _buildActionButton(
                           icon: Icons.comment,
                           count: post.commentsCount,
-                          onTap: () {
-                            // TODO: Comments functionality
-                          },
+                          onTap: () {},
                         ),
                       ],
                     ),

@@ -116,55 +116,51 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeOut,
                   ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-
-                    transform: Matrix4.identity()
-                      ..scale(
-                        isSelected ? 1.2 : 1.0,
-                        isSelected ? 1.2 : 1.0,
-                        isSelected ? 1.2 : 1.0,
-                      ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 55,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
+                  child: Transform.scale(
+                    scale: isSelected ? 1.2 : 1.0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 55,
+                            height: 55,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withAlpha(150),
+                                width: isSelected ? 4 : 2,
+                              ),
+                              color: isSelected
+                                  ? _getFilterColor(filter.type).withAlpha(100)
+                                  : Colors.transparent,
+                            ),
+                            child: Icon(
+                              filter.icon,
                               color: isSelected
                                   ? Colors.white
-                                  : Colors.white.withAlpha(150),
-                              width: isSelected ? 4 : 2,
+                                  : Colors.white.withAlpha(200),
+                              size: 24,
                             ),
-                            color: isSelected
-                                ? _getFilterColor(filter.type).withAlpha(100)
-                                : Colors.transparent,
                           ),
-                          child: Icon(
-                            filter.icon,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.white.withAlpha(200),
-                            size: 24,
+                          const SizedBox(height: 4),
+                          Text(
+                            filter.name.toUpperCase(),
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withAlpha(200),
+                              fontSize: 10,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          filter.name.toUpperCase(),
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.white.withAlpha(200),
-                            fontSize: 10,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );

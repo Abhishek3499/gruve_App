@@ -71,7 +71,7 @@ class EditProfileResponse {
 class EditProfileData {
   final String? userId;
   final String username;
-  final String? profile_picture;
+  final String? profilePicture;
   final String fullName;
   final String? phone;
   final String? email;
@@ -81,7 +81,7 @@ class EditProfileData {
   EditProfileData({
     this.userId,
     required this.username,
-    this.profile_picture,
+    this.profilePicture,
     required this.fullName,
     this.phone,
     this.email,
@@ -122,7 +122,7 @@ class EditProfileData {
     return EditProfileData(
       userId: userId,
       username: username,
-      profile_picture: profilePicture,
+      profilePicture: profilePicture,
       fullName: fullName,
       phone: phone,
       email: email,
@@ -137,7 +137,7 @@ class EditProfileData {
     final json = {
       'user_id': userId,
       'username': username,
-      'profile_picture': profile_picture,
+      'profile_picture': profilePicture,
       'full_name': fullName,
       'phone': phone,
       'email': email,
@@ -151,6 +151,6 @@ class EditProfileData {
 
   @override
   String toString() {
-    return 'EditProfileData(userId: $userId, username: $username, profile_picture: $profile_picture, fullName: $fullName, phone: $phone, email: $email, gender: $gender, bio: $bio)';
+    return 'EditProfileData(userId: $userId, username: $username, profile_picture: $profilePicture, fullName: $fullName, phone: $phone, email: $email, gender: $gender, bio: $bio)';
   }
 }

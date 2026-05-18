@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../controllers/conversation_controller.dart';
 import '../providers/message_provider.dart';
 import '../screen/chat_screen.dart';
+import '../../../core/widgets/optimized/optimized_image.dart';
 
 class MessageAvatar extends StatelessWidget {
   final String name;
@@ -29,15 +29,10 @@ class MessageAvatar extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CircleAvatar(
+              OptimizedAvatar(
+                imageUrl: imageUrl,
+                name: name,
                 radius: 30,
-                backgroundColor: Colors.grey[600],
-                backgroundImage: imageUrl.isNotEmpty 
-                    ? CachedNetworkImageProvider(imageUrl) 
-                    : null,
-                child: imageUrl.isEmpty 
-                    ? const Icon(Icons.person, size: 30, color: Colors.white)
-                    : null,
               ),
 
               if (isOnline)

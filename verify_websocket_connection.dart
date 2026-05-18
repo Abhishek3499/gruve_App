@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 
 /// Diagnostic tool to verify which WebSocket server you're connected to
@@ -7,8 +9,8 @@ import 'dart:convert';
 /// Usage:
 /// dart run verify_websocket_connection.dart
 void main() async {
-  print('🔍 WebSocket Connection Diagnostic Tool');
-  print('=' * 80);
+  developer.log('🔍 WebSocket Connection Diagnostic Tool');
+  developer.log('=' * 80);
   
   // Test URLs
   final testUrls = [
@@ -18,12 +20,12 @@ void main() async {
   ];
   
   for (final url in testUrls) {
-    print('\n📡 Testing: $url');
+    developer.log('\n📡 Testing: $url');
     await testWebSocketConnection(url);
   }
   
-  print('\n' + '=' * 80);
-  print('✅ Diagnostic complete');
+  developer.log('\n${'=' * 80}');
+  developer.log('✅ Diagnostic complete');
 }
 
 Future<void> testWebSocketConnection(String url) async {
@@ -31,7 +33,7 @@ Future<void> testWebSocketConnection(String url) async {
   StreamSubscription? subscription;
   
   try {
-    print('  🔌 Connecting...');
+    developer.log('  🔌 Connecting...');
     
     // Create connection with timeout
     final uri = Uri.parse(url);
@@ -42,24 +44,24 @@ Future<void> testWebSocketConnection(String url) async {
     subscription = channel.stream.timeout(
       Duration(seconds: 5),
       onTimeout: (sink) {
-        print('  ⏰ Connection timeout');
+        developer.log('  ⏰ Connection timeout');
         completer.complete();
       },
     ).listen(
       (message) {
-        print('  📨 Received: $message');
+        developer.log('  📨 Received: $message');
         
         try {
           final data = jsonDecode(message);
-          print('  📊 Message type: ${data['type']}');
+          developer.log('  📊 Message type: ${data['type']}');
           
           if (data['type'] == 'connection_established') {
-            print('  ✅ Connected to NEW backend (event handler)');
+            developer.log('  ✅ Connected to NEW backend (event handler)');
           } else if (data['type'] == 'connected') {
-            print('  ⚠️  Connected to OLD backend (requires conversation_id)');
+            developer.log('  ⚠️  Connected to OLD backend (requires conversation_id)');
           }
         } catch (e) {
-          print('  ⚠️  Non-JSON message: $message');
+          developer.log('  ⚠️  Non-JSON message: $message');
         }
         
         if (!completer.isCompleted) {
@@ -67,13 +69,13 @@ Future<void> testWebSocketConnection(String url) async {
         }
       },
       onError: (error) {
-        print('  ❌ Error: $error');
+        developer.log('  ❌ Error: $error');
         if (!completer.isCompleted) {
           completer.complete();
         }
       },
       onDone: () {
-        print('  🔌 Connection closed');
+        developer.log('  🔌 Connection closed');
         if (!completer.isCompleted) {
           completer.complete();
         }
@@ -81,7 +83,7 @@ Future<void> testWebSocketConnection(String url) async {
     );
     
     // Send heartbeat to test
-    print('  💓 Sending heartbeat...');
+    developer.log('  💓 Sending heartbeat...');
     final heartbeat = jsonEncode({
       'type': 'heartbeat',
       'action': 'ping',
@@ -93,7 +95,7 @@ Future<void> testWebSocketConnection(String url) async {
     await completer.future;
     
   } catch (e) {
-    print('  ❌ Connection failed: $e');
+    developer.log('  ❌ Connection failed: $e');
   } finally {
     await subscription?.cancel();
     await channel?.sink.close();

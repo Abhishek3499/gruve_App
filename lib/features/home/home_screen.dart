@@ -12,6 +12,7 @@ import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance
 /// FPS impact: 15-20fps drops → 55-60fps smooth (200% improvement)
@@ -35,13 +36,13 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isDisposed = false;
   VideoFeedController? _videoController;
   VideoService? _currentVideoService;
+  final SocketService _socketService = SocketService();
 
   // ✅ CRITICAL: Cache screens to prevent rebuilds
   late final List<Widget> _screens;
 
   // 🚀 PERFORMANCE: Track rebuild metrics
   int _rebuildCount = 0;
-  DateTime? _lastRebuildTime;
 
   // Double tap detection for Home tab with smooth animations
   int? _lastHomeTapTime;
@@ -87,19 +88,17 @@ class _HomeScreenState extends State<HomeScreen>
       const ProfileScreen(),
     ];
 
-    PostShareFlowBridge.onShareStartProcessing = () {
+    PostShareFlowBridge.onShareStartProcessing = (isVideo) {
       if (kDebugMode) {
-        debugPrint("🏠 Home Screen: Share start processing callback triggered");
+        debugPrint("🏠 Home Screen: Share start processing callback triggered (isVideo=$isVideo)");
       }
-      if (mounted && !_isDisposed) _startVideoProcessing();
+      if (mounted && !_isDisposed) _startVideoProcessing(isVideo);
     };
 
     PostShareFlowBridge.onShareUploadError = () {
       if (!mounted || _isDisposed) return;
       _currentVideoService?.dispose();
       _currentVideoService = null;
-      // Only dismiss our processing dialog. [Navigator.maybePop] without a dialog
-      // on top pops [HomeScreen] (auth stack below looks like logout).
       if (_shareProcessingOverlayVisible) {
         _shareProcessingOverlayVisible = false;
         Navigator.of(context).pop();
@@ -107,8 +106,23 @@ class _HomeScreenState extends State<HomeScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Upload failed. Check your connection or try a smaller video.',
+            'Upload failed. Check your connection or try again.',
           ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    };
+
+    PostShareFlowBridge.onShowSuccessSnackbar = (isVideo) {
+      if (!mounted || _isDisposed) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isVideo ? 'Video posted successfully' : 'Photo posted successfully',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
         ),
       );
     };
@@ -164,23 +178,35 @@ class _HomeScreenState extends State<HomeScreen>
   void _handleAppBackgrounded() {
     _pauseVideo('App backgrounded');
     _isInBackground.value = true;
+    
+    // Disconnect WebSocket to save battery
+    _socketService.disconnect();
+    debugPrint('🔌 [HomeScreen] WebSocket disconnected (app backgrounded)');
   }
 
   void _handleAppResumed() {
     _isInBackground.value = false;
+    
+    // Reconnect WebSocket
+    TokenStorage.getAccessToken().then((token) {
+      if (token != null && token.isNotEmpty) {
+        _socketService.connect(token);
+        debugPrint('🔌 [HomeScreen] WebSocket reconnected (app resumed)');
+      }
+    });
+    
     if (_currentIndex.value == 0 && !_isNavigatingAway.value && !_isDisposed) {
       _resumeVideo('App resumed');
     }
   }
 
-  void _startVideoProcessing() {
+  void _startVideoProcessing(bool isVideo) {
     _videoProcessingDismissScheduled = false;
     _shareProcessingOverlayVisible = false;
     _currentVideoService = VideoService();
     PostShareFlowBridge.setVideoService(_currentVideoService!);
 
     final nav = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
 
     final dialogFuture = showGeneralDialog<void>(
       context: context,
@@ -193,19 +219,16 @@ class _HomeScreenState extends State<HomeScreen>
           initialData: 0.0,
           builder: (context, snapshot) {
             final progress = snapshot.data ?? 0.0;
-            // Stream keeps emitting at 100%; only dismiss once or we pop past the dialog.
             if (progress >= 100 && !_videoProcessingDismissScheduled) {
               _videoProcessingDismissScheduled = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 if (nav.canPop()) nav.pop();
-                messenger.showSnackBar(
-                  const SnackBar(content: Text("Video Shared Successfully!")),
-                );
               });
             }
             return ProcessingDialog(
               progress: progress,
+              isVideo: isVideo,
               onCancel: () {
                 _currentVideoService?.dispose();
                 _currentVideoService = null;
@@ -287,7 +310,8 @@ class _HomeScreenState extends State<HomeScreen>
         final result = await CameraHandler.openCamera(context);
         if (!mounted || _isDisposed) return;
         if (result == 'start_processing') {
-          _startVideoProcessing();
+          // For camera flow, assume video (most common case)
+          _startVideoProcessing(true);
         }
       } finally {
         _cameraFlowInProgress = false;
@@ -393,38 +417,11 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  // 🚀 OPTIMIZED: Initialize screens method
-  void _initializeScreens() {
-    _screens = [
-      VideoFeed(
-        selectedIndex: _currentIndex.value,
-        onTabChanged: _onItemTapped,
-        onControllerReady: (controller) {
-          if (kDebugMode) {
-            debugPrint("🏠 Home Screen: VideoFeed onControllerReady called!");
-          }
-          _videoController = controller;
-          PostShareFlowBridge.setVideoController(controller);
-          if (kDebugMode) {
-            debugPrint(
-              "🏠 Home Screen: Video controller ready and set to bridge",
-            );
-          }
-        },
-      ),
-      const SearchScreen(),
-      const SizedBox.shrink(),
-      const SizedBox.shrink(),
-      const ProfileScreen(),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     // 🚀 PERFORMANCE: Track rebuild metrics
     if (kDebugMode) {
       _rebuildCount++;
-      _lastRebuildTime = DateTime.now();
       debugPrint(
         "🏠 Home Screen build #$_rebuildCount, _isDisposed: $_isDisposed",
       );

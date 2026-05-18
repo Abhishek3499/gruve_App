@@ -106,25 +106,7 @@ Map<String, dynamic> _flattenUserJson(Map<String, dynamic> json) {
   return base;
 }
 
-String _pickString(
-  Map<String, dynamic> map,
-  List<String> keys, {
-  String fallback = '',
-}) {
-  return _pickNullableString(map, keys) ?? fallback;
-}
 
-String? _pickNullableString(Map<String, dynamic> map, List<String> keys) {
-  for (final key in keys) {
-    final value = map[key];
-    if (value == null) continue;
-    final stringValue = value.toString().trim();
-    if (stringValue.isNotEmpty && stringValue.toLowerCase() != 'null') {
-      return stringValue;
-    }
-  }
-  return null;
-}
 
 /// Model representing the last message in a conversation
 class LastMessage {
@@ -217,8 +199,8 @@ class ConversationModel {
   final LastMessage lastMessage;
   final DateTime updatedAt;
   final int unreadCount;
-  final String? participant_1_id;
-  final String? participant_2_id;
+  final String? participant1Id;
+  final String? participant2Id;
 
   const ConversationModel({
     required this.id,
@@ -226,8 +208,8 @@ class ConversationModel {
     required this.lastMessage,
     required this.updatedAt,
     this.unreadCount = 0,
-    this.participant_1_id,
-    this.participant_2_id,
+    this.participant1Id,
+    this.participant2Id,
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
@@ -261,8 +243,8 @@ class ConversationModel {
         safeJson['updated_at'] ?? safeJson['updatedAt'] ?? safeJson['last_message_at'],
       ),
       unreadCount: SafeParsingHelpers.safeInt(safeJson, const ['unread_count', 'unreadCount'], fallback: 0),
-      participant_1_id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_1_id', 'participant1Id']),
-      participant_2_id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_2_id', 'participant2Id']),
+      participant1Id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_1_id', 'participant1Id']),
+      participant2Id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_2_id', 'participant2Id']),
     );
   }
 
@@ -273,8 +255,8 @@ class ConversationModel {
       'last_message': lastMessage.toJson(),
       'updated_at': updatedAt.toIso8601String(),
       'unread_count': unreadCount,
-      'participant_1_id': participant_1_id,
-      'participant_2_id': participant_2_id,
+      'participant_1_id': participant1Id,
+      'participant_2_id': participant2Id,
     };
   }
 
@@ -314,8 +296,8 @@ class ConversationModel {
     LastMessage? lastMessage,
     DateTime? updatedAt,
     int? unreadCount,
-    String? participant_1_id,
-    String? participant_2_id,
+    String? participant1Id,
+    String? participant2Id,
   }) {
     return ConversationModel(
       id: id ?? this.id,
@@ -323,8 +305,8 @@ class ConversationModel {
       lastMessage: lastMessage ?? this.lastMessage,
       updatedAt: updatedAt ?? this.updatedAt,
       unreadCount: unreadCount ?? this.unreadCount,
-      participant_1_id: participant_1_id ?? this.participant_1_id,
-      participant_2_id: participant_2_id ?? this.participant_2_id,
+      participant1Id: participant1Id ?? this.participant1Id,
+      participant2Id: participant2Id ?? this.participant2Id,
     );
   }
 
@@ -337,8 +319,8 @@ class ConversationModel {
         other.lastMessage == lastMessage &&
         other.updatedAt == updatedAt &&
         other.unreadCount == unreadCount &&
-        other.participant_1_id == participant_1_id &&
-        other.participant_2_id == participant_2_id;
+        other.participant1Id == participant1Id &&
+        other.participant2Id == participant2Id;
   }
 
   @override
@@ -348,12 +330,12 @@ class ConversationModel {
         lastMessage.hashCode ^
         updatedAt.hashCode ^
         unreadCount.hashCode ^
-        participant_1_id.hashCode ^
-        participant_2_id.hashCode;
+        participant1Id.hashCode ^
+        participant2Id.hashCode;
   }
 
   @override
   String toString() {
-    return 'ConversationModel(id: $id, otherUser: $otherUser, lastMessage: $lastMessage, updatedAt: $updatedAt, unreadCount: $unreadCount, participant_1_id: $participant_1_id, participant_2_id: $participant_2_id)';
+    return 'ConversationModel(id: $id, otherUser: $otherUser, lastMessage: $lastMessage, updatedAt: $updatedAt, unreadCount: $unreadCount, participant1Id: $participant1Id, participant2Id: $participant2Id)';
   }
 }

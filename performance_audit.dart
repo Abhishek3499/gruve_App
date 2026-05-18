@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 class PerformanceAudit {
   static final PerformanceAudit _instance = PerformanceAudit._internal();
@@ -129,12 +127,14 @@ class PerformanceAudit {
     }
 
     // API performance
-    _durations.forEach((key, durations) {
+    for (final entry in _durations.entries) {
+      final key = entry.key;
+      final durations = entry.value;
       if (key.startsWith('api_')) {
         final avgDuration = durations.reduce((a, b) => a + b).inMilliseconds / durations.length;
         developer.log('🌐 [PERF] API $key: Average ${avgDuration.toStringAsFixed(2)}ms (${durations.length} calls)', name: 'PerformanceAudit');
       }
-    });
+    }
 
     // Image loading performance
     if (_durations.containsKey('image_loading')) {
@@ -153,23 +153,25 @@ class PerformanceAudit {
 
   // Performance thresholds and warnings
   void checkPerformanceThresholds() {
-    _durations.forEach((key, durations) {
+    for (final entry in _durations.entries) {
+      final key = entry.key;
+      final durations = entry.value;
       if (key.startsWith('api_')) {
-        durations.forEach((duration) {
+        for (final duration in durations) {
           if (duration.inMilliseconds > 2000) {
             developer.log('⚠️ [PERF] SLOW API: $key took ${duration.inMilliseconds}ms', name: 'PerformanceAudit');
           }
-        });
+        }
       }
       
       if (key == 'image_loading') {
-        durations.forEach((duration) {
+        for (final duration in durations) {
           if (duration.inMilliseconds > 1000) {
             developer.log('⚠️ [PERF] SLOW IMAGE: Load took ${duration.inMilliseconds}ms', name: 'PerformanceAudit');
           }
-        });
+        }
       }
-    });
+    }
 
     _rebuildCounts.forEach((widget, count) {
       if (count > 50) {

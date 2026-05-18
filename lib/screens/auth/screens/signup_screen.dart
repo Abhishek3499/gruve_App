@@ -845,17 +845,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           if (!mounted) return false;
 
-
-
                           // ✅ Gender touched mark — error dikhao agar empty
 
                           setState(() => _genderTouched = true);
 
 
-
                         final isValid = _validateBeforeSubmit();
 
                         if (!isValid) {
+                          
+                          if (!mounted) return false;
                           
                           // Show specific error if any
                           String errorMessage = _nameError ?? _identifierError ?? 
@@ -907,6 +906,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           }
 
 
+
+                          if (!mounted) return false;
 
                           Navigator.push(
 

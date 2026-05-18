@@ -174,13 +174,17 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                             setState(() => isLoading = true);
 
-                            await _controller.signIn(phone_number: phone);
+                            await _controller.signIn(phoneNumber: phone);
+
+                            if (!mounted) return false;
 
                             setState(() => isLoading = false);
 
                             // ❌ Error case
 
                             if (_controller.errorMessage != null) {
+                              if (!mounted) return false;
+                              if (!context.mounted) return false;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(_controller.errorMessage!),
@@ -191,10 +195,11 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             }
 
                             // ✅ Success → Navigate to OTP
+                            if (!mounted) return false;
+                            if (!context.mounted) return false;
 
                             Navigator.push(
                               context,
-
                               MaterialPageRoute(
                                 builder: (_) => OtpScreen(
                                   identifier: phone,
@@ -211,15 +216,17 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                   isLogin: true,
 
                                   onVerified: () {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
+                                    if (context.mounted) {
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
 
-                                      MaterialPageRoute(
-                                        builder: (_) => const HomeScreen(),
-                                      ),
+                                        MaterialPageRoute(
+                                          builder: (_) => const HomeScreen(),
+                                        ),
 
-                                      (route) => false,
-                                    );
+                                        (route) => false,
+                                      );
+                                    }
                                   },
                                 ),
                               ),
