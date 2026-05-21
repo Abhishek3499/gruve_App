@@ -56,6 +56,9 @@ class _GetStartedButtonState extends State<GetStartedButton>
 
   @override
   void didPopNext() {
+    if (mounted) {
+      setState(() => _internalLoading = false);
+    }
     _snapTo(0);
   }
 

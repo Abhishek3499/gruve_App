@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
 import 'package:gruve_app/api_calls/profile/model/profile_model.dart';
@@ -22,6 +24,8 @@ class ProfileProvider extends ChangeNotifier {
   String? errorMessage;
 
   Future<void>? _profileFetchInFlight;
+  DateTime? _profileFetchStartedAt;
+  int _profileFetchGeneration = 0;
 
   ProfileModel? user;
   ProfileStatsModel stats = const ProfileStatsModel.empty();
@@ -39,14 +43,31 @@ class ProfileProvider extends ChangeNotifier {
   Future<void> fetchProfileData({
     String fetchUserReason = 'profile_provider_opened',
   }) async {
-    if (_profileFetchInFlight != null) return _profileFetchInFlight!;
+    final inFlight = _profileFetchInFlight;
+    if (inFlight != null) {
+      final startedAt = _profileFetchStartedAt;
+      final isStale = startedAt != null &&
+          DateTime.now().difference(startedAt) > const Duration(seconds: 25);
+      if (!isStale) return inFlight;
 
+      _log('[Profile] Clearing stale in-flight fetch');
+      _profileFetchInFlight = null;
+      _profileFetchStartedAt = null;
+      isLoading = false;
+      notifyListeners();
+    }
+
+    final generation = ++_profileFetchGeneration;
     final future = _runProfileFetch(fetchUserReason: fetchUserReason);
     _profileFetchInFlight = future;
+    _profileFetchStartedAt = DateTime.now();
     try {
       await future;
     } finally {
-      _profileFetchInFlight = null;
+      if (_profileFetchGeneration == generation) {
+        _profileFetchInFlight = null;
+        _profileFetchStartedAt = null;
+      }
     }
   }
 
@@ -58,13 +79,21 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final results = await Future.wait([
-        controller.fetchUser(reason: fetchUserReason),
-        _highlightService.fetchMyHighlights(),
-      ]);
+        controller
+            .fetchUser(reason: fetchUserReason)
+            .timeout(const Duration(seconds: 20)),
+        _highlightService
+            .fetchMyHighlights()
+            .timeout(const Duration(seconds: 20)),
+      ]).timeout(const Duration(seconds: 25));
 
       final highlightsResponse = results[1] as HighlightsResponse;
 
       user = controller.user;
+      if (user == null) {
+        throw StateError('Profile API did not return user data');
+      }
+
       stats = controller.stats;
       posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
       highlights = List<HighlightModel>.unmodifiable(
@@ -87,7 +116,12 @@ class ProfileProvider extends ChangeNotifier {
   }
 
   Future<void> refreshProfileData({String reason = 'manual_refresh'}) {
-    return fetchProfileData();
+    if (_profileFetchInFlight != null) {
+      _profileFetchInFlight = null;
+      _profileFetchStartedAt = null;
+      _profileFetchGeneration++;
+    }
+    return fetchProfileData(fetchUserReason: reason);
   }
 
   Future<void> ensureTabLoaded(int tabIndex) async {
@@ -145,6 +179,9 @@ class ProfileProvider extends ChangeNotifier {
     posts = [];
     highlights = [];
     isLoading = false;
+    _profileFetchInFlight = null;
+    _profileFetchStartedAt = null;
+    _profileFetchGeneration++;
     errorMessage = null;
     notifyListeners();
     debugPrint('✅ [ProfileProvider] Profile data reset complete');

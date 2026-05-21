@@ -17,10 +17,12 @@ class VideoBackground extends StatefulWidget {
   State<VideoBackground> createState() => VideoBackgroundState();
 }
 
-class VideoBackgroundState extends State<VideoBackground> {
+class VideoBackgroundState extends State<VideoBackground>
+    with WidgetsBindingObserver {
   static VideoPlayerController? _sharedController;
   static bool _isInitializing = false;
   static int _instanceCount = 0;
+  static final ValueNotifier<int> _controllerVersion = ValueNotifier<int>(0);
 
   // Expose the shared controller for external access
   static VideoPlayerController? get sharedController => _sharedController;
@@ -28,6 +30,8 @@ class VideoBackgroundState extends State<VideoBackground> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _controllerVersion.addListener(_onSharedControllerChanged);
     _instanceCount++;
     _initializeSharedController();
   }
@@ -47,18 +51,43 @@ class VideoBackgroundState extends State<VideoBackground> {
       _sharedController = null;
     } finally {
       _isInitializing = false;
+      _controllerVersion.value++;
       if (mounted) setState(() {});
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controllerVersion.removeListener(_onSharedControllerChanged);
     _instanceCount--;
     if (_instanceCount == 0 && _sharedController != null) {
       _sharedController!.dispose();
       _sharedController = null;
+      _controllerVersion.value++;
     }
     super.dispose();
+  }
+
+  void _onSharedControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _sharedController;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      controller.pause();
+      return;
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      controller.play();
+    }
   }
 
   @override
@@ -67,17 +96,23 @@ class VideoBackgroundState extends State<VideoBackground> {
       fit: StackFit.expand,
       children: [
         // VIDEO
-        if (_sharedController != null && _sharedController!.value.isInitialized)
-          FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: _sharedController!.value.size.width,
-              height: _sharedController!.value.size.height,
-              child: VideoPlayer(_sharedController!),
-            ),
-          )
-        else
-          const SizedBox(),
+        RepaintBoundary(
+          child:
+              _sharedController != null &&
+                  _sharedController!.value.isInitialized
+              ? FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _sharedController!.value.size.width,
+                    height: _sharedController!.value.size.height,
+                    child: VideoPlayer(_sharedController!),
+                  ),
+                )
+              : const ColoredBox(
+                  color: Colors.black,
+                  child: SizedBox.expand(),
+                ),
+        ),
 
         // OVERLAY (only if opacity > 0)
         if (widget.overlayOpacity > 0)

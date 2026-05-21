@@ -17,10 +17,13 @@ class CommentSheet extends StatefulWidget {
 
 class _CommentSheetState extends State<CommentSheet> {
   final TextEditingController _commentController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final CommentService _commentService = CommentService();
-  
+
   List<Comment> _comments = [];
   bool _isLoading = true;
+  bool _isSending = false;
+  Future<void>? _fetchInFlight;
 
   @override
   void initState() {
@@ -29,12 +32,19 @@ class _CommentSheetState extends State<CommentSheet> {
   }
 
   Future<void> _fetchComments() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
+    if (_fetchInFlight != null) return _fetchInFlight!;
+    final future = _runFetchComments();
+    _fetchInFlight = future;
+    try {
+      return await future;
+    } finally {
+      _fetchInFlight = null;
+    }
+  }
+
+  Future<void> _runFetchComments() async {
+    setState(() => _isLoading = true);
     final comments = await _commentService.getComments(widget.postId);
-    
     if (mounted) {
       setState(() {
         _comments = comments;
@@ -43,9 +53,22 @@ class _CommentSheetState extends State<CommentSheet> {
     }
   }
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -100,11 +123,8 @@ class _CommentSheetState extends State<CommentSheet> {
 
           const Divider(color: Colors.white24, height: 1),
 
-          /// COMMENTS LIST
           Expanded(
             child: _isLoading
-                // ✅ SHIMMER — shows comment row shapes while loading
-                // Prevents the jarring spinner → list jump
                 ? const CommentShimmer(itemCount: 5)
                 : _comments.isEmpty
                     ? const Center(
@@ -114,16 +134,15 @@ class _CommentSheetState extends State<CommentSheet> {
                         ),
                       )
                     : ListView.builder(
+                        controller: _scrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
-                          final comment = _comments[index];
-                          return _buildCommentTile(comment);
+                          return _buildCommentTile(_comments[index]);
                         },
                       ),
           ),
 
-          /// INPUT
           Container(
             margin: EdgeInsets.only(
               left: 16,
@@ -155,36 +174,66 @@ class _CommentSheetState extends State<CommentSheet> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () async {
+                  onTap: _isSending ? null : () async {
                     final text = _commentController.text.trim();
                     if (text.isEmpty) return;
 
-                    final tempBody = text;
                     _commentController.clear();
                     FocusScope.of(context).unfocus();
+                    setState(() => _isSending = true);
 
-                    final success = await _commentService.addComment(widget.postId, tempBody);
-                    
-                    if (success) {
+                    // Optimistic insert
+                    final optimisticId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+                    final optimistic = Comment(
+                      id: optimisticId,
+                      body: text,
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                      user: CommentUser(id: '', username: 'You', isSubscribed: false),
+                    );
+                    setState(() => _comments.add(optimistic));
+                    _scrollToBottom();
+
+                    final newComment = await _commentService.addComment(widget.postId, text);
+                    CommentService.invalidatePost(widget.postId);
+
+                    if (!mounted) return;
+                    if (newComment != null) {
+                      setState(() {
+                        final idx = _comments.indexWhere((c) => c.id == optimisticId);
+                        if (idx != -1) _comments[idx] = newComment;
+                        _isSending = false;
+                      });
                       widget.onCommentAdded?.call();
-                      _fetchComments();
                     } else {
-                      // optionally show error or revert optimistic UI
+                      setState(() {
+                        _comments.removeWhere((c) => c.id == optimisticId);
+                        _isSending = false;
+                      });
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text("Failed to post comment", style: TextStyle(color: Colors.white)),
                             backgroundColor: Colors.redAccent,
-                          )
+                          ),
                         );
                       }
                     }
                   },
-                  child: Image.asset(
-                    AppAssets.sendbutton,
-                    height: 32,
-                    width: 32,
-                  ),
+                  child: _isSending
+                      ? const SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white70,
+                          ),
+                        )
+                      : Image.asset(
+                          AppAssets.sendbutton,
+                          height: 32,
+                          width: 32,
+                        ),
                 ),
               ],
             ),

@@ -6,13 +6,15 @@ import '../services/message_service.dart';
 
 class MessageController extends ChangeNotifier {
   final MessageService _messageService;
-  final String conversationId;
+  String conversationId;
   final String receiverUserId;
+  final ValueChanged<String>? onConversationIdChanged;
 
   MessageController({
     required MessageService messageService,
     required this.conversationId,
     required this.receiverUserId,
+    this.onConversationIdChanged,
   }) : _messageService = messageService;
 
   final List<MessageModel> _messages = [];
@@ -20,6 +22,7 @@ class MessageController extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _hasMoreData = true;
   bool _disposed = false;
+  bool _isRecoveringConversation = false;
   Future<void>? _activeFetch;
   String? _error;
   int _currentPage = 1;
@@ -307,6 +310,16 @@ class MessageController extends ChangeNotifier {
 
       return sentMessage;
     } catch (error) {
+      if (_shouldRecoverConversation(error)) {
+        debugPrint(
+          '[MessageController] Recovering conversation after participant error during send...',
+        );
+        final recovered = await _recoverConversationId();
+        if (recovered) {
+          return sendMessage(content);
+        }
+      }
+
       debugPrint('[MessageController] ❌ REST send FAILED: $error');
       _setError(error.toString());
       rethrow;
@@ -368,6 +381,17 @@ class MessageController extends ChangeNotifier {
       );
     } catch (error) {
       if (_disposed) return;
+      if (replace && _shouldRecoverConversation(error)) {
+        debugPrint(
+          '[MessageController] Recovering conversation after participant error during fetch...',
+        );
+        final recovered = await _recoverConversationId();
+        if (recovered && !_disposed) {
+          await _fetchMessages(page: 1, replace: true);
+          return;
+        }
+      }
+
       debugPrint('❌ [MessageController] Fetch messages failed: $error');
       _setError(error.toString());
     } finally {
@@ -403,6 +427,42 @@ class MessageController extends ChangeNotifier {
     if (_error == value) return;
     _error = value;
     _notify();
+  }
+
+  bool _shouldRecoverConversation(Object error) {
+    final message = error.toString().toLowerCase();
+    return !_isRecoveringConversation &&
+        receiverUserId.isNotEmpty &&
+        message.contains('403') &&
+        message.contains('participant');
+  }
+
+  Future<bool> _recoverConversationId() async {
+    if (_isRecoveringConversation) return false;
+    _isRecoveringConversation = true;
+    try {
+      final conversation = await _messageService.createOrGetConversation(
+        receiverUserId,
+      );
+      if (conversation.id.isEmpty || conversation.id == conversationId) {
+        return false;
+      }
+
+      conversationId = conversation.id;
+      onConversationIdChanged?.call(conversation.id);
+      _setError(null);
+      debugPrint(
+        '[MessageController] Recovered conversation ID: $conversationId',
+      );
+      return true;
+    } catch (recoverError) {
+      debugPrint(
+        '[MessageController] Failed to recover conversation ID: $recoverError',
+      );
+      return false;
+    } finally {
+      _isRecoveringConversation = false;
+    }
   }
 
   void _notify() {

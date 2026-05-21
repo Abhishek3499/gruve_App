@@ -70,7 +70,7 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     debugPrint('🔄 [UserProfile] Parsing profile from JSON...');
-    debugPrint('� [UserProfile] Top level keys: ${json.keys.toList()}');
+    debugPrint('[UserProfile] Top level keys: ${json.keys.toList()}');
 
     try {
       // ✅ Service already extracted 'data' layer — so start from 'user' directly

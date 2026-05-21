@@ -20,34 +20,10 @@ class SearchUser {
   });
 
   factory SearchUser.fromJson(Map<String, dynamic> json) {
-    debugPrint('🔄 [SearchUser] Parsing user from JSON...');
-    debugPrint('📄 [SearchUser] Raw JSON: $json');
-
     final id = _firstString(json, const ['id', '_id', 'user_id', 'uuid']);
-    final username = _firstString(json, const [
-      'username',
-      'user_name',
-      'handle',
-      'email',
-    ]);
-    final name = _firstString(json, const [
-      'name',
-      'full_name',
-      'display_name',
-      'first_name',
-      'username',
-    ]);
-    final avatar = _firstString(json, const [
-      'avatar',
-      'profile_picture',
-      'profile_image',
-      'image',
-      'photo',
-    ]);
-
-    debugPrint(
-      '✅ [SearchUser] Parsed: id=$id, name=$name, username=$username, avatar=${avatar.isNotEmpty ? "present" : "empty"}',
-    );
+    final username = _firstString(json, const ['username', 'user_name', 'handle', 'email']);
+    final name = _firstString(json, const ['name', 'full_name', 'display_name', 'first_name', 'username']);
+    final avatar = _firstString(json, const ['avatar', 'profile_picture', 'profile_image', 'image', 'photo']);
 
     return SearchUser(
       id: id.isNotEmpty ? id : username,
@@ -84,189 +60,56 @@ class UserSearchService {
     );
   }
 
-  Future<List<SearchUser>> searchUsers(String query) async {
-    debugPrint('🔍 [UserSearchService] ========== SEARCH START ==========');
-    debugPrint('🔍 [UserSearchService] Query: "$query"');
-
+  Future<List<SearchUser>> searchUsers(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
     final trimmedQuery = query.trim();
-    debugPrint('🔍 [UserSearchService] Trimmed query: "$trimmedQuery"');
-
-    if (trimmedQuery.isEmpty) {
-      debugPrint('⚠️ [UserSearchService] Empty query, returning empty list');
-      debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-      return const [];
-    }
+    if (trimmedQuery.isEmpty) return const [];
 
     try {
-      debugPrint('🌐 [UserSearchService] Making API call...');
-      debugPrint('🌐 [UserSearchService] Endpoint: /user/users/search/');
-      debugPrint('🌐 [UserSearchService] Query params: {username: $trimmedQuery}');
-
       final response = await _dio.get(
         'user/users/search/',
         queryParameters: {'username': trimmedQuery},
+        cancelToken: cancelToken,
       );
-
-      debugPrint('✅ [UserSearchService] API call successful');
-      debugPrint('📊 [UserSearchService] Status code: ${response.statusCode}');
-      debugPrint(
-        '📊 [UserSearchService] Response type: ${response.data.runtimeType}',
-      );
-      debugPrint('📄 [UserSearchService] Response data: ${response.data}');
-
-      final users = _parseUsers(response.data);
-      debugPrint('✅ [UserSearchService] Parsed ${users.length} users');
-      debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-
-      return users;
+      return _parseUsers(response.data);
     } on DioException catch (e) {
-      debugPrint('❌ [UserSearchService] ========== SEARCH FAILED ==========');
-      debugPrint('❌ [UserSearchService] DioException caught');
-      debugPrint('❌ [UserSearchService] Type: ${e.type}');
-      debugPrint('❌ [UserSearchService] Message: ${e.message}');
-      debugPrint(
-        '❌ [UserSearchService] Status code: ${e.response?.statusCode}',
-      );
-      debugPrint('❌ [UserSearchService] Response data: ${e.response?.data}');
-      debugPrint(
-        '❌ [UserSearchService] Request path: ${e.requestOptions.path}',
-      );
-      debugPrint(
-        '❌ [UserSearchService] Request query: ${e.requestOptions.queryParameters}',
-      );
-      debugPrint(
-        '❌ [UserSearchService] Request headers: ${e.requestOptions.headers}',
-      );
-
-      // Handle specific timeout errors gracefully
-      if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.sendTimeout) {
-        debugPrint('⏰ [UserSearchService] ⏰ TIMEOUT ERROR - Returning empty list');
-        debugPrint('⚠️ [UserSearchService] ⚠️ Search timed out, user can try again');
-        debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-        return []; // Return empty list instead of throwing
-      }
-
-      if (e.response?.statusCode == 422) {
-        debugPrint('⚠️ [UserSearchService] 422 Error - Unprocessable Entity');
-        debugPrint('⚠️ [UserSearchService] This usually means:');
-        debugPrint('   - Invalid query parameter format');
-        debugPrint('   - Query too short (minimum length required)');
-        debugPrint('   - Query contains invalid characters');
-        debugPrint('   - Missing required parameters');
-        return []; // Return empty list for validation errors
-      } else if (e.response?.statusCode == 404) {
-        debugPrint('⚠️ [UserSearchService] 404 Error - Not Found');
-        debugPrint('⚠️ [UserSearchService] This usually means:');
-        debugPrint('   - Endpoint does not exist');
-        debugPrint('   - Wrong API path');
-        debugPrint('   - API version mismatch');
-        return []; // Return empty list for not found
-      } else if (e.response?.statusCode == 401) {
-        debugPrint('⚠️ [UserSearchService] 401 Error - Unauthorized');
-        debugPrint('⚠️ [UserSearchService] User token expired or invalid');
-        return []; // Return empty list for auth errors
-      }
-
-      debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-      return []; // Return empty list for all other errors
+      debugPrint('❌ [UserSearchService] ${e.type}: ${e.message}');
+      return [];
     } catch (e) {
-      debugPrint(
-        '❌ [UserSearchService] ========== UNEXPECTED ERROR ==========',
-      );
-      debugPrint('❌ [UserSearchService] Error type: ${e.runtimeType}');
-      debugPrint('❌ [UserSearchService] Error: $e');
-      debugPrint('🔍 [UserSearchService] ========== SEARCH END ==========');
-      return []; // Return empty list for unexpected errors
+      debugPrint('❌ [UserSearchService] Unexpected: $e');
+      return [];
     }
   }
 
   List<SearchUser> _parseUsers(dynamic data) {
-    debugPrint('🔄 [UserSearchService] Parsing users from response...');
-    debugPrint('📊 [UserSearchService] Data type: ${data.runtimeType}');
-
     final rawUsers = _extractList(data);
-    debugPrint(
-      '📊 [UserSearchService] Extracted ${rawUsers.length} raw user objects',
-    );
-
-    final users = rawUsers
+    return rawUsers
         .whereType<Map>()
         .map((user) {
           try {
             return SearchUser.fromJson(Map<String, dynamic>.from(user));
-          } catch (e) {
-            debugPrint('⚠️ [UserSearchService] Failed to parse user: $e');
-            debugPrint('⚠️ [UserSearchService] User data: $user');
+          } catch (_) {
             return null;
           }
         })
         .whereType<SearchUser>()
-        .where((user) {
-          final hasId = user.id.isNotEmpty;
-          if (!hasId) {
-            debugPrint(
-              '⚠️ [UserSearchService] Skipping user with empty ID: ${user.username}',
-            );
-          }
-          return hasId;
-        })
+        .where((user) => user.id.isNotEmpty)
         .toList();
-
-    debugPrint(
-      '✅ [UserSearchService] Successfully parsed ${users.length} valid users',
-    );
-    return users;
   }
 
   List<dynamic> _extractList(dynamic data) {
-    debugPrint('🔄 [UserSearchService] Extracting list from data...');
-    debugPrint('📊 [UserSearchService] Data type: ${data.runtimeType}');
-
-    if (data is List) {
-      debugPrint(
-        '✅ [UserSearchService] Data is already a list with ${data.length} items',
-      );
-      return data;
-    }
-
-    if (data is! Map) {
-      debugPrint(
-        '⚠️ [UserSearchService] Data is neither List nor Map, returning empty',
-      );
-      return const [];
-    }
-
-    debugPrint('🔍 [UserSearchService] Searching for list in map keys...');
-    debugPrint('📊 [UserSearchService] Available keys: ${data.keys.toList()}');
-
+    if (data is List) return data;
+    if (data is! Map) return const [];
     for (final key in const ['results', 'users', 'data', 'items']) {
-      debugPrint('🔍 [UserSearchService] Checking key: "$key"');
       final value = data[key];
-
-      if (value is List) {
-        debugPrint(
-          '✅ [UserSearchService] Found list at key "$key" with ${value.length} items',
-        );
-        return value;
-      }
-
+      if (value is List) return value;
       if (value is Map) {
-        debugPrint(
-          '🔍 [UserSearchService] Key "$key" contains nested map, searching recursively...',
-        );
         final nested = _extractList(value);
-        if (nested.isNotEmpty) {
-          debugPrint(
-            '✅ [UserSearchService] Found list in nested map with ${nested.length} items',
-          );
-          return nested;
-        }
+        if (nested.isNotEmpty) return nested;
       }
     }
-
-    debugPrint(
-      '⚠️ [UserSearchService] No list found in any expected keys, returning empty',
-    );
     return const [];
   }
 }
@@ -274,105 +117,47 @@ class UserSearchService {
 class DebouncedUserSearch {
   DebouncedUserSearch({
     UserSearchService? service,
-    this.delay = const Duration(milliseconds: 400), // Updated to 400ms to match search_page.dart debounce
-  }) : _service = service ?? UserSearchService() {
-    debugPrint(
-      '🔧 [DebouncedUserSearch] Initialized with delay: ${delay.inMilliseconds}ms',
-    );
-  }
+    this.delay = const Duration(milliseconds: 300),
+  }) : _service = service ?? UserSearchService();
 
   final UserSearchService _service;
   final Duration delay;
   Timer? _timer;
+  CancelToken? _cancelToken;
   int _requestId = 0;
-  bool _isSearching = false; // Add search state tracking
 
   void search(
     String query, {
     required ValueChanged<List<SearchUser>> onResults,
     required ValueChanged<Object> onError,
   }) {
-    debugPrint('🔍 [DebouncedUserSearch] Search triggered for: "$query"');
-
-    // Cancel previous timer and increment request ID
     _timer?.cancel();
+    _cancelToken?.cancel('Superseded by a newer search query');
+    _cancelToken = CancelToken();
     final requestId = ++_requestId;
-
-    debugPrint('🔍 [DebouncedUserSearch] Request ID: $requestId');
-    debugPrint(
-      '🔍 [DebouncedUserSearch] Debouncing for ${delay.inMilliseconds}ms...',
-    );
+    final cancelToken = _cancelToken;
 
     _timer = Timer(delay, () async {
-      // Double-check if this request is still current
-      if (requestId != _requestId) {
-        debugPrint(
-          '⚠️ [DebouncedUserSearch] Request $requestId is stale (current: $_requestId), skipping',
-        );
-        return;
-      }
-
-      // Prevent concurrent searches
-      if (_isSearching) {
-        debugPrint(
-          '⚠️ [DebouncedUserSearch] Already searching, skipping request $requestId',
-        );
-        return;
-      }
-
-      _isSearching = true;
-      debugPrint(
-        '⏰ [DebouncedUserSearch] Debounce timer expired, executing search $requestId...',
-      );
+      if (requestId != _requestId) return;
 
       try {
-        final results = await _service.searchUsers(query);
-
-        // Final check after async operation
-        if (requestId == _requestId) {
-          debugPrint(
-            '✅ [DebouncedUserSearch] Request $requestId is still current, returning ${results.length} results',
-          );
-          onResults(results);
-        } else {
-          debugPrint(
-            '⚠️ [DebouncedUserSearch] Request $requestId became stale during search (current: $_requestId), ignoring results',
-          );
-        }
+        final results = await _service.searchUsers(
+          query,
+          cancelToken: cancelToken,
+        );
+        if (requestId == _requestId) onResults(results);
       } catch (error) {
-        debugPrint(
-          '❌ [DebouncedUserSearch] Search error for request $requestId: $error',
-        );
-
-        // Final check after async operation
-        if (requestId == _requestId) {
-          debugPrint(
-            '❌ [DebouncedUserSearch] Request $requestId is still current, calling onError',
-          );
-          onError(error);
-        } else {
-          debugPrint(
-            '⚠️ [DebouncedUserSearch] Request $requestId became stale during error (current: $_requestId), ignoring error',
-          );
-        }
-      } finally {
-        _isSearching = false;
-        debugPrint(
-          '🔧 [DebouncedUserSearch] Search completed for request $requestId, ready for next',
-        );
+        if (requestId == _requestId) onError(error);
       }
     });
   }
 
   void clear() {
-    debugPrint('🧹 [DebouncedUserSearch] Clearing search...');
     _timer?.cancel();
+    _cancelToken?.cancel('Search cleared');
+    _cancelToken = null;
     _requestId++;
-    debugPrint('🧹 [DebouncedUserSearch] New request ID: $_requestId');
   }
 
-  void dispose() {
-    debugPrint('🗑️ [DebouncedUserSearch] Disposing...');
-    clear();
-  }
+  void dispose() => clear();
 }

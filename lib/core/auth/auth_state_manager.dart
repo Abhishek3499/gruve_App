@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';
 
 /// Global authentication state manager
@@ -70,6 +71,11 @@ class AuthStateManager extends ChangeNotifier {
 
       // Disconnect socket
       SocketService().disconnect();
+
+      // Clear all caches
+      final cacheManager = CacheManager();
+      await cacheManager.clear();
+      debugPrint('✅ [AuthState] All caches cleared');
 
       // Reset state
       _isAuthenticated = false;

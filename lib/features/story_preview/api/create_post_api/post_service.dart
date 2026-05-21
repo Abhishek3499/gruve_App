@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -13,6 +14,7 @@ class PostService {
 
   bool _isLoading = false;
   String? _lastRequestKey;
+  final Map<String, Future<PaginatedPostsResponse>> _inFlightPageRequests = {};
 
   PostService() {
     _dio = AppDio.create(receiveTimeout: const Duration(seconds: 45));
@@ -162,14 +164,32 @@ class PostService {
     bool refresh = false,
   }) async {
     final isInitialLoad = cursor == null || !cursor.isValid;
-    final requestKey = '${cursor?.toString() ?? 'first'}_$limit';
+    final requestKey =
+        '${refresh ? 'refresh' : 'page'}_${cursor?.toString() ?? 'first'}_$limit';
+    final inFlight = _inFlightPageRequests[requestKey];
+    if (inFlight != null) {
+      debugPrint('🔄 PostService: Joining duplicate paginated request');
+      return inFlight;
+    }
+
+    final completer = Completer<PaginatedPostsResponse>();
+    _inFlightPageRequests[requestKey] = completer.future;
+    unawaited(completer.future.catchError((_) => PaginatedPostsResponse(
+          posts: [],
+          nextCursor: null,
+          hasMore: false,
+        )));
+
     if (_isLoading && !refresh && _lastRequestKey == requestKey) {
       debugPrint('🔄 PostService: Skipping duplicate request');
-      return PaginatedPostsResponse(
+      final result = PaginatedPostsResponse(
         posts: [],
         nextCursor: null,
         hasMore: false,
       );
+      completer.complete(result);
+      _inFlightPageRequests.remove(requestKey);
+      return result;
     }
 
     _isLoading = true;
@@ -236,27 +256,34 @@ class PostService {
       debugPrint('📊 Has More: $hasMore');
       debugPrint('📊 API Posts Count: ${posts.length}');
 
-      return PaginatedPostsResponse(
+      final result = PaginatedPostsResponse(
         posts: posts,
         nextCursor: nextCursor,
         hasMore: hasMore,
       );
+      completer.complete(result);
+      return result;
     } catch (e) {
       debugPrint("❌ GET PAGINATED POSTS ERROR: $e");
       if (e is DioException) {
         if (e.response?.statusCode == 401) {
           debugPrint("Unauthorized error");
-          return PaginatedPostsResponse(
+          final result = PaginatedPostsResponse(
             posts: [],
             nextCursor: null,
             hasMore: false,
           );
+          completer.complete(result);
+          return result;
         }
+        completer.completeError(e);
         rethrow;
       }
+      completer.completeError(e);
       rethrow;
     } finally {
       _isLoading = false;
+      _inFlightPageRequests.remove(requestKey);
     }
   }
 
@@ -318,6 +345,7 @@ class PostService {
   void resetPagination() {
     _lastRequestKey = null;
     _isLoading = false;
+    _inFlightPageRequests.clear();
   }
 
   Future<bool> likePost(String postId) async {

@@ -6,6 +6,7 @@ import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../services/socket_service.dart';
+import '../../../screens/auth/token_storage.dart';
 
 import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';
@@ -56,6 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isSending = false;
   bool _isLoadingOlderMessages = false;
   bool _hasCompletedInitialScroll = false;
+  String? _resolvedConversationId;
   ReplyMessageModel? _activeReply;
   MessageModel? _pinnedMessage;
 
@@ -110,6 +112,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String get _conversationId {
+    if (_resolvedConversationId != null && _resolvedConversationId!.isNotEmpty) {
+      return _resolvedConversationId!;
+    }
+
     // Priority 1: Explicit conversationId parameter
     if (_useExplicitData && widget.conversationId != null) {
       return widget.conversationId!;
@@ -167,6 +173,12 @@ class _ChatScreenState extends State<ChatScreen> {
       messageService: MessageService(),
       conversationId: _conversationId,
       receiverUserId: _userId,
+      onConversationIdChanged: (conversationId) {
+        _resolvedConversationId = conversationId;
+        debugPrint(
+          '[ChatScreen] Active conversation recovered: $conversationId',
+        );
+      },
     )..addListener(_onMessageControllerTick);
     _scrollController.addListener(_onMessageScroll);
     _initializeSocketListener();
@@ -174,7 +186,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       final blockProvider = context.read<BlockProvider>();
       try {
-        await blockProvider.fetchBlockedUsers(forceRefresh: true);
+        await blockProvider.fetchBlockedUsers();
         if (!mounted) return;
         final isBlocked = blockProvider.blockedUsers.any(
           (user) => user.userId == _userId,
@@ -394,13 +406,10 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       debugPrint('[ChatScreen] 🌐 Step 2: Starting backend send...');
 
-      final sendFuture = _sendToBackend(trimmedText);
-      final timeoutFuture = Future.delayed(
-        const Duration(seconds: 5),
-        () => throw TimeoutException('Send timeout after 5s'),
+      await _sendToBackend(trimmedText).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Send timeout after 15s'),
       );
-
-      await Future.any([sendFuture, timeoutFuture]);
 
       debugPrint('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
     } catch (e) {
@@ -426,9 +435,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Step 2a: Try WebSocket send with timeout
     final wsSuccess = await _tryWebSocketSend(content).timeout(
-      const Duration(seconds: 3),
+      const Duration(seconds: 12),
       onTimeout: () {
-        debugPrint('[ChatScreen] ⏱️ WebSocket send TIMEOUT after 3s');
+        debugPrint('[ChatScreen] WebSocket send timed out after 12s');
         return false;
       },
     );
@@ -438,9 +447,10 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    // Step 2b: WebSocket failed/timeout - use REST fallback
-    debugPrint('[ChatScreen] 🔄 WebSocket failed, using REST fallback...');
-    await _sendViaREST(content);
+    // Current backend sends chat messages over WebSocket. The REST collection
+    // endpoint allows GET, but POST returns 405 Method Not Allowed.
+    debugPrint('[ChatScreen] WebSocket unavailable; REST send skipped');
+    throw Exception('Message connection unavailable. Please try again.');
   }
 
   Future<bool> _tryWebSocketSend(String content) async {
@@ -450,7 +460,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (!socketService.isConnected) {
         debugPrint('[ChatScreen] ⚠️ WebSocket NOT CONNECTED');
-        return false;
+        final accessToken = await TokenStorage.getAccessToken();
+        if (accessToken == null || accessToken.isEmpty) {
+          debugPrint('[ChatScreen] No token available for WebSocket reconnect');
+          return false;
+        }
+
+        await socketService.connect(accessToken);
+        final connected = await _waitForSocketConnection(socketService);
+        if (!connected) {
+          debugPrint('[ChatScreen] WebSocket reconnect did not complete');
+          return false;
+        }
       }
 
       final sent = socketService.sendMessage(
@@ -466,21 +487,16 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _sendViaREST(String content) async {
-    debugPrint('[ChatScreen] 🌐 REST API send start');
-    try {
-      final sentMessage = await _messageController.sendMessage(content);
+  Future<bool> _waitForSocketConnection(SocketService socketService) async {
+    const maxAttempts = 40;
+    const delay = Duration(milliseconds: 250);
 
-      if (sentMessage != null) {
-        debugPrint('[ChatScreen] ✅ REST API send SUCCESS: ${sentMessage.id}');
-      } else {
-        debugPrint('[ChatScreen] ⚠️ REST API returned null');
-        throw Exception('REST API returned null');
-      }
-    } catch (e) {
-      debugPrint('[ChatScreen] ❌ REST API send FAILED: $e');
-      rethrow;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (socketService.isConnected) return true;
+      await Future.delayed(delay);
     }
+
+    return socketService.isConnected;
   }
 
   void _sendImage(String imagePath) {

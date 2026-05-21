@@ -81,20 +81,22 @@ class SocketService {
   }
 
   void _onDisconnected() {
-    debugPrint("� [SocketService] � SOCKET CONNECTION CLOSED");
+    _setOnlineUsers(<String>{});
+    debugPrint("[SocketService] SOCKET CONNECTION CLOSED");
     debugPrint(
-      "� [SocketService] � Connection ended, will reconnect automatically",
+      "[SocketService] Connection ended, will reconnect automatically",
     );
   }
 
   void _onReconnecting(int attempt) {
-    debugPrint("� [SocketService] � RECONNECTING ATTEMPT $attempt");
+    debugPrint("[SocketService] RECONNECTING ATTEMPT $attempt");
     debugPrint("⏳ [SocketService] ⏳ Attempting to restore connection...");
   }
 
   void _onFailed() {
+    _setOnlineUsers(<String>{});
     debugPrint("❌ [SocketService] ❌ CONNECTION FAILED");
-    debugPrint("� [SocketService] � Max reconnect attempts reached");
+    debugPrint("[SocketService] Max reconnect attempts reached");
   }
 
   void _onError(String error) {
@@ -105,38 +107,50 @@ class SocketService {
   // ADD HERE 👇👇👇
 
   void _handleSocketMessage(Map<String, dynamic> data) {
-    final type = data['type'];
+    final type = data['type']?.toString();
 
     debugPrint("📩 [SocketService] Message Type => $type");
 
     switch (type) {
       case 'connected':
+      case 'presence_snapshot':
+      case 'online_users':
         final updatedUsers = <String>{};
 
-        final users = data['users'];
+        final users = _extractUsersList(data);
 
-        if (users != null && users is List) {
-          for (var user in users) {
-            if (user['is_online'] == true) {
-              updatedUsers.add(user['user_id']);
+        if (users != null) {
+          for (final user in users) {
+            final userId = _extractUserId(user);
+            if (userId.isEmpty) continue;
+
+            final isOnline = user is Map
+                ? _extractOnlineFlag(Map<String, dynamic>.from(user))
+                : true;
+
+            if (isOnline) {
+              updatedUsers.add(userId);
             }
           }
         }
 
-        onlineUsers.value = updatedUsers;
+        _setOnlineUsers(updatedUsers);
 
         debugPrint("🟢 ONLINE USERS => ${onlineUsers.value}");
 
         break;
       case 'user_online':
-        final userId = data['user_id'];
+      case 'presence_online':
+      case 'user_connected':
+      case 'user_active':
+        final userId = _extractUserId(data);
 
-        if (userId != null) {
+        if (userId.isNotEmpty) {
           final updatedUsers = Set<String>.from(onlineUsers.value);
 
           updatedUsers.add(userId);
 
-          onlineUsers.value = updatedUsers;
+          _setOnlineUsers(updatedUsers);
 
           debugPrint("🟢 USER ONLINE => $userId");
         }
@@ -144,20 +158,223 @@ class SocketService {
         break;
 
       case 'user_offline':
-        final userId = data['user_id'];
+      case 'presence_offline':
+      case 'user_disconnected':
+      case 'user_inactive':
+        final userId = _extractUserId(data);
 
-        if (userId != null) {
+        if (userId.isNotEmpty) {
           final updatedUsers = Set<String>.from(onlineUsers.value);
 
           updatedUsers.remove(userId);
 
-          onlineUsers.value = updatedUsers;
+          _setOnlineUsers(updatedUsers);
 
           debugPrint("🔴 USER OFFLINE => $userId");
         }
 
         break;
+
+      case 'presence_update':
+      case 'user_presence':
+      case 'user_status':
+      case 'status_update':
+      case 'user_status_changed':
+        final userId = _extractUserId(data);
+
+        if (userId.isNotEmpty) {
+          final updatedUsers = Set<String>.from(onlineUsers.value);
+          if (_extractOnlineFlag(data)) {
+            updatedUsers.add(userId);
+          } else {
+            updatedUsers.remove(userId);
+          }
+          _setOnlineUsers(updatedUsers);
+          debugPrint(
+            "USER PRESENCE => $userId online=${onlineUsers.value.contains(userId)}",
+          );
+        }
+        break;
+
+      default:
+        _applyGenericPresenceUpdate(data);
     }
+  }
+
+  void _applyGenericPresenceUpdate(Map<String, dynamic> data) {
+    final users = _extractUsersList(data);
+    if (users != null) {
+      final updatedUsers = Set<String>.from(onlineUsers.value);
+      var changed = false;
+
+      for (final user in users) {
+        final userId = _extractUserId(user);
+        if (userId.isEmpty || user is! Map) continue;
+
+        final userData = Map<String, dynamic>.from(user);
+        if (!_hasOnlineFlag(userData)) continue;
+
+        if (_extractOnlineFlag(userData)) {
+          changed = updatedUsers.add(userId) || changed;
+        } else {
+          changed = updatedUsers.remove(userId) || changed;
+        }
+      }
+
+      if (changed) {
+        _setOnlineUsers(updatedUsers);
+        debugPrint("PRESENCE LIST UPDATE => ${onlineUsers.value}");
+      }
+      return;
+    }
+
+    if (!_hasOnlineFlag(data)) return;
+
+    final userId = _extractUserId(data);
+    if (userId.isEmpty) return;
+
+    final updatedUsers = Set<String>.from(onlineUsers.value);
+    final wasOnline = updatedUsers.contains(userId);
+    final isOnline = _extractOnlineFlag(data);
+
+    if (isOnline) {
+      updatedUsers.add(userId);
+    } else {
+      updatedUsers.remove(userId);
+    }
+
+    if (wasOnline != isOnline) {
+      _setOnlineUsers(updatedUsers);
+      debugPrint("GENERIC PRESENCE => $userId online=$isOnline");
+    }
+  }
+
+  List<dynamic>? _extractUsersList(Map<String, dynamic> data) {
+    final candidates = [
+      data['users'],
+      data['online_users'],
+      data['onlineUsers'],
+      if (data['data'] is Map) (data['data'] as Map)['users'],
+      if (data['data'] is Map) (data['data'] as Map)['online_users'],
+      if (data['data'] is Map) (data['data'] as Map)['onlineUsers'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is List) return candidate;
+    }
+
+    return null;
+  }
+
+  String _extractUserId(dynamic source) {
+    if (source == null) return '';
+
+    if (source is String || source is num) {
+      return source.toString().trim();
+    }
+
+    if (source is! Map) return '';
+
+    final data = Map<String, dynamic>.from(source);
+    final direct = _firstString(data, const [
+      'user_id',
+      'userId',
+      'id',
+      '_id',
+      'pk',
+    ]);
+    if (direct.isNotEmpty) return direct;
+
+    for (final key in const ['user', 'profile', 'data']) {
+      final nested = data[key];
+      if (nested is Map || nested is String || nested is num) {
+        final nestedId = _extractUserId(nested);
+        if (nestedId.isNotEmpty) return nestedId;
+      }
+    }
+
+    return '';
+  }
+
+  bool _extractOnlineFlag(Map<String, dynamic> data) {
+    for (final key in const [
+      'is_online',
+      'isOnline',
+      'online',
+      'status',
+      'presence',
+      'state',
+    ]) {
+      final value = data[key];
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        final normalized = value.trim().toLowerCase();
+        if (normalized == 'true' ||
+            normalized == '1' ||
+            normalized == 'online') {
+          return true;
+        }
+        if (normalized == 'false' ||
+            normalized == '0' ||
+            normalized == 'offline' ||
+            normalized == 'disconnected' ||
+            normalized == 'inactive') {
+          return false;
+        }
+      }
+    }
+
+    for (final key in const ['user', 'profile', 'data']) {
+      final nested = data[key];
+      if (nested is Map) {
+        final nestedData = Map<String, dynamic>.from(nested);
+        if (_hasOnlineFlag(nestedData)) {
+          return _extractOnlineFlag(nestedData);
+        }
+      }
+    }
+
+    return true;
+  }
+
+  bool _hasOnlineFlag(Map<String, dynamic> data) {
+    if (data.containsKey('is_online') ||
+        data.containsKey('isOnline') ||
+        data.containsKey('online') ||
+        data.containsKey('status') ||
+        data.containsKey('presence') ||
+        data.containsKey('state')) {
+      return true;
+    }
+
+    for (final key in const ['user', 'profile', 'data']) {
+      final nested = data[key];
+      if (nested is Map && _hasOnlineFlag(Map<String, dynamic>.from(nested))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  String _firstString(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value == null) continue;
+
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+
+    return '';
+  }
+
+  void _setOnlineUsers(Set<String> users) {
+    onlineUsers.value = users
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
   }
 
   // =========================
@@ -166,6 +383,7 @@ class SocketService {
 
   /// Connect to WebSocket (maintains backward compatibility)
   Future<void> connect(String token) async {
+    debugPrint("[SOCKET SERVICE] connect() requested");
     debugPrint("🔌 [SocketService] 🔌 CONNECTING SOCKET...");
     final previewLength = token.length < 10 ? token.length : 10;
     debugPrint(
@@ -174,6 +392,9 @@ class SocketService {
 
     // The reconnect manager will handle token internally
     await _reconnectManager.connect();
+    debugPrint(
+      "[SOCKET SERVICE] connect() completed state=${_reconnectManager.state.name}",
+    );
   }
 
   /// Send message through enhanced socket with timeout protection
@@ -184,6 +405,9 @@ class SocketService {
     String? senderId,
     Map<String, dynamic>? additionalData,
   }) {
+    debugPrint(
+      "[SOCKET SERVICE] sendMessage() state=${_reconnectManager.state.name} connected=${_reconnectManager.isConnected}",
+    );
     if (message.trim().isEmpty) {
       debugPrint("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
       return false;
@@ -213,9 +437,12 @@ class SocketService {
       ...?additionalData,
     };
 
+    debugPrint("[SOCKET SERVICE] outgoing payload => $messageData");
+
     try {
       debugPrint("🚀 [SocketService] 🚀 Attempting to send via WebSocket...");
       final sent = _reconnectManager.sendMessage(messageData);
+      debugPrint("[SOCKET SERVICE] low-level send result => $sent");
 
       if (sent) {
         debugPrint("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");

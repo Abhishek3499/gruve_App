@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
 
 class ForgotPasswordService {
   final Dio _dio = AppDio.create();
@@ -9,17 +11,17 @@ class ForgotPasswordService {
       const endpoint = 'auth/forgot-password/';
       final requestData = {"email": email};
       
-      debugPrint("=== FORGOT PASSWORD REQUEST ===");
-      debugPrint("URL: ${_dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: ${_dio.options.headers}");
-      debugPrint("BODY: $requestData");
+      AuthApiLogger.request(
+        'ForgotPassword',
+        dio: _dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: requestData,
+      );
 
       final response = await _dio.post(endpoint, data: requestData);
 
-      debugPrint("=== FORGOT PASSWORD RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('ForgotPassword', response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data["message"] ?? "Reset link sent";
@@ -27,18 +29,11 @@ class ForgotPasswordService {
         throw Exception("Failed to send reset link");
       }
     } on DioException catch (e) {
-      debugPrint("=== FORGOT PASSWORD DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      AuthApiLogger.error('ForgotPassword', e);
 
-      throw Exception(e.response?.data["message"] ?? "Something went wrong");
+      throw Exception(AuthApiException.extractMessage(e));
     } catch (e) {
-      debugPrint("=== FORGOT PASSWORD UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      debugPrint("Forgot password failed: $e");
       rethrow;
     }
   }

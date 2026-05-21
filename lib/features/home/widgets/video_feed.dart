@@ -41,12 +41,6 @@ class _VideoFeedState extends State<VideoFeed> {
 
     _controller.initVideos();
 
-    // ✅ FIX: Auto-play first video after initial load
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _controller.playVideo(0);
-      }
-    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onControllerReady?.call(_controller);

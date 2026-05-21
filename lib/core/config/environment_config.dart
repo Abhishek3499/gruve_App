@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Environment configuration management
-/// Handles dev/staging/prod environments using dart-define
+/// Environment configuration management.
 class EnvironmentConfig {
   static late Environment _environment;
   static late String _baseUrl;
@@ -13,26 +12,21 @@ class EnvironmentConfig {
   static late int _apiTimeout;
   static late int _wsTimeout;
 
-  /// Initialize environment configuration
   static Future<void> initialize() async {
     await dotenv.load(fileName: ".env");
 
-    // Detect environment from dart-define
     const environment = String.fromEnvironment(
       'ENVIRONMENT',
       defaultValue: 'development',
     );
     _environment = _parseEnvironment(environment);
-
-    // Load configuration based on environment
     _loadConfiguration();
 
-    debugPrint('🌍 [Environment] Initialized: ${_environment.name}');
-    debugPrint('🔗 [Environment] Base URL: $_baseUrl');
-    debugPrint('📊 [Environment] Logging enabled: $_enableLogging');
+    debugPrint('[Environment] Initialized: ${_environment.name}');
+    debugPrint('[Environment] Base URL: $_baseUrl');
+    debugPrint('[Environment] WebSocket URL: $_wsUrl');
   }
 
-  /// Parse environment string
   static Environment _parseEnvironment(String env) {
     switch (env.toLowerCase()) {
       case 'production':
@@ -48,13 +42,12 @@ class EnvironmentConfig {
     }
   }
 
-  /// Load configuration for current environment
   static void _loadConfiguration() {
     switch (_environment) {
       case Environment.production:
         _baseUrl =
             dotenv.env['PROD_BASE_URL'] ??
-            'https://gruve-api.hardkore.tech/api/v1';
+            'https://gruve-api.hardkore.tech/api/v1/';
         _wsUrl =
             dotenv.env['PROD_WS_URL'] ?? 'wss://gruve-api.hardkore.tech/ws';
         _enableLogging = false;
@@ -63,27 +56,26 @@ class EnvironmentConfig {
         _apiTimeout = 30;
         _wsTimeout = 15;
         break;
-
       case Environment.staging:
         _baseUrl =
             dotenv.env['STAGING_BASE_URL'] ??
-            'https://staging-api.gruveapp.com';
+            'https://staging-api.gruveapp.com/api/v1/';
         _wsUrl =
-            dotenv.env['STAGING_WS_URL'] ?? 'wss://staging-ws.gruveapp.com';
+            dotenv.env['STAGING_WS_URL'] ?? 'wss://staging-ws.gruveapp.com/ws';
         _enableLogging = true;
         _enableDebugTools = false;
         _enableCrashReporting = true;
         _apiTimeout = 25;
         _wsTimeout = 12;
         break;
-
       case Environment.development:
         _baseUrl =
             dotenv.env['DEV_BASE_URL'] ??
+            dotenv.env['BASE_URL'] ??
             'https://zg7h02xx-8001.inc1.devtunnels.ms/api/v1/';
         _wsUrl =
             dotenv.env['DEV_WS_URL'] ??
-            'ws://zg7h02xx-8001.inc1.devtunnels.ms/ws';
+            'wss://zg7h02xx-8001.inc1.devtunnels.ms/ws';
         _enableLogging = true;
         _enableDebugTools = true;
         _enableCrashReporting = false;
@@ -92,10 +84,6 @@ class EnvironmentConfig {
         break;
     }
   }
-
-  // =========================
-  // GETTERS
-  // =========================
 
   static Environment get environment => _environment;
   static String get baseUrl => _baseUrl;
@@ -109,19 +97,15 @@ class EnvironmentConfig {
   static int get apiTimeout => _apiTimeout;
   static int get wsTimeout => _wsTimeout;
 
-  /// Get environment-specific headers
   static Map<String, String> get headers {
     final headers = <String, String>{};
-
     if (!isProduction) {
       headers['X-Environment'] = _environment.name;
       headers['X-Debug-Mode'] = 'true';
     }
-
     return headers;
   }
 
-  /// Get environment-specific app name
   static String get appName {
     switch (_environment) {
       case Environment.production:
@@ -133,7 +117,6 @@ class EnvironmentConfig {
     }
   }
 
-  /// Get environment-specific app version
   static String get appVersion {
     const version = String.fromEnvironment(
       'APP_VERSION',
@@ -143,15 +126,11 @@ class EnvironmentConfig {
       'BUILD_NUMBER',
       defaultValue: '1',
     );
-
-    if (isProduction) {
-      return version;
-    } else {
-      return '$version+$buildNumber (${_environment.name})';
-    }
+    return isProduction
+        ? version
+        : '$version+$buildNumber (${_environment.name})';
   }
 
-  /// Check if feature is enabled
   static bool isFeatureEnabled(String featureName) {
     final featureFlags = {
       'new_feed_ui': isDevelopment || isStaging,
@@ -160,15 +139,13 @@ class EnvironmentConfig {
       'analytics': !isDevelopment,
       'crash_reporting': _enableCrashReporting,
     };
-
     return featureFlags[featureName] ?? false;
   }
 
-  /// Log environment info
   static void logEnvironmentInfo() {
     if (!_enableLogging) return;
 
-    debugPrint('🌍 [Environment] Configuration:');
+    debugPrint('[Environment] Configuration:');
     debugPrint('  Environment: ${_environment.name}');
     debugPrint('  Base URL: $_baseUrl');
     debugPrint('  WebSocket URL: $_wsUrl');
@@ -182,10 +159,8 @@ class EnvironmentConfig {
   }
 }
 
-/// Environment enum
 enum Environment { development, staging, production }
 
-/// Extension for environment utilities
 extension EnvironmentExtension on Environment {
   String get name {
     switch (this) {

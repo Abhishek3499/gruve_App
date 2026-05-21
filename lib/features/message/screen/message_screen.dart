@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -19,24 +21,32 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen> {
   bool _isLoadingMoreConversations = false;
+  bool _startedUserPrefetch = false;
 
   @override
   void initState() {
     super.initState();
     debugPrint('📱 [MessageScreen] Screen initialized');
-    // Fetch both conversations and users in parallel on initial load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('🔄 [MessageScreen] Starting parallel fetch');
-      _fetchInitialData();
+      debugPrint('[MessageScreen] Starting conversation fetch');
+      unawaited(_fetchInitialData());
     });
   }
 
   Future<void> _fetchInitialData() async {
-    await Future.wait([
-      context.read<MessageProvider>().fetchConversations(),
-      context.read<UserProvider>().fetchUsers(),
-    ]);
-    debugPrint('✅ [MessageScreen] Initial data loaded');
+    await context.read<MessageProvider>().fetchConversations();
+    debugPrint('[MessageScreen] Conversations loaded');
+    _prefetchUsersForAvatarRow();
+  }
+
+  void _prefetchUsersForAvatarRow() {
+    if (_startedUserPrefetch || !mounted) return;
+
+    final userProvider = context.read<UserProvider>();
+    if (userProvider.hasInitialized || userProvider.isLoading) return;
+
+    _startedUserPrefetch = true;
+    unawaited(userProvider.fetchUsers());
   }
 
   Future<void> _handleRefresh() async {
@@ -46,10 +56,8 @@ class _MessageScreenState extends State<MessageScreen> {
     final messageProvider = context.read<MessageProvider>();
     final userProvider = context.read<UserProvider>();
 
-    await Future.wait([
-      messageProvider.refreshConversations(),
-      userProvider.refreshUsers(),
-    ]);
+    await messageProvider.refreshConversations();
+    unawaited(userProvider.refreshUsers());
 
     debugPrint('✅ [MessageScreen] Refresh completed');
   }

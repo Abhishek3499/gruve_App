@@ -1,4 +1,5 @@
 import 'package:gruve_app/screens/auth/api/services/complete_profile_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
@@ -9,7 +10,11 @@ class CompleteProfileController {
   String? errorMessage;
   CompleteProfileResponse? response;
 
-  Future<void> completeProfile({required String username, String? file}) async {
+  Future<void> completeProfile({
+    required String username,
+    String? file,
+    XFile? image,
+  }) async {
     isLoading = true;
     errorMessage = null;
     response = null;
@@ -18,14 +23,15 @@ class CompleteProfileController {
       final result = await _service.completeProfile(
         request: CompleteProfileRequest(username: username),
         file: file,
+        image: image,
       );
 
       response = result;
     } catch (e) {
       response = null;
       errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      isLoading = false;
     }
-
-    isLoading = false;
   }
 }

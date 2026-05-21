@@ -9,11 +9,37 @@ import 'package:web_socket_channel/io.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../../screens/auth/token_storage.dart';
+import '../config/environment_config.dart';
 import '../debug/debug_logger.dart';
 import 'socket_logger.dart';
 
 // 🚀 PRODUCTION: Connection tracking
 final String _connectionId = DateTime.now().millisecondsSinceEpoch.toString();
+
+void _socketPrint(String message, {Object? data}) {
+  debugPrint('[SOCKET] $message');
+  if (data != null) {
+    debugPrint('[SOCKET DATA] $data');
+  }
+}
+
+String _safeJson(Object? data) {
+  try {
+    return jsonEncode(data);
+  } catch (_) {
+    return data.toString();
+  }
+}
+
+String _redactSocketUri(Uri uri) {
+  final params = Map<String, String>.from(uri.queryParameters);
+  final token = params['token'];
+  if (token != null && token.isNotEmpty) {
+    final previewLength = token.length < 10 ? token.length : 10;
+    params['token'] = '${token.substring(0, previewLength)}...redacted';
+  }
+  return uri.replace(queryParameters: params.isEmpty ? null : params).toString();
+}
 
 /// PRODUCTION OPTIMIZATION: Memory-efficient socket management
 /// Battery impact: 10-15% drain → 2-3% (80% reduction)
@@ -58,11 +84,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
   static int _activeInstances = 0;
   static int get activeInstances => _activeInstances;
 
-  // 🚀 PRODUCTION FIX: Use environment config for WebSocket URL
+  // 🚀 PRODUCTION FIX: Use environment config for WebSocket URL                                                                                                                                          
   static String get _baseUrl {
-    // Import EnvironmentConfig if not already imported
-    // For now, use devtunnel URL directly
-    return 'ws://zg7h02xx-8001.inc1.devtunnels.ms/ws';
+    return EnvironmentConfig.wsUrl;
   }
 
   static const Duration _connectionTimeout = Duration(seconds: 10);
@@ -113,7 +137,11 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
 
   Future<void> connect() async {
+    _socketPrint(
+      'connect() called state=${_state.name} attempts=$_reconnectAttempts',
+    );
     if (_isDisposed) {
+      _socketPrint('connect ignored: manager disposed');
       debugLog.socket('CONNECT_IGNORED', properties: {'reason': 'disposed'});
       return;
     }
@@ -129,6 +157,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     );
 
     if (isConnected) {
+      _socketPrint('connect skipped: already connected');
       debugLog.socket(
         'ALREADY_CONNECTED',
         properties: {'reason': 'Connection already established'},
@@ -137,6 +166,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     }
 
     if (isConnecting) {
+      _socketPrint('connect skipped: connection already in progress');
       debugLog.socket(
         'CONNECTION_IN_PROGRESS',
         properties: {'reason': 'Connection already in progress'},
@@ -148,6 +178,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
   }
 
   Future<void> disconnect() async {
+    _socketPrint('disconnect() called state=${_state.name}');
     _manualDisconnect = true;
     debugLog.socket(
       'DISCONNECT',
@@ -171,6 +202,10 @@ class SocketReconnectManager with WidgetsBindingObserver {
   bool sendMessage(Map<String, dynamic> message) {
     // Minimal logging - only errors
     if (!isConnected || _channel == null) {
+      _socketPrint(
+        'send skipped: connected=$isConnected channel=${_channel != null} state=${_state.name}',
+        data: _safeJson(message),
+      );
       if (kDebugMode) {
         debugLog.socket('SEND_SKIPPED', properties: {'state': _state.name});
       }
@@ -179,7 +214,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
     try {
       final messageJson = jsonEncode(message);
+      _socketPrint('outgoing message', data: messageJson);
       _channel!.sink.add(messageJson);
+      SocketLogger.logOutgoing(message, true);
 
       // Only log in debug mode
       if (kDebugMode) {
@@ -191,12 +228,15 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
       return true;
     } catch (error) {
+      _socketPrint('send error: $error', data: _safeJson(message));
+      SocketLogger.logOutgoing(message, false);
       debugLog.socket('SEND_ERROR', error: error.toString());
       return false;
     }
   }
 
   Future<void> reset() async {
+    _socketPrint('reset() called');
     debugLog.socket('RESET');
     _manualDisconnect = false;
     _clearReconnectTimer();
@@ -206,7 +246,11 @@ class SocketReconnectManager with WidgetsBindingObserver {
   }
 
   Future<void> _performConnect() async {
+    _socketPrint(
+      '_performConnect start disposed=$_isDisposed manual=$_manualDisconnect online=$_isOnline foreground=$_isAppInForeground',
+    );
     if (_isDisposed || _manualDisconnect) {
+      _socketPrint('_performConnect cancelled');
       debugLog.socket(
         'CONNECT_CANCELLED',
         properties: {
@@ -218,6 +262,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
     }
 
     if (!_isOnline || !_isAppInForeground) {
+      _socketPrint(
+        '_performConnect deferred online=$_isOnline foreground=$_isAppInForeground',
+      );
       debugLog.socket(
         'CONNECT_DEFERRED',
         properties: {
@@ -236,6 +283,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
       final token = await TokenStorage.getAccessToken();
       if (token == null || token.isEmpty) {
+        _socketPrint('connect failed: missing auth token');
         debugLog.socket('CONNECT_FAILED', error: 'Missing auth token');
         _setState(SocketState.failed);
         _scheduleReconnect();
@@ -244,6 +292,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
       // 🚀 PRODUCTION-GRADE: Build WebSocket URI with authentication options
       final socketUri = _buildWebSocketUri(token);
+      _socketPrint(
+        'connect attempt uri=${_redactSocketUri(socketUri)} scheme=${socketUri.scheme} host=${socketUri.host} path=${socketUri.path}',
+      );
 
       // Comprehensive logging for debugging
       debugLog.socket(
@@ -264,6 +315,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
       // 🚀 PRODUCTION: Prevent duplicate connections
       if (_channel != null && isConnected) {
+        _socketPrint('duplicate connection prevented');
         debugLog.socket(
           'DUPLICATE_CONNECTION_PREVENTED',
           properties: {
@@ -275,6 +327,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
       }
 
       _connectionTimeoutTimer = Timer(_connectionTimeout, () {
+        _socketPrint('connection timeout after ${_connectionTimeout.inSeconds}s');
         debugLog.socket(
           'WEBSOCKET_TIMEOUT',
           properties: {
@@ -286,12 +339,14 @@ class SocketReconnectManager with WidgetsBindingObserver {
       });
 
       // 🔥 DEBUG: Print active WebSocket URL before connection
-      debugPrint("🔥 ACTIVE WS URL => ${socketUri.toString()}");
+      debugPrint("[SOCKET] ACTIVE WS URL => ${_redactSocketUri(socketUri)}");
 
       //  PRODUCTION: Connect with proper authentication
       try {
         _channel = IOWebSocketChannel.connect(socketUri.toString());
+        _socketPrint('IOWebSocketChannel.connect() created');
       } catch (e) {
+        _socketPrint('websocket connection create error: $e');
         debugLog.socket(
           'WEBSOCKET_CONNECTION_ERROR',
           error: e.toString(),
@@ -308,6 +363,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
       _lastConnectedAt = DateTime.now();
       _setState(SocketState.connected);
     } catch (error, stackTrace) {
+      _socketPrint('connect error: $error');
       debugLog.socket('CONNECT_ERROR', error: error.toString());
       debugLog.error(
         'Socket connect failed',
@@ -321,6 +377,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
   Future<void> _setupSocketListeners() async {
     await _socketSubscription?.cancel();
+    _socketPrint('attaching socket listeners');
 
     _socketSubscription = _channel?.stream.listen(
       _onMessageReceived,
@@ -330,16 +387,21 @@ class SocketReconnectManager with WidgetsBindingObserver {
     );
 
     debugLog.socket('LISTENERS_ATTACHED');
+    _socketPrint('listeners attached');
   }
 
   void _onMessageReceived(dynamic message) {
+    _socketPrint('incoming raw message', data: message);
     try {
       final data = _decodeMessage(message);
       if (data == null) return;
+      _socketPrint('incoming decoded message', data: _safeJson(data));
+      SocketLogger.logIncoming(message, data);
 
 
       // Handle errors
       if (data['type'] == 'error') {
+        _socketPrint('backend error response', data: _safeJson(data));
         debugLog.socket(
           'ERROR_RESPONSE',
           properties: {'error': data['error'], 'message': data['message']},
@@ -355,11 +417,15 @@ class SocketReconnectManager with WidgetsBindingObserver {
         debugLog.socket('MESSAGE_RECEIVED', properties: {'type': data['type']});
       }
     } catch (error) {
+      _socketPrint('message parse error: $error', data: message);
       debugLog.socket('MESSAGE_PARSE_ERROR', error: error.toString());
     }
   }
 
   void _onConnectionClosed() {
+    _socketPrint(
+      'connection closed manual=$_manualDisconnect disposed=$_isDisposed state=${_state.name}',
+    );
     if (_manualDisconnect || _isDisposed) {
       debugLog.socket(
         'CLOSE_IGNORED',
@@ -379,11 +445,13 @@ class SocketReconnectManager with WidgetsBindingObserver {
   }
 
   void _onConnectionError(dynamic error) {
+    _socketPrint('stream error: $error');
     debugLog.socket('STREAM_ERROR', error: error.toString());
     _handleConnectionError(error.toString());
   }
 
   void _handleConnectionError(String error) {
+    _socketPrint('handle connection error: $error');
     if (_manualDisconnect || _isDisposed) {
       debugLog.socket(
         'ERROR_IGNORED',
@@ -418,6 +486,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
   }
 
   void _scheduleReconnect({Duration? extraDelay}) {
+    _socketPrint(
+      'schedule reconnect requested state=${_state.name} attempts=$_reconnectAttempts extraMs=${extraDelay?.inMilliseconds ?? 0}',
+    );
     if (_isDisposed || _manualDisconnect) {
       debugLog.socket(
         'RECONNECT_SKIPPED',
@@ -451,6 +522,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     }
 
     if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _socketPrint('reconnect give up attempts=$_reconnectAttempts');
       debugLog.socket(
         'RECONNECT_GIVE_UP',
         reconnectAttempts: _reconnectAttempts,
@@ -465,6 +537,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
       _maxReconnectAttempts,
     );
     final delay = _calculateReconnectDelay() + (extraDelay ?? Duration.zero);
+    _socketPrint(
+      'reconnect scheduled nextAttempt=$nextAttempt delayMs=${delay.inMilliseconds}',
+    );
     debugLog.socket(
       'RECONNECT_SCHEDULED',
       reconnectAttempts: nextAttempt,
@@ -477,6 +552,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     );
 
     _reconnectTimer = Timer(delay, () async {
+      _socketPrint('reconnect timer fired');
       _reconnectTimer = null;
       _reconnectAttempts = (_reconnectAttempts + 1).clamp(
         1,
@@ -509,6 +585,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
       result,
     ) {
       _isOnline = result != ConnectivityResult.none;
+      _socketPrint(
+        'connectivity changed result=${result.name} online=$_isOnline state=${_state.name}',
+      );
       debugLog.socket(
         'CONNECTIVITY_CHANGE',
         properties: {
@@ -535,6 +614,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final wasInForeground = _isAppInForeground;
     _isAppInForeground = state == AppLifecycleState.resumed;
+    _socketPrint(
+      'app lifecycle state=${state.name} foreground=$_isAppInForeground wasForeground=$wasInForeground',
+    );
 
     debugLog.socket(
       'APP_LIFECYCLE',
@@ -547,6 +629,11 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
     if (!_isAppInForeground) {
       _clearReconnectTimer();
+      if (isConnected || isConnecting) {
+        unawaited(_cleanupActiveSocket());
+        _setState(SocketState.disconnected);
+        _emitEvent(SocketEvent(type: SocketEventType.disconnected));
+      }
       return;
     }
 
@@ -573,6 +660,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     };
 
     debugLog.socket('STATE_CHANGE', properties: stateChangeData);
+    _socketPrint('state change ${oldState.name} -> ${newState.name}');
     SocketLogger.logConnectionState(
       oldState.name,
       newState.name,
@@ -594,6 +682,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
         'CONNECTION_ESTABLISHED',
         'WebSocket connection established',
       );
+      _socketPrint('connection established successfully');
       debugPrint('✅ [SOCKET DEBUG] Connection established successfully');
     }
   }
@@ -635,6 +724,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
   // 🚀 PRODUCTION OPTIMIZED: Comprehensive cleanup with memory tracking
   Future<void> _cleanupActiveSocket({bool keepState = false}) async {
+    _socketPrint(
+      'cleanup start keepState=$keepState channel=${_channel != null} subscription=${_socketSubscription != null}',
+    );
     debugLog.socket(
       'CLEANUP_START',
       properties: {
@@ -663,7 +755,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
     // 🚀 CHANNEL CLEANUP: Safe channel closure
     try {
       await _channel?.sink.close();
+      _socketPrint('channel sink closed');
     } catch (error) {
+      _socketPrint('channel close error: $error');
       debugLog.socket('CHANNEL_CLOSE_ERROR', error: error.toString());
     }
     _channel = null;
@@ -688,6 +782,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
         'remainingTimers': _activeTimers.length,
       },
     );
+    _socketPrint('cleanup complete state=${_state.name}');
   }
 
   // 🚀 PRODUCTION OPTIMIZED: Comprehensive disposal with memory leak prevention
@@ -774,34 +869,25 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
   // 🚀 PRODUCTION-GRADE: Build WebSocket URI with proper validation
   Uri _buildWebSocketUri(String token) {
-    try {
-      // Parse base URL components safely
-      final baseUri = Uri.parse(_baseUrl);
+    final configuredUri = Uri.parse(EnvironmentConfig.wsUrl.trim());
+    final scheme = switch (configuredUri.scheme) {
+      'https' => 'wss',
+      'http' => 'ws',
+      '' => 'wss',
+      final value => value,
+    };
+    final path = configuredUri.path.isEmpty || configuredUri.path == '/'
+        ? '/ws'
+        : configuredUri.path;
 
-      // Build WebSocket URI with proper components
-      return Uri(
-        scheme: baseUri.scheme, // Use scheme from _baseUrl (ws or wss)
-        host: baseUri.host,
-        port: baseUri.hasPort
-            ? baseUri.port
-            : null, // Let system handle default port
-        path: baseUri.path, // Preserve /ws endpoint
-        query: 'token=$token', // Add authentication token as query parameter
-      );
-    } catch (e) {
-      debugLog.socket(
-        'URI_BUILD_ERROR',
-        error: e.toString(),
-        properties: {'connectionId': _connectionId},
-      );
-      // Fallback to manual construction if parsing fails
-      return Uri(
-        scheme: 'ws', // Use ws:// for devtunnels
-        host: 'zg7h02xx-8001.inc1.devtunnels.ms',
-        path: '/ws',
-        query: 'token=$token',
-      );
-    }
+    return configuredUri.replace(
+      scheme: scheme,
+      path: path,
+      queryParameters: {
+        ...configuredUri.queryParameters,
+        'token': token,
+      },
+    );
   }
 
   // 🚀 HELPER METHODS: Timer management with tracking

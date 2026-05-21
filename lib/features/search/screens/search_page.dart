@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
@@ -40,7 +39,6 @@ class _SearchPageState extends State<SearchPage> {
   bool _isSearching = false;
   bool _isNavigating = false;
   String? _searchError;
-  Timer? _debounceTimer; // Added for custom debounce control
 
   @override
   void initState() {
@@ -60,7 +58,6 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel(); // CHANGED: Cancel debounce timer on dispose
     _searchController.dispose();
     _searchFocusNode.dispose();
     _userSearch.dispose();
@@ -97,50 +94,36 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onSearchChanged(String query) {
-    // Cancel existing debounce timer
-    _debounceTimer?.cancel();
-
-    // CHANGED: Clear results immediately when user types, set searching state
     setState(() {
-      _users = []; // Clear previous results instantly
-      _searchError = null; // Clear any previous errors
-      _isSearching = query
-          .trim()
-          .isNotEmpty; // Only show loader when there's text
+      _users = [];
+      _searchError = null;
+      _isSearching = query.trim().isNotEmpty;
     });
 
-    // CHANGED: Handle empty query case - clear debounced search
     if (query.trim().isEmpty) {
       _userSearch.clear();
       return;
     }
 
-    // CHANGED: Add 400ms debounce using Timer instead of relying on service debounce
-    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
-      if (!mounted) return; // Safety check
-
-      // Only proceed if still searching (user hasn't cleared the query)
-      if (query.trim().isNotEmpty) {
-        _userSearch.search(
-          query,
-          onResults: (users) {
-            if (!mounted) return;
-            setState(() {
-              _users = users;
-              _isSearching = false; // Stop loader when results arrive
-            });
-          },
-          onError: (_) {
-            if (!mounted) return;
-            setState(() {
-              _users = [];
-              _isSearching = false; // Stop loader on error
-              _searchError = 'Unable to search users right now';
-            });
-          },
-        );
-      }
-    });
+    // Single debounce handled by DebouncedUserSearch (300ms)
+    _userSearch.search(
+      query,
+      onResults: (users) {
+        if (!mounted) return;
+        setState(() {
+          _users = users;
+          _isSearching = false;
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _users = [];
+          _isSearching = false;
+          _searchError = 'Unable to search users right now';
+        });
+      },
+    );
   }
 
   Future<void> _navigateToUserProfile(SearchUser user) async {

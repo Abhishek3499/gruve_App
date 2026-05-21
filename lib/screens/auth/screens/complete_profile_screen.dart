@@ -6,8 +6,8 @@ import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/services/image_picker_service.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:provider/provider.dart';
 
 // ✅ IMPORT
 
@@ -19,15 +19,19 @@ class CompleteProfileScreen extends StatefulWidget {
 }
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
-  XFile? _selectedImage;
-
   final CompleteProfileController controller =
       CompleteProfileController(); // ✅ FIX
 
   final TextEditingController _usernameController =
       TextEditingController(); // ✅ FIX
 
-  bool isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetCompleteProfile();
+    });
+  }
 
   @override
   void dispose() {
@@ -37,6 +41,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authUi = context.watch<AuthUiProvider>();
+    final selectedImage = authUi.selectedProfileImage;
+    final selectedImageBytes = authUi.selectedProfileImageBytes;
+    final isLoading = authUi.isLoading(AuthLoadingKey.completeProfile);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: VideoBackground(
@@ -80,34 +89,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     onTap: () {
                       ImagePickerService.showImagePickerBottomSheet(
                         context,
-                        onImageSelected: (image) {
-                          setState(() {
-                            _selectedImage = image;
-                          });
+                        onImageSelected: (image) async {
+                          final bytes = await image.readAsBytes();
+                          if (!mounted) return;
+                          context.read<AuthUiProvider>().setProfileImage(
+                            image,
+                            bytes,
+                          );
                         },
                       );
                     },
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.purple,
-                      backgroundImage:
-                          _selectedImage != null &&
-                              !(_selectedImage!.path.toLowerCase().endsWith(
-                                    '.mp4',
-                                  ) ||
-                                  _selectedImage!.path.toLowerCase().endsWith(
-                                    '.mov',
-                                  ))
-                          ? FileImage(File(_selectedImage!.path))
+                      backgroundImage: selectedImageBytes != null &&
+                              !authUi.isSelectedProfileMediaVideo
+                          ? MemoryImage(selectedImageBytes)
                           : null,
-                      child: _selectedImage == null
+                      child: selectedImage == null
                           ? const Icon(Icons.camera_alt, color: Colors.white)
-                          : (_selectedImage!.path.toLowerCase().endsWith(
-                                  '.mp4',
-                                ) ||
-                                _selectedImage!.path.toLowerCase().endsWith(
-                                  '.mov',
-                                ))
+                          : authUi.isSelectedProfileMediaVideo
                           ? const Icon(
                               Icons.videocam,
                               color: Colors.white,
@@ -134,7 +135,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     isLoading: isLoading,
                     onComplete: () async {
                       final username = _usernameController.text.trim();
-                      final file = _selectedImage?.path;
+                      final file = selectedImage?.path;
                       debugPrint("USERNAME: '$username'");
                       debugPrint("IMAGE PATH: '$file'");
 
@@ -151,14 +152,21 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         return false;
                       }
 
-                      setState(() => isLoading = true);
+                      context.read<AuthUiProvider>().setLoading(
+                        AuthLoadingKey.completeProfile,
+                        true,
+                      );
                       try {
                         await controller.completeProfile(
                           username: username,
                           file: file,
+                          image: selectedImage,
                         );
                       } finally {
-                        if (mounted) setState(() => isLoading = false);
+                        context.read<AuthUiProvider>().setLoading(
+                          AuthLoadingKey.completeProfile,
+                          false,
+                        );
                       }
 
                       if (!context.mounted) return false;

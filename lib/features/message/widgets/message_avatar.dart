@@ -17,7 +17,7 @@ class MessageAvatar extends StatelessWidget {
     required this.name,
     required this.imageUrl,
     required this.userId,
-    this.isOnline = true,
+    this.isOnline = false,
     this.onTap,
   });
 

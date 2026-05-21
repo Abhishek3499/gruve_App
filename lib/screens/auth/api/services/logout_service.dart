@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import '../models/logout_model.dart';
 
@@ -38,13 +40,13 @@ class LogoutService {
           "Authorization": "Bearer $accessTokenValue",
       };
       
-      debugPrint("=== LOGOUT REQUEST ===");
-      debugPrint("URL: ${dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: $headers");
-      debugPrint("BODY: $requestData");
-      debugPrint("REFRESH TOKEN: $refreshTokenValue");
-      debugPrint("ACCESS TOKEN: $accessTokenValue");
+      AuthApiLogger.request(
+        'Logout',
+        dio: dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: {'refresh_token': 'present'},
+      );
 
       final response = await dio.post(
         endpoint,
@@ -52,18 +54,11 @@ class LogoutService {
         options: Options(headers: headers),
       );
 
-      debugPrint("=== LOGOUT RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('Logout', response);
       
       return LogoutResponse.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint("=== LOGOUT DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      AuthApiLogger.error('Logout', e);
       
       final responseData = e.response?.data;
       if (responseData is Map<String, dynamic>) {
@@ -77,11 +72,9 @@ class LogoutService {
           throw responseData["refresh_token"].toString();
         }
       }
-      throw "Logout failed";
+      throw AuthApiException.extractMessage(e, fallback: 'Logout failed');
     } catch (e) {
-      debugPrint("=== LOGOUT UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      debugPrint("Logout failed: $e");
       rethrow;
     }
   }

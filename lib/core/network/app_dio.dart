@@ -53,15 +53,8 @@ class AppDio {
       ),
     );
 
-    // Add refresh token interceptor
-    dio.interceptors.add(RefreshTokenInterceptor(dio));
-
-    // Add cache interceptor (before deduplication for optimal performance)
-    dio.interceptors.add(CacheInterceptor());
-
-    // Add request deduplication interceptor
-    dio.interceptors.add(RequestDeduplicationInterceptor());
-
+    // Auth/metrics must run before cache and deduplication so the request key
+    // and cached response both represent the final authenticated request.
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -112,6 +105,16 @@ class AppDio {
         },
       ),
     );
+
+    // Refresh runs after auth attaches the current token.
+    dio.interceptors.add(RefreshTokenInterceptor(dio));
+
+    // Cache before deduplication gives stale data a chance to answer without
+    // creating an in-flight network request.
+    dio.interceptors.add(CacheInterceptor());
+
+    // Coalesce duplicate in-flight GET requests.
+    dio.interceptors.add(RequestDeduplicationInterceptor());
 
     return dio;
   }

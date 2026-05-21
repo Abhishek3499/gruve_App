@@ -13,6 +13,8 @@ import 'package:gruve_app/widgets/video_background.dart';
 import 'package:gruve_app/widgets/inputs/neon_password_field.dart';
 
 import 'package:gruve_app/screens/auth/screens/email_login_screen.dart';
+import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:provider/provider.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -28,11 +30,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   late final TextEditingController _confirmPasswordController;
 
-  bool isLoading = false;
-
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetResetPassword();
+    });
 
     _newPasswordController = TextEditingController();
 
@@ -50,6 +53,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthUiProvider>().isLoading(
+      AuthLoadingKey.resetPassword,
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
 
@@ -244,19 +251,28 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 return false;
                               }
 
-                              setState(() => isLoading = true);
+                              context.read<AuthUiProvider>().setLoading(
+                                AuthLoadingKey.resetPassword,
+                                true,
+                              );
 
                               // 🔥 CALL API
 
-                              final message = await _controller.resetPassword(
-                                token: token,
+                              late final String message;
+                              try {
+                                message = await _controller.resetPassword(
+                                  token: token,
 
-                                password: password,
-                              );
+                                  password: password,
+                                );
+                              } finally {
+                                context.read<AuthUiProvider>().setLoading(
+                                  AuthLoadingKey.resetPassword,
+                                  false,
+                                );
+                              }
 
                               if (!mounted) return false;
-
-                              setState(() => isLoading = false);
 
                               if (message.toLowerCase().contains("success")) {
                                 // ✅ CLEAR TOKEN AFTER SUCCESS

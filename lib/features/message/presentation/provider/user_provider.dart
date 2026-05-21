@@ -17,6 +17,7 @@ class UserProvider extends ChangeNotifier {
   String? _errorMessage;
   bool _hasInitialized = false;
   DateTime? _lastFetchTime;
+  Future<void>? _fetchInFlight;
   static const _cacheValidDuration = Duration(minutes: 2);
 
   // Getters
@@ -26,8 +27,26 @@ class UserProvider extends ChangeNotifier {
   bool get hasNext => _hasNext;
   int get currentPage => _currentPage;
   String? get errorMessage => _errorMessage;
+  bool get hasInitialized => _hasInitialized;
 
   Future<void> fetchUsers({bool loadMore = false}) async {
+    if (_fetchInFlight != null && !loadMore) {
+      debugPrint('⏳ [UserProvider] Joining in-flight user fetch');
+      return _fetchInFlight!;
+    }
+
+    final future = _runFetchUsers(loadMore: loadMore);
+    if (!loadMore) _fetchInFlight = future;
+    try {
+      return await future;
+    } finally {
+      if (!loadMore && identical(_fetchInFlight, future)) {
+        _fetchInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _runFetchUsers({bool loadMore = false}) async {
     // Check cache validity for initial load
     if (!loadMore && 
         _lastFetchTime != null && 
@@ -60,7 +79,6 @@ class UserProvider extends ChangeNotifier {
     } else {
       _isLoading = true;
       _currentPage = 1; // Reset page for initial load
-      _users.clear(); // Clear existing data for fresh load
       _hasNext = true;
     }
     _errorMessage = null;
@@ -86,6 +104,7 @@ class UserProvider extends ChangeNotifier {
       } else {
         _users = response.users.map((m) => m.toEntity()).toList();
         _lastFetchTime = DateTime.now();
+        _hasInitialized = true;
         debugPrint('🔄 [UserProvider] Replaced list with ${response.users.length} users');
       }
 
@@ -117,6 +136,21 @@ class UserProvider extends ChangeNotifier {
     debugPrint('🔄 [UserProvider] Refreshing users...');
     _lastFetchTime = null; // Clear cache
     await fetchUsers(loadMore: false);
+  }
+
+  /// Reset provider state
+  void reset() {
+    _users.clear();
+    _isLoading = false;
+    _isFetchingMore = false;
+    _hasNext = true;
+    _currentPage = 1;
+    _errorMessage = null;
+    _hasInitialized = false;
+    _lastFetchTime = null;
+    _fetchInFlight = null;
+    debugPrint('🔄 [UserProvider] Provider state reset');
+    notifyListeners();
   }
 
   @override

@@ -105,7 +105,7 @@ class VideoFeedController {
       debugPrint('⏸️ [VideoFeed] Operation already in progress, skipping loadMore');
       return null;
     }
-    
+
     if (_isLoadingMore || !_hasMore || _isRefreshing) return null;
 
     final requestId = ++_feedLoadGeneration;
@@ -173,8 +173,6 @@ class VideoFeedController {
   }
 
   Future<bool?> initVideos({bool refresh = false}) async {
-    final requestId = ++_feedLoadGeneration;
-
     if (_isAnyOperationInProgress) {
       debugPrint('⏸️ [VideoFeed] Operation already in progress, skipping init');
       return null;
@@ -184,7 +182,7 @@ class VideoFeedController {
       if (_isRefreshing) {
         if (kDebugMode) {
           debugPrint(
-            '⏳ [VideoFeed] Refresh already in progress, skipping request $requestId',
+            '⏳ [VideoFeed] Refresh already in progress, skipping request',
           );
         }
         return null;
@@ -194,7 +192,7 @@ class VideoFeedController {
       if (_isInitialLoading) {
         if (kDebugMode) {
           debugPrint(
-            '⏳ [VideoFeed] Initial load already in progress, skipping request $requestId',
+            '⏳ [VideoFeed] Initial load already in progress, skipping request',
           );
         }
         return null;
@@ -202,6 +200,7 @@ class VideoFeedController {
       _isInitialLoading = _mediaUrls.isEmpty;
     }
 
+    final requestId = ++_feedLoadGeneration;
     _isAnyOperationInProgress = true;
     _loadError = null;
     _notifyFeedChanged();
@@ -276,7 +275,7 @@ class VideoFeedController {
         }
       }
 
-      if (gen != _feedLoadGeneration) return null;
+      if (requestId != _feedLoadGeneration) return null;
 
       if (!refresh) {
         await _disposeAllControllers();
@@ -294,7 +293,10 @@ class VideoFeedController {
       // It will call controller.play() after init completes if the index
       // matches _currentIndex.value — no race condition.
       unawaited(
-        _ensureControllersAroundIndex(refresh ? _currentIndex.value : 0, gen),
+        _ensureControllersAroundIndex(
+          refresh ? _currentIndex.value : 0,
+          requestId,
+        ),
       );
 
       return true;
@@ -415,6 +417,41 @@ class VideoFeedController {
     if (kDebugMode) {
       debugPrint('✅ VideoFeedController fully disposed (memory freed)');
     }
+  }
+
+  /// Reset controller state (for logout)
+  void reset() {
+    if (_disposed) return;
+
+    debugPrint('🔄 [VideoFeedController] Resetting state...');
+
+    // Dispose all controllers
+    for (final controller in _controllers.values) {
+      try {
+        controller.pause();
+        controller.dispose();
+      } catch (e) {
+        debugPrint('❌ Error disposing controller during reset: $e');
+      }
+    }
+
+    _controllers.clear();
+    _failedVideoIndexes.clear();
+    _posts.clear();
+    _mediaUrls.clear();
+    _currentIndex.value = 0;
+    _isPlaying.value = false;
+    _feedLoadGeneration++;
+    _isInitialLoading = false;
+    _isRefreshing = false;
+    _isLoadingMore = false;
+    _hasMore = true;
+    _loadError = null;
+    _nextCursor = null;
+    _isAnyOperationInProgress = false;
+
+    _notifyFeedChanged();
+    debugPrint('✅ [VideoFeedController] State reset complete');
   }
 
   List<Post> _filterPostsWithSupportedMedia(List<Post> raw) {

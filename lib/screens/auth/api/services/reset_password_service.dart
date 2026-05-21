@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
 import '../models/reset_password_model.dart';
 
 class ResetPasswordService {
@@ -20,35 +22,28 @@ class ResetPasswordService {
         "password": password,
       };
 
-      debugPrint("=== RESET PASSWORD REQUEST ===");
-      debugPrint("URL: ${_dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: ${_dio.options.headers}");
-      debugPrint("BODY: $requestData");
+      AuthApiLogger.request(
+        'ResetPassword',
+        dio: _dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: requestData,
+      );
 
       final response = await _dio.post(endpoint, data: requestData);
 
-      debugPrint("=== RESET PASSWORD RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('ResetPassword', response);
 
       return ResetPasswordResponse.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint("=== RESET PASSWORD DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      AuthApiLogger.error('ResetPassword', e);
 
       return ResetPasswordResponse(
-        message: e.response?.data?['message'] ?? "Server error",
+        message: AuthApiException.extractMessage(e, fallback: 'Server error'),
         success: false,
       );
     } catch (e) {
-      debugPrint("=== RESET PASSWORD UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      debugPrint("Reset password failed: $e");
 
       return ResetPasswordResponse(
         message: "Something went wrong",

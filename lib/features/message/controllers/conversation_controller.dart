@@ -25,6 +25,7 @@ class ConversationController extends ChangeNotifier {
   bool _disposed = false;
   String? _error;
   final Set<String> _activeRequests = {};
+  final Map<String, Future<ConversationModel>> _inFlightRequests = {};
   
   // Getters
   bool get isLoading => _isLoading;
@@ -67,6 +68,23 @@ class ConversationController extends ChangeNotifier {
     if (receiverId.isEmpty) {
       throw ArgumentError('Receiver ID cannot be empty');
     }
+
+    final inFlight = _inFlightRequests[receiverId];
+    if (inFlight != null) {
+      debugPrint('🔒 [ConversationController] Joining active request for receiver: $receiverId');
+      return inFlight;
+    }
+
+    final future = _runCreateOrGetConversation(receiverId);
+    _inFlightRequests[receiverId] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightRequests.remove(receiverId);
+    }
+  }
+
+  Future<ConversationModel> _runCreateOrGetConversation(String receiverId) async {
 
     // Prevent duplicate requests for the same receiver
     if (_activeRequests.contains(receiverId)) {
@@ -217,12 +235,23 @@ class ConversationController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  /// Reset controller state
+  void reset() {
+    _isLoading = false;
+    _error = null;
+    _activeRequests.clear();
+    _inFlightRequests.clear();
+    debugPrint('🔄 [ConversationController] Controller state reset');
+    _notify();
+  }
+
   @override
   void dispose() {
     if (_disposed) return;
     
     _disposed = true;
     _activeRequests.clear();
+    _inFlightRequests.clear();
     debugPrint('🗑️ [ConversationController] Controller disposed (cleared ${_activeRequests.length} active requests)');
     super.dispose();
   }

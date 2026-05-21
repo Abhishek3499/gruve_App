@@ -1,15 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenStorage {
-  static const String _accessTokenKey = "access_token";
-  static const String _refreshTokenKey = "refresh_token";
-  static const String _resetTokenKey = "reset_token";
-  static const String _currentUserIdKey = "current_user_id";
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _resetTokenKey = 'reset_token';
+  static const String _currentUserIdKey = 'current_user_id';
 
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
+
+  static void _log(String message) {
+    if (kDebugMode) debugPrint('[TokenStorage] $message');
+  }
 
   static Future<void> _writeSecure(String key, String value) {
     return _secureStorage.write(key: key, value: value);
@@ -17,11 +23,7 @@ class TokenStorage {
 
   static Future<String?> _readSecure(String key) async {
     final secureValue = await _secureStorage.read(key: key);
-    if (secureValue != null && secureValue.isNotEmpty) {
-      return secureValue;
-    }
-
-    return null;
+    return secureValue == null || secureValue.isEmpty ? null : secureValue;
   }
 
   static Future<void> _deleteSecure(String key) {
@@ -32,158 +34,114 @@ class TokenStorage {
     required String accessToken,
     required String refreshToken,
   }) async {
-    debugPrint("💾 [TokenStorage] 💾 Saving tokens");
-    debugPrint("🎫 [TokenStorage] 🎫 Access token: ${accessToken.substring(0, 10)}...");
-    debugPrint("🔄 [TokenStorage] 🔄 Refresh token: ${refreshToken.substring(0, 10)}...");
-    
+    _log('Saving tokens');
     await _deleteSecure(_currentUserIdKey);
     await _writeSecure(_accessTokenKey, accessToken);
     await _writeSecure(_refreshTokenKey, refreshToken);
-    
-    debugPrint("✅ [TokenStorage] ✅ Tokens saved successfully");
+    _log('Tokens saved successfully');
   }
 
   static Future<String?> getAccessToken() async {
-    debugPrint("🔍 [TokenStorage] 🔍 Retrieving access token");
     final token = await _readSecure(_accessTokenKey);
-    if (token != null && token.isNotEmpty) {
-      debugPrint("🎫 [TokenStorage] 🎫 Access token found: ${token.substring(0, 10)}...");
-      
-      // Validate token format (basic JWT check)
-      if (_isValidTokenFormat(token)) {
-        return token;
-      } else {
-        debugPrint("❌ [TokenStorage] ❌ Invalid token format detected");
-        return null;
-      }
+    if (token == null) {
+      _log('No access token found');
+      return null;
     }
-    
-    debugPrint("⚠️ [TokenStorage] ⚠️ No access token found");
-    return null;
-  }
 
-  /// Basic token format validation (JWT structure check)
-  static bool _isValidTokenFormat(String token) {
-    try {
-      // Basic JWT format: header.payload.signature
-      final parts = token.split('.');
-      if (parts.length != 3) {
-        debugPrint("❌ [TokenStorage] ❌ Token doesn't have 3 parts (JWT format)");
-        return false;
-      }
-      
-      // Try to decode payload to check expiration
-      final payload = parts[1];
-      // Pad base64 string if needed
-      final paddedPayload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
-      final decodedBytes = Uri.decodeComponent(paddedPayload);
-      
-      // Basic check if payload can be decoded
-      if (decodedBytes.isEmpty) {
-        debugPrint("❌ [TokenStorage] ❌ Token payload cannot be decoded");
-        return false;
-      }
-      
-      return true;
-    } catch (e) {
-      debugPrint("❌ [TokenStorage] ❌ Token validation error: $e");
-      return false;
+    if (!_isValidTokenFormat(token)) {
+      _log('Invalid access token format');
+      return null;
     }
-  }
 
-  /// Check if token is likely expired (basic check)
-  static Future<bool> isTokenExpired() async {
-    final token = await getAccessToken();
-    if (token == null) return true;
-    
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return true;
-      
-      final payload = parts[1];
-      final paddedPayload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
-      final decodedBytes = Uri.decodeComponent(paddedPayload);
-      
-      // This is a basic check - in production you'd want proper JWT decoding
-      return decodedBytes.isEmpty;
-    } catch (e) {
-      debugPrint("❌ [TokenStorage] ❌ Expiration check error: $e");
-      return true; // Assume expired if we can't check
-    }
-  }
-
-  static Future<String?> getRefreshToken() async {
-    debugPrint("🔍 [TokenStorage] 🔍 Retrieving refresh token");
-    final token = await _readSecure(_refreshTokenKey);
-    if (token != null && token.isNotEmpty) {
-      debugPrint("🔄 [TokenStorage] 🔄 Refresh token found: ${token.substring(0, 10)}...");
-    } else {
-      debugPrint("🚫 [TokenStorage] 🚫 No refresh token found");
-    }
+    _log('Access token found');
     return token;
   }
 
+  static Future<String?> getRefreshToken() async {
+    final token = await _readSecure(_refreshTokenKey);
+    _log(token == null ? 'No refresh token found' : 'Refresh token found');
+    return token;
+  }
+
+  static Future<bool> isTokenExpired() async {
+    final token = await getAccessToken();
+    if (token == null) return true;
+
+    final exp = _readJwtExp(token);
+    if (exp == null) return true;
+
+    final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+    return DateTime.now().isAfter(expiresAt);
+  }
+
   static Future<void> saveCurrentUserId(String userId) async {
-    debugPrint("👤 [TokenStorage] 👤 Saving current user ID: $userId");
+    _log('Saving current user ID');
     await _writeSecure(_currentUserIdKey, userId);
-    debugPrint("✅ [TokenStorage] ✅ User ID saved successfully");
   }
 
   static Future<String?> getCurrentUserId() async {
-    debugPrint("🔍 [TokenStorage] 🔍 Retrieving current user ID");
     final userId = await _readSecure(_currentUserIdKey);
-    if (userId != null && userId.isNotEmpty) {
-      debugPrint("👤 [TokenStorage] 👤 User ID found: $userId");
-    } else {
-      debugPrint("🚫 [TokenStorage] 🚫 No user ID found");
-    }
+    _log(userId == null ? 'No user ID found' : 'User ID found');
     return userId;
   }
 
   static Future<void> debugCheckTokens() async {
-    debugPrint("🔍 [TokenStorage] 🔍 Debug checking tokens");
     final access = await getAccessToken();
     final refresh = await getRefreshToken();
-    debugPrint("📊 [TokenStorage] 📊 Token Status:");
-    debugPrint("  🎫 Access Token: ${access != null && access.isNotEmpty ? '✅ Present' : '❌ Missing'}");
-    debugPrint("  🔄 Refresh Token: ${refresh != null && refresh.isNotEmpty ? '✅ Present' : '❌ Missing'}");
-    debugPrint("📋 [TokenStorage] 📋 Summary: accessTokenPresent=${access != null && access.isNotEmpty} refreshTokenPresent=${refresh != null && refresh.isNotEmpty}");
+    _log(
+      'accessTokenPresent=${access != null && access.isNotEmpty} '
+      'refreshTokenPresent=${refresh != null && refresh.isNotEmpty}',
+    );
   }
 
   static Future<void> clearTokens() async {
-    // 🔌 DISCONNECT WEBSOCKET WHEN TOKENS ARE CLEARED
-    debugPrint("�️ [TokenStorage] 🗑️ Clearing tokens - disconnecting websocket");
-    debugPrint("🧹 [TokenStorage] 🧹 Cleaning up secure storage");
-    // Note: SocketService disconnect is handled in LogoutController
-    // This ensures websocket is disconnected whenever tokens are cleared
-    
+    _log('Clearing tokens');
     await _deleteSecure(_accessTokenKey);
     await _deleteSecure(_refreshTokenKey);
     await _deleteSecure(_currentUserIdKey);
-    
-    debugPrint("✅ [TokenStorage] ✅ All tokens cleared successfully");
   }
 
   static Future<void> saveResetToken(String token) async {
-    debugPrint("🔐 [TokenStorage] 🔐 Saving reset token: ${token.substring(0, 10)}...");
+    _log('Saving reset token');
     await _writeSecure(_resetTokenKey, token);
-    debugPrint("✅ [TokenStorage] ✅ Reset token saved successfully");
   }
 
   static Future<String?> getResetToken() async {
-    debugPrint("🔍 [TokenStorage] 🔍 Retrieving reset token");
     final token = await _readSecure(_resetTokenKey);
-    if (token != null && token.isNotEmpty) {
-      debugPrint("🔐 [TokenStorage] 🔐 Reset token found: ${token.substring(0, 10)}...");
-    } else {
-      debugPrint("🚫 [TokenStorage] 🚫 No reset token found");
-    }
+    _log(token == null ? 'No reset token found' : 'Reset token found');
     return token;
   }
 
   static Future<void> clearResetToken() async {
-    debugPrint("🗑️ [TokenStorage] 🗑️ Clearing reset token");
+    _log('Clearing reset token');
     await _deleteSecure(_resetTokenKey);
-    debugPrint("✅ [TokenStorage] ✅ Reset token cleared successfully");
+  }
+
+  static bool _isValidTokenFormat(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) return false;
+    return _decodeJwtPayload(token) != null;
+  }
+
+  static int? _readJwtExp(String token) {
+    final payload = _decodeJwtPayload(token);
+    final exp = payload?['exp'];
+    if (exp is int) return exp;
+    if (exp is num) return exp.toInt();
+    if (exp is String) return int.tryParse(exp);
+    return null;
+  }
+
+  static Map<String, dynamic>? _decodeJwtPayload(String token) {
+    try {
+      final payload = token.split('.')[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final json = jsonDecode(decoded);
+      if (json is Map) return Map<String, dynamic>.from(json);
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

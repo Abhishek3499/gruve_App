@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
 import '../models/phone_login_model.dart';
 
 class PhoneSiginServices {
@@ -12,32 +14,25 @@ class PhoneSiginServices {
         "phone_number": phoneNumber,
       };
       
-      debugPrint("=== PHONE LOGIN REQUEST ===");
-      debugPrint("URL: ${_dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: ${_dio.options.headers}");
-      debugPrint("BODY: $requestData");
+      AuthApiLogger.request(
+        'PhoneLogin',
+        dio: _dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: requestData,
+      );
 
       final response = await _dio.post(endpoint, data: requestData);
 
-      debugPrint("=== PHONE LOGIN RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('PhoneLogin', response);
 
       return PhoneloginResponse.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint("=== PHONE LOGIN DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      AuthApiLogger.error('PhoneLogin', e);
 
-      throw e.response?.data["message"] ?? "Something went wrong";
+      throw AuthApiException.extractMessage(e);
     } catch (e) {
-      debugPrint("=== PHONE LOGIN UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      debugPrint("Phone login failed: $e");
       rethrow;
     }
   }

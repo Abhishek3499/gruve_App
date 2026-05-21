@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
 import 'package:gruve_app/screens/auth/api/services/forgot_password_service.dart';
+import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:provider/provider.dart';
 
 
 
@@ -38,13 +40,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   late final TextEditingController _emailController;
 
-  bool isLoading = false;
-
   final ForgotPasswordService _service = ForgotPasswordService();
-
-  // Real-time validation state
-
-  String? _emailError;
 
 
 
@@ -53,6 +49,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void initState() {
 
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetForgotPassword();
+    });
 
     _emailController = TextEditingController();
 
@@ -70,11 +69,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
       final error = SignupValidator.validateEmailRealTime(_emailController.text);
 
-      if (error != _emailError) {
-
-        setState(() => _emailError = error);
-
-      }
+      context.read<AuthUiProvider>().setError('forgot_email', error);
 
     });
 
@@ -97,6 +92,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
 
   Widget build(BuildContext context) {
+    final authUi = context.watch<AuthUiProvider>();
+    final isLoading = authUi.isLoading(AuthLoadingKey.forgotPassword);
 
     return Scaffold(
 
@@ -302,10 +299,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             if (!mounted) return false;
                             final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(context);
-                            // Check real-time validation errors instead of duplicate validation
-                            if (_emailError != null) {
+                            final emailError =
+                                SignupValidator.validateEmailRealTime(email);
+                            context.read<AuthUiProvider>().setError(
+                              'forgot_email',
+                              emailError,
+                            );
+
+                            if (emailError != null) {
                               messenger.showSnackBar(
-                                SnackBar(content: Text(_emailError!)),
+                                SnackBar(content: Text(emailError)),
                               );
                               return false;
                             }
@@ -313,19 +316,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
 
                             // ✅ LOADER START 🔥
-                            setState(() => isLoading = true);
+                            context.read<AuthUiProvider>().setLoading(
+                              AuthLoadingKey.forgotPassword,
+                              true,
+                            );
 
 
 
                             try {
 
                               await _service.sendResetLink(email: email);
+                              if (!mounted) return false;
 
 
 
                               // ✅ LOADER STOP
 
-                              setState(() => isLoading = false);
+                              context.read<AuthUiProvider>().setLoading(
+                                AuthLoadingKey.forgotPassword,
+                                false,
+                              );
 
 
 
@@ -383,7 +393,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               // ✅ LOADER STOP ON ERROR
 
                               if (!mounted) return false;
-                              setState(() => isLoading = false);
+                              context.read<AuthUiProvider>().setLoading(
+                                AuthLoadingKey.forgotPassword,
+                                false,
+                              );
 
                               messenger.showSnackBar(
 

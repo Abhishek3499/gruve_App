@@ -95,7 +95,7 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
             );
 
             // Initial Loading or Refreshing
-            if (p.isLoading) {
+            if (p.isLoading || !p.hasInitialized) {
               debugPrint('⏳ [MessageAvatarList] Showing skeleton loader');
 
               return const MessageAvatarSkeleton(avatarCount: 6);

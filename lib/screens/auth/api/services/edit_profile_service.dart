@@ -123,7 +123,9 @@ class EditProfileService {
       debugPrint('=== FETCH PROFILE REQUEST DETAILS ===');
       debugPrint('URL: ${dio.options.baseUrl}$endpoint');
       debugPrint('METHOD: GET');
-      debugPrint('HEADERS: $headers');
+      debugPrint(
+        "HEADERS: authorization=${headers.containsKey('Authorization')}",
+      );
 
       final response = await dio.get(
         endpoint,
@@ -132,7 +134,7 @@ class EditProfileService {
 
       debugPrint('=== FETCH PROFILE RESPONSE ===');
       debugPrint('STATUS CODE: ${response.statusCode}');
-      debugPrint('RESPONSE DATA: ${response.data}');
+      debugPrint('RESPONSE DATA TYPE: ${response.data.runtimeType}');
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = _asJsonMap(response.data);

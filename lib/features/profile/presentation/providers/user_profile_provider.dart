@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../../data/services/user_profile_service.dart';
 import '../../data/models/user_profile_model.dart';
@@ -19,6 +21,7 @@ class UserProfileProvider extends ChangeNotifier {
   UserProfile? _profile;
   String? _errorMessage;
   String? _currentUserId;
+  final Map<String, Future<void>> _inFlightFetches = {};
 
   // Getters
   UserProfileState get state => _state;
@@ -43,6 +46,22 @@ class UserProfileProvider extends ChangeNotifier {
       return;
     }
 
+    final inFlight = _inFlightFetches[userId];
+    if (inFlight != null) {
+      _log('⏳ [UserProfileProvider] Joining in-flight fetch for userId: $userId');
+      return inFlight;
+    }
+
+    final future = _runFetchProfile(userId, silent: silent);
+    _inFlightFetches[userId] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightFetches.remove(userId);
+    }
+  }
+
+  Future<void> _runFetchProfile(String userId, {required bool silent}) async {
     _currentUserId = userId;
     _state = UserProfileState.loading;
     _errorMessage = null;
@@ -52,7 +71,13 @@ class UserProfileProvider extends ChangeNotifier {
 
     try {
       _log('🌐 [UserProfileProvider] Calling service for userId: $userId');
-      final userProfile = await _service.getUserProfile(userId);
+      final userProfile = await _service
+          .getUserProfile(userId)
+          .timeout(const Duration(seconds: 20));
+      if (_currentUserId != userId) {
+        _log('⏭️ [UserProfileProvider] Stale profile response ignored: $userId');
+        return;
+      }
       
       _profile = userProfile;
       _state = UserProfileState.loaded;
@@ -64,10 +89,10 @@ class UserProfileProvider extends ChangeNotifier {
       _state = UserProfileState.error;
       _errorMessage = e.toString();
       _profile = null;
+    } finally {
+      notifyListeners();
+      _log('🏁 [UserProfileProvider] Fetch profile END for userId: $userId');
     }
-
-    notifyListeners();
-    _log('🏁 [UserProfileProvider] Fetch profile END for userId: $userId');
   }
 
   void reset() {
@@ -76,6 +101,7 @@ class UserProfileProvider extends ChangeNotifier {
     _profile = null;
     _errorMessage = null;
     _currentUserId = null;
+    _inFlightFetches.clear();
     notifyListeners();
     _log('✅ [UserProfileProvider] Provider reset complete');
   }

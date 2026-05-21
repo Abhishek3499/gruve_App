@@ -5,6 +5,7 @@ import 'package:gruve_app/features/profile/controller/profile_count_refresh_brid
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import '../data/models/user_profile_model.dart';
 import 'package:gruve_app/widgets/stats_row_skeleton.dart';
 import 'package:gruve_app/widgets/profile_grid_skeleton.dart';
@@ -124,11 +125,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           builder: (context) {
             _log('[ProfileScreen] Build state - user: ${provider.user != null}, isLoading: ${provider.isLoading}, error: ${provider.errorMessage}');
             
-            // Show skeleton immediately when user is null (logout or initial load)
-            if (provider.user == null) {
-              return _buildSkeleton();
-            }
-            
             if (provider.errorMessage != null) {
               return Center(
                 child: Column(
@@ -150,6 +146,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               );
+            }
+
+            // Show skeleton immediately when user is null (logout or initial load)
+            if (provider.user == null) {
+              return _buildSkeleton();
             }
 
             return _buildMainContentForOwnProfile(provider);
@@ -441,90 +442,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
+        child: AppShimmer(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
 
-              /// Profile image
-              const CircleAvatar(radius: 40, backgroundColor: Colors.white12),
+                /// Profile image
+                const ShimmerCircle(radius: 40),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              Container(
-                height: 14,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(6),
+                const ShimmerBox(height: 14, width: 120, borderRadius: 6),
+
+                const SizedBox(height: 6),
+
+                const ShimmerBox(height: 12, width: 80, borderRadius: 6),
+
+                const SizedBox(height: 30),
+
+                /// Stats
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(3, (_) {
+                    return const Column(
+                      children: [
+                        ShimmerBox(height: 14, width: 40, borderRadius: 6),
+                        SizedBox(height: 6),
+                        ShimmerBox(height: 12, width: 30, borderRadius: 6),
+                      ],
+                    );
+                  }),
                 ),
-              ),
 
-              const SizedBox(height: 6),
+                const SizedBox(height: 30),
 
-              Container(
-                height: 12,
-                width: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(6),
+                /// Grid
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(10),
+                  itemCount: 9,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
+                  ),
+                  itemBuilder: (_, _) {
+                    return const ShimmerBox(
+                      height: double.infinity,
+                      width: double.infinity,
+                    );
+                  },
                 ),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// Stats
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(3, (_) {
-                  return Column(
-                    children: [
-                      Container(
-                        height: 14,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        height: 12,
-                        width: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(10),
-                itemCount: 9,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 6,
-                  mainAxisSpacing: 6,
-                ),
-                itemBuilder: (_, _) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  );
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

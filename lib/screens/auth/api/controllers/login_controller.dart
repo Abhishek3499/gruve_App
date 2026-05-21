@@ -53,8 +53,8 @@ class EmailSignInController {
     } catch (e) {
       errorMessage = e.toString();
       debugPrint("❌ CONTROLLER ERROR: $e");
+    } finally {
+      isLoading = false;
     }
-
-    isLoading = false;
   }
 }

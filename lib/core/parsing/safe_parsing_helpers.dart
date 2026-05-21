@@ -6,7 +6,7 @@ class SafeParsingHelpers {
   /// Returns empty map if parsing fails
   static Map<String, dynamic> safeMapParse(dynamic data, {String? context}) {
     if (data == null) {
-      debugPrint('� [SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty map');
+      debugPrint('[SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty map');
       return {};
     }
     
@@ -34,7 +34,7 @@ class SafeParsingHelpers {
   /// Returns empty list if parsing fails
   static List<dynamic> safeListParse(dynamic data, {String? context}) {
     if (data == null) {
-      debugPrint('� [SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty list');
+      debugPrint('[SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty list');
       return [];
     }
     

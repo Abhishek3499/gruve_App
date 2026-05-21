@@ -78,6 +78,11 @@ class RequestDeduplicationManager {
     
     // Create new in-flight request
     final completer = Completer<Response<T>>();
+    // If this request has no duplicate waiter, completeError below can be
+    // reported by Dart as an unhandled async error. The original caller still
+    // receives the thrown error from requestFunction; this listener only keeps
+    // the shared duplicate future quiet when nobody else is awaiting it.
+    completer.future.catchError((_) {});
     final inFlightRequest = _InFlightRequest<T>(completer, options);
     _inFlightRequests[requestKey] = inFlightRequest;
     
@@ -186,7 +191,18 @@ class RequestDeduplicationInterceptor extends Interceptor {
       );
       handler.resolve(response);
     } catch (e) {
-      handler.next(options);
+      if (e is DioException) {
+        handler.reject(e);
+      } else {
+        handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.unknown,
+            error: e,
+            message: e.toString(),
+          ),
+        );
+      }
     }
   }
 
@@ -205,6 +221,10 @@ class RequestDeduplicationInterceptor extends Interceptor {
 
   /// Determines if a request should skip deduplication
   bool _shouldSkipDeduplication(RequestOptions options) {
+    if (options.method.toUpperCase() != 'GET') {
+      return true;
+    }
+
     final skipPaths = {
       '/auth/refresh',
       '/auth/login',

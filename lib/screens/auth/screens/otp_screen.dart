@@ -15,6 +15,8 @@ import 'package:gruve_app/screens/auth/widgets/otp_input_box.dart';
 import 'package:gruve_app/main.dart';
 
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:provider/provider.dart';
 
 
 
@@ -102,8 +104,6 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
-  bool isLoading = false;
-
   // Mask phone number function (crash-proof)
 
   String _maskPhoneNumber(String phone) {
@@ -161,6 +161,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   void initState() {
 
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetOtp();
+    });
 
     listenForCode();
 
@@ -216,7 +219,8 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   Future<bool> _verifyOtpManually() async {
 
-    if (isLoading) return false;
+    final authUi = context.read<AuthUiProvider>();
+    if (authUi.isLoading(AuthLoadingKey.otp)) return false;
 
 
 
@@ -224,7 +228,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
 
 
-    debugPrint("🟡 OTP ENTERED: $otp");
+    debugPrint("OTP entered");
 
 
 
@@ -264,7 +268,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
 
 
-    setState(() => isLoading = true);
+    authUi.setLoading(AuthLoadingKey.otp, true);
 
 
 
@@ -278,31 +282,33 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
 
 
-    await controller.verifyOtp(
+    try {
+      await controller.verifyOtp(
 
-      identifier: widget.identifier,
+        identifier: widget.identifier,
 
-      phoneNumber: widget.type == "phone" ? widget.identifier : "",
+        phoneNumber: widget.type == "phone" ? widget.identifier : "",
 
-      email: widget.type == "email" ? widget.identifier : "",
+        email: widget.type == "email" ? widget.identifier : "",
 
-      type: widget.type,
+        type: widget.type,
 
-      otp: otp,
+        otp: otp,
 
-      isLogin: widget.isLogin,
+        isLogin: widget.isLogin,
 
-      isForgot: widget.isForgot,
+        isForgot: widget.isForgot,
 
-    );
+      );
+    } finally {
+      if (mounted) {
+        authUi.setLoading(AuthLoadingKey.otp, false);
+      }
+    }
 
 
 
     if (!mounted) return false;
-
-
-
-    setState(() => isLoading = false);
 
 
 
@@ -343,8 +349,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
         // 🔌 CONNECT WEBSOCKET FOR LOGIN/SIGNUP SUCCESS
         final accessToken = controller.verifyOtpResponse?.data?.accessToken;
         if (accessToken != null && accessToken.isNotEmpty) {
-          debugPrint("🔌 [OTP Success] 🔌 Connecting websocket after OTP verification");
-          debugPrint("🎫 [OTP Success] 🎫 Access token received: ${accessToken.substring(0, 10)}...");
+          debugPrint("OTP success: connecting websocket after verification");
           SocketService().connect(accessToken);
           debugPrint("✅ [OTP Success] ✅ WebSocket connection initiated");
         } else {
@@ -430,17 +435,10 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   void didPopNext() {
 
-    setState(() {
-
-      for (final controller in _controllers) {
-
-        controller.clear();
-
-      }
-
-      _focusNodes.first.requestFocus();
-
-    });
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    _focusNodes.first.requestFocus();
 
   }
 
@@ -449,6 +447,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   @override
 
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthUiProvider>().isLoading(
+      AuthLoadingKey.otp,
+    );
 
     return Scaffold(
 

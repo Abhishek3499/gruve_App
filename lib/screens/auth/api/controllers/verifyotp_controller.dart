@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
 
-import '../services/verify_otp_service.dart';
 import '../models/verify_otp_response.dart';
+import '../services/verify_otp_service.dart';
 
 class VerifyotpController {
   final VerifyOtpService _service = VerifyOtpService();
@@ -11,6 +11,7 @@ class VerifyotpController {
   bool isLoading = false;
   String? errorMessage;
   VerifyOtpResponse? verifyOtpResponse;
+
   Future<void> verifyOtp({
     required String identifier,
     required String phoneNumber,
@@ -18,17 +19,14 @@ class VerifyotpController {
     required String type,
     required String otp,
     bool isLogin = false,
-    bool isForgot = false, // ✅ ADD THIS
+    bool isForgot = false,
   }) async {
     isLoading = true;
     errorMessage = null;
 
-    debugPrint("🧠 CONTROLLER HIT");
-    debugPrint("👉 isForgot: $isForgot");
-    debugPrint("👉 isLogin: $isLogin");
-    debugPrint("👉 identifier: $identifier");
-    debugPrint("👉 email: $email");
-    debugPrint("👉 phone: $phoneNumber");
+    debugPrint(
+      'VerifyOtpController flow forgot=$isForgot login=$isLogin type=$type',
+    );
 
     try {
       final response = await _service.verifyOtp(
@@ -38,48 +36,44 @@ class VerifyotpController {
         type: type,
         otp: otp,
         isLogin: isLogin,
-        isForgot: isForgot, // ✅ PASS
+        isForgot: isForgot,
       );
 
       verifyOtpResponse = response;
 
-      // ❗ DO NOT SAVE TOKENS IN FORGOT PASSWORD
-      if (response.success) {
-        if (response.data != null) {
-          // ✅ LOGIN / SIGNUP FLOW
-          if (!isForgot) {
-            await TokenStorage.saveTokens(
-              accessToken: response.data!.accessToken,
-              refreshToken: response.data!.refreshToken,
-            );
-            ProfileIdentityService.instance.clearCachedLoggedInUserId();
-
-            if (response.data!.userId.trim().isNotEmpty) {
-              await TokenStorage.saveCurrentUserId(response.data!.userId);
-              ProfileIdentityService.instance.primeLoggedInUserId(
-                response.data!.userId,
-              );
-            }
-
-            debugPrint("✅ TOKENS SAVED");
-          }
-
-          // ✅ FORGOT PASSWORD FLOW
-          if (isForgot) {
-            final resetToken = response.data!.resetToken;
-
-            await TokenStorage.saveResetToken(resetToken!);
-
-            debugPrint("🔐 RESET TOKEN SAVED");
-          }
-        }
-      } else {
+      if (!response.success) {
         errorMessage = response.message;
+        return;
       }
+
+      final data = response.data;
+      if (data == null) return;
+
+      if (isForgot) {
+        final resetToken = data.resetToken;
+        if (resetToken != null && resetToken.isNotEmpty) {
+          await TokenStorage.saveResetToken(resetToken);
+          debugPrint('VerifyOtpController reset token saved');
+        }
+        return;
+      }
+
+      await TokenStorage.saveTokens(
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      );
+      ProfileIdentityService.instance.clearCachedLoggedInUserId();
+
+      if (data.userId.trim().isNotEmpty) {
+        await TokenStorage.saveCurrentUserId(data.userId);
+        ProfileIdentityService.instance.primeLoggedInUserId(data.userId);
+      }
+
+      debugPrint('VerifyOtpController tokens saved');
     } catch (e) {
       errorMessage = e.toString();
+    } finally {
+      isLoading = false;
     }
-
-    isLoading = false;
   }
 }

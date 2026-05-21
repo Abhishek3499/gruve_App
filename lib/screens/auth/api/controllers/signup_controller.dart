@@ -38,8 +38,8 @@ class SignupController {
       final rawMessage = e.toString();
       errorMessage = rawMessage.replaceFirst("Exception: ", "").trim();
       debugPrint("❌ Signup Error: $errorMessage");
+    } finally {
+      isLoading = false;
     }
-
-    isLoading = false;
   }
 }

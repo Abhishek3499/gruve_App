@@ -9,6 +9,9 @@ import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/features/message/providers/message_provider.dart';
+import 'package:gruve_app/features/message/controllers/conversation_controller.dart';
+import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 
 class LogoutProvider extends ChangeNotifier {
   final LogoutController _controller = LogoutController();
@@ -36,11 +39,12 @@ class LogoutProvider extends ChangeNotifier {
       if (context != null && context.mounted) {
         final profileProvider = _tryGetProvider<ProfileProvider>(context);
         final storyController = _tryGetProvider<StoryController>(context);
-        final highlightProvider = _tryGetProvider<HighlightFlowProvider>(
-          context,
-        );
+        final highlightProvider = _tryGetProvider<HighlightFlowProvider>(context);
         final blockProvider = _tryGetProvider<BlockProvider>(context);
         final saveProvider = _tryGetProvider<SavePostProvider>(context);
+        final messageProvider = _tryGetProvider<MessageProvider>(context);
+        final conversationController = _tryGetProvider<ConversationController>(context);
+        final userProvider = _tryGetProvider<UserProvider>(context);
 
         debugPrint('🔄 [LogoutProvider] Resetting local providers...');
         profileProvider?.reset();
@@ -48,6 +52,9 @@ class LogoutProvider extends ChangeNotifier {
         highlightProvider?.reset();
         blockProvider?.reset();
         saveProvider?.reset();
+        messageProvider?.reset();
+        conversationController?.reset();
+        userProvider?.reset();
         debugPrint('✅ [LogoutProvider] Local providers cleared');
       }
 

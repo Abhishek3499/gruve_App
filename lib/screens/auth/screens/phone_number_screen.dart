@@ -14,6 +14,8 @@ import 'package:gruve_app/widgets/get_started_button.dart';
 import 'package:gruve_app/widgets/inputs/phone_input_field.dart';
 
 import 'package:gruve_app/widgets/video_background.dart';
+import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:provider/provider.dart';
 import '../validators/phone_number_validator.dart';
 
 class PhoneNumberScreen extends StatefulWidget {
@@ -28,14 +30,12 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
   final PhoneSignInController _controller = PhoneSignInController();
 
-  bool isLoading = false;
-
-  // Real-time validation state
-  String? _phoneError;
-
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetPhoneLogin();
+    });
     _phoneController = TextEditingController();
     _setupRealTimeValidation();
   }
@@ -48,9 +48,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         _phoneController.text,
       );
 
-      if (error != _phoneError) {
-        setState(() => _phoneError = error);
-      }
+      context.read<AuthUiProvider>().setError('phone_login_phone', error);
     });
   }
 
@@ -63,6 +61,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authUi = context.watch<AuthUiProvider>();
+    final isLoading = authUi.isLoading(AuthLoadingKey.phoneLogin);
     return Scaffold(
       resizeToAvoidBottomInset: true,
 
@@ -162,23 +162,38 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           onComplete: () async {
                             final phone = _phoneController.text.trim();
 
-                            // Check real-time validation errors
+                            final phoneError =
+                                PhoneNumberValidator.validatePhoneRealTime(
+                                  phone,
+                                );
+                            context.read<AuthUiProvider>().setError(
+                              'phone_login_phone',
+                              phoneError,
+                            );
 
-                            if (_phoneError != null) {
+                            if (phoneError != null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(_phoneError!)),
+                                SnackBar(content: Text(phoneError)),
                               );
 
                               return false;
                             }
 
-                            setState(() => isLoading = true);
+                            context.read<AuthUiProvider>().setLoading(
+                              AuthLoadingKey.phoneLogin,
+                              true,
+                            );
 
-                            await _controller.signIn(phoneNumber: phone);
+                            try {
+                              await _controller.signIn(phoneNumber: phone);
+                            } finally {
+                              context.read<AuthUiProvider>().setLoading(
+                                AuthLoadingKey.phoneLogin,
+                                false,
+                              );
+                            }
 
                             if (!mounted) return false;
-
-                            setState(() => isLoading = false);
 
                             // ❌ Error case
 

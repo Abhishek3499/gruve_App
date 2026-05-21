@@ -10,6 +10,9 @@ class SavePostProvider extends ChangeNotifier {
   List<Post> _savedPostsList = [];
   bool _isLoadingSavedPosts = false;
   String? _savedPostsError;
+  Future<void>? _savedPostsFetchInFlight;
+  DateTime? _lastSavedPostsFetchAt;
+  static const _savedPostsCacheTtl = Duration(minutes: 3);
 
   bool isSaved(String postId) => _savedPosts[postId] ?? false;
   bool isLoading(String postId) => _loadingPosts.contains(postId);
@@ -69,7 +72,30 @@ class SavePostProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchSavedPosts() async {
+  Future<void> fetchSavedPosts({bool forceRefresh = false}) async {
+    if (!forceRefresh &&
+        _lastSavedPostsFetchAt != null &&
+        DateTime.now().difference(_lastSavedPostsFetchAt!) <
+            _savedPostsCacheTtl) {
+      debugPrint('✅ [SavePostProvider] Using cached saved posts');
+      return;
+    }
+
+    if (_savedPostsFetchInFlight != null) {
+      debugPrint('⏳ [SavePostProvider] Joining in-flight saved posts fetch');
+      return _savedPostsFetchInFlight!;
+    }
+
+    final future = _runFetchSavedPosts();
+    _savedPostsFetchInFlight = future;
+    try {
+      return await future;
+    } finally {
+      _savedPostsFetchInFlight = null;
+    }
+  }
+
+  Future<void> _runFetchSavedPosts() async {
     debugPrint('🔄 [SavePostProvider] FETCH SAVED POSTS START');
     
     _isLoadingSavedPosts = true;
@@ -80,6 +106,7 @@ class SavePostProvider extends ChangeNotifier {
       final posts = await _postService.fetchSavedPosts();
       
       _savedPostsList = posts;
+      _lastSavedPostsFetchAt = DateTime.now();
       
       // Update saved state map
       for (final post in posts) {
@@ -104,6 +131,8 @@ class SavePostProvider extends ChangeNotifier {
     _savedPostsList.clear();
     _savedPostsError = null;
     _isLoadingSavedPosts = false;
+    _savedPostsFetchInFlight = null;
+    _lastSavedPostsFetchAt = null;
     notifyListeners();
     debugPrint('✅ [SavePostProvider] Save post data reset complete');
   }
@@ -113,6 +142,8 @@ class SavePostProvider extends ChangeNotifier {
     _loadingPosts.clear();
     _savedPostsList.clear();
     _savedPostsError = null;
+    _savedPostsFetchInFlight = null;
+    _lastSavedPostsFetchAt = null;
     notifyListeners();
   }
 }

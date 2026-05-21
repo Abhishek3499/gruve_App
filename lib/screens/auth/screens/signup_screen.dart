@@ -17,7 +17,9 @@ import 'package:gruve_app/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/widgets/inputs/neon_password_field.dart';
 
 import '../api/controllers/signup_controller.dart';
+import '../presentation/provider/auth_ui_provider.dart';
 import '../validators/signup_validator.dart';
+import 'package:provider/provider.dart';
 
 
 
@@ -64,14 +66,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // ── Real-time Validation State ───────────────────────────
 
-  String? _nameError;
-
-  String? _identifierError;
-
-  String? _passwordError;
-
-  String? _confirmPasswordError;
-
 
 
   // ── Other State ──────────────────────────────────────────
@@ -80,28 +74,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
   final GlobalKey _genderFieldKey = GlobalKey();
 
-  String? selectedGender;
-
-  bool _genderTouched = false;
-
-  bool _useEmail = true;
-
-  bool isLoading = false;
-
-
-
-  String? get _genderError => (_genderTouched && selectedGender == null)
-
-      ? 'Please select gender'
-
-      : null;
-
-
-
   @override
 
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetSignup();
+    });
     _setupRealTimeValidation();
   }
 
@@ -115,11 +94,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       final error = SignupValidator.validateFullNameRealTime(_nameController.text);
 
-      if (error != _nameError) {
-
-        setState(() => _nameError = error);
-
-      }
+        context.read<AuthUiProvider>().setError('signup_name', error);
 
     });
 
@@ -131,11 +106,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       final error = _validateIdentifier(_identifierController.text);
 
-      if (error != _identifierError) {
-
-        setState(() => _identifierError = error);
-
-      }
+        context.read<AuthUiProvider>().setError('signup_identifier', error);
 
     });
 
@@ -147,11 +118,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       final error = SignupValidator.validatePasswordRealTime(_passwordController.text);
 
-      if (error != _passwordError) {
-
-        setState(() => _passwordError = error);
-
-      }
+        context.read<AuthUiProvider>().setError('signup_password', error);
 
       // Revalidate confirm password when password changes
 
@@ -165,11 +132,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
         );
 
-        if (confirmError != _confirmPasswordError) {
-
-          setState(() => _confirmPasswordError = confirmError);
-
-        }
+          context.read<AuthUiProvider>().setError(
+            'signup_confirm_password',
+            confirmError,
+          );
 
       }
 
@@ -189,11 +155,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
       );
 
-      if (error != _confirmPasswordError) {
-
-        setState(() => _confirmPasswordError = error);
-
-      }
+        context.read<AuthUiProvider>().setError(
+          'signup_confirm_password',
+          error,
+        );
 
     });
 
@@ -204,7 +169,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String? _validateIdentifier(String identifier) {
     final trimmed = identifier.trim();
 
-    if (_useEmail) {
+    if (context.read<AuthUiProvider>().useEmail) {
       return SignupValidator.validateEmailRealTime(trimmed);
     }
 
@@ -230,27 +195,30 @@ class _SignupScreenState extends State<SignupScreen> {
       _confirmPasswordController.text,
     );
 
-    setState(() {
-      _nameError = nameError;
-      _identifierError = identifierError;
-      _passwordError = passwordError;
-      _confirmPasswordError = confirmPasswordError;
+    final authUi = context.read<AuthUiProvider>();
+    authUi.setErrors({
+      'signup_name': nameError,
+      'signup_identifier': identifierError,
+      'signup_password': passwordError,
+      'signup_confirm_password': confirmPasswordError,
     });
 
     return nameError == null &&
         identifierError == null &&
         passwordError == null &&
         confirmPasswordError == null &&
-        selectedGender != null;
+        authUi.selectedGender != null;
   }
 
   void _setContactMode(bool useEmail) {
-    if (_useEmail == useEmail) return;
+    final authUi = context.read<AuthUiProvider>();
+    if (authUi.useEmail == useEmail) return;
 
-    setState(() {
-      _useEmail = useEmail;
-      _identifierError = _validateIdentifier(_identifierController.text);
-    });
+    authUi.setContactMode(useEmail);
+    authUi.setError(
+      'signup_identifier',
+      _validateIdentifier(_identifierController.text),
+    );
   }
 
   @override
@@ -282,6 +250,15 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
 
   Widget build(BuildContext context) {
+    final authUi = context.watch<AuthUiProvider>();
+    final isLoading = authUi.isLoading(AuthLoadingKey.signup);
+    final selectedGender = authUi.selectedGender;
+    final genderError = authUi.genderError;
+    final useEmail = authUi.useEmail;
+    final nameError = authUi.error('signup_name');
+    final identifierError = authUi.error('signup_identifier');
+    final passwordError = authUi.error('signup_password');
+    final confirmPasswordError = authUi.error('signup_confirm_password');
 
     return Scaffold(
 
@@ -421,7 +398,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           ),
 
-                          if (_nameError != null)
+                          if (nameError != null)
 
                             Padding(
 
@@ -429,7 +406,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                               child: Text(
 
-                                _nameError!,
+                                nameError,
 
                                 style: const TextStyle(
 
@@ -465,7 +442,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       // ── EMAIL / PHONE ───────────────────────────────
 
-                      _buildLabel(_useEmail ? 'Email' : 'Phone Number'),
+                      _buildLabel(useEmail ? 'Email' : 'Phone Number'),
 
                       Column(
 
@@ -475,7 +452,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           // ✅ Toggle ke basis pe alag widget
 
-                          if (_useEmail)
+                          if (useEmail)
 
                             NeonTextField(
 
@@ -519,7 +496,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                             ),
 
-                          if (_identifierError != null)
+                          if (identifierError != null)
 
                             Padding(
 
@@ -527,7 +504,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                               child: Text(
 
-                                _identifierError!,
+                                identifierError,
 
                                 style: const TextStyle(
 
@@ -563,7 +540,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         onTap: () async {
 
-                          setState(() => _genderTouched = true);
+                          context.read<AuthUiProvider>().touchGender();
 
                           await _showGenderMenu();
 
@@ -587,7 +564,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                 border: Border.all(
 
-                                  color: _genderError != null
+                                  color: genderError != null
 
                                       ? const Color(0xFFFF6B6B) // ✅ red
 
@@ -665,7 +642,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                               duration: const Duration(milliseconds: 200),
 
-                              child: _genderError != null
+                              child: genderError != null
 
                                   ? Padding(
 
@@ -679,7 +656,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                       child: Text(
 
-                                        _genderError!,
+                                        genderError,
 
                                         style: const TextStyle(
 
@@ -743,7 +720,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           ),
 
-                          if (_passwordError != null)
+                          if (passwordError != null)
 
                             Padding(
 
@@ -751,7 +728,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                               child: Text(
 
-                                _passwordError!,
+                                passwordError,
 
                                 style: const TextStyle(
 
@@ -799,7 +776,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           ),
 
-                          if (_confirmPasswordError != null)
+                          if (confirmPasswordError != null)
 
                             Padding(
 
@@ -807,7 +784,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                               child: Text(
 
-                                _confirmPasswordError!,
+                                confirmPasswordError,
 
                                 style: const TextStyle(
 
@@ -847,7 +824,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           // ✅ Gender touched mark — error dikhao agar empty
 
-                          setState(() => _genderTouched = true);
+                          context.read<AuthUiProvider>().touchGender();
 
 
                         final isValid = _validateBeforeSubmit();
@@ -857,8 +834,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           if (!mounted) return false;
                           
                           // Show specific error if any
-                          String errorMessage = _nameError ?? _identifierError ?? 
-                              _passwordError ?? _confirmPasswordError ?? 
+                          String errorMessage = nameError ?? identifierError ?? 
+                              passwordError ?? confirmPasswordError ?? 
                               (selectedGender == null ? 'Please select gender' : '');
                              
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -867,29 +844,39 @@ class _SignupScreenState extends State<SignupScreen> {
                             return false;
                           }
 
-                          setState(() => isLoading = true);
+                          context.read<AuthUiProvider>().setLoading(
+                            AuthLoadingKey.signup,
+                            true,
+                          );
 
                           final identifier = _identifierController.text.trim();
 
 
 
-                          await controller.signup(
+                          try {
+                            await controller.signup(
 
-                            fullName: _nameController.text.trim(),
+                              fullName: _nameController.text.trim(),
 
-                            identifier: identifier,
+                              identifier: identifier,
 
-                            password: _passwordController.text.trim(),
+                              password: _passwordController.text.trim(),
 
-                            gender: selectedGender,
+                              gender: selectedGender,
 
-                          );
+                            );
+                          } finally {
+                            if (mounted) {
+                              context.read<AuthUiProvider>().setLoading(
+                                AuthLoadingKey.signup,
+                                false,
+                              );
+                            }
+                          }
 
 
 
                           if (!mounted) return false;
-
-                          setState(() => isLoading = false);
 
 
 
@@ -919,7 +906,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                                 identifier: identifier,
 
-                                type: _useEmail ? "email" : "phone",
+                                type: useEmail ? "email" : "phone",
 
                                 title: 'Enter your Code',
 
@@ -1061,7 +1048,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               title: 'Email',
 
-              isSelected: _useEmail,
+              isSelected: context.watch<AuthUiProvider>().useEmail,
 
               onTap: () => _setContactMode(true),
 
@@ -1075,7 +1062,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               title: 'Phone',
 
-              isSelected: !_useEmail,
+              isSelected: !context.watch<AuthUiProvider>().useEmail,
 
               onTap: () => _setContactMode(false),
 
@@ -1213,7 +1200,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (selected == null || !mounted) return;
 
-    setState(() => selectedGender = selected);
+    this.context.read<AuthUiProvider>().setGender(selected);
 
   }
 

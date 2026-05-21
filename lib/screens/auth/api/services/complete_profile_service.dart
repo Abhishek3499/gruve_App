@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart' show TokenStorage;
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
 
@@ -29,13 +32,13 @@ class CompleteProfileService {
   Future<CompleteProfileResponse> completeProfile({
     required CompleteProfileRequest request,
     String? file,
+    XFile? image,
   }) async {
     try {
       final token = await TokenStorage.getAccessToken();
 
-      debugPrint("=== COMPLETE PROFILE REQUEST ===");
       debugPrint(
-        "TOKEN: ${token == null || token.isEmpty ? "missing" : "present"}",
+        "Complete profile token: ${token == null || token.isEmpty ? "missing" : "present"}",
       );
 
       if (token == null || token.isEmpty) {
@@ -44,39 +47,23 @@ class CompleteProfileService {
         );
       }
 
-      final formData = FormData.fromMap({
-        "username": request.username,
+      final formMap = <String, dynamic>{"username": request.username};
+      final upload = await _buildUploadFile(image: image, file: file);
+      if (upload != null) {
+        formMap["file"] = upload;
+      }
 
-        if (file != null && file.trim().isNotEmpty)
-          "file": await MultipartFile.fromFile(file.trim()),
-      });
+      final formData = FormData.fromMap(formMap);
 
       const endpoint = "auth/complete-profile/";
       final headers = <String, dynamic>{"Authorization": "Bearer $token"};
 
-      debugPrint("=== COMPLETE PROFILE REQUEST DETAILS ===");
-      debugPrint("URL: ${dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: $headers");
-      debugPrint("FORM DATA FIELDS: ${formData.fields}");
-      debugPrint("FORM DATA FILES: ${formData.files.map((f) => f.key)}");
-
-      // Debug all request fields
-      debugPrint("=== COMPLETE PROFILE DEBUG INFO ===");
-      debugPrint("Request object fields:");
-      debugPrint("  - username: ${request.username}");
-
-      debugPrint("  - file: ${file ?? 'null'}");
-
-      debugPrint("Form data being sent:");
-      final fieldList = <String>[];
-      for (int i = 0; i < formData.fields.length; i++) {
-        final entry = formData.fields[i];
-        fieldList.add('${entry.key}: ${entry.value}');
-      }
-      debugPrint("  - All form fields: $fieldList");
-      debugPrint(
-        "  - All form files: ${formData.files.map((f) => '${f.key}: ${f.value.filename}').toList()}",
+      AuthApiLogger.request(
+        'CompleteProfile',
+        dio: dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: {'username': request.username, 'hasFile': upload != null},
       );
 
       final response = await dio.post(
@@ -85,9 +72,7 @@ class CompleteProfileService {
         options: Options(headers: headers),
       );
 
-      debugPrint("=== COMPLETE PROFILE RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('CompleteProfile', response);
 
       final status = response.statusCode ?? 0;
       if (status < 200 || status >= 300) {
@@ -106,11 +91,7 @@ class CompleteProfileService {
           : result.message;
       throw Exception(msg);
     } on DioException catch (e) {
-      debugPrint("=== COMPLETE PROFILE DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
+      AuthApiLogger.error('CompleteProfile', e);
       final data = e.response?.data;
       if (data is Map) {
         final m = Map<String, dynamic>.from(data);
@@ -121,11 +102,27 @@ class CompleteProfileService {
           }
         }
       }
-      throw Exception(e.message ?? 'Something went wrong');
+      throw Exception(AuthApiException.extractMessage(e));
     } catch (e) {
-      debugPrint("=== COMPLETE PROFILE UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
+      debugPrint("Complete profile failed: $e");
       rethrow;
     }
+  }
+
+  Future<MultipartFile?> _buildUploadFile({XFile? image, String? file}) async {
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      if (bytes.isEmpty) return null;
+
+      return MultipartFile.fromBytes(
+        bytes,
+        filename: image.name.isNotEmpty ? image.name : 'profile_image.jpg',
+      );
+    }
+
+    final path = file?.trim();
+    if (path == null || path.isEmpty) return null;
+
+    return MultipartFile.fromFile(path);
   }
 }

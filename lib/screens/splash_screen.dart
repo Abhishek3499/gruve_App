@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (accessToken != null && accessToken.isNotEmpty) {
         // User is logged in, connect websocket and navigate to Home screen
         debugPrint("🔑 [Splash] 🔑 Token found, connecting websocket and navigating to Home screen");
-        debugPrint("🎫 [Splash] 🎫 Token preview: ${accessToken.substring(0, 10)}...");
+        debugPrint("[Splash] Access token found");
         
         // 🔌 CONNECT WEBSOCKET FOR AUTO-LOGIN
         debugPrint("🔌 [Splash Auto-Login] 🔌 Connecting websocket with existing token");
@@ -97,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       } else {
         // No token found, navigate to Intro screen
-        debugPrint("� [Splash] 🚫 No token found, navigating to Intro screen");
+        debugPrint("[Splash] No token found, navigating to Intro screen");
         if (!mounted) return;
         debugPrint("🎯 [Splash] 🎯 Navigating to IntroScreen");
         Navigator.pushReplacement(

@@ -15,6 +15,8 @@ class BlockProvider extends ChangeNotifier {
   List<BlockedUserModel> _blockedUsers = [];
   bool _isLoadingList = false;
   Future<void>? _blockedUsersFetchFuture;
+  DateTime? _lastBlockedUsersFetchAt;
+  static const _blockedUsersCacheTtl = Duration(minutes: 5);
 
   List<BlockedUserModel> get blockedUsers => List.unmodifiable(_blockedUsers);
   bool get isLoadingList => _isLoadingList;
@@ -27,6 +29,14 @@ class BlockProvider extends ChangeNotifier {
   /// When [forceRefresh] is true (e.g. after a successful block toggle), any prior in-flight fetch is
   /// awaited first, then a new request runs so the list matches the backend after the mutation.
   Future<void> fetchBlockedUsers({bool forceRefresh = false}) async {
+    if (!forceRefresh &&
+        _lastBlockedUsersFetchAt != null &&
+        DateTime.now().difference(_lastBlockedUsersFetchAt!) <
+            _blockedUsersCacheTtl) {
+      _log('✅ FETCH BLOCKED - Using cached blocked users list');
+      return;
+    }
+
     if (_blockedUsersFetchFuture != null) {
       _log('⚠️ FETCH BLOCKED - Joining in-flight request');
       try {
@@ -50,6 +60,7 @@ class BlockProvider extends ChangeNotifier {
 
     try {
       _blockedUsers = await _apiService.fetchBlockedUsers(forceRefresh: true);
+      _lastBlockedUsersFetchAt = DateTime.now();
       _syncBlockStatesFromList();
       _log('✅ DATA LOADED - ${_blockedUsers.length} users');
     } catch (e) {
@@ -157,6 +168,7 @@ class BlockProvider extends ChangeNotifier {
     _blockedUsers.clear();
     _isLoadingList = false;
     _blockedUsersFetchFuture = null;
+    _lastBlockedUsersFetchAt = null;
     notifyListeners();
     debugPrint('✅ [BlockProvider] Block data reset complete');
   }

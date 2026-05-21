@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/phone_login_model.dart';
 import '../services/phone_login_services.dart';
-// ❌ removed token_storage import
 
 class PhoneSignInController {
   final PhoneSiginServices _service = PhoneSiginServices();
@@ -17,21 +16,17 @@ class PhoneSignInController {
 
     try {
       final res = await _service.signIn(phoneNumber: phoneNumber);
-
       response = res;
 
-      debugPrint("✅ SUCCESS: ${res.success}");
-      debugPrint("📩 MESSAGE: ${res.message}");
-
-      // ❌ TOKEN STORAGE REMOVED
+      debugPrint('Phone login success=${res.success}');
       if (!res.success) {
         errorMessage = res.message;
       }
     } catch (e) {
       errorMessage = e.toString();
-      debugPrint("❌ CONTROLLER ERROR: $e");
+      debugPrint('Phone login controller error: $e');
+    } finally {
+      isLoading = false;
     }
-
-    isLoading = false;
   }
 }

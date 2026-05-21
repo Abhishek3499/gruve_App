@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show debugPrint;
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
 import '../models/verify_otp_response.dart';
 
 class VerifyOtpService {
@@ -18,12 +20,9 @@ class VerifyOtpService {
     bool isForgot = false, // ✅ ADD THIS
   }) async {
     try {
-      debugPrint("=== VERIFY OTP REQUEST ===");
-      debugPrint("isForgot: $isForgot");
-      debugPrint("isLogin: $isLogin");
-      debugPrint("type: $type");
-      debugPrint("email: $email");
-      debugPrint("phone: $phoneNumber");
+      debugPrint(
+        "Verify OTP flow: forgot=$isForgot login=$isLogin type=$type",
+      );
 
       Map<String, dynamic> body;
       String endpoint;
@@ -46,17 +45,17 @@ class VerifyOtpService {
         }
       }
 
-      debugPrint("=== VERIFY OTP REQUEST DETAILS ===");
-      debugPrint("URL: ${dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: ${dio.options.headers}");
-      debugPrint("BODY: $body");
+      AuthApiLogger.request(
+        'VerifyOtp',
+        dio: dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: body,
+      );
 
       final response = await dio.post(endpoint, data: body);
 
-      debugPrint("=== VERIFY OTP RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('VerifyOtp', response);
 
       final result = VerifyOtpResponse.fromJson(response.data);
 
@@ -66,17 +65,10 @@ class VerifyOtpService {
         throw result.message;
       }
     } on DioException catch (e) {
-      debugPrint("=== VERIFY OTP DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
-      throw e.response?.data["message"] ?? "Something went wrong";
+      AuthApiLogger.error('VerifyOtp', e);
+      throw AuthApiException.extractMessage(e);
     } catch (e) {
-      debugPrint("=== VERIFY OTP UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      debugPrint("Verify OTP failed: $e");
       rethrow;
     }
   }

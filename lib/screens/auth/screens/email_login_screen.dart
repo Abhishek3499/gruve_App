@@ -9,6 +9,7 @@ import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 
 import 'package:gruve_app/screens/auth/api/controllers/login_controller.dart';
+import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
 
 import 'package:gruve_app/screens/auth/screens/forgot_password_screen.dart';
 
@@ -33,8 +34,6 @@ class EmailLoginScreen extends StatefulWidget {
 class _EmailLoginScreenState extends State<EmailLoginScreen> {
   final EmailSignInController _controller = EmailSignInController();
 
-  bool isLoading = false;
-
   // Controllers & focus nodes
   final TextEditingController _emailController = TextEditingController();
 
@@ -44,16 +43,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
   final FocusNode _passwordFocus = FocusNode();
 
-  // Real-time validation state
-  String? _emailError;
-  String? _passwordError;
-
   // Form key for backward compatibility
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthUiProvider>().resetLogin();
+    });
     _setupRealTimeValidation();
   }
 
@@ -65,17 +63,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         _emailController.text,
       );
 
-      if (error != _emailError) {
-        setState(() => _emailError = error);
-      }
+      context.read<AuthUiProvider>().setError('login_email', error);
     });
 
     // Password field real-time validation
     _passwordController.addListener(() {
       final error = _validatePasswordForLogin(_passwordController.text);
-      if (error != _passwordError) {
-        setState(() => _passwordError = error);
-      }
+      context.read<AuthUiProvider>().setError('login_password', error);
     });
   }
 
@@ -110,35 +104,35 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     );
     final passwordError = _validatePasswordForLogin(_passwordController.text);
 
-    if (emailError != _emailError || passwordError != _passwordError) {
-      setState(() {
-        _emailError = emailError;
-        _passwordError = passwordError;
-      });
-    }
+    final authUi = context.read<AuthUiProvider>();
+    authUi.setErrors({
+      'login_email': emailError,
+      'login_password': passwordError,
+    });
 
     // Check real-time validation errors instead of form validation
-    if (_emailError != null || _passwordError != null) {
+    if (emailError != null || passwordError != null) {
       // Show specific error if any
-      String errorMessage =
-          _emailError ?? _passwordError ?? 'Please fill all fields';
+      String errorMessage = emailError ?? passwordError ?? 'Please fill all fields';
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(errorMessage)));
       return false;
     }
 
-    setState(() => isLoading = true);
+    authUi.setLoading(AuthLoadingKey.login, true);
 
-    await _controller.signIn(
-      identifier: _emailController.text.trim(),
+    try {
+      await _controller.signIn(
+        identifier: _emailController.text.trim(),
 
-      password: _passwordController.text.trim(),
-    );
+        password: _passwordController.text.trim(),
+      );
+    } finally {
+      authUi.setLoading(AuthLoadingKey.login, false);
+    }
 
     if (!mounted) return false;
-
-    setState(() => isLoading = false);
 
     //
 
@@ -195,6 +189,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authUi = context.watch<AuthUiProvider>();
+    final isLoading = authUi.isLoading(AuthLoadingKey.login);
     return Scaffold(
       resizeToAvoidBottomInset: true,
 

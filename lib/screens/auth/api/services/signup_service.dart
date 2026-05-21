@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart' show debugPrint;
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_exception.dart';
+import 'package:gruve_app/screens/auth/core/auth_api_logger.dart';
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
 
@@ -17,17 +19,17 @@ class SignupService {
     final payload = request.toJson();
 
     try {
-      debugPrint("=== SIGNUP REQUEST ===");
-      debugPrint("URL: ${dio.options.baseUrl}$endpoint");
-      debugPrint("METHOD: POST");
-      debugPrint("HEADERS: ${dio.options.headers}");
-      debugPrint("BODY: $payload");
+      AuthApiLogger.request(
+        'Signup',
+        dio: dio,
+        endpoint: endpoint,
+        method: 'POST',
+        body: payload,
+      );
 
       final response = await dio.post(endpoint, data: payload);
 
-      debugPrint("=== SIGNUP RESPONSE ===");
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE BODY: ${response.data}");
+      AuthApiLogger.response('Signup', response);
 
       final result = SignupResponse.fromJson(response.data);
 
@@ -37,42 +39,35 @@ class SignupService {
         throw result.message;
       }
     } on DioException catch (e) {
-      debugPrint("=== SIGNUP DIO ERROR ===");
-      debugPrint("STATUS CODE: ${e.response?.statusCode}");
-      debugPrint("ERROR DATA: ${e.response?.data}");
-      debugPrint("ERROR MESSAGE: ${e.message}");
-      debugPrint("ERROR TYPE: ${e.type}");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      AuthApiLogger.error('Signup', e);
 
       // Retry once when no response is received (timeout / connection issue).
       if (_shouldRetry(e)) {
         try {
-          debugPrint("=== SIGNUP RETRY ATTEMPT ===");
+          debugPrint("Signup retry attempt");
           final retryResponse = await dio.post(endpoint, data: payload);
-          debugPrint("=== SIGNUP RETRY RESPONSE ===");
-          debugPrint("STATUS CODE: ${retryResponse.statusCode}");
-          debugPrint("RESPONSE BODY: ${retryResponse.data}");
+          AuthApiLogger.response('SignupRetry', retryResponse);
           final retryResult = SignupResponse.fromJson(retryResponse.data);
           if (retryResult.success == true) return retryResult;
           throw retryResult.message;
         } on DioException catch (retryError) {
-          debugPrint("=== SIGNUP RETRY ERROR ===");
-          debugPrint("RETRY ERROR: ${retryError.response?.data}");
-          debugPrint("RETRY STACK TRACE: ${StackTrace.current}");
-          throw _extractErrorMessage(retryError);
+          AuthApiLogger.error('SignupRetry', retryError);
+          throw AuthApiException.extractMessage(
+            retryError,
+            fallback: 'Unable to reach server right now. Please try again.',
+          );
         } catch (retryError) {
-          debugPrint("=== SIGNUP RETRY UNKNOWN ERROR ===");
-          debugPrint("RETRY ERROR: $retryError");
-          debugPrint("RETRY STACK TRACE: ${StackTrace.current}");
+          debugPrint("Signup retry failed: $retryError");
           throw retryError.toString();
         }
       }
 
-      throw _extractErrorMessage(e);
+      throw AuthApiException.extractMessage(
+        e,
+        fallback: 'Unable to reach server right now. Please try again.',
+      );
     } catch (e) {
-      debugPrint("=== SIGNUP UNKNOWN ERROR ===");
-      debugPrint("ERROR: $e");
-      debugPrint("STACK TRACE: ${StackTrace.current}");
+      debugPrint("Signup failed: $e");
       throw "Signup failed. Please try again.";
     }
   }
@@ -85,45 +80,4 @@ class SignupService {
             e.type == DioExceptionType.connectionError);
   }
 
-  String _extractErrorMessage(DioException e) {
-    final responseData = e.response?.data;
-
-    if (responseData is Map<String, dynamic>) {
-      final message = responseData["message"];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-
-      final error = responseData["error"];
-      if (error is String && error.trim().isNotEmpty) {
-        return error;
-      }
-
-      final errors = responseData["errors"];
-      if (errors is Map<String, dynamic>) {
-        for (final value in errors.values) {
-          if (value is List && value.isNotEmpty) {
-            final first = value.first;
-            if (first is String && first.trim().isNotEmpty) return first;
-          }
-          if (value is String && value.trim().isNotEmpty) return value;
-        }
-      }
-    }
-
-    if (responseData is String && responseData.trim().isNotEmpty) {
-      return responseData;
-    }
-
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return "Request timed out. Please check your internet and try again.";
-      case DioExceptionType.connectionError:
-        return "Unable to connect. Please check your internet connection.";
-      default:
-        return "Unable to reach server right now. Please try again.";
-    }
-  }
 }

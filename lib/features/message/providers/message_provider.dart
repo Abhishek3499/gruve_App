@@ -41,6 +41,14 @@ class MessageProvider extends ChangeNotifier {
 
       try {
         final conversationId = data['conversation_id'];
+        final eventKey = _realtimeEventKey(data, conversationId);
+        if (!_seenRealtimeEventKeys.add(eventKey)) {
+          debugPrint('🔒 [MessageProvider] Duplicate realtime event skipped');
+          return;
+        }
+        if (_seenRealtimeEventKeys.length > 200) {
+          _seenRealtimeEventKeys.remove(_seenRealtimeEventKeys.first);
+        }
 
         final index = _conversations.indexWhere((c) => c.id == conversationId);
 
@@ -71,6 +79,14 @@ class MessageProvider extends ChangeNotifier {
     });
   }
 
+  String _realtimeEventKey(Map<String, dynamic> data, dynamic conversationId) {
+    final nested = data['data'];
+    final nestedId = nested is Map ? nested['id'] : null;
+    final messageId = data['message_id'] ?? data['id'] ?? nestedId ?? '';
+    final timestamp = data['timestamp'] ?? data['created_at'] ?? '';
+    return '$conversationId|$messageId|$timestamp|${data['type'] ?? ''}';
+  }
+
   // State variables
   List<ConversationModel> _conversations = [];
   bool _isLoading = false;
@@ -79,6 +95,8 @@ class MessageProvider extends ChangeNotifier {
   String? _error;
   DateTime? _lastFetchTime;
   static const _cacheValidDuration = Duration(minutes: 5);
+  final Map<String, Future<void>> _inFlightFetches = {};
+  final Set<String> _seenRealtimeEventKeys = <String>{};
 
   // Pagination support (for future implementation)
   int _currentPage = 1;
@@ -200,8 +218,31 @@ class MessageProvider extends ChangeNotifier {
       return;
     }
 
+    final requestedPage = page ?? 1;
+    final fetchKey = '${refresh ? 'refresh' : 'page'}:$requestedPage';
+    final inFlight = _inFlightFetches[fetchKey];
+    if (inFlight != null) {
+      debugPrint('⏳ [MessageProvider] Joining in-flight fetch $fetchKey');
+      return inFlight;
+    }
+
+    final future = _runFetchConversations(
+      refresh: refresh,
+      requestedPage: requestedPage,
+    );
+    _inFlightFetches[fetchKey] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightFetches.remove(fetchKey);
+    }
+  }
+
+  Future<void> _runFetchConversations({
+    required bool refresh,
+    required int requestedPage,
+  }) async {
     final fetchStart = DateTime.now();
-    final requestedPage = page ?? (refresh ? 1 : _currentPage);
     final isPagination = !refresh && requestedPage > 1;
 
     if (refresh) {
@@ -248,7 +289,7 @@ class MessageProvider extends ChangeNotifier {
         debugPrint('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
       }
 
-      if (refresh) {
+      if (refresh || !isPagination) {
         _conversations = conversations;
         _lastFetchTime = DateTime.now();
       } else {
@@ -263,6 +304,9 @@ class MessageProvider extends ChangeNotifier {
         );
         if (isPagination && newConversations.isEmpty) {
           _hasMoreData = false;
+        }
+        if (!isPagination) {
+          _lastFetchTime = DateTime.now();
         }
       }
 
@@ -420,6 +464,12 @@ class MessageProvider extends ChangeNotifier {
   ///
   /// [conversation] - The new conversation to add
   void addConversation(ConversationModel conversation) {
+    if (_conversations.any((item) => item.id == conversation.id)) {
+      debugPrint(
+        '🔒 [MessageProvider] Duplicate conversation skipped: ${conversation.id}',
+      );
+      return;
+    }
     _conversations.insert(0, conversation);
     notifyListeners();
     debugPrint(
@@ -445,6 +495,9 @@ class MessageProvider extends ChangeNotifier {
     _isRefreshing = false;
     _currentPage = 1;
     _hasMoreData = true;
+    _lastFetchTime = null;
+    _inFlightFetches.clear();
+    _seenRealtimeEventKeys.clear();
     notifyListeners();
     debugPrint('🔄 [MessageProvider] Provider state reset');
   }

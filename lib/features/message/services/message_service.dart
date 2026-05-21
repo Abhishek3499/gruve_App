@@ -60,10 +60,7 @@ class MessageService {
 
       if (response.statusCode == 200) {
         // Safely parse response data
-        final responseData = SafeParsingHelpers.safeListParse(
-          response.data,
-          context: '📋 getConversationList',
-        );
+        final responseData = _extractConversationList(response.data);
 
         final conversations = <ConversationModel>[];
         for (int i = 0; i < responseData.length; i++) {
@@ -166,6 +163,7 @@ class MessageService {
       final response = await _dio.get<dynamic>(
         endpoint,
         queryParameters: page > 1 ? {'page': page} : null,
+        options: Options(receiveTimeout: const Duration(seconds: 45)),
       );
 
       debugPrint(
@@ -272,6 +270,45 @@ class MessageService {
     return [];
   }
 
+  List<dynamic> _extractConversationList(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      if (data['results'] is List) {
+        return data['results'];
+      }
+      if (data['conversations'] is List) {
+        return data['conversations'];
+      }
+      if (data['data'] is List) {
+        return data['data'];
+      }
+      if (data['data'] is Map<String, dynamic>) {
+        final nestedData = data['data'] as Map<String, dynamic>;
+        if (nestedData['results'] is List) {
+          return nestedData['results'];
+        }
+        if (nestedData['conversations'] is List) {
+          return nestedData['conversations'];
+        }
+      }
+    }
+
+    return SafeParsingHelpers.safeListParse(
+      data,
+      context: 'getConversationList',
+    );
+  }
+
+  dynamic _unwrapResponseData(dynamic data) {
+    if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+      return data['data'];
+    }
+    return data;
+  }
+
   String _mapDioException(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
@@ -282,8 +319,9 @@ class MessageService {
         final statusCode = e.response?.statusCode;
         final responseData = e.response?.data;
         final message = responseData is Map<String, dynamic>
-            ? responseData['message'] ??
-                  responseData['detail'] ??
+            ? responseData['detail'] ??
+                  responseData['error'] ??
+                  responseData['message'] ??
                   'Unknown error'
             : 'Unknown error';
         return 'API Error ($statusCode): $message';
@@ -399,7 +437,7 @@ class MessageService {
         );
 
         final conversationData = SafeParsingHelpers.safeMapParse(
-          response.data,
+          _unwrapResponseData(response.data),
           context: '🔍 getConversationById',
         );
         if (conversationData.isNotEmpty) {
@@ -505,7 +543,7 @@ class MessageService {
         );
 
         final conversationData = SafeParsingHelpers.safeMapParse(
-          response.data,
+          _unwrapResponseData(response.data),
           context: '🚀 createOrGetConversation',
         );
         if (conversationData.isNotEmpty) {

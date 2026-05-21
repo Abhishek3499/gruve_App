@@ -12,7 +12,6 @@ import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/screens/auth/token_storage.dart';
 import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
-import 'package:gruve_app/services/socket_service.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance
 /// FPS impact: 15-20fps drops → 55-60fps smooth (200% improvement)
@@ -36,10 +35,9 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isDisposed = false;
   VideoFeedController? _videoController;
   VideoService? _currentVideoService;
-  final SocketService _socketService = SocketService();
-
   // ✅ CRITICAL: Cache screens to prevent rebuilds
-  late final List<Widget> _screens;
+  late final List<Widget?> _screens;
+  final Set<int> _activatedTabs = <int>{0};
 
   // 🚀 PERFORMANCE: Track rebuild metrics
   int _rebuildCount = 0;
@@ -65,28 +63,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     // ✅ Initialize screens ONCE
-    _screens = [
-      VideoFeed(
-        selectedIndex: _currentIndex.value,
-        onTabChanged: _onItemTapped,
-        onControllerReady: (controller) {
-          if (kDebugMode) {
-            debugPrint("🏠 Home Screen: VideoFeed onControllerReady called!");
-          }
-          _videoController = controller;
-          PostShareFlowBridge.setVideoController(controller);
-          if (kDebugMode) {
-            debugPrint(
-              "🏠 Home Screen: Video controller ready and set to bridge",
-            );
-          }
-        },
-      ),
-      const SearchScreen(),
-      const SizedBox.shrink(),
-      const SizedBox.shrink(),
-      const ProfileScreen(),
-    ];
+    _screens = List<Widget?>.filled(5, null);
+    _screens[0] = _createScreen(0);
 
     PostShareFlowBridge.onShareStartProcessing = (isVideo) {
       if (kDebugMode) {
@@ -134,6 +112,40 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // 🚀 OPTIMIZED: Use ValueNotifier for efficient state updates
+  Widget _createScreen(int index) {
+    switch (index) {
+      case 0:
+        return VideoFeed(
+          selectedIndex: _currentIndex.value,
+          onTabChanged: _onItemTapped,
+          onControllerReady: (controller) {
+            if (kDebugMode) {
+              debugPrint("ðŸ  Home Screen: VideoFeed onControllerReady called!");
+            }
+            _videoController = controller;
+            PostShareFlowBridge.setVideoController(controller);
+            if (kDebugMode) {
+              debugPrint(
+                "ðŸ  Home Screen: Video controller ready and set to bridge",
+              );
+            }
+          },
+        );
+      case 1:
+        return const SearchScreen();
+      case 4:
+        return const ProfileScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  void _activateTab(int index) {
+    if (index < 0 || index >= _screens.length) return;
+    _activatedTabs.add(index);
+    _screens[index] ??= _createScreen(index);
+  }
+
   void _ensureHomeFeedTab() {
     if (!mounted || _isDisposed || _currentIndex.value == 0) return;
 
@@ -146,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _ensureProfileTab() {
     if (!mounted || _isDisposed || _currentIndex.value == 4) return;
+    _activateTab(4);
 
     // 🚀 BATCH UPDATE: Update all notifiers at once
     _previousIndex.value = _currentIndex.value;
@@ -179,22 +192,10 @@ class _HomeScreenState extends State<HomeScreen>
     _pauseVideo('App backgrounded');
     _isInBackground.value = true;
     
-    // Disconnect WebSocket to save battery
-    _socketService.disconnect();
-    debugPrint('🔌 [HomeScreen] WebSocket disconnected (app backgrounded)');
   }
 
   void _handleAppResumed() {
     _isInBackground.value = false;
-    
-    // Reconnect WebSocket
-    TokenStorage.getAccessToken().then((token) {
-      if (token != null && token.isNotEmpty) {
-        _socketService.connect(token);
-        debugPrint('🔌 [HomeScreen] WebSocket reconnected (app resumed)');
-      }
-    });
-    
     if (_currentIndex.value == 0 && !_isNavigatingAway.value && !_isDisposed) {
       _resumeVideo('App resumed');
     }
@@ -279,6 +280,7 @@ class _HomeScreenState extends State<HomeScreen>
         // Navigating to Home tab from another tab
         _lastHomeTapTime = currentTime;
         // 🚀 OPTIMIZED: Use ValueNotifier instead of setState
+        _activateTab(index);
         _previousIndex.value = _currentIndex.value;
         _currentIndex.value = index;
         _handleTabChange(index);
@@ -328,6 +330,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     // 🚀 OPTIMIZED: Use ValueNotifier instead of setState
+    _activateTab(index);
     _previousIndex.value = _currentIndex.value;
     _currentIndex.value = index;
     _handleTabChange(index);
@@ -437,7 +440,15 @@ class _HomeScreenState extends State<HomeScreen>
         body: ValueListenableBuilder<int>(
           valueListenable: _currentIndex,
           builder: (context, currentIndex, _) {
-            return IndexedStack(index: currentIndex, children: _screens);
+            return IndexedStack(
+              index: currentIndex,
+              children: List.generate(_screens.length, (index) {
+                if (!_activatedTabs.contains(index)) {
+                  return const SizedBox.shrink();
+                }
+                return _screens[index] ??= _createScreen(index);
+              }),
+            );
           },
         ),
         bottomNavigationBar: ValueListenableBuilder<int>(
