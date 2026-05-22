@@ -7,8 +7,6 @@ import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import '../data/models/user_profile_model.dart';
-import 'package:gruve_app/widgets/stats_row_skeleton.dart';
-import 'package:gruve_app/widgets/profile_grid_skeleton.dart';
 
 import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
@@ -44,14 +42,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
-    _log('[ProfileScreen] Initializing profile screen with userId: ${widget.userId}');
+    _log(
+      '[ProfileScreen] Initializing profile screen with userId: ${widget.userId}',
+    );
 
     // Own profile: fetch whenever session has no user yet (fixes stuck loader when
     // init ran while provider falsely reported loading, and refetch after logout).
     if (widget.userId == null) {
       _ownProfileProvider = context.read<ProfileProvider>();
       _ownProfileProvider!.addListener(_ensureOwnProfileLoaded);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureOwnProfileLoaded());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _ensureOwnProfileLoaded(),
+      );
     } else {
       // Other user's profile - fetch using UserProfileProvider after first frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -118,13 +120,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         extendBody: true,
         backgroundColor: const Color(0xFF42174C),
-        endDrawer: provider.user != null 
+        endDrawer: provider.user != null
             ? ProfileMenuDrawer(profileImage: provider.user?.profileImage)
             : null,
         body: Builder(
           builder: (context) {
-            _log('[ProfileScreen] Build state - user: ${provider.user != null}, isLoading: ${provider.isLoading}, error: ${provider.errorMessage}');
-            
+            _log(
+              '[ProfileScreen] Build state - user: ${provider.user != null}, isLoading: ${provider.isLoading}, error: ${provider.errorMessage}',
+            );
+
             if (provider.errorMessage != null) {
               return Center(
                 child: Column(
@@ -148,9 +152,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }
 
-            // Show skeleton immediately when user is null (logout or initial load)
+            // Show shimmer immediately when user is null (logout or initial load)
             if (provider.user == null) {
-              return _buildSkeleton();
+              return _buildProfileShimmer();
             }
 
             return _buildMainContentForOwnProfile(provider);
@@ -167,11 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             body: Builder(
               builder: (context) {
                 if (userProfileProvider.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                    ),
-                  );
+                  return _buildProfileShimmer();
                 }
 
                 if (userProfileProvider.hasError) {
@@ -180,7 +180,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          userProfileProvider.errorMessage ?? 'Failed to load profile',
+                          userProfileProvider.errorMessage ??
+                              'Failed to load profile',
                           style: const TextStyle(color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
@@ -200,7 +201,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }
 
                 if (userProfileProvider.hasData) {
-                  return _buildMainContentForOtherUser(userProfileProvider.profile!);
+                  return _buildMainContentForOtherUser(
+                    userProfileProvider.profile!,
+                  );
                 }
 
                 return const SizedBox.shrink();
@@ -252,14 +255,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           const SizedBox(height: 110),
-                          // Show skeleton when stats are loading
-                          provider.isLoading 
-                              ? StatsRowSkeleton()
-                              : StatsRow(
-                                  subscribersCount: provider.stats.subscribersCount,
-                                  likesCount: provider.stats.likesCount,
-                                  videosCount: provider.stats.videosCount,
-                                ),
+                          StatsRow(
+                            subscribersCount: provider.stats.subscribersCount,
+                            likesCount: provider.stats.likesCount,
+                            videosCount: provider.stats.videosCount,
+                          ),
                           const SizedBox(height: 25),
                           StoryList(provider: provider),
                           const SizedBox(height: 20),
@@ -277,12 +277,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: provider.isLoading && selectedTab == 0
-                                ? ProfileGridSkeleton(itemCount: 9, showDraftItem: true)
-                                : ProfileGrid(
-                                    selectedTab: selectedTab,
-                                    controller: provider.controller,
-                                  ),
+                            child: ProfileGrid(
+                              selectedTab: selectedTab,
+                              controller: provider.controller,
+                            ),
                           ),
                           SizedBox(height: 100),
                         ],
@@ -372,12 +370,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Follow functionality coming soon')),
+                            const SnackBar(
+                              content: Text('Follow functionality coming soon'),
+                            ),
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: userProfile.isFollowing 
-                              ? Colors.grey 
+                          backgroundColor: userProfile.isFollowing
+                              ? Colors.grey
                               : const Color(0xFFD42BC2),
                           minimumSize: const Size(double.infinity, 45),
                         ),
@@ -405,7 +405,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: ProfileGridSkeleton(itemCount: 9, showDraftItem: false),
+                      child: AppShimmer(
+                        child: _buildShimmerGrid(itemCount: 9),
+                      ),
                     ),
                     const SizedBox(height: 100),
                   ],
@@ -430,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSkeleton() {
+  Widget _buildProfileShimmer() {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -449,7 +451,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 const SizedBox(height: 30),
 
-                /// Profile image
                 const ShimmerCircle(radius: 40),
 
                 const SizedBox(height: 10),
@@ -462,7 +463,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 30),
 
-                /// Stats
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: List.generate(3, (_) {
@@ -478,29 +478,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 30),
 
-                /// Grid
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(10),
+                _buildShimmerGrid(
                   itemCount: 9,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6,
-                  ),
-                  itemBuilder: (_, _) {
-                    return const ShimmerBox(
-                      height: double.infinity,
-                      width: double.infinity,
-                    );
-                  },
+                  padding: const EdgeInsets.all(10),
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildShimmerGrid({
+    required int itemCount,
+    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
+      horizontal: 13,
+      vertical: 20,
+    ),
+  }) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: padding,
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.75,
+      ),
+      itemBuilder: (_, _) {
+        return const ShimmerBox(
+          height: double.infinity,
+          width: double.infinity,
+          borderRadius: 18,
+        );
+      },
     );
   }
 

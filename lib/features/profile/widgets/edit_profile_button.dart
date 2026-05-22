@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
+import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';
 
 import '../screens/edit_profile_screen.dart';
 import '../models/profile_model.dart';

@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local JVM/Android heap dumps can be huge and should never be versioned.
+*.hprof

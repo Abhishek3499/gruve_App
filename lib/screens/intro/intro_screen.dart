@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
-import 'package:gruve_app/widgets/get_started_button.dart';
-import 'package:gruve_app/widgets/video_background.dart';
+import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
+import 'package:gruve_app/core/widgets/get_started_button.dart';
+import 'package:gruve_app/core/widgets/video_background.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});

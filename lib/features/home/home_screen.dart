@@ -4,13 +4,13 @@ import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
 import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
 import 'package:gruve_app/features/story_preview/api/post/processing_dialog.dart';
-import 'package:gruve_app/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
+import 'package:gruve_app/core/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
-import 'package:gruve_app/screens/auth/screens/sign_in_screen.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance

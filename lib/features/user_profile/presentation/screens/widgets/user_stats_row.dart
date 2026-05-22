@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/profile/data/api_calls/model/profile_stats_model.dart';
 import '../../../../../core/constants/app_colors.dart';
-import '../../../../../api_calls/profile/model/profile_stats_model.dart';
 
 class UserStatsRow extends StatelessWidget {
   const UserStatsRow({super.key, required this.stats});

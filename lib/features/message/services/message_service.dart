@@ -105,7 +105,9 @@ class MessageService {
       }
     } on DioException catch (e) {
       debugPrint('💥 [MessageService] DioException: ${e.message}');
-      debugPrint('📄 [MessageService] Response: ${e.response?.data}');
+      debugPrint(
+        '[MessageService] Response status: ${e.response?.statusCode}',
+      );
 
       // Handle different types of Dio exceptions
       switch (e.type) {
@@ -681,7 +683,9 @@ class MessageService {
       debugPrint(
         '💥 [MessageService] ❌ DioException deleting message: ${e.message}',
       );
-      debugPrint('📄 [MessageService] 📋 Response: ${e.response?.data}');
+      debugPrint(
+        '[MessageService] Response status: ${e.response?.statusCode}',
+      );
 
       switch (e.type) {
         case DioExceptionType.badResponse:

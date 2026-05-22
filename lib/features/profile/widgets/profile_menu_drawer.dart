@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/screens/auth/logout/logout_widget.dart';
-import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
+import 'package:gruve_app/features/auth/logout/logout_widget.dart';
+import 'package:gruve_app/features/auth/logout/logout_provider.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';

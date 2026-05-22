@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
+import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
-import 'package:gruve_app/widgets/user_profile_story_skeleton.dart';
+import 'package:gruve_app/core/widgets/user_profile_story_skeleton.dart';
 
 /// Reusable highlights list for user profile
 /// Similar to StoryList but without "Add Story" button

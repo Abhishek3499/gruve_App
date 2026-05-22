@@ -8,17 +8,20 @@ class UserRemoteDataSource {
 
   Future<PaginatedUserResponse> fetchUsers({int page = 1}) async {
     try {
-      debugPrint('🌐 [UserRemoteDataSource] Hitting API: user/users/?page=$page');
       final rawResponse = await apiClient.get('user/users/?page=$page');
-      debugPrint('📦 [UserRemoteDataSource] Raw response: $rawResponse');
       
       final response = PaginatedUserResponse.fromJson(rawResponse);
-      debugPrint('📊 [UserRemoteDataSource] Page ${response.page} loaded: ${response.users.length} users');
-      debugPrint('➡️ [UserRemoteDataSource] Has next: ${response.hasNext}');
+      if (kDebugMode) {
+        debugPrint(
+          '[UserRemoteDataSource] Page ${response.page} loaded: ${response.users.length} users',
+        );
+      }
       
       return response;
     } catch (e) {
-      debugPrint('💥 [UserRemoteDataSource] Exception on page $page: $e');
+      if (kDebugMode) {
+        debugPrint('[UserRemoteDataSource] Exception on page $page: $e');
+      }
       rethrow;
     }
   }

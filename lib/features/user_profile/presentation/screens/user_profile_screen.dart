@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/api_calls/user_profile/controller/user_profile_controller.dart';
+import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/home/models/subscribe_model.dart';
@@ -8,9 +8,9 @@ import 'package:gruve_app/features/user_profile/presentation/screens/widgets/use
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
-import 'package:gruve_app/widgets/story_list_skeleton.dart';
-import 'package:gruve_app/widgets/stats_row_skeleton.dart';
-import 'package:gruve_app/widgets/profile_grid_skeleton.dart';
+import 'package:gruve_app/core/widgets/story_list_skeleton.dart';
+import 'package:gruve_app/core/widgets/stats_row_skeleton.dart';
+import 'package:gruve_app/core/widgets/profile_grid_skeleton.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String profileUserId;

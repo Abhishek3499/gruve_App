@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets.dart';
-import '../../../screens/auth/api/controllers/edit_profile_controller.dart';
+import '../../../features/auth/api/controllers/edit_profile_controller.dart';
 import '../models/profile_model.dart';
 import '../widgets/personal_info_card.dart';
 import '../widgets/profile_image_picker.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
+import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 
 import 'close_friend_user_tile.dart';
 

@@ -6,7 +6,7 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 
 import 'package:gruve_app/features/story_preview/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_top_bar.dart';
-import 'package:gruve_app/widgets/story_share_sheet.dart';
+import 'package:gruve_app/core/widgets/story_share_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 

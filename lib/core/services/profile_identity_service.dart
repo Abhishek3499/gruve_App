@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 class ProfileIdentityResolution {
   final String? loggedInUserId;

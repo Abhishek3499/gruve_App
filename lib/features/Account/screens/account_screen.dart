@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/Account/widgets/account_body.dart';
 import 'package:gruve_app/features/Account/widgets/account_header.dart';
 import 'package:gruve_app/features/profile/models/profile_model.dart';
-import 'package:gruve_app/screens/auth/api/controllers/edit_profile_controller.dart';
+import 'package:gruve_app/features/auth/api/controllers/edit_profile_controller.dart';
 import '../../../../core/assets.dart';
 
 /// Account Screen with professional widget separation

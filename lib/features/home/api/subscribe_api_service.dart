@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 class SubscribeApiService {
   static const String _toggleEndpoint = 'profile/subscribe/toggle';

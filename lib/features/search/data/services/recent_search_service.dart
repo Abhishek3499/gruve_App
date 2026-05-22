@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../api_calls/user_search/user_search_service.dart';
+import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 
 class RecentSearchService {
   static const String _key = 'recent_searches';

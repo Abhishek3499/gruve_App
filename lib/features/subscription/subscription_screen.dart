@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/subscription/widgets/subscription_header.dart';
-import 'package:gruve_app/widgets/get_started_button.dart';
+import 'package:gruve_app/core/widgets/get_started_button.dart';
 import 'widgets/subscription_card.dart';
 
 class SubscriptionScreen extends StatefulWidget {

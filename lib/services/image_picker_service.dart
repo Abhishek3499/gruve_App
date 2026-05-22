@@ -50,6 +50,23 @@ class ImagePickerService {
     }
   }
 
+  static Future<XFile?> pickImageFromGallery() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      debugPrint('Gallery image picked: ${image?.path}');
+      return image;
+    } catch (e) {
+      debugPrint('Error picking image from gallery: $e');
+      return null;
+    }
+  }
+
   static void showImagePickerBottomSheet(
     BuildContext context, {
     required Function(XFile) onImageSelected,
@@ -100,11 +117,11 @@ class ImagePickerService {
                       label: 'Gallery',
                       onTap: () async {
                         Navigator.pop(context);
-                        final media = await pickMediaFromGallery();
-                        if (media != null) {
-                          onImageSelected(media);
+                        final image = await pickImageFromGallery();
+                        if (image != null) {
+                          onImageSelected(image);
                         } else {
-                          debugPrint('Gallery media selection cancelled or failed');
+                          debugPrint('Gallery image selection cancelled or failed');
                         }
                       },
                     ),

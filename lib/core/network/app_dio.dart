@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
 import 'package:gruve_app/core/network/pending_request_queue.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
@@ -26,10 +26,10 @@ class AppDio {
 
     // Also cancel pending queued requests
     _queue.cancelAll(reason);
-    
+
     // Cancel all in-flight deduplicated requests
     RequestDeduplicationManager().cancelAll(reason);
-    
+
     // Clear cache on logout
     CacheManager().clear();
   }
@@ -39,7 +39,7 @@ class AppDio {
     Duration receiveTimeout = const Duration(seconds: 20),
     Duration sendTimeout = const Duration(seconds: 20),
   }) {
-    var baseUrl = (dotenv.env['BASE_URL'] ?? '').trim();
+    var baseUrl = EnvironmentConfig.baseUrl.trim();
     if (baseUrl.isNotEmpty && !baseUrl.endsWith('/')) {
       baseUrl = '$baseUrl/';
     }
@@ -59,7 +59,7 @@ class AppDio {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           options.extra['request_start_time'] = DateTime.now();
-          
+
           final hasAuthorizationHeader =
               options.headers.containsKey('Authorization') &&
               (options.headers['Authorization']?.toString().trim().isNotEmpty ??
@@ -77,7 +77,8 @@ class AppDio {
           handler.next(options);
         },
         onResponse: (response, handler) {
-          final startTime = response.requestOptions.extra['request_start_time'] as DateTime?;
+          final startTime =
+              response.requestOptions.extra['request_start_time'] as DateTime?;
           if (startTime != null) {
             final duration = DateTime.now().difference(startTime);
             NetworkMonitor().logApiCall(
@@ -90,7 +91,8 @@ class AppDio {
           handler.next(response);
         },
         onError: (error, handler) {
-          final startTime = error.requestOptions.extra['request_start_time'] as DateTime?;
+          final startTime =
+              error.requestOptions.extra['request_start_time'] as DateTime?;
           if (startTime != null) {
             final duration = DateTime.now().difference(startTime);
             NetworkMonitor().logApiCall(

@@ -8,7 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-import '../../screens/auth/token_storage.dart';
+import '../../features/auth/token_storage.dart';
 import '../config/environment_config.dart';
 import '../debug/debug_logger.dart';
 import 'socket_logger.dart';

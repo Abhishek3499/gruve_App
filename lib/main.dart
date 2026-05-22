@@ -4,19 +4,17 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/routing/app_routes.dart';
 import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';
-import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:gruve_app/features/profile/data/services/user_profile_service.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
-import 'package:gruve_app/screens/auth/logout/logout_provider.dart';
-import 'package:gruve_app/screens/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:gruve_app/features/auth/logout/logout_provider.dart';
+import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:gruve_app/screens/splash_screen.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/message/providers/message_provider.dart';
 import 'package:gruve_app/features/message/services/message_service.dart';
@@ -35,8 +33,6 @@ Future<void> main() async {
   if (!kDebugMode) {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
-
-  await dotenv.load(fileName: ".env"); // 👈 IMPORTANT
   await EnvironmentConfig.initialize(); // 👈 CRITICAL - Initialize environment config
   await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
   runApp(MyApp());
@@ -88,8 +84,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        home: const SplashScreen(),
-        routes: {'/profile': (_) => const ProfileScreen()},
+        initialRoute: AppRoutes.initialRoute,
+        routes: AppRoutes.routes,
         navigatorObservers: [routeObserver],
       ),
     );

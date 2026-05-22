@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 import '../models/message_model.dart';
 import '../services/message_service.dart';

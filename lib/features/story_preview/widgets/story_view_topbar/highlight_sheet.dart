@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:gruve_app/core/routing/app_route_names.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
@@ -31,9 +32,7 @@ void showInstagramHighlightSheet(BuildContext context) {
   );
 
   if (currentStory == null) {
-    _log(
-      '[HighlightSheet] ERROR: cannot open sheet without currentStory',
-    );
+    _log('[HighlightSheet] ERROR: cannot open sheet without currentStory');
     return;
   }
 
@@ -178,7 +177,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         sheetNavigator.pop();
 
         _log('[Flow] Navigation triggered');
-        rootNavigator.pushReplacementNamed('/profile');
+        rootNavigator.pushReplacementNamed(AppRouteNames.profile);
       } else {
         _log('[Flow] API FAILED');
         if (mounted && _createController.message.value.isNotEmpty) {

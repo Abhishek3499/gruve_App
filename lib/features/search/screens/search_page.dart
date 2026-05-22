@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:gruve_app/api_calls/user_search/user_search_service.dart';
+import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../models/search_history_model.dart';
 import '../models/search_navigation_type.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/api_calls/user_profile/controller/user_profile_controller.dart';
+import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';
 

@@ -3,7 +3,7 @@ import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
 import 'package:gruve_app/features/message/models/conversation_model.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/message/data/models/user_model.dart';
-import 'package:gruve_app/api_calls/profile/model/profile_model.dart';
+import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
 
 void main() {
   group('Conversation Parsing Tests', () {

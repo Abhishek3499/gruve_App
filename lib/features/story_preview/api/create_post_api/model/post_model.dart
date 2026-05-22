@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 
 class CreatePostResponse {
   final bool success;
@@ -225,7 +225,7 @@ class Post {
       return value;
     }
 
-    final baseUrl = (dotenv.env['BASE_URL'] ?? "").trim();
+    final baseUrl = EnvironmentConfig.baseUrl.trim();
     if (baseUrl.isEmpty) {
       return value;
     }

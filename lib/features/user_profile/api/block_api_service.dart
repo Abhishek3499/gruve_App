@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 import '../models/block_toggle_response_model.dart';
 import '../../profile_menu_drawer/models/blocked/blocked_user_model.dart';
 

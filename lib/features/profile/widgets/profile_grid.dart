@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/assets.dart';
-import '../../../api_calls/profile/controller/profile_controller.dart';
+import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import '../../../features/story_preview/api/create_post_api/model/post_model.dart';
 import '../screens/real_draft_screen.dart';
 import '../screens/post_detail/profile_post_detail_screen.dart';
@@ -116,67 +116,59 @@ class ProfileGrid extends StatelessWidget {
       // Nested inside profile SingleChildScrollView — must not use [Expanded]
       // (unbounded height); shrinkWrap joins the outer scroll.
       return _withPagingFooter(
-        CustomScrollView(
+        GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 0.75,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index == 0) {
-                        return RepaintBoundary(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ReelsDraftsScreen(),
-                                ),
-                              );
-                            },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(18),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.asset(AppAssets.frame1, fit: BoxFit.cover),
-                                  Container(
-                                    color: Colors.black.withValues(alpha: 0.45),
-                                    alignment: Alignment.center,
-                                    child: const Text(
-                                      'Drafts',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+          itemCount: filteredPosts.length + 1,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: 0.75,
+          ),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return RepaintBoundary(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReelsDraftsScreen(),
+                      ),
+                    );
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(AppAssets.frame1, fit: BoxFit.cover),
+                        Container(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Drafts',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        );
-                      }
-                      final post = filteredPosts[index - 1];
-                      return RepaintBoundary(
-                        child: _buildPostItem(post, context, filteredPosts, index - 1),
-                      );
-                    },
-                    childCount: filteredPosts.length + 1,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              );
+            }
+            final post = filteredPosts[index - 1];
+            return RepaintBoundary(
+              child: _buildPostItem(post, context, filteredPosts, index - 1),
+            );
+          },
+        ),
       );
     }
 
@@ -230,31 +222,23 @@ class ProfileGrid extends StatelessWidget {
       );
     }
 
-    return CustomScrollView(
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              childAspectRatio: 0.75,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final post = posts[index];
-                return RepaintBoundary(
-                  child: _buildPostItem(post, context, posts, index),
-                );
-              },
-              childCount: posts.length,
-            ),
-          ),
-        ),
-      ],
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      itemCount: posts.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.75,
+      ),
+      itemBuilder: (context, index) {
+        final post = posts[index];
+        return RepaintBoundary(
+          child: _buildPostItem(post, context, posts, index),
+        );
+      },
     );
   }
 

@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:gruve_app/api_calls/profile/controller/profile_controller.dart';
-import 'package:gruve_app/api_calls/profile/model/profile_model.dart';
-import 'package:gruve_app/api_calls/profile/model/profile_stats_model.dart';
+import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
+import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
+import 'package:gruve_app/features/profile/data/api_calls/model/profile_stats_model.dart';
 import 'package:gruve_app/features/highlights/api/highlight_service.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
-import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
+import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';
 
 class ProfileProvider extends ChangeNotifier {
   ProfileProvider({

@@ -5,7 +5,7 @@ import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
-import 'package:gruve_app/widgets/story_list_skeleton.dart';
+import 'package:gruve_app/core/widgets/story_list_skeleton.dart';
 
 class StoryList extends StatelessWidget {
   final ProfileProvider provider;

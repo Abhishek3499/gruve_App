@@ -7,7 +7,7 @@ import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/paginated_response_model.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 class PostService {
   late final Dio _dio;
@@ -115,7 +115,6 @@ class PostService {
       debugPrint('\n🚀 [PostService] ===== CREATE POST START =====');
       debugPrint('🎥 [PostService] Type: ${isVideo ? "VIDEO" : "IMAGE"}');
       debugPrint('📁 [PostService] mediaPath: $mediaPath');
-      debugPrint('📝 [PostService] caption: $caption');
 
       final token = await TokenStorage.getAccessToken();
       final file = File(mediaPath);
@@ -140,7 +139,6 @@ class PostService {
       );
 
       debugPrint('✅ [PostService] Status: ${res.statusCode}');
-      debugPrint('📥 [PostService] Response: ${res.data}');
       debugPrint(
         '🏁 [PostService] ===== ${isVideo ? "VIDEO" : "IMAGE"} POST SUCCESS =====\n',
       );
@@ -150,7 +148,7 @@ class PostService {
       debugPrint('\n❌ [PostService] DIO ERROR');
       debugPrint('⚠️ [PostService] type: ${e.type}');
       debugPrint('📊 [PostService] status: ${e.response?.statusCode}');
-      debugPrint('📥 [PostService] response: ${e.response?.data}');
+      debugPrint('📥 [PostService] response status: ${e.response?.statusCode}');
       rethrow;
     } catch (e) {
       debugPrint('\n💥 [PostService] UNKNOWN ERROR: $e');
@@ -213,8 +211,6 @@ class PostService {
         queryParameters: queryParams,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
-
-      debugPrint('📡 [PostService] Raw API response: ${res.data}');
 
       final responseData = res.data['data'] ?? res.data;
       final rawPosts = responseData['posts'] as List<dynamic>? ?? [];
@@ -294,8 +290,6 @@ class PostService {
     try {
       final res = await _getWithRetry("posts/get-post/", options: opts);
 
-      debugPrint("📡 FULL API RESPONSE: ${res.data}");
-
       final data = res.data['data'];
 
       if (data == null) {
@@ -320,12 +314,6 @@ class PostService {
 
         debugPrint("✅ PARSED POST:");
         debugPrint("ID: ${post.id}");
-        debugPrint("CAPTION: ${post.caption}");
-        debugPrint("MEDIA: ${post.media}");
-        debugPrint("❤️ Likes: ${post.likesCount}");
-        debugPrint("💬 Comments: ${post.commentsCount}");
-        debugPrint("👤 User: ${post.username}");
-        debugPrint("🔔 Subscribed: ${post.isSubscribed}");
 
         return post;
       }).toList();
@@ -399,7 +387,7 @@ class PostService {
       debugPrint("❌ [PostService] SAVE TOGGLE ERROR: $e");
       if (e is DioException) {
         debugPrint("❌ [PostService] Status: ${e.response?.statusCode}");
-        debugPrint("❌ [PostService] Response: ${e.response?.data}");
+        debugPrint("❌ [PostService] Response status: ${e.response?.statusCode}");
         if (e.response?.statusCode == 401) {
           debugPrint("❌ [PostService] Unauthorized error");
         }
@@ -434,7 +422,7 @@ class PostService {
       debugPrint("❌ [PostService] FETCH SAVED POSTS ERROR: $e");
       if (e is DioException) {
         debugPrint("❌ [PostService] Status: ${e.response?.statusCode}");
-        debugPrint("❌ [PostService] Response: ${e.response?.data}");
+        debugPrint("❌ [PostService] Response status: ${e.response?.statusCode}");
       }
       rethrow;
     }
@@ -452,11 +440,11 @@ class PostService {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      debugPrint("✅ COMMENT RESPONSE: ${res.data}");
+      debugPrint("✅ COMMENT RESPONSE status: ${res.statusCode}");
     } catch (e) {
       if (e is DioException) {
         debugPrint("❌ STATUS CODE: ${e.response?.statusCode}");
-        debugPrint("❌ RESPONSE: ${e.response?.data}");
+        debugPrint("❌ RESPONSE status: ${e.response?.statusCode}");
       } else {
         debugPrint("❌ ERROR: $e");
       }

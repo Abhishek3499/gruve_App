@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 import 'video_user_info.dart';
 import '../controllers/video_feed_controller.dart';

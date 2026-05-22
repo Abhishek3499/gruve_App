@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import 'package:gruve_app/screens/auth/api/models/edit_profile_response.dart';
+import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';
 import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 
 import '../models/profile_model.dart';

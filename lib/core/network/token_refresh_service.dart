@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 /// Production-level token refresh service with race condition protection
 class TokenRefreshService {
@@ -40,7 +40,7 @@ class TokenRefreshService {
         return null;
       }
 
-      final baseUrl = (dotenv.env['BASE_URL'] ?? '').trim();
+      final baseUrl = EnvironmentConfig.baseUrl.trim();
       if (baseUrl.isEmpty) {
         debugPrint('❌ [TokenRefresh] No base URL configured');
         _refreshCompleter!.complete(null);
@@ -57,16 +57,11 @@ class TokenRefreshService {
         ),
       );
 
-      final previewLength = refreshToken.length < 10 ? refreshToken.length : 10;
       debugPrint('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
-      debugPrint('🔄 [TokenRefresh] Refresh token: ${refreshToken.substring(0, previewLength)}...');
 
       final response = await dio.post(
         '/auth/refresh',
-        data: {
-          'refresh_token': refreshToken,
-          'refreshToken': refreshToken,
-        },
+        data: {'refresh_token': refreshToken, 'refreshToken': refreshToken},
         options: Options(
           headers: {'Content-Type': 'application/json'},
           // Skip auth header for refresh endpoint
@@ -74,9 +69,9 @@ class TokenRefreshService {
         ),
       );
 
-      debugPrint('📊 [TokenRefresh] Refresh response status: ${response.statusCode}');
-      debugPrint('📊 [TokenRefresh] Refresh response data: ${response.data}');
-
+      debugPrint(
+        '📊 [TokenRefresh] Refresh response status: ${response.statusCode}',
+      );
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data is Map<String, dynamic>
             ? response.data as Map<String, dynamic>

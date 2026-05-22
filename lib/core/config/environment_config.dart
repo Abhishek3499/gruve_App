@@ -13,7 +13,9 @@ class EnvironmentConfig {
   static late int _wsTimeout;
 
   static Future<void> initialize() async {
-    await dotenv.load(fileName: ".env");
+    if (!dotenv.isInitialized) {
+      await dotenv.load(fileName: '.env');
+    }
 
     const environment = String.fromEnvironment(
       'ENVIRONMENT',
@@ -22,9 +24,9 @@ class EnvironmentConfig {
     _environment = _parseEnvironment(environment);
     _loadConfiguration();
 
-    debugPrint('[Environment] Initialized: ${_environment.name}');
-    debugPrint('[Environment] Base URL: $_baseUrl');
-    debugPrint('[Environment] WebSocket URL: $_wsUrl');
+    if (kDebugMode) {
+      debugPrint('[Environment] Initialized: ${_environment.name}');
+    }
   }
 
   static Environment _parseEnvironment(String env) {
@@ -45,11 +47,8 @@ class EnvironmentConfig {
   static void _loadConfiguration() {
     switch (_environment) {
       case Environment.production:
-        _baseUrl =
-            dotenv.env['PROD_BASE_URL'] ??
-            'https://gruve-api.hardkore.tech/api/v1/';
-        _wsUrl =
-            dotenv.env['PROD_WS_URL'] ?? 'wss://gruve-api.hardkore.tech/ws';
+        _baseUrl = _envValue('PROD_BASE_URL', fallbackKey: 'BASE_URL');
+        _wsUrl = _envValue('PROD_WS_URL', fallbackKey: 'WS_URL');
         _enableLogging = false;
         _enableDebugTools = false;
         _enableCrashReporting = true;
@@ -57,11 +56,8 @@ class EnvironmentConfig {
         _wsTimeout = 15;
         break;
       case Environment.staging:
-        _baseUrl =
-            dotenv.env['STAGING_BASE_URL'] ??
-            'https://staging-api.gruveapp.com/api/v1/';
-        _wsUrl =
-            dotenv.env['STAGING_WS_URL'] ?? 'wss://staging-ws.gruveapp.com/ws';
+        _baseUrl = _envValue('STAGING_BASE_URL', fallbackKey: 'BASE_URL');
+        _wsUrl = _envValue('STAGING_WS_URL', fallbackKey: 'WS_URL');
         _enableLogging = true;
         _enableDebugTools = false;
         _enableCrashReporting = true;
@@ -69,13 +65,8 @@ class EnvironmentConfig {
         _wsTimeout = 12;
         break;
       case Environment.development:
-        _baseUrl =
-            dotenv.env['DEV_BASE_URL'] ??
-            dotenv.env['BASE_URL'] ??
-            'https://zg7h02xx-8001.inc1.devtunnels.ms/api/v1/';
-        _wsUrl =
-            dotenv.env['DEV_WS_URL'] ??
-            'wss://zg7h02xx-8001.inc1.devtunnels.ms/ws';
+        _baseUrl = _envValue('DEV_BASE_URL', fallbackKey: 'BASE_URL');
+        _wsUrl = _envValue('DEV_WS_URL', fallbackKey: 'WS_URL');
         _enableLogging = true;
         _enableDebugTools = true;
         _enableCrashReporting = false;
@@ -83,6 +74,20 @@ class EnvironmentConfig {
         _wsTimeout = 10;
         break;
     }
+  }
+
+  static String _envValue(String key, {String? fallbackKey}) {
+    final value = dotenv.env[key]?.trim();
+    if (value != null && value.isNotEmpty) return value;
+
+    if (fallbackKey != null) {
+      final fallback = dotenv.env[fallbackKey]?.trim();
+      if (fallback != null && fallback.isNotEmpty) return fallback;
+    }
+
+    throw StateError(
+      '[Environment] Missing $key${fallbackKey == null ? '' : ' or $fallbackKey'} in .env',
+    );
   }
 
   static Environment get environment => _environment;
@@ -147,8 +152,8 @@ class EnvironmentConfig {
 
     debugPrint('[Environment] Configuration:');
     debugPrint('  Environment: ${_environment.name}');
-    debugPrint('  Base URL: $_baseUrl');
-    debugPrint('  WebSocket URL: $_wsUrl');
+    debugPrint('  Base URL configured: ${_baseUrl.isNotEmpty}');
+    debugPrint('  WebSocket URL configured: ${_wsUrl.isNotEmpty}');
     debugPrint('  Logging: $_enableLogging');
     debugPrint('  Debug Tools: $_enableDebugTools');
     debugPrint('  Crash Reporting: $_enableCrashReporting');

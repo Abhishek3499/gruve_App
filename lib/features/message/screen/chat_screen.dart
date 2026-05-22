@@ -6,7 +6,7 @@ import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../services/socket_service.dart';
-import '../../../screens/auth/token_storage.dart';
+import '../../../features/auth/token_storage.dart';
 
 import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';

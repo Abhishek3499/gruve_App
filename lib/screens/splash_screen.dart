@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/screens/intro/intro_screen.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:video_player/video_player.dart';

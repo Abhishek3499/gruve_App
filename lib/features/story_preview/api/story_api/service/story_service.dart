@@ -6,7 +6,7 @@ import 'package:gruve_app/core/network/app_dio.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/model/stroy_response.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
-import 'package:gruve_app/screens/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 
 class StoryService {
@@ -101,7 +101,7 @@ class StoryService {
       );
 
       debugPrint('✅ [StoryService] Status: ${res.statusCode}');
-      debugPrint('📥 [StoryService] Response: ${res.data}');
+      debugPrint('[StoryService] Response status: ${res.statusCode}');
       debugPrint('🏁 [StoryService] ===== CREATE STORY END =====\n');
 
       return CreateStoryResponse.fromJson(res.data);

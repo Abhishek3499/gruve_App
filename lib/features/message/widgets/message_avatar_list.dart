@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../widgets/message_avatar.dart';
 import '../presentation/provider/user_provider.dart';
 import '../utils/user_display_helper.dart';
-import '../../../../widgets/message_avatar_skeleton.dart';
+import 'package:gruve_app/core/widgets/message_avatar_skeleton.dart';
 
 class MessageAvatarList extends StatefulWidget {
   const MessageAvatarList({super.key});
