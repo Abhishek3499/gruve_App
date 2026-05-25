@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
@@ -64,7 +65,9 @@ class AppDio {
               options.headers.containsKey('Authorization') &&
               (options.headers['Authorization']?.toString().trim().isNotEmpty ??
                   false);
-          final skipAuth = options.extra['skipAuth'] == true;
+          final skipAuth =
+              options.extra['skipAuth'] == true ||
+              AuthEndpointPaths.shouldSkipAuth(options.path);
 
           if (!skipAuth && !hasAuthorizationHeader) {
             final token = await TokenStorage.getAccessToken();

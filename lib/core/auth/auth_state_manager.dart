@@ -23,6 +23,11 @@ class AuthStateManager extends ChangeNotifier {
   bool get isLoggingOut => _isLoggingOut;
   String? get currentUserId => _currentUserId;
 
+  Future<String?> getActiveAccessToken() async {
+    if (!_isAuthenticated) return null;
+    return TokenStorage.getAccessToken();
+  }
+
   /// Initializes auth state by checking stored tokens
   Future<void> initialize() async {
     final accessToken = await TokenStorage.getAccessToken();

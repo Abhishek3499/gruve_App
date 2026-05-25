@@ -36,20 +36,20 @@ class MessageService {
         queryParameters: page > 1
             ? {'page': page, 'page_size': pageSize}
             : null,
-        options: forceRefresh
-            ? Options(
-                headers: {
+        options: Options(
+          headers: forceRefresh
+              ? {
                   'Cache-Control': 'no-cache, no-store, must-revalidate',
                   'Pragma': 'no-cache',
                   'Expires': '0',
-                },
-                extra: {
-                  'skipCache': true,
-                  'bypassCache': true,
-                  'noCache': true,
-                },
-              )
-            : null,
+                }
+              : null,
+          extra: {
+            'skipCache': true,
+            'bypassCache': true,
+            'noCache': true,
+          },
+        ),
       );
 
       // Log detailed response information for debugging
@@ -277,18 +277,25 @@ class MessageService {
       return data;
     }
 
-    if (data is Map<String, dynamic>) {
-      if (data['results'] is List) {
-        return data['results'];
+    if (data is Map) {
+      final map = SafeParsingHelpers.safeMapParse(
+        data,
+        context: '_extractConversationList',
+      );
+      if (map['results'] is List) {
+        return map['results'];
       }
-      if (data['conversations'] is List) {
-        return data['conversations'];
+      if (map['conversations'] is List) {
+        return map['conversations'];
       }
-      if (data['data'] is List) {
-        return data['data'];
+      if (map['data'] is List) {
+        return map['data'];
       }
-      if (data['data'] is Map<String, dynamic>) {
-        final nestedData = data['data'] as Map<String, dynamic>;
+      if (map['data'] is Map) {
+        final nestedData = SafeParsingHelpers.safeMapParse(
+          map['data'],
+          context: '_extractConversationList.data',
+        );
         if (nestedData['results'] is List) {
           return nestedData['results'];
         }

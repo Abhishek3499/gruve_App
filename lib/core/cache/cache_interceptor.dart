@@ -73,6 +73,7 @@ class RequestDeduplicator {
 
   final Map<String, Future<dynamic>> _inFlightRequests = {};
   final Map<String, DateTime> _requestTimestamps = {};
+  final Set<String> _requestKeys = <String>{};
 
   /// Get or create a deduplicated request
   Future<T> deduplicate<T>(
@@ -87,6 +88,7 @@ class RequestDeduplicator {
 
     debugPrint('🚀 [RequestDeduplicator] Starting new request: $key');
     _requestTimestamps[key] = DateTime.now();
+    _requestKeys.add(key);
 
     try {
       final requestFuture = requestFunction();
@@ -109,7 +111,7 @@ class RequestDeduplicator {
   Map<String, dynamic> getStats() {
     return {
       'inFlightRequests': _inFlightRequests.length,
-      'requests': _requestTimestamps.keys.toList(),
+      'requests': _requestKeys.toList(),
     };
   }
 
@@ -117,6 +119,7 @@ class RequestDeduplicator {
   void clear() {
     _inFlightRequests.clear();
     _requestTimestamps.clear();
+    _requestKeys.clear();
     debugPrint('🧹 [RequestDeduplicator] Cleared all requests');
   }
 }

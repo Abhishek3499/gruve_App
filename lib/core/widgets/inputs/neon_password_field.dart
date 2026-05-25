@@ -7,6 +7,7 @@ class NeonPasswordField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final Function(String)? onFieldSubmitted;
   final String? Function(String?)? validator; // ✅ ADD
+  final String? errorText;
 
   const NeonPasswordField({
     super.key,
@@ -16,6 +17,7 @@ class NeonPasswordField extends StatefulWidget {
     this.textInputAction,
     this.onFieldSubmitted,
     this.validator, // ✅ ADD
+    this.errorText,
   });
 
   @override
@@ -56,6 +58,8 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveErrorText = widget.errorText ?? _errorText;
+
     return Column(
       // ✅ Column — error bahar dikhega
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +70,7 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
             color: const Color(0xFF461851),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: _errorText != null
+              color: effectiveErrorText != null
                   ? const Color(0xFFFF6B6B) // ✅ red border on error
                   : const Color(0xFFAF50C4),
               width: 1,
@@ -123,11 +127,11 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
         // ✅ Error text field ke bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: _errorText != null
+          child: effectiveErrorText != null
               ? Padding(
                   padding: const EdgeInsets.only(left: 16, top: 5),
                   child: Text(
-                    _errorText!,
+                    effectiveErrorText,
                     style: const TextStyle(
                       color: Color(0xFFFF6B6B),
                       fontSize: 11,

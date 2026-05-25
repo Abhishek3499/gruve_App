@@ -148,7 +148,14 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       const SizedBox(height: 10),
 
                       /// PHONE INPUT
-                      PhoneInputField(controller: _phoneController),
+                      PhoneInputField(
+                        controller: _phoneController,
+                        validator: (value) =>
+                            PhoneNumberValidator.validatePhoneRealTime(
+                              value ?? '',
+                            ),
+                        errorText: authUi.error('phone_login_phone'),
+                      ),
 
                       const SizedBox(height: 36),
 
@@ -179,15 +186,13 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                               return false;
                             }
 
-                            context.read<AuthUiProvider>().setLoading(
-                              AuthLoadingKey.phoneLogin,
-                              true,
-                            );
+                            final authUi = context.read<AuthUiProvider>();
+                            authUi.setLoading(AuthLoadingKey.phoneLogin, true);
 
                             try {
                               await _controller.signIn(phoneNumber: phone);
                             } finally {
-                              context.read<AuthUiProvider>().setLoading(
+                              authUi.setLoading(
                                 AuthLoadingKey.phoneLogin,
                                 false,
                               );

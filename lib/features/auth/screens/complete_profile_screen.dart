@@ -21,6 +21,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final CompleteProfileController controller = CompleteProfileController();
   final TextEditingController _usernameController = TextEditingController();
 
+  String? _profileImageError;
   String? _usernameError;
 
   @override
@@ -49,10 +50,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final username = _usernameController.text.trim();
     final usernameError = SignupValidator.validateUsernameRealTime(username);
 
-    setState(() => _usernameError = usernameError);
+    final profileImageError =
+        selectedImage == null || selectedImage.path.trim().isEmpty
+        ? 'Please add profile image'
+        : null;
 
-    if (selectedImage == null || selectedImage.path.trim().isEmpty) {
-      _showSnackBar('Please add profile image');
+    setState(() {
+      _profileImageError = profileImageError;
+      _usernameError = usernameError;
+    });
+
+    if (profileImageError != null) {
+      _showSnackBar(profileImageError);
       return false;
     }
 
@@ -83,6 +92,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         }
 
         context.read<AuthUiProvider>().setProfileImage(image, bytes);
+        setState(() => _profileImageError = null);
       },
     );
   }
@@ -107,9 +117,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       );
     } finally {
       if (mounted) {
-        context
-            .read<AuthUiProvider>()
-            .setLoading(AuthLoadingKey.completeProfile, false);
+        context.read<AuthUiProvider>().setLoading(
+          AuthLoadingKey.completeProfile,
+          false,
+        );
       }
     }
 
@@ -171,25 +182,93 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 80),
-                  GestureDetector(
-                    onTap: _pickProfileImage,
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.purple,
-                      backgroundImage: selectedImageBytes != null
-                          ? MemoryImage(selectedImageBytes)
-                          : null,
-                      child: selectedImage == null
-                          ? const Icon(Icons.camera_alt, color: Colors.white)
-                          : null,
+                  const SizedBox(height: 20),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: const Text(
+                      'Lorem Ipsum is simply dummy text of the\nprinting and typesetting industry',
+
+                      textAlign: TextAlign.left,
+
+                      style: TextStyle(
+                        color: Colors.white,
+
+                        fontSize: 14,
+
+                        height: 1.4,
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: 40),
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickProfileImage,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.purple,
+                            backgroundImage: selectedImageBytes != null
+                                ? MemoryImage(selectedImageBytes)
+                                : null,
+                            child: selectedImage == null
+                                ? const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+
+                          Positioned(
+                            right: 5,
+                            bottom: 17,
+                            child: Container(
+                              height: 26,
+                              width: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFFB026FF),
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  AppAssets.editbutton,
+                                  height: 15,
+                                  width: 15,
+                                  color: Colors.white,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    child: _profileImageError != null
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Text(
+                              _profileImageError!,
+                              style: const TextStyle(
+                                color: Color(0xFFFF6B6B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 40),
                   NeonTextField(
                     controller: _usernameController,
                     hintText: 'Enter your username',
                     prefixIcon: AppAssets.user2,
+                    validator: (value) =>
+                        SignupValidator.validateUsernameRealTime(value ?? ''),
+                    errorText: _usernameError,
                     onChanged: (value) {
                       if (_usernameError == null) return;
                       setState(() {
@@ -198,21 +277,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       });
                     },
                   ),
-                  if (_usernameError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16, top: 6),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _usernameError!,
-                          style: const TextStyle(
-                            color: Color(0xFFFF6B6B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
                   const SizedBox(height: 40),
                   GetStartedButton(
                     text: 'Complete',

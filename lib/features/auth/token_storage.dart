@@ -35,7 +35,6 @@ class TokenStorage {
     required String refreshToken,
   }) async {
     _log('Saving tokens');
-    await _deleteSecure(_currentUserIdKey);
     await _writeSecure(_accessTokenKey, accessToken);
     await _writeSecure(_refreshTokenKey, refreshToken);
     _log('Tokens saved successfully');

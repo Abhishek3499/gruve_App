@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/debug/debug_logger.dart';
 
 /// Production-grade request deduplication manager
@@ -82,7 +83,7 @@ class RequestDeduplicationManager {
     // reported by Dart as an unhandled async error. The original caller still
     // receives the thrown error from requestFunction; this listener only keeps
     // the shared duplicate future quiet when nobody else is awaiting it.
-    completer.future.catchError((_) {});
+    completer.future.catchError((_) => Response<T>(requestOptions: options));
     final inFlightRequest = _InFlightRequest<T>(completer, options);
     _inFlightRequests[requestKey] = inFlightRequest;
     
@@ -225,15 +226,11 @@ class RequestDeduplicationInterceptor extends Interceptor {
       return true;
     }
 
-    final skipPaths = {
-      '/auth/refresh',
-      '/auth/login',
-      '/auth/signup',
-      '/ws',
-      '/socket.io/',
-    };
-    
-    return skipPaths.any((path) => options.path.contains(path)) ||
-           options.extra['skipDeduplication'] == true;
+    final normalizedPath = AuthEndpointPaths.normalize(options.path);
+
+    return AuthEndpointPaths.shouldSkipAuth(options.path) ||
+        normalizedPath.contains('ws') ||
+        normalizedPath.contains('socket.io') ||
+        options.extra['skipDeduplication'] == true;
   }
 }

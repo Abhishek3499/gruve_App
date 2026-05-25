@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 
@@ -294,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen>
       if (_cameraFlowInProgress) return;
 
       // Check if user is authenticated before opening camera
-      final token = await TokenStorage.getAccessToken();
+      final token = await AuthStateManager().getActiveAccessToken();
       if (!mounted || _isDisposed) return;
       if (token == null || token.isEmpty) {
         // Navigate to sign in screen instead of just showing snackbar

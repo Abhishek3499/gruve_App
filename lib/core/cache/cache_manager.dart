@@ -15,6 +15,12 @@ class CacheEntry<T> {
     required this.ttl,
   }) : createdAt = DateTime.now();
 
+  CacheEntry._({
+    required this.data,
+    required this.ttl,
+    required this.createdAt,
+  });
+
   /// Check if cache entry is still valid
   bool get isValid => DateTime.now().difference(createdAt) < ttl;
 
@@ -34,10 +40,16 @@ class CacheEntry<T> {
   }
 
   /// Deserialize from JSON
-  factory CacheEntry.fromJson(Map<String, dynamic> json, T Function(dynamic) fromJson) {
-    return CacheEntry<T>(
+  factory CacheEntry.fromJson(
+    Map<String, dynamic> json,
+    T Function(dynamic) fromJson,
+  ) {
+    return CacheEntry<T>._(
       data: fromJson(json['data']),
       ttl: Duration(milliseconds: json['ttl']),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        json['createdAt'] is int ? json['createdAt'] as int : 0,
+      ),
     );
   }
 }

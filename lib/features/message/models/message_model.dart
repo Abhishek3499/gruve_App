@@ -33,35 +33,45 @@ class MessageModel {
     String? currentUserId,
     String? receiverUserId,
   }) {
-    debugPrint('📨 [MessageModel] 🔍 Starting message parsing');
-    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📨 MessageModel.fromJson');
-    debugPrint('📨 [MessageModel] 🗺️ Message keys: ${safeJson.keys.toList()}');
-    
-    // Parse nested sender object if present
-    final senderObj = safeJson['sender'] is Map<String, dynamic>
-        ? safeJson['sender'] as Map<String, dynamic>
-        : null;
+    debugPrint('[MessageModel] Starting message parsing');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(
+      json,
+      context: 'MessageModel.fromJson',
+    );
+    debugPrint('[MessageModel] Message keys: ${safeJson.keys.toList()}');
 
-    final senderId = senderObj?['id']?.toString() ??
-        SafeParsingHelpers.safeString(safeJson, const [
-          'sender_id',
-          'senderId',
-          'sender.id',
-          'user.id',
-        ], fallback: '');
-
-    final senderAvatar = senderObj?['avatar']?.toString();
-    final senderName = senderObj?['name']?.toString() ?? senderObj?['username']?.toString();
+    final senderObj = safeJson['sender'] is Map
+        ? Map<String, dynamic>.from(safeJson['sender'] as Map)
+        : <String, dynamic>{};
+    final senderId = _resolveSenderId(safeJson, senderObj);
+    final senderAvatar = SafeParsingHelpers.safeNullableString(
+      senderObj,
+      const [
+        'avatar',
+        'profile_picture',
+        'profilePicture',
+        'profile_image',
+        'profileImage',
+      ],
+    );
+    final senderName = SafeParsingHelpers.safeNullableString(
+      senderObj,
+      const ['name', 'username', 'full_name', 'fullName'],
+    );
 
     final isSent = currentUserId != null && currentUserId.isNotEmpty
         ? senderId == currentUserId
         : receiverUserId != null && receiverUserId.isNotEmpty
-            ? senderId != receiverUserId
-            : SafeParsingHelpers.safeBool(safeJson, const ['is_sent', 'isSent'], fallback: false);
+        ? senderId != receiverUserId
+        : SafeParsingHelpers.safeBool(
+            safeJson,
+            const ['is_sent', 'isSent'],
+            fallback: false,
+          );
 
     return MessageModel(
-      id: SafeParsingHelpers.safeString(safeJson, const ['id', '_id'], fallback: ''),
-      text: SafeParsingHelpers.safeString(safeJson, const ['content', 'text', 'message'], fallback: ''),
+      id: _resolveMessageId(safeJson),
+      text: _resolveMessageText(safeJson),
       timestamp: _parseDateTime(
         safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
       ),
@@ -71,7 +81,12 @@ class MessageModel {
         safeJson,
         const ['image', 'image_url', 'media_url', 'file'],
       ),
-      isRead: SafeParsingHelpers.safeBool(safeJson, const ['is_read', 'isRead'], fallback: false),
+      isPinned: SafeParsingHelpers.safeBool(
+        safeJson,
+        const ['is_pinned', 'isPinned'],
+        fallback: false,
+      ),
+      isRead: _resolveIsRead(safeJson),
       senderAvatar: senderAvatar,
       senderName: senderName,
     );
@@ -117,6 +132,83 @@ class MessageModel {
       senderAvatar: senderAvatar ?? this.senderAvatar,
       senderName: senderName ?? this.senderName,
     );
+  }
+
+  static String _resolveSenderId(
+    Map<String, dynamic> json,
+    Map<String, dynamic> senderObj,
+  ) {
+    final nestedSenderId = SafeParsingHelpers.safeString(
+      senderObj,
+      const ['id', 'user_id', 'userId'],
+      fallback: '',
+    );
+    if (nestedSenderId.isNotEmpty) return nestedSenderId;
+
+    return SafeParsingHelpers.safeString(
+      json,
+      const ['sender_id', 'senderId', 'user_id', 'userId'],
+      fallback: '',
+    );
+  }
+
+  static String _resolveMessageId(Map<String, dynamic> json) {
+    final explicitId = SafeParsingHelpers.safeString(
+      json,
+      const [
+        'id',
+        '_id',
+        'message_id',
+        'messageId',
+        'client_message_id',
+        'clientMessageId',
+      ],
+      fallback: '',
+    );
+    if (explicitId.isNotEmpty) return explicitId;
+
+    final timestamp = json['created_at'] ?? json['createdAt'] ?? json['timestamp'];
+    final sender = json['sender_id'] ?? json['senderId'] ?? json['sender'] ?? '';
+    final content = _resolveMessageText(json);
+    final seed = '$timestamp|$sender|$content';
+    return 'realtime_${seed.hashCode.abs()}';
+  }
+
+  static String _resolveMessageText(Map<String, dynamic> json) {
+    final content = json['content'];
+    if (content is Map) {
+      final contentMap = Map<String, dynamic>.from(content);
+      final text = SafeParsingHelpers.safeString(
+        contentMap,
+        const ['text', 'message', 'value'],
+        fallback: '',
+      );
+      if (text.isNotEmpty) return text;
+    }
+
+    return SafeParsingHelpers.safeString(
+      json,
+      const ['content', 'text', 'message'],
+      fallback: '',
+    );
+  }
+
+  static bool _resolveIsRead(Map<String, dynamic> json) {
+    final explicit = SafeParsingHelpers.safeBool(
+      json,
+      const ['is_read', 'isRead'],
+      fallback: false,
+    );
+    if (explicit) return true;
+
+    final deliveryStatus = json['delivery_status'];
+    if (deliveryStatus is Map) {
+      final deliveryMap = Map<String, dynamic>.from(deliveryStatus);
+      final readAt = deliveryMap['read_at'] ?? deliveryMap['readAt'];
+      return readAt != null && readAt.toString().trim().isNotEmpty;
+    }
+
+    return false;
   }
 
   static DateTime _parseDateTime(dynamic value) {

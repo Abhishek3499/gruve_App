@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -19,7 +20,11 @@ class ForgotPasswordService {
         body: requestData,
       );
 
-      final response = await _dio.post(endpoint, data: requestData);
+      final response = await _dio.post(
+        endpoint,
+        data: requestData,
+        options: AuthEndpointPaths.skipAuthOptions(),
+      );
 
       AuthApiLogger.response('ForgotPassword', response);
 

@@ -14,6 +14,7 @@ import 'package:gruve_app/core/widgets/inputs/neon_password_field.dart';
 
 import 'package:gruve_app/features/auth/screens/email_login_screen.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:provider/provider.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -29,6 +30,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   late final TextEditingController _newPasswordController;
 
   late final TextEditingController _confirmPasswordController;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   void initState() {
@@ -40,6 +43,31 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _newPasswordController = TextEditingController();
 
     _confirmPasswordController = TextEditingController();
+    _newPasswordController.addListener(_validatePasswordsAfterFirstError);
+    _confirmPasswordController.addListener(_validatePasswordsAfterFirstError);
+  }
+
+  void _validatePasswordsAfterFirstError() {
+    if (_passwordError == null && _confirmPasswordError == null) return;
+    _validatePasswords();
+  }
+
+  bool _validatePasswords() {
+    final password = _newPasswordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+    final passwordError = SignupValidator.validatePasswordRealTime(password);
+    final confirmPasswordError =
+        SignupValidator.validateConfirmPasswordRealTime(
+          password,
+          confirmPassword,
+        );
+
+    setState(() {
+      _passwordError = passwordError;
+      _confirmPasswordError = confirmPasswordError;
+    });
+
+    return passwordError == null && confirmPasswordError == null;
   }
 
   @override
@@ -161,6 +189,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           hintText: 'Enter new password',
 
                           controller: _newPasswordController,
+                          validator: (value) =>
+                              SignupValidator.validatePasswordRealTime(
+                                value ?? '',
+                              ),
+                          errorText: _passwordError,
                         ),
 
                         const SizedBox(height: 20),
@@ -187,6 +220,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           hintText: 'Confirm new password',
 
                           controller: _confirmPasswordController,
+                          validator: (value) =>
+                              SignupValidator.validateConfirmPasswordRealTime(
+                                _newPasswordController.text,
+                                value ?? '',
+                              ),
+                          errorText: _confirmPasswordError,
                         ),
 
                         const SizedBox(height: 40),
@@ -200,29 +239,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             isLoading: isLoading,
 
                             onComplete: () async {
+                              final authUi = context.read<AuthUiProvider>();
+                              final messenger = ScaffoldMessenger.of(context);
+                              final nav = Navigator.of(context);
                               final password = _newPasswordController.text
                                   .trim();
 
-                              final confirmPassword = _confirmPasswordController
-                                  .text
-                                  .trim();
-
-                              if (password.isEmpty || confirmPassword.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please fill in all fields'),
-
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-
-                                return false;
-                              }
-
-                              if (password != confirmPassword) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Passwords do not match'),
+                              if (!_validatePasswords()) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      _passwordError ??
+                                          _confirmPasswordError ??
+                                          'Please fill in all fields',
+                                    ),
 
                                     backgroundColor: Colors.red,
                                   ),
@@ -238,7 +268,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               if (token == null) {
                                 if (!mounted) return false;
 
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   const SnackBar(
                                     content: Text(
                                       "Session expired. Please try again.",
@@ -251,7 +281,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 return false;
                               }
 
-                              context.read<AuthUiProvider>().setLoading(
+                              authUi.setLoading(
                                 AuthLoadingKey.resetPassword,
                                 true,
                               );
@@ -266,7 +296,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   password: password,
                                 );
                               } finally {
-                                context.read<AuthUiProvider>().setLoading(
+                                authUi.setLoading(
                                   AuthLoadingKey.resetPassword,
                                   false,
                                 );
@@ -281,15 +311,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                                 if (!mounted) return false;
 
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   SnackBar(content: Text(message)),
                                 );
 
-                                if (!mounted) return false;
+                                if (!nav.mounted) return false;
 
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-
+                                nav.pushAndRemoveUntil(
                                   MaterialPageRoute(
                                     builder: (_) => const EmailLoginScreen(),
                                   ),
@@ -301,7 +329,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               } else {
                                 if (!mounted) return false;
 
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(message),
 

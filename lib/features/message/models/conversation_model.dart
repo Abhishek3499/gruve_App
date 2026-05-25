@@ -197,6 +197,7 @@ class ConversationModel {
   final String id;
   final OtherUser otherUser;
   final LastMessage lastMessage;
+  final bool hasLastMessage;
   final DateTime updatedAt;
   final int unreadCount;
   final String? participant1Id;
@@ -206,6 +207,7 @@ class ConversationModel {
     required this.id,
     required this.otherUser,
     required this.lastMessage,
+    this.hasLastMessage = true,
     required this.updatedAt,
     this.unreadCount = 0,
     this.participant1Id,
@@ -227,8 +229,9 @@ class ConversationModel {
       context: '💬 ConversationModel.otherUser'
     );
     
+    final rawLastMessage = safeJson['last_message'] ?? safeJson['lastMessage'];
     final lastMessageData = SafeParsingHelpers.safeMapParse(
-      safeJson['last_message'] ?? safeJson['lastMessage'] ?? {},
+      rawLastMessage ?? {},
       context: '💬 ConversationModel.lastMessage'
     );
     
@@ -239,6 +242,7 @@ class ConversationModel {
       id: SafeParsingHelpers.safeString(safeJson, const ['id', '_id', 'conversation_id'], fallback: ''),
       otherUser: OtherUser.fromJson(otherUserData),
       lastMessage: LastMessage.fromJson(lastMessageData),
+      hasLastMessage: rawLastMessage is Map && lastMessageData.isNotEmpty,
       updatedAt: _parseDateTime(
         safeJson['updated_at'] ?? safeJson['updatedAt'] ?? safeJson['last_message_at'],
       ),
@@ -252,7 +256,7 @@ class ConversationModel {
     return {
       'id': id,
       'other_user': otherUser.toJson(),
-      'last_message': lastMessage.toJson(),
+      'last_message': hasLastMessage ? lastMessage.toJson() : null,
       'updated_at': updatedAt.toIso8601String(),
       'unread_count': unreadCount,
       'participant_1_id': participant1Id,
@@ -276,7 +280,8 @@ class ConversationModel {
   }
 
   /// Get formatted time ago string for the last message
-  String get lastMessageTimeAgo => lastMessage.timeAgo;
+  String get lastMessageTimeAgo =>
+      hasLastMessage ? lastMessage.timeAgo : timeago.format(updatedAt);
 
   /// Get the other user's name
   String get otherUserName => otherUser.name;
@@ -285,7 +290,8 @@ class ConversationModel {
   String? get otherUserAvatar => otherUser.avatar;
 
   /// Get the last message content
-  String get lastMessageContent => lastMessage.content;
+  String get lastMessageContent =>
+      hasLastMessage ? lastMessage.content : 'No messages yet';
 
   /// Check if conversation has unread messages
   bool get hasUnreadMessages => unreadCount > 0;
@@ -294,6 +300,7 @@ class ConversationModel {
     String? id,
     OtherUser? otherUser,
     LastMessage? lastMessage,
+    bool? hasLastMessage,
     DateTime? updatedAt,
     int? unreadCount,
     String? participant1Id,
@@ -303,6 +310,7 @@ class ConversationModel {
       id: id ?? this.id,
       otherUser: otherUser ?? this.otherUser,
       lastMessage: lastMessage ?? this.lastMessage,
+      hasLastMessage: hasLastMessage ?? this.hasLastMessage,
       updatedAt: updatedAt ?? this.updatedAt,
       unreadCount: unreadCount ?? this.unreadCount,
       participant1Id: participant1Id ?? this.participant1Id,
@@ -317,6 +325,7 @@ class ConversationModel {
         other.id == id &&
         other.otherUser == otherUser &&
         other.lastMessage == lastMessage &&
+        other.hasLastMessage == hasLastMessage &&
         other.updatedAt == updatedAt &&
         other.unreadCount == unreadCount &&
         other.participant1Id == participant1Id &&
@@ -328,6 +337,7 @@ class ConversationModel {
     return id.hashCode ^
         otherUser.hashCode ^
         lastMessage.hashCode ^
+        hasLastMessage.hashCode ^
         updatedAt.hashCode ^
         unreadCount.hashCode ^
         participant1Id.hashCode ^
@@ -336,6 +346,6 @@ class ConversationModel {
 
   @override
   String toString() {
-    return 'ConversationModel(id: $id, otherUser: $otherUser, lastMessage: $lastMessage, updatedAt: $updatedAt, unreadCount: $unreadCount, participant1Id: $participant1Id, participant2Id: $participant2Id)';
+    return 'ConversationModel(id: $id, otherUser: $otherUser, lastMessage: $lastMessage, hasLastMessage: $hasLastMessage, updatedAt: $updatedAt, unreadCount: $unreadCount, participant1Id: $participant1Id, participant2Id: $participant2Id)';
   }
 }

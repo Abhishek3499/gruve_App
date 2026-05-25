@@ -1,25 +1,22 @@
 class PhoneNumberValidator {
-
   // Real-time validation for phone number
   static String? validatePhoneRealTime(String phone) {
-    if (phone.trim().isEmpty) return "Phone number is required";
-    
-    // Remove common formatting characters for validation
-    String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    
-    if (cleanPhone.length < 7) return "Enter valid phone number";
-    
-    if (!RegExp(r'^[0-9+\s-]+$').hasMatch(phone)) {
-      return "Phone number can only contain digits, +, -, and spaces";
+    final trimmed = phone.trim();
+    if (trimmed.isEmpty) return "Phone number is required";
+
+    if (!RegExp(r'^[0-9\s().-]+$').hasMatch(trimmed)) {
+      return "Phone number can only contain digits and basic separators";
     }
-    
-    // Basic international format validation
-    if (cleanPhone.startsWith('+')) {
-      if (cleanPhone.length < 8) return "Enter valid international number";
-    } else {
-      if (cleanPhone.length < 10) return "Enter valid phone number";
+
+    final digitsOnly = trimmed.replaceAll(RegExp(r'\D'), '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      return "Enter valid phone number";
     }
-    
+
+    if (RegExp(r'([().-])\1').hasMatch(trimmed)) {
+      return "Enter valid phone number";
+    }
+
     return null;
   }
 

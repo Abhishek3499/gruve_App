@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart' show debugPrint;
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -27,7 +28,11 @@ class SignupService {
         body: payload,
       );
 
-      final response = await dio.post(endpoint, data: payload);
+      final response = await dio.post(
+        endpoint,
+        data: payload,
+        options: AuthEndpointPaths.skipAuthOptions(),
+      );
 
       AuthApiLogger.response('Signup', response);
 
@@ -45,7 +50,11 @@ class SignupService {
       if (_shouldRetry(e)) {
         try {
           debugPrint("Signup retry attempt");
-          final retryResponse = await dio.post(endpoint, data: payload);
+          final retryResponse = await dio.post(
+            endpoint,
+            data: payload,
+            options: AuthEndpointPaths.skipAuthOptions(),
+          );
           AuthApiLogger.response('SignupRetry', retryResponse);
           final retryResult = SignupResponse.fromJson(retryResponse.data);
           if (retryResult.success == true) return retryResult;

@@ -57,7 +57,9 @@ class LogoutWidget extends StatelessWidget {
                             logoutProvider.clearError(); // Clear any previous logout error
 
                             // Start logout ASAP; it will continue in background after navigation.
-                            logoutProvider.logout(context: context);
+                            final providerContext =
+                                rootNavigatorKey.currentContext ?? context;
+                            logoutProvider.logout(context: providerContext);
 
                             debugPrint("🚀 [LogoutWidget] Navigating to SignIn immediately...");
                             Navigator.of(context).pop(); // Close dialog immediately

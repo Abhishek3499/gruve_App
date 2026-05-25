@@ -1,8 +1,7 @@
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:flutter/foundation.dart';
+
 import '../models/logout_model.dart';
 import '../services/logout_service.dart';
-import 'package:gruve_app/services/socket_service.dart';
-import 'package:flutter/foundation.dart';
 
 class LogoutController {
   final LogoutService _service = LogoutService();
@@ -16,7 +15,7 @@ class LogoutController {
   }) async {
     isLoading = true;
     errorMessage = null;
-    debugPrint("🚪 [Logout] 🚪 Starting logout process");
+    debugPrint('[Logout] Starting logout API process');
 
     try {
       final hasToken =
@@ -24,7 +23,6 @@ class LogoutController {
           (accessToken != null && accessToken.isNotEmpty);
 
       if (hasToken) {
-        debugPrint("📡 [Logout] 📡 Calling logout API");
         final res = await _service.logout(
           accessToken: accessToken,
           refreshToken: refreshToken,
@@ -32,29 +30,20 @@ class LogoutController {
         response = res;
 
         if (!res.success) {
-          debugPrint("❌ [Logout] ❌ Logout API failed: ${res.message}");
           errorMessage = res.message;
+          debugPrint('[Logout] Logout API failed: ${res.message}');
         } else {
-          debugPrint("✅ [Logout] ✅ Logout API successful");
+          debugPrint('[Logout] Logout API successful');
         }
       } else {
-        debugPrint("⚠️ [Logout] ⚠️ No tokens found, skipping API call");
+        debugPrint('[Logout] No tokens found, skipping API call');
       }
     } catch (e) {
-      debugPrint("💥 [Logout] 💥 Logout error: $e");
       errorMessage = e.toString();
+      debugPrint('[Logout] Logout API error: $e');
     } finally {
-      // 🔌 DISCONNECT WEBSOCKET ON LOGOUT
-      debugPrint("🔌 [Logout] 🔌 Disconnecting websocket");
-      SocketService().disconnect();
-      debugPrint("🧹 [Logout] 🧹 WebSocket disconnected");
-      
-      debugPrint("🗑️ [Logout] 🗑️ Clearing tokens");
-      await TokenStorage.clearTokens();
-      debugPrint("✅ [Logout] ✅ Tokens cleared successfully");
+      isLoading = false;
+      debugPrint('[Logout] Logout API process completed');
     }
-
-    isLoading = false;
-    debugPrint("🏁 [Logout] 🏁 Logout process completed");
   }
 }

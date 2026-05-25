@@ -206,7 +206,7 @@ class _SenderAvatar extends StatelessWidget {
         radius: radius,
         backgroundImage: imageProvider,
       ),
-      placeholder: (_, __) => Shimmer.fromColors(
+      placeholder: (context, url) => Shimmer.fromColors(
         baseColor: Colors.white12,
         highlightColor: Colors.white24,
         child: CircleAvatar(radius: radius, backgroundColor: Colors.white12),

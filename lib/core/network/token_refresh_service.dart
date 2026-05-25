@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 /// Production-level token refresh service with race condition protection
 class TokenRefreshService {
@@ -62,10 +64,8 @@ class TokenRefreshService {
       final response = await dio.post(
         '/auth/refresh',
         data: {'refresh_token': refreshToken, 'refreshToken': refreshToken},
-        options: Options(
+        options: AuthEndpointPaths.skipAuthOptions(
           headers: {'Content-Type': 'application/json'},
-          // Skip auth header for refresh endpoint
-          extra: {'skipAuth': true},
         ),
       );
 
@@ -95,6 +95,7 @@ class TokenRefreshService {
             accessToken: newAccessToken,
             refreshToken: newRefreshToken,
           );
+          await SocketService().reconnectWithLatestTokenIfActive();
 
           debugPrint('✅ [TokenRefresh] Tokens refreshed successfully');
           _refreshCompleter!.complete({

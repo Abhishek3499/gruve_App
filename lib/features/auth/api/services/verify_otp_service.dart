@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart' show debugPrint;
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -53,7 +54,11 @@ class VerifyOtpService {
         body: body,
       );
 
-      final response = await dio.post(endpoint, data: body);
+      final response = await dio.post(
+        endpoint,
+        data: body,
+        options: AuthEndpointPaths.skipAuthOptions(),
+      );
 
       AuthApiLogger.response('VerifyOtp', response);
 

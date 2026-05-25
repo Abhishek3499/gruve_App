@@ -390,8 +390,7 @@ class SocketService {
       "🎫 [SocketService] 🎫 Token preview: ${token.substring(0, previewLength)}...",
     );
 
-    // The reconnect manager will handle token internally
-    await _reconnectManager.connect();
+    await _reconnectManager.connect(token);
     debugPrint(
       "[SOCKET SERVICE] connect() completed state=${_reconnectManager.state.name}",
     );
@@ -470,6 +469,15 @@ class SocketService {
   /// Reset connection (useful for token changes)
   Future<void> reset() async {
     debugPrint("🔄 [SocketService] 🔄 RESETTING CONNECTION");
+    await _reconnectManager.reset();
+  }
+
+  Future<void> reconnectWithLatestTokenIfActive() async {
+    if (!_reconnectManager.isConnected && !_reconnectManager.isConnecting) {
+      return;
+    }
+
+    debugPrint('[SocketService] Refreshing socket auth with latest token');
     await _reconnectManager.reset();
   }
 

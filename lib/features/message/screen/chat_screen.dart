@@ -291,13 +291,19 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('🔥 SOCKET DATA => $data');
 
       try {
-        final incomingConversationId = data['conversation_id'];
-
-        if (incomingConversationId != _conversationId) {
+        final messageData = _extractRealtimeMessagePayload(data);
+        if (messageData == null) {
+          debugPrint('[ChatScreen] Socket payload skipped: no message content');
           return;
         }
 
-        final messageData = data['data'] as Map<String, dynamic>? ?? data;
+        final incomingConversationId = _extractConversationId(data);
+
+        if (incomingConversationId.isNotEmpty &&
+            incomingConversationId != _conversationId) {
+          return;
+        }
+
         _messageController.addRealtimeMessage(messageData);
 
         debugPrint('✅ REALTIME MESSAGE ADDED');
@@ -307,6 +313,47 @@ class _ChatScreenState extends State<ChatScreen> {
         debugPrint('💥 SOCKET ERROR => $e');
       }
     });
+  }
+
+  String _extractConversationId(Map<String, dynamic> data) {
+    final direct = data['conversation_id'] ?? data['conversationId'];
+    if (direct != null && direct.toString().trim().isNotEmpty) {
+      return direct.toString().trim();
+    }
+
+    final nested = data['data'];
+    if (nested is Map) {
+      final nestedId = nested['conversation_id'] ?? nested['conversationId'];
+      if (nestedId != null && nestedId.toString().trim().isNotEmpty) {
+        return nestedId.toString().trim();
+      }
+    }
+
+    return '';
+  }
+
+  Map<String, dynamic>? _extractRealtimeMessagePayload(
+    Map<String, dynamic> data,
+  ) {
+    final nested = data['data'];
+    final payload = nested is Map
+        ? Map<String, dynamic>.from(nested)
+        : Map<String, dynamic>.from(data);
+
+    payload.putIfAbsent('conversation_id', () => _extractConversationId(data));
+
+    final hasMessageText =
+        payload['content'] != null ||
+        payload['text'] != null ||
+        payload['message'] != null;
+    final type = data['type']?.toString().toLowerCase() ?? '';
+    final looksLikeMessage =
+        hasMessageText ||
+        type.contains('message') ||
+        payload.containsKey('sender_id') ||
+        payload.containsKey('senderId');
+
+    return looksLikeMessage ? payload : null;
   }
 
   void _showMessagePopup(
@@ -412,6 +459,9 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 
       debugPrint('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      await _messageController.fetchInitialMessages();
+      _scrollToBottom();
     } catch (e) {
       debugPrint('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
       if (mounted) {

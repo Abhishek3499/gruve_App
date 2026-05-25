@@ -40,7 +40,7 @@ class MessageProvider extends ChangeNotifier {
       debugPrint('🔥 SOCKET MESSAGE RECEIVED: $data');
 
       try {
-        final conversationId = data['conversation_id'];
+        final conversationId = _extractConversationId(data);
         final eventKey = _realtimeEventKey(data, conversationId);
         if (!_seenRealtimeEventKeys.add(eventKey)) {
           debugPrint('🔒 [MessageProvider] Duplicate realtime event skipped');
@@ -87,6 +87,23 @@ class MessageProvider extends ChangeNotifier {
     return '$conversationId|$messageId|$timestamp|${data['type'] ?? ''}';
   }
 
+  String _extractConversationId(Map<String, dynamic> data) {
+    final direct = data['conversation_id'] ?? data['conversationId'];
+    if (direct != null && direct.toString().trim().isNotEmpty) {
+      return direct.toString().trim();
+    }
+
+    final nested = data['data'];
+    if (nested is Map) {
+      final nestedId = nested['conversation_id'] ?? nested['conversationId'];
+      if (nestedId != null && nestedId.toString().trim().isNotEmpty) {
+        return nestedId.toString().trim();
+      }
+    }
+
+    return '';
+  }
+
   // State variables
   List<ConversationModel> _conversations = [];
   bool _isLoading = false;
@@ -94,7 +111,6 @@ class MessageProvider extends ChangeNotifier {
   bool _isRefreshing = false;
   String? _error;
   DateTime? _lastFetchTime;
-  static const _cacheValidDuration = Duration(minutes: 5);
   final Map<String, Future<void>> _inFlightFetches = {};
   final Set<String> _seenRealtimeEventKeys = <String>{};
 

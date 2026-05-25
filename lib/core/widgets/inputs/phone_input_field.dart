@@ -5,6 +5,7 @@ class PhoneInputField extends StatefulWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final String? Function(String?)? validator; // ✅
+  final String? errorText;
   final TextInputAction? textInputAction;
   final Function(String)? onFieldSubmitted;
 
@@ -13,6 +14,7 @@ class PhoneInputField extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.validator,
+    this.errorText,
     this.textInputAction,
     this.onFieldSubmitted,
   });
@@ -54,6 +56,8 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveErrorText = widget.errorText ?? _errorText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -72,7 +76,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             ),
 
             border: Border.all(
-              color: _errorText != null
+              color: effectiveErrorText != null
                   ? const Color(0xFFFF6B6B)
                   : const Color(0xFFB86AD0),
               width: 1.2,
@@ -167,11 +171,11 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
         // ✅ Error bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
-          child: _errorText != null
+          child: effectiveErrorText != null
               ? Padding(
                   padding: const EdgeInsets.only(left: 16, top: 5),
                   child: Text(
-                    _errorText!,
+                    effectiveErrorText,
                     style: const TextStyle(
                       color: Color(0xFFFF6B6B),
                       fontSize: 11,

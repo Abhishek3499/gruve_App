@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 
 import '../models/login_model.dart';
 import '../services/login_services.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
 
 class EmailSignInController {
   final EmailSignInService _service = EmailSignInService();
@@ -35,14 +35,14 @@ class EmailSignInController {
         final accessToken = res.data!.accessToken;
         final refreshToken = res.data!.refreshToken;
 
-        await TokenStorage.saveTokens(
+        await AuthStateManager().onAuthSuccess(
           accessToken: accessToken,
           refreshToken: refreshToken,
+          userId: res.data!.userId,
         );
         ProfileIdentityService.instance.clearCachedLoggedInUserId();
 
         if (res.data!.userId.trim().isNotEmpty) {
-          await TokenStorage.saveCurrentUserId(res.data!.userId);
           ProfileIdentityService.instance.primeLoggedInUserId(res.data!.userId);
         }
 

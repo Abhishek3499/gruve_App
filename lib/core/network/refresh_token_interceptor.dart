@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
@@ -9,22 +10,13 @@ class RefreshTokenInterceptor extends Interceptor {
   final TokenRefreshService _refreshService = TokenRefreshService();
   final Dio _dio;
 
-  /// Set of request paths that should not trigger token refresh
-  final Set<String> _skipRefreshPaths = {
-    '/auth/login',
-    '/auth/signup',
-    '/auth/refresh',
-    '/auth/logout',
-    '/auth/forgot-password',
-    '/auth/reset-password',
-  };
-
   RefreshTokenInterceptor(this._dio);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // Skip auth for certain endpoints
-    if (options.extra['skipAuth'] == true) {
+    if (options.extra['skipAuth'] == true ||
+        AuthEndpointPaths.shouldSkipAuth(options.path)) {
       handler.next(options);
       return;
     }
@@ -125,8 +117,8 @@ class RefreshTokenInterceptor extends Interceptor {
 
   /// Checks if the request path should skip token refresh
   bool _shouldSkipRefresh(RequestOptions options) {
-    final path = options.path;
-    return _skipRefreshPaths.any((skipPath) => path.contains(skipPath));
+    return options.extra['skipAuth'] == true ||
+        AuthEndpointPaths.shouldSkipAuth(options.path);
   }
 
   /// Clones request options for retry

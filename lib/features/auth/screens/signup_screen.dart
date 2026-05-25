@@ -18,27 +18,18 @@ import 'package:gruve_app/core/widgets/inputs/neon_password_field.dart';
 
 import '../api/controllers/signup_controller.dart';
 import '../presentation/provider/auth_ui_provider.dart';
+import '../validators/phone_number_validator.dart';
 import '../validators/signup_validator.dart';
 import 'package:provider/provider.dart';
 
-
-
 class SignupScreen extends StatefulWidget {
-
   const SignupScreen({super.key});
 
-
-
   @override
-
   State<SignupScreen> createState() => _SignupScreenState();
-
 }
 
-
-
 class _SignupScreenState extends State<SignupScreen> {
-
   // ── Controllers ──────────────────────────────────────────
 
   final _nameController = TextEditingController();
@@ -48,8 +39,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
 
   final _confirmPasswordController = TextEditingController();
-
-
 
   // ── Focus Nodes ──────────────────────────────────────────
 
@@ -62,11 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordFocus = FocusNode();
   final _formKey = GlobalKey<FormState>();
 
-
-
   // ── Real-time Validation State ───────────────────────────
-
-
 
   // ── Other State ──────────────────────────────────────────
 
@@ -75,7 +60,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final GlobalKey _genderFieldKey = GlobalKey();
 
   @override
-
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -84,87 +68,62 @@ class _SignupScreenState extends State<SignupScreen> {
     _setupRealTimeValidation();
   }
 
-
-
   void _setupRealTimeValidation() {
-
     // Name field real-time validation
 
     _nameController.addListener(() {
+      final error = SignupValidator.validateFullNameRealTime(
+        _nameController.text,
+      );
 
-      final error = SignupValidator.validateFullNameRealTime(_nameController.text);
-
-        context.read<AuthUiProvider>().setError('signup_name', error);
-
+      context.read<AuthUiProvider>().setError('signup_name', error);
     });
-
-
 
     // Identifier field real-time validation
 
     _identifierController.addListener(() {
-
       final error = _validateIdentifier(_identifierController.text);
 
-        context.read<AuthUiProvider>().setError('signup_identifier', error);
-
+      context.read<AuthUiProvider>().setError('signup_identifier', error);
     });
-
-
 
     // Password field real-time validation
 
     _passwordController.addListener(() {
+      final error = SignupValidator.validatePasswordRealTime(
+        _passwordController.text,
+      );
 
-      final error = SignupValidator.validatePasswordRealTime(_passwordController.text);
-
-        context.read<AuthUiProvider>().setError('signup_password', error);
+      context.read<AuthUiProvider>().setError('signup_password', error);
 
       // Revalidate confirm password when password changes
 
       if (_confirmPasswordController.text.isNotEmpty) {
-
         final confirmError = SignupValidator.validateConfirmPasswordRealTime(
+          _passwordController.text,
 
-          _passwordController.text, 
-
-          _confirmPasswordController.text
-
+          _confirmPasswordController.text,
         );
 
-          context.read<AuthUiProvider>().setError(
-            'signup_confirm_password',
-            confirmError,
-          );
-
+        context.read<AuthUiProvider>().setError(
+          'signup_confirm_password',
+          confirmError,
+        );
       }
-
     });
-
-
 
     // Confirm password field real-time validation
 
     _confirmPasswordController.addListener(() {
-
       final error = SignupValidator.validateConfirmPasswordRealTime(
+        _passwordController.text,
 
-        _passwordController.text, 
-
-        _confirmPasswordController.text
-
+        _confirmPasswordController.text,
       );
 
-        context.read<AuthUiProvider>().setError(
-          'signup_confirm_password',
-          error,
-        );
-
+      context.read<AuthUiProvider>().setError('signup_confirm_password', error);
     });
-
   }
-
-
 
   String? _validateIdentifier(String identifier) {
     final trimmed = identifier.trim();
@@ -173,13 +132,7 @@ class _SignupScreenState extends State<SignupScreen> {
       return SignupValidator.validateEmailRealTime(trimmed);
     }
 
-    if (trimmed.isEmpty) return 'Phone number is required';
-    if (trimmed.length < 7) return 'Enter valid phone number';
-    if (!RegExp(r'^[0-9+\s-]+$').hasMatch(trimmed)) {
-      return 'Phone number can only contain digits, +, -, and spaces';
-    }
-
-    return null;
+    return PhoneNumberValidator.validatePhoneRealTime(trimmed);
   }
 
   bool _validateBeforeSubmit() {
@@ -190,10 +143,11 @@ class _SignupScreenState extends State<SignupScreen> {
     final passwordError = SignupValidator.validatePasswordRealTime(
       _passwordController.text,
     );
-    final confirmPasswordError = SignupValidator.validateConfirmPasswordRealTime(
-      _passwordController.text,
-      _confirmPasswordController.text,
-    );
+    final confirmPasswordError =
+        SignupValidator.validateConfirmPasswordRealTime(
+          _passwordController.text,
+          _confirmPasswordController.text,
+        );
 
     final authUi = context.read<AuthUiProvider>();
     authUi.setErrors({
@@ -232,9 +186,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   @override
-
   void dispose() {
-
     _nameController.dispose();
 
     _identifierController.dispose();
@@ -252,13 +204,9 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordFocus.dispose();
 
     super.dispose();
-
   }
 
-
-
   @override
-
   Widget build(BuildContext context) {
     final authUi = context.watch<AuthUiProvider>();
     final isLoading = authUi.isLoading(AuthLoadingKey.signup);
@@ -271,55 +219,38 @@ class _SignupScreenState extends State<SignupScreen> {
     final confirmPasswordError = authUi.error('signup_confirm_password');
 
     return Scaffold(
-
       resizeToAvoidBottomInset: true,
 
       backgroundColor: Colors.black,
 
       body: VideoBackground(
-
         videoPath: AppAssets.splashVideo,
 
         overlayOpacity: 0.85,
 
         child: LayoutBuilder(
-
           builder: (context, constraints) {
-
             return Padding(
-
               padding: const EdgeInsets.symmetric(horizontal: 24),
 
               child: Form(
-
                 // ✅ Form wrap
-
                 key: _formKey,
 
                 autovalidateMode: AutovalidateMode.onUserInteraction,
 
                 child: SingleChildScrollView(
-
                   child: Column(
-
                     children: [
-
                       SizedBox(height: constraints.maxHeight * 0.15),
 
-
-
                       // TITLE
-
                       Align(
-
                         alignment: AlignmentDirectional.topStart,
 
                         child: RichText(
-
                           text: const TextSpan(
-
                             style: TextStyle(
-
                               color: Colors.white,
 
                               fontSize: 28,
@@ -329,67 +260,43 @@ class _SignupScreenState extends State<SignupScreen> {
                               letterSpacing: 1.0,
 
                               fontFamily: AppAssets.syncopateFont,
-
                             ),
 
                             children: [
-
                               TextSpan(text: 'Sign'),
 
                               TextSpan(
-
                                 text: ' Up',
 
                                 style: TextStyle(color: Color(0xFFB86AD0)),
-
                               ),
-
                             ],
-
                           ),
-
                         ),
-
                       ),
-
-
 
                       const SizedBox(height: 12),
 
-
-
                       const Align(
-
                         alignment: Alignment.centerLeft,
 
                         child: Text(
-
                           'Create Your Account',
 
                           style: TextStyle(color: Colors.white, fontSize: 16),
-
                         ),
-
                       ),
-
-
 
                       const SizedBox(height: 38),
 
-
-
                       // ── FULL NAME ───────────────────────────────────
-
                       _buildLabel('Full Name'),
 
                       Column(
-
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
-
                           NeonTextField(
-
                             controller: _nameController,
 
                             hintText: 'Skyler',
@@ -401,71 +308,48 @@ class _SignupScreenState extends State<SignupScreen> {
                             textInputAction: TextInputAction.next,
 
                             onFieldSubmitted: (_) {
-
-                              FocusScope.of(context).requestFocus(_identifierFocus);
-
+                              FocusScope.of(
+                                context,
+                              ).requestFocus(_identifierFocus);
                             },
-
                           ),
 
                           if (nameError != null)
-
                             Padding(
-
                               padding: const EdgeInsets.only(left: 16, top: 5),
 
                               child: Text(
-
                                 nameError,
 
                                 style: const TextStyle(
-
                                   color: Color(0xFFFF6B6B),
 
                                   fontSize: 11,
 
                                   fontWeight: FontWeight.w500,
-
                                 ),
-
                               ),
-
                             ),
-
                         ],
-
                       ),
-
-
 
                       const SizedBox(height: 20),
 
-
-
                       // ── TOGGLE ──────────────────────────────────────
-
                       _buildContactToggle(),
 
                       const SizedBox(height: 12),
 
-
-
                       // ── EMAIL / PHONE ───────────────────────────────
-
                       _buildLabel(useEmail ? 'Email' : 'Phone Number'),
 
                       Column(
-
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
-
                           // ✅ Toggle ke basis pe alag widget
-
                           if (useEmail)
-
                             NeonTextField(
-
                               controller: _identifierController,
 
                               hintText: 'example@gmail.com',
@@ -479,19 +363,14 @@ class _SignupScreenState extends State<SignupScreen> {
                               textInputAction: TextInputAction.next,
 
                               onFieldSubmitted: (_) {
-
-                                FocusScope.of(context).requestFocus(_passwordFocus);
-
+                                FocusScope.of(
+                                  context,
+                                ).requestFocus(_passwordFocus);
                               },
-
                             )
-
                           else
-
                             PhoneInputField(
-
                               // ✅ phone wala widget
-
                               controller: _identifierController,
 
                               focusNode: _identifierFocus,
@@ -499,105 +378,74 @@ class _SignupScreenState extends State<SignupScreen> {
                               textInputAction: TextInputAction.next,
 
                               onFieldSubmitted: (_) {
-
-                                FocusScope.of(context).requestFocus(_passwordFocus);
-
+                                FocusScope.of(
+                                  context,
+                                ).requestFocus(_passwordFocus);
                               },
-
                             ),
 
                           if (identifierError != null)
-
                             Padding(
-
                               padding: const EdgeInsets.only(left: 16, top: 5),
 
                               child: Text(
-
                                 identifierError,
 
                                 style: const TextStyle(
-
                                   color: Color(0xFFFF6B6B),
 
                                   fontSize: 11,
 
                                   fontWeight: FontWeight.w500,
-
                                 ),
-
                               ),
-
                             ),
-
                         ],
-
                       ),
-
-
 
                       const SizedBox(height: 20),
 
-
-
                       // ── GENDER ──────────────────────────────────────
-
                       _buildLabel('Gender'),
 
                       GestureDetector(
-
                         key: _genderFieldKey,
 
                         onTap: () async {
-
-                          context.read<AuthUiProvider>().touchGender();
+                          final authUi = context.read<AuthUiProvider>();
+                          authUi.touchGender();
 
                           await _showGenderMenu();
-
                         },
 
                         child: Column(
-
                           crossAxisAlignment: CrossAxisAlignment.start,
 
                           children: [
-
                             Container(
-
                               width: double.infinity,
 
                               height: 56,
 
                               decoration: BoxDecoration(
-
                                 borderRadius: BorderRadius.circular(28),
 
                                 border: Border.all(
-
                                   color: genderError != null
-
                                       ? const Color(0xFFFF6B6B) // ✅ red
-
                                       : const Color(0xFFB86AD0),
-
                                 ),
 
                                 color: const Color(0xFF461851),
-
                               ),
 
                               padding: const EdgeInsets.symmetric(
-
                                 horizontal: 16,
-
                               ),
 
                               child: Row(
-
                                 children: [
-
                                   Image.asset(
-
                                     AppAssets.user2,
 
                                     width: 22,
@@ -605,111 +453,71 @@ class _SignupScreenState extends State<SignupScreen> {
                                     height: 22,
 
                                     color: const Color(0x99FF00FF),
-
                                   ),
 
                                   const SizedBox(width: 12),
 
                                   Expanded(
-
                                     child: Text(
-
                                       selectedGender ?? 'Select Gender',
 
                                       style: TextStyle(
-
                                         color: selectedGender == null
-
                                             ? Colors.white54
-
                                             : Colors.white,
-
                                       ),
-
                                     ),
-
                                   ),
 
                                   const Icon(
-
                                     Icons.arrow_drop_down,
 
                                     color: Colors.white,
-
                                   ),
-
                                 ],
-
                               ),
-
                             ),
 
-
-
                             // ✅ Gender error bahar
-
                             AnimatedSize(
-
                               duration: const Duration(milliseconds: 200),
 
                               child: genderError != null
-
                                   ? Padding(
-
                                       padding: const EdgeInsets.only(
-
                                         left: 16,
 
                                         top: 5,
-
                                       ),
 
                                       child: Text(
-
                                         genderError,
 
                                         style: const TextStyle(
-
                                           color: Color(0xFFFF6B6B),
 
                                           fontSize: 11,
 
                                           fontWeight: FontWeight.w500,
-
                                         ),
-
                                       ),
-
                                     )
-
                                   : const SizedBox.shrink(),
-
                             ),
-
                           ],
-
                         ),
-
                       ),
-
-
 
                       const SizedBox(height: 20),
 
-
-
                       // ── PASSWORD ────────────────────────────────────
-
                       _buildLabel('Password'),
 
                       Column(
-
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
-
                           NeonPasswordField(
-
                             controller: _passwordController,
 
                             hintText: '********',
@@ -719,63 +527,41 @@ class _SignupScreenState extends State<SignupScreen> {
                             textInputAction: TextInputAction.next,
 
                             onFieldSubmitted: (_) {
-
                               FocusScope.of(
-
                                 context,
-
                               ).requestFocus(_confirmPasswordFocus);
-
                             },
-
                           ),
 
                           if (passwordError != null)
-
                             Padding(
-
                               padding: const EdgeInsets.only(left: 16, top: 5),
 
                               child: Text(
-
                                 passwordError,
 
                                 style: const TextStyle(
-
                                   color: Color(0xFFFF6B6B),
 
                                   fontSize: 11,
 
                                   fontWeight: FontWeight.w500,
-
                                 ),
-
                               ),
-
                             ),
-
                         ],
-
                       ),
-
-
 
                       const SizedBox(height: 20),
 
-
-
                       // ── CONFIRM PASSWORD ────────────────────────────
-
                       _buildLabel('Confirm Password'),
 
                       Column(
-
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
-
                           NeonPasswordField(
-
                             controller: _confirmPasswordController,
 
                             hintText: '********',
@@ -783,84 +569,62 @@ class _SignupScreenState extends State<SignupScreen> {
                             focusNode: _confirmPasswordFocus,
 
                             textInputAction: TextInputAction.done,
-
                           ),
 
                           if (confirmPasswordError != null)
-
                             Padding(
-
                               padding: const EdgeInsets.only(left: 16, top: 5),
 
                               child: Text(
-
                                 confirmPasswordError,
 
                                 style: const TextStyle(
-
                                   color: Color(0xFFFF6B6B),
 
                                   fontSize: 11,
 
                                   fontWeight: FontWeight.w500,
-
                                 ),
-
                               ),
-
                             ),
-
                         ],
-
                       ),
-
-
 
                       const SizedBox(height: 30),
 
-
-
                       // ── SIGN UP BUTTON ──────────────────────────────
-
                       GetStartedButton(
-
                         text: 'Sign Up',
 
                         isLoading: isLoading,
 
                         onComplete: () async {
-
                           if (!mounted) return false;
 
                           // ✅ Gender touched mark — error dikhao agar empty
 
-                          context.read<AuthUiProvider>().touchGender();
+                          final authUi = context.read<AuthUiProvider>();
+                          final messenger = ScaffoldMessenger.of(context);
+                          final nav = Navigator.of(context);
+                          authUi.touchGender();
 
+                          final isValid = _validateBeforeSubmit();
 
-                        final isValid = _validateBeforeSubmit();
+                          if (!isValid) {
+                            if (!mounted) return false;
 
-                        if (!isValid) {
-                          
-                          if (!mounted) return false;
-                             
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(content: Text(_firstSignupError())),
                             );
                             return false;
                           }
 
-                          context.read<AuthUiProvider>().setLoading(
-                            AuthLoadingKey.signup,
-                            true,
-                          );
+                          authUi.setLoading(AuthLoadingKey.signup, true);
 
                           final identifier = _identifierController.text.trim();
 
-
-
                           try {
                             await controller.signup(
-
                               fullName: _nameController.text.trim(),
 
                               identifier: identifier,
@@ -868,47 +632,29 @@ class _SignupScreenState extends State<SignupScreen> {
                               password: _passwordController.text.trim(),
 
                               gender: selectedGender,
-
                             );
                           } finally {
                             if (mounted) {
-                              context.read<AuthUiProvider>().setLoading(
-                                AuthLoadingKey.signup,
-                                false,
-                              );
+                              authUi.setLoading(AuthLoadingKey.signup, false);
                             }
                           }
 
-
-
                           if (!mounted) return false;
 
-
-
                           if (controller.errorMessage != null) {
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-
+                            messenger.showSnackBar(
                               SnackBar(content: Text(controller.errorMessage!)),
-
                             );
 
                             return false;
-
                           }
-
-
 
                           if (!mounted) return false;
 
-                          Navigator.push(
-
-                            context,
-
+                          if (!nav.mounted) return false;
+                          nav.push(
                             MaterialPageRoute(
-
                               builder: (context) => OtpScreen(
-
                                 identifier: identifier,
 
                                 type: useEmail ? "email" : "phone",
@@ -916,7 +662,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 title: 'Enter your Code',
 
                                 description:
-
                                     'Enter the code sent to $identifier',
 
                                 buttonText: 'Continue',
@@ -924,226 +669,143 @@ class _SignupScreenState extends State<SignupScreen> {
                                 isLogin: false,
 
                                 onVerified: () {
-
                                   Navigator.push(
-
                                     context,
 
                                     MaterialPageRoute(
-
                                       builder: (_) =>
-
                                           const CompleteProfileScreen(),
-
                                     ),
-
                                   );
-
                                 },
-
                               ),
-
                             ),
-
                           );
 
                           return true;
-
                         },
-
                       ),
-
-
 
                       const SizedBox(height: 35),
 
-
-
                       GestureDetector(
-
                         onTap: () => Navigator.pop(context),
 
                         child: const Text(
-
                           'Already have an account? Sign In',
 
                           style: TextStyle(color: Colors.white),
-
                         ),
-
                       ),
 
-
-
                       const SizedBox(height: 20),
-
                     ],
-
                   ),
-
                 ),
-
               ),
-
             );
-
           },
-
         ),
-
       ),
-
     );
-
   }
 
-
-
   Widget _buildLabel(String text) {
-
     return Padding(
-
       padding: const EdgeInsets.only(bottom: 10),
 
       child: Align(
-
         alignment: Alignment.centerLeft,
 
         child: Text(
-
           text,
 
           style: const TextStyle(color: Colors.white, fontSize: 16),
-
         ),
-
       ),
-
     );
-
   }
 
-
-
   Widget _buildContactToggle() {
-
     return Container(
-
       width: double.infinity,
 
       padding: const EdgeInsets.all(4),
 
       decoration: BoxDecoration(
-
         color: const Color(0xFF461851),
 
         borderRadius: BorderRadius.circular(26),
 
         border: Border.all(color: const Color(0xFFB86AD0)),
-
       ),
 
       child: Row(
-
         children: [
-
           Expanded(
-
             child: _buildToggleOption(
-
               title: 'Email',
 
               isSelected: context.watch<AuthUiProvider>().useEmail,
 
               onTap: () => _setContactMode(true),
-
             ),
-
           ),
 
           Expanded(
-
             child: _buildToggleOption(
-
               title: 'Phone',
 
               isSelected: !context.watch<AuthUiProvider>().useEmail,
 
               onTap: () => _setContactMode(false),
-
             ),
-
           ),
-
         ],
-
       ),
-
     );
-
   }
 
-
-
   Widget _buildToggleOption({
-
     required String title,
 
     required bool isSelected,
 
     required VoidCallback onTap,
-
   }) {
-
     return GestureDetector(
-
       onTap: onTap,
 
       child: AnimatedContainer(
-
         duration: const Duration(milliseconds: 180),
 
         height: 44,
 
         decoration: BoxDecoration(
-
           color: isSelected ? const Color(0xFFB86AD0) : Colors.transparent,
 
           borderRadius: BorderRadius.circular(22),
-
         ),
 
         alignment: Alignment.center,
 
         child: Text(
-
           title,
 
           style: TextStyle(
-
             color: Colors.white,
 
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-
           ),
-
         ),
-
       ),
-
     );
-
   }
 
-
-
   Future<void> _showGenderMenu() async {
-
     final context = _genderFieldKey.currentContext;
 
     if (context == null) return;
-
-
 
     final RenderBox box = context.findRenderObject()! as RenderBox;
 
@@ -1151,16 +813,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final Size size = box.size;
 
-
-
     final selected = await showMenu<String>(
-
       context: this.context,
 
       color: const Color(0xFF461851),
 
       position: RelativeRect.fromLTRB(
-
         topLeft.dx,
 
         topLeft.dy + size.height + 6,
@@ -1168,46 +826,31 @@ class _SignupScreenState extends State<SignupScreen> {
         topLeft.dx + size.width,
 
         0,
-
       ),
 
       items: const [
-
         PopupMenuItem(
-
           value: 'Male',
 
           child: Text('Male', style: TextStyle(color: Colors.white)),
-
         ),
 
         PopupMenuItem(
-
           value: 'Female',
 
           child: Text('Female', style: TextStyle(color: Colors.white)),
-
         ),
 
         PopupMenuItem(
-
           value: 'Other',
 
           child: Text('Other', style: TextStyle(color: Colors.white)),
-
         ),
-
       ],
-
     );
-
-
 
     if (selected == null || !mounted) return;
 
     this.context.read<AuthUiProvider>().setGender(selected);
-
   }
-
 }
-

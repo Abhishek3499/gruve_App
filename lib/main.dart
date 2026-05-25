@@ -35,17 +35,23 @@ Future<void> main() async {
   }
   await EnvironmentConfig.initialize(); // 👈 CRITICAL - Initialize environment config
   await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
-  runApp(MyApp());
+  final authStateManager = AuthStateManager();
+  await authStateManager.initialize();
+  runApp(MyApp(authStateManager: authStateManager));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthStateManager? authStateManager;
+
+  const MyApp({super.key, this.authStateManager});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthStateManager()),
+        ChangeNotifierProvider.value(
+          value: authStateManager ?? AuthStateManager(),
+        ),
         ChangeNotifierProvider(create: (context) => StoryController()),
         ChangeNotifierProvider(create: (_) => HighlightFlowProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),

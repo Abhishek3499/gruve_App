@@ -1,12 +1,12 @@
-import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/screens/intro/intro_screen.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:gruve_app/screens/intro/intro_screen.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:developer' as developer;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,7 +18,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
   bool _isReady = false;
-  Timer? _navigationTimer;
+  bool _didNavigate = false;
   final DateTime _appStartTime = DateTime.now();
 
   @override
@@ -26,108 +26,107 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     final videoInitStart = DateTime.now();
-    developer.log('🚀 [PERF] Splash screen video initialization started', name: 'SplashScreen');
-    
-    _controller = VideoPlayerController.asset(AppAssets.splashVideo)
-      ..initialize().then((_) {
-        if (!mounted) return;
-        
-        final videoInitTime = DateTime.now().difference(videoInitStart);
-        developer.log('🎥 [PERF] Video initialized in ${videoInitTime.inMilliseconds}ms', name: 'SplashScreen');
+    developer.log(
+      '[PERF] Splash screen video initialization started',
+      name: 'SplashScreen',
+    );
 
-        setState(() {
-          _isReady = true;
-        });
+    _controller = VideoPlayerController.asset(AppAssets.splashVideo);
+    _initializeVideo(videoInitStart);
 
-        _controller
-          ..setLooping(true)
-          ..setVolume(0.0)
-          ..play();
-      });
+    Future<void>.microtask(_resolveInitialRoute);
+  }
 
-    _navigationTimer = Timer(const Duration(seconds: 3), () async {
+  Future<void> _initializeVideo(DateTime videoInitStart) async {
+    try {
+      await _controller.initialize();
       if (!mounted) return;
 
-      final totalStartupTime = DateTime.now().difference(_appStartTime);
-      developer.log('🚀 [PERF] Total app startup time: ${totalStartupTime.inMilliseconds}ms', name: 'SplashScreen');
+      final videoInitTime = DateTime.now().difference(videoInitStart);
+      developer.log(
+        '[PERF] Video initialized in ${videoInitTime.inMilliseconds}ms',
+        name: 'SplashScreen',
+      );
 
-      // Check if user is already logged in
-      final tokenCheckStart = DateTime.now();
-      final accessToken = await TokenStorage.getAccessToken();
-      final tokenCheckTime = DateTime.now().difference(tokenCheckStart);
-      developer.log('🔑 [PERF] Token check completed in ${tokenCheckTime.inMilliseconds}ms', name: 'SplashScreen');
-      
-      if (!mounted) return;
-      
-      if (accessToken != null && accessToken.isNotEmpty) {
-        // User is logged in, connect websocket and navigate to Home screen
-        debugPrint("🔑 [Splash] 🔑 Token found, connecting websocket and navigating to Home screen");
-        debugPrint("[Splash] Access token found");
-        
-        // 🔌 CONNECT WEBSOCKET FOR AUTO-LOGIN
-        debugPrint("🔌 [Splash Auto-Login] 🔌 Connecting websocket with existing token");
-        final websocketStart = DateTime.now();
-        SocketService().connect(accessToken);
-        final websocketTime = DateTime.now().difference(websocketStart);
-        developer.log('🔌 [PERF] WebSocket connection initiated in ${websocketTime.inMilliseconds}ms', name: 'SplashScreen');
-        debugPrint("✅ [Splash] ✅ WebSocket connection initiated");
-        
-        if (!mounted) return;
-        debugPrint("🏠 [Splash] 🏠 Navigating to HomeScreen");
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            opaque: false,
-            transitionDuration: const Duration(milliseconds: 280),
-            reverseTransitionDuration: const Duration(milliseconds: 280),
-            pageBuilder: (_, _, _) => const HomeScreen(),
-            transitionsBuilder: (_, animation, _, child) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                )),
-                child: child,
-              );
-            },
-          ),
-        );
-      } else {
-        // No token found, navigate to Intro screen
-        debugPrint("[Splash] No token found, navigating to Intro screen");
-        if (!mounted) return;
-        debugPrint("🎯 [Splash] 🎯 Navigating to IntroScreen");
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            opaque: false,
-            transitionDuration: const Duration(milliseconds: 280),
-            reverseTransitionDuration: const Duration(milliseconds: 280),
-            pageBuilder: (_, _, _) => const IntroScreen(),
-            transitionsBuilder: (_, animation, _, child) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1.0, 0.0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOut,
-                )),
-                child: child,
-              );
-            },
-          ),
-        );
-      }
-    });
+      setState(() => _isReady = true);
+
+      await _controller.setLooping(true);
+      await _controller.setVolume(0.0);
+      await _controller.play();
+    } catch (e) {
+      debugPrint('[Splash] Video initialization skipped: $e');
+    }
+  }
+
+  Future<void> _resolveInitialRoute() async {
+    if (_didNavigate || !mounted) return;
+
+    final totalStartupTime = DateTime.now().difference(_appStartTime);
+    developer.log(
+      '[PERF] Total app startup time: ${totalStartupTime.inMilliseconds}ms',
+      name: 'SplashScreen',
+    );
+
+    final authState = AuthStateManager();
+    final tokenCheckStart = DateTime.now();
+    final accessToken = await authState.getActiveAccessToken();
+    final tokenCheckTime = DateTime.now().difference(tokenCheckStart);
+    developer.log(
+      '[PERF] Auth state check completed in ${tokenCheckTime.inMilliseconds}ms',
+      name: 'SplashScreen',
+    );
+
+    if (!mounted) return;
+
+    if (authState.isAuthenticated &&
+        accessToken != null &&
+        accessToken.isNotEmpty) {
+      debugPrint('[Splash] Authenticated session found');
+
+      final websocketStart = DateTime.now();
+      SocketService().connect(accessToken);
+      final websocketTime = DateTime.now().difference(websocketStart);
+      developer.log(
+        '[PERF] WebSocket connection initiated in ${websocketTime.inMilliseconds}ms',
+        name: 'SplashScreen',
+      );
+
+      _navigateTo(const HomeScreen());
+      return;
+    }
+
+    debugPrint('[Splash] No authenticated session, navigating to Intro screen');
+    _navigateTo(const IntroScreen());
+  }
+
+  void _navigateTo(Widget screen) {
+    if (_didNavigate || !mounted) return;
+    _didNavigate = true;
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 280),
+        pageBuilder: (_, _, _) => screen,
+        transitionsBuilder: (_, animation, _, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            ),
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _navigationTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -135,10 +134,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // important
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 🎥 VIDEO (FADE IN)
           AnimatedOpacity(
             duration: const Duration(milliseconds: 500),
             opacity: _isReady ? 1 : 0,
@@ -155,8 +153,6 @@ class _SplashScreenState extends State<SplashScreen> {
                   )
                 : Container(color: Colors.black),
           ),
-
-          // 🔥 LOGO (SCALE + FADE)
           Center(
             child: TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 800),
@@ -171,8 +167,6 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Image.asset(AppAssets.logoMain, width: 140),
             ),
           ),
-
-          // 👇 BOTTOM TEXT (NO CHANGE)
           Positioned(
             bottom: 30,
             left: 0,

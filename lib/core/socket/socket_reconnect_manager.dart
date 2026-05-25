@@ -136,7 +136,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
 
 
-  Future<void> connect() async {
+  Future<void> connect([String? accessToken]) async {
     _socketPrint(
       'connect() called state=${_state.name} attempts=$_reconnectAttempts',
     );
@@ -174,7 +174,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
       return;
     }
 
-    await _performConnect();
+    await _performConnect(accessToken);
   }
 
   Future<void> disconnect() async {
@@ -245,7 +245,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     await connect();
   }
 
-  Future<void> _performConnect() async {
+  Future<void> _performConnect([String? accessToken]) async {
     _socketPrint(
       '_performConnect start disposed=$_isDisposed manual=$_manualDisconnect online=$_isOnline foreground=$_isAppInForeground',
     );
@@ -281,7 +281,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
       _clearReconnectTimer();
       await _cleanupActiveSocket(keepState: true);
 
-      final token = await TokenStorage.getAccessToken();
+      final token = accessToken?.trim().isNotEmpty == true
+          ? accessToken!.trim()
+          : await TokenStorage.getAccessToken();
       if (token == null || token.isEmpty) {
         _socketPrint('connect failed: missing auth token');
         debugLog.socket('CONNECT_FAILED', error: 'Missing auth token');
