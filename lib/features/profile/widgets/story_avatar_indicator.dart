@@ -33,18 +33,15 @@ class StoryAvatarIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      '🟣 [StoryAvatarIndicator] build hasActiveStory=$hasActiveStory isViewed=$isViewed radius=$radius',
-    );
-
     final avatar = _buildAvatarContent();
-    final child = enableNavigation
+    final canOpenStory = enableNavigation && hasActiveStory && onTap != null;
+    final child = canOpenStory
         ? GestureDetector(
             onTap: () {
               debugPrint(
                 '👆 [StoryAvatarIndicator] tapped hasActiveStory=$hasActiveStory',
               );
-              onTap?.call();
+              onTap!();
             },
             child: avatar,
           )
@@ -82,13 +79,8 @@ class StoryAvatarIndicator extends StatelessWidget {
     );
 
     if (!hasActiveStory) {
-      debugPrint('⚪ [StoryAvatarIndicator] Rendering normal avatar');
       return avatarCore;
     }
-
-    debugPrint(
-      '🟠 [StoryAvatarIndicator] Rendering story ring style=${isViewed ? "viewed" : "active"}',
-    );
 
     return Container(
       padding: EdgeInsets.all(ringWidth),
@@ -98,11 +90,7 @@ class StoryAvatarIndicator extends StatelessWidget {
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: isViewed
-              ? const [
-                  Color(0xFF9E9E9E),
-                  Color(0xFF757575),
-                  Color(0xFFBDBDBD),
-                ]
+              ? const [Color(0xFF9E9E9E), Color(0xFF757575), Color(0xFFBDBDBD)]
               : const [
                   Color(0xFFFEDA75),
                   Color(0xFFFA7E1E),

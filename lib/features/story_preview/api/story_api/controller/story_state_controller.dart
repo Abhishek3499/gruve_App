@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
-import 'package:get/get.dart';
 
 /// Story data model for better organization
 class StoryData {
@@ -12,11 +11,7 @@ class StoryData {
   final DateTime createdAt;
   final String? id; // Story UUID for API calls
 
-  StoryData({
-    required this.mediaPath,
-    required this.createdAt,
-    this.id,
-  });
+  StoryData({required this.mediaPath, required this.createdAt, this.id});
 }
 
 /// Optimized controller for managing story state across the app
@@ -30,11 +25,7 @@ class StoryStateController extends ChangeNotifier {
   }
 
   static StoryStateController ensureRegistered() {
-    if (!Get.isRegistered<StoryStateController>()) {
-      Get.put<StoryStateController>(StoryStateController(), permanent: true);
-      debugPrint('[StoryState] Registered shared StoryStateController');
-    }
-    return Get.find<StoryStateController>();
+    return StoryStateController();
   }
 
   List<StoryData> _userStories = [];
@@ -70,7 +61,8 @@ class StoryStateController extends ChangeNotifier {
       _userStories.map((s) => s.createdAt).toList();
 
   /// Get current story ID (UUID) for API calls
-  String? get currentStoryId => _currentStory?.id ??
+  String? get currentStoryId =>
+      _currentStory?.id ??
       (_userStories.isNotEmpty ? _userStories.first.id : null);
 
   /// Get story ID by media path

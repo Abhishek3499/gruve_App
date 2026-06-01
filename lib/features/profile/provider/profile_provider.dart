@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
 import 'package:gruve_app/features/profile/data/api_calls/model/profile_stats_model.dart';
@@ -13,7 +14,10 @@ class ProfileProvider extends ChangeNotifier {
   ProfileProvider({
     ProfileController? controller,
     HighlightService? highlightService,
-  }) : controller = controller ?? ProfileController(),
+    HighlightStateManager? highlightStateManager,
+  }) : controller =
+           controller ??
+           ProfileController(highlightStateManager: highlightStateManager),
        _highlightService = highlightService ?? HighlightService();
 
   final ProfileController controller;
@@ -26,6 +30,7 @@ class ProfileProvider extends ChangeNotifier {
   Future<void>? _profileFetchInFlight;
   DateTime? _profileFetchStartedAt;
   int _profileFetchGeneration = 0;
+  bool _isFetchingHighlights = false;
 
   ProfileModel? user;
   ProfileStatsModel stats = const ProfileStatsModel.empty();
@@ -46,7 +51,8 @@ class ProfileProvider extends ChangeNotifier {
     final inFlight = _profileFetchInFlight;
     if (inFlight != null) {
       final startedAt = _profileFetchStartedAt;
-      final isStale = startedAt != null &&
+      final isStale =
+          startedAt != null &&
           DateTime.now().difference(startedAt) > const Duration(seconds: 25);
       if (!isStale) return inFlight;
 
@@ -78,16 +84,9 @@ class ProfileProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      final results = await Future.wait([
-        controller
-            .fetchUser(reason: fetchUserReason)
-            .timeout(const Duration(seconds: 20)),
-        _highlightService
-            .fetchMyHighlights()
-            .timeout(const Duration(seconds: 20)),
-      ]).timeout(const Duration(seconds: 25));
-
-      final highlightsResponse = results[1] as HighlightsResponse;
+      await controller
+          .fetchUser(reason: fetchUserReason)
+          .timeout(const Duration(seconds: 18));
 
       user = controller.user;
       if (user == null) {
@@ -96,14 +95,12 @@ class ProfileProvider extends ChangeNotifier {
 
       stats = controller.stats;
       posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
-      highlights = List<HighlightModel>.unmodifiable(
-        highlightsResponse.success
-            ? highlightsResponse.data.highlights
-            : const [],
-      );
+      isLoading = false;
+      notifyListeners();
+
+      unawaited(_loadHighlightsInBackground());
 
       _log('[Profile] API success');
-      _log('[Profile] Highlights count: ${highlights.length}');
       _log('[Profile] Posts count: ${posts.length}');
     } catch (error, stackTrace) {
       errorMessage = 'Failed to load profile';
@@ -112,6 +109,27 @@ class ProfileProvider extends ChangeNotifier {
     } finally {
       isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _loadHighlightsInBackground() async {
+    if (_isFetchingHighlights) return;
+
+    _isFetchingHighlights = true;
+    try {
+      final response = await _highlightService.fetchMyHighlights().timeout(
+        const Duration(seconds: 12),
+      );
+      highlights = List<HighlightModel>.unmodifiable(
+        response.success ? response.data.highlights : const [],
+      );
+      controller.highlightList.value = highlights;
+      _log('[Profile] Highlights count: ${highlights.length}');
+      notifyListeners();
+    } catch (error) {
+      _log('[Profile] Highlights failed: $error');
+    } finally {
+      _isFetchingHighlights = false;
     }
   }
 
@@ -178,7 +196,9 @@ class ProfileProvider extends ChangeNotifier {
     stats = const ProfileStatsModel.empty();
     posts = [];
     highlights = [];
+    controller.highlightList.value = const [];
     isLoading = false;
+    _isFetchingHighlights = false;
     _profileFetchInFlight = null;
     _profileFetchStartedAt = null;
     _profileFetchGeneration++;

@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 
 /// Utility class for story-related operations
 class StoryUtils {
@@ -27,24 +28,30 @@ class StoryUtils {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
+      barrierColor: Colors.black.withValues(alpha: 0.42),
+      builder: (context) => const _StoryOpeningLoader(),
     );
 
     try {
-      StoryStateController.ensureRegistered();
-      final storyStateController = Get.find<StoryStateController>();
-      final storyController = StoryController();
+      final storyStateController = context.read<StoryStateController>();
+      final storyController = context.read<StoryController>();
 
       // Check cache first for instant response
       await storyStateController.loadStoriesFromStorage(userId);
 
       if (!context.mounted) return;
 
-      // If we have cached stories, navigate immediately and refresh in background
-      if (storyStateController.hasUserStory &&
-          !storyStateController.isLoadingFromStorage) {
+      final cachedStoryIds = storyStateController.currentUserStoryIds;
+      final cachedStoriesHaveIds = cachedStoryIds.any(
+        (id) => id?.trim().isNotEmpty ?? false,
+      );
+      final canUseCachedStories =
+          storyStateController.hasUserStory &&
+          !storyStateController.isLoadingFromStorage &&
+          (!isOwnProfile || cachedStoriesHaveIds);
+
+      // If cached own stories are missing API ids, fetch first so highlights work.
+      if (canUseCachedStories) {
         Navigator.pop(context); // Close loading dialog
 
         final mediaPaths = storyStateController.currentUserStoryMediaPaths;
@@ -80,10 +87,12 @@ class StoryUtils {
         if (storyController.isSuccess && storyController.stories.isNotEmpty) {
           Navigator.pop(context); // Close loading dialog
 
-          final mediaPaths =
-              storyController.stories.map((story) => story.mediaUrl).toList();
-          final timestamps =
-              storyController.stories.map((story) => story.createdAt).toList();
+          final mediaPaths = storyController.stories
+              .map((story) => story.mediaUrl)
+              .toList();
+          final timestamps = storyController.stories
+              .map((story) => story.createdAt)
+              .toList();
 
           await storyStateController.setStoriesFromStoryItems(
             storyController.stories,
@@ -142,7 +151,9 @@ class StoryUtils {
   }) {
     if (kDebugMode) {
       debugPrint("🧭 [StoryUtils] _navigateToStoryScreen called");
-      debugPrint("🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile");
+      debugPrint(
+        "🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile",
+      );
     }
 
     Navigator.push(
@@ -192,16 +203,17 @@ class StoryUtils {
   static bool isVideoFile(String filePath) {
     debugPrint("\n🎬 ===== CHECK VIDEO FILE CALLED =====");
     debugPrint("📁 File Path: $filePath");
-    
+
     final extension = filePath.toLowerCase();
-    bool isVideo = extension.endsWith('.mp4') ||
-                   extension.endsWith('.mov') ||
-                   extension.endsWith('.avi');
-    
+    bool isVideo =
+        extension.endsWith('.mp4') ||
+        extension.endsWith('.mov') ||
+        extension.endsWith('.avi');
+
     debugPrint("🔍 Extension: $extension");
     debugPrint("🎬 Is Video: $isVideo");
     debugPrint("🏁 ===== CHECK VIDEO FILE END =====\n");
-    
+
     return isVideo;
   }
 
@@ -209,18 +221,18 @@ class StoryUtils {
   static String getStoryTimeDisplay(DateTime? createdAt) {
     debugPrint("\n⏰ ===== GET STORY TIME DISPLAY CALLED =====");
     debugPrint("📅 Created At: $createdAt");
-    
+
     if (createdAt == null) {
       debugPrint("⚠️ No created time provided, returning 'Now'");
       debugPrint("🏁 ===== GET STORY TIME DISPLAY END =====\n");
       return 'Now';
     }
-    
+
     final now = DateTime.now();
     final difference = now.difference(createdAt);
-    
+
     debugPrint("🕐 Time Difference: ${difference.inMinutes} minutes");
-    
+
     String timeText;
     if (difference.inMinutes < 1) {
       timeText = 'Just now';
@@ -231,10 +243,50 @@ class StoryUtils {
     } else {
       timeText = '${difference.inDays}d ago';
     }
-    
+
     debugPrint("🕐 Time Display: $timeText");
     debugPrint("🏁 ===== GET STORY TIME DISPLAY END =====\n");
-    
+
     return timeText;
+  }
+}
+
+class _StoryOpeningLoader extends StatelessWidget {
+  const _StoryOpeningLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.92, end: 1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: Center(
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF212235).withValues(alpha: 0.88),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.loaderPrimary.withValues(alpha: 0.28),
+                blurRadius: 22,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Padding(
+            padding: EdgeInsets.all(15),
+            child: CircularProgressIndicator(
+              color: AppColors.loaderDark,
+              strokeWidth: 2.6,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

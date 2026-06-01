@@ -51,28 +51,42 @@ class TopBar extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return GestureDetector(
-          onTap: () {
-            CameraLogger.logUserAction('Flip camera button pressed');
-            _cameraService.switchCamera();
-          },
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-                width: 1,
+        return StreamBuilder<bool>(
+          stream: _cameraService.videoRecordingStream,
+          initialData: _cameraService.isRecordingVideo,
+          builder: (context, recordingSnapshot) {
+            final isRecording = recordingSnapshot.data ?? false;
+
+            return GestureDetector(
+              onTap: isRecording
+                  ? null
+                  : () {
+                      CameraLogger.logUserAction('Flip camera button pressed');
+                      _cameraService.switchCamera();
+                    },
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: isRecording ? 0.35 : 1,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.flip_camera_ios,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
-            ),
-            child: const Icon(
-              Icons.flip_camera_ios,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
+            );
+          },
         );
       },
     );

@@ -112,7 +112,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   String get _conversationId {
-    if (_resolvedConversationId != null && _resolvedConversationId!.isNotEmpty) {
+    if (_resolvedConversationId != null &&
+        _resolvedConversationId!.isNotEmpty) {
       return _resolvedConversationId!;
     }
 
@@ -464,6 +465,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     } catch (e) {
       debugPrint('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
+      _messageController.removeMessages({localId});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -587,7 +589,9 @@ class _ChatScreenState extends State<ChatScreen> {
       case MessageAction.delete:
         // Check if it's user's own message
         if (message.isSent) {
-          debugPrint('[ChatScreen] 🗑️ 👤 Own message - showing delete confirmation');
+          debugPrint(
+            '[ChatScreen] 🗑️ 👤 Own message - showing delete confirmation',
+          );
           _showDeleteConfirmation(message);
         } else {
           debugPrint('[ChatScreen] ⚠️ 🚫 Not own message - cannot delete');
@@ -621,8 +625,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Show delete confirmation dialog
   Future<void> _showDeleteConfirmation(MessageModel message) async {
-    debugPrint('🗑️ [ChatScreen] 💬 Showing delete confirmation for message: ${message.id}');
-    
+    debugPrint(
+      '🗑️ [ChatScreen] 💬 Showing delete confirmation for message: ${message.id}',
+    );
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -630,7 +636,11 @@ class _ChatScreenState extends State<ChatScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Delete Message?',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         content: const Text(
           'This message will be deleted for you. This action cannot be undone.',
@@ -655,11 +665,17 @@ class _ChatScreenState extends State<ChatScreen> {
             style: TextButton.styleFrom(
               backgroundColor: const Color(0xFFF51829).withValues(alpha: 0.15),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text(
               'Delete',
-              style: TextStyle(color: Color(0xFFF51829), fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Color(0xFFF51829),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -670,17 +686,25 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete');
       await _deleteSingleMessage(message);
     } else {
-      debugPrint('🗑️ [ChatScreen] ⚠️ Delete not confirmed or context unmounted');
+      debugPrint(
+        '🗑️ [ChatScreen] ⚠️ Delete not confirmed or context unmounted',
+      );
     }
   }
 
   /// Delete a single message
   Future<void> _deleteSingleMessage(MessageModel message) async {
-    debugPrint('🗑️ [ChatScreen] 🚀 Starting delete process for message: ${message.id}');
-    debugPrint('💬 [ChatScreen] 📝 Message text: ${message.text.substring(0, message.text.length.clamp(0, 50))}${message.text.length > 50 ? "..." : ""}');
-    
+    debugPrint(
+      '🗑️ [ChatScreen] 🚀 Starting delete process for message: ${message.id}',
+    );
+    debugPrint(
+      '💬 [ChatScreen] 📝 Message text: ${message.text.substring(0, message.text.length.clamp(0, 50))}${message.text.length > 50 ? "..." : ""}',
+    );
+
     try {
-      debugPrint('📡 [ChatScreen] 🌐 Calling MessageController.deleteMessage...');
+      debugPrint(
+        '📡 [ChatScreen] 🌐 Calling MessageController.deleteMessage...',
+      );
       final success = await _messageController.deleteMessage(message.id);
 
       if (!mounted) {
@@ -709,9 +733,9 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       debugPrint('💥 [ChatScreen] ❌ Error deleting message: $e');
-      
+
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),

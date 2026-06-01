@@ -18,10 +18,7 @@ import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:provider/provider.dart';
 
-
-
 class OtpScreen extends StatefulWidget {
-
   // final AuthFlow authFlow;
 
   final String title;
@@ -34,8 +31,6 @@ class OtpScreen extends StatefulWidget {
 
   final VoidCallback? onVerified; // 👈 OLD (SAFE)
 
-
-
   // final String phoneNumber;
 
   final String identifier; // email ya phone
@@ -46,10 +41,7 @@ class OtpScreen extends StatefulWidget {
 
   final bool isForgot;
 
-
-
   const OtpScreen({
-
     super.key,
 
     required this.identifier,
@@ -57,7 +49,6 @@ class OtpScreen extends StatefulWidget {
     required this.type,
 
     // required this.authFlow,
-
     required this.title,
 
     required this.description,
@@ -68,98 +59,64 @@ class OtpScreen extends StatefulWidget {
 
     this.onVerifiedWithToken,
 
-
-
     this.isLogin = false,
 
     this.isForgot = false,
 
     // required this.phoneNumber,
-
   });
 
-
-
   @override
-
   State<OtpScreen> createState() => _OtpScreenState();
-
 }
 
-
-
 class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
-
   final VerifyotpController controller = VerifyotpController();
 
   final List<TextEditingController> _controllers = List.generate(
-
     4,
 
     (_) => TextEditingController(),
-
   );
-
-
 
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
   // Mask phone number function (crash-proof)
 
   String _maskPhoneNumber(String phone) {
-
     if (phone.isEmpty) return phone;
-
-
 
     // Remove spaces for processing
 
     String cleaned = phone.replaceAll(' ', '');
 
-
-
     // Safety check — if too short, return as is
 
     if (cleaned.length < 6) return phone;
 
-
-
     // Last 4 digits always visible
 
     String lastFour = cleaned.substring(cleaned.length - 4);
-
-
 
     // Middle digits — everything between first 2 and last 4
 
     int middleLength = cleaned.length - 6;
 
     String middle = middleLength > 0
-
         ? List.filled(middleLength, 'x').join()
-
         : '';
-
-
 
     // First 2 digits always visible
 
     String firstTwo = cleaned.substring(0, 2);
 
-
-
     // Final result: 98xxxxx8282 style
 
     return '$firstTwo$middle$lastFour';
-
   }
 
-
-
   @override
-
   void initState() {
-
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<AuthUiProvider>().resetOtp();
@@ -168,8 +125,6 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     listenForCode();
 
     _focusNodes.first.requestFocus();
-
-
 
     debugPrint("🔥 OTP SCREEN INIT");
 
@@ -180,97 +135,110 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     debugPrint("👉 type: ${widget.type}");
 
     debugPrint("👉 identifier: ${widget.identifier}");
-
   }
 
-
-
   @override
-
   void codeUpdated() {
-
     if (code == null) return;
 
-
-
     final otp = code!.toString();
-
-
 
     // ✅ safety check
 
     if (otp.length < 4) return;
 
-
-
     for (int i = 0; i < 4; i++) {
-
       _controllers[i].text = otp[i]; // ✅ safe indexing
-
     }
 
-
-
     _focusNodes.last.requestFocus();
-
   }
 
+  void _setOtpDigit(int index, String digit) {
+    final value = TextEditingValue(
+      text: digit,
+      selection: TextSelection.collapsed(offset: digit.length),
+    );
+    if (_controllers[index].value != value) {
+      _controllers[index].value = value;
+    }
+  }
 
+  void _handleOtpChanged(int index, String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+
+    if (digits.isEmpty) {
+      return;
+    }
+
+    if (digits.length == 1) {
+      _setOtpDigit(index, digits);
+      if (index < _focusNodes.length - 1) {
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        _focusNodes[index].unfocus();
+      }
+      return;
+    }
+
+    var writeIndex = index;
+    for (
+      var i = 0;
+      i < digits.length && writeIndex < _controllers.length;
+      i++
+    ) {
+      _setOtpDigit(writeIndex, digits[i]);
+      writeIndex++;
+    }
+
+    final nextEmptyIndex = _controllers.indexWhere(
+      (controller) => controller.text.isEmpty,
+    );
+
+    if (nextEmptyIndex != -1) {
+      _focusNodes[nextEmptyIndex].requestFocus();
+    } else {
+      _focusNodes.last.unfocus();
+    }
+  }
+
+  void _handleOtpBackspace(int index) {
+    if (index > 0 && _controllers[index].text.isEmpty) {
+      _focusNodes[index - 1].requestFocus();
+    }
+  }
 
   Future<bool> _verifyOtpManually() async {
-
     final authUi = context.read<AuthUiProvider>();
     if (authUi.isLoading(AuthLoadingKey.otp)) return false;
 
-
-
     final otp = _controllers.map((e) => e.text).join();
 
-
-
     debugPrint("OTP entered");
-
-
 
     // ✅ STEP 1: EMPTY CHECK
 
     if (otp.isEmpty || otp.length < 4) {
-
       ScaffoldMessenger.of(context).showSnackBar(
-
         const SnackBar(content: Text("Please enter complete OTP")),
-
       );
 
       return false;
-
     }
-
-
 
     // ✅ STEP 2: REGEX VALIDATION (ADD HERE 🔥)
 
     if (!RegExp(r'^\d{4}$').hasMatch(otp)) {
-
       ScaffoldMessenger.of(
-
         context,
-
       ).showSnackBar(const SnackBar(content: Text("Enter valid 4 digit OTP")));
 
       return false;
-
     }
-
-
 
     FocusScope.of(context).unfocus();
 
-
-
     authUi.setLoading(AuthLoadingKey.otp, true);
-
-
 
     debugPrint("🟡 BEFORE API CALL");
 
@@ -280,11 +248,8 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     debugPrint("📡 CALLING CONTROLLER...");
 
-
-
     try {
       await controller.verifyOtp(
-
         identifier: widget.identifier,
 
         phoneNumber: widget.type == "phone" ? widget.identifier : "",
@@ -298,7 +263,6 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
         isLogin: widget.isLogin,
 
         isForgot: widget.isForgot,
-
       );
     } finally {
       if (mounted) {
@@ -306,46 +270,26 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       }
     }
 
-
-
     if (!mounted) return false;
 
-
-
     if (controller.errorMessage != null) {
-
       ScaffoldMessenger.of(
-
         context,
-
       ).showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
 
       return false;
-
     }
 
-
-
     if (controller.verifyOtpResponse?.success == true) {
-
       if (widget.isForgot) {
-
         final token = controller.verifyOtpResponse?.resetToken ?? "";
 
-
-
         if (widget.onVerifiedWithToken != null) {
-
           widget.onVerifiedWithToken!(token);
-
         } else {
-
           debugPrint("⚠️ onVerifiedWithToken is null");
-
         }
-
       } else {
-
         // 🔌 CONNECT WEBSOCKET FOR LOGIN/SIGNUP SUCCESS
         final accessToken = controller.verifyOtpResponse?.data?.accessToken;
         if (accessToken != null && accessToken.isNotEmpty) {
@@ -353,230 +297,152 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
           SocketService().connect(accessToken);
           debugPrint("✅ [OTP Success] ✅ WebSocket connection initiated");
         } else {
-          debugPrint("⚠️ [OTP Success] ⚠️ No access token available for websocket connection");
+          debugPrint(
+            "⚠️ [OTP Success] ⚠️ No access token available for websocket connection",
+          );
         }
 
         if (widget.onVerified != null) {
           debugPrint("🎯 [OTP Success] 🎯 Calling onVerified callback");
           widget.onVerified!();
           debugPrint("✅ [OTP Success] ✅ onVerified callback executed");
-
         } else {
-
           debugPrint("⚠️ [OTP Success] ⚠️ onVerified is null");
-
         }
-
       }
 
-
-
       return true;
-
     } else {
-
       ScaffoldMessenger.of(context).showSnackBar(
-
         SnackBar(
-
           content: Text(controller.verifyOtpResponse?.message ?? "Invalid OTP"),
-
         ),
-
       );
 
       return false;
-
     }
-
   }
 
-
-
   @override
-
   void didChangeDependencies() {
-
     super.didChangeDependencies();
 
     routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
-
   }
 
-
-
   @override
-
   void dispose() {
-
     routeObserver.unsubscribe(this);
 
     cancel();
 
     for (final c in _controllers) {
-
       c.dispose();
-
     }
 
     for (final f in _focusNodes) {
-
       f.dispose();
-
     }
 
     super.dispose();
-
   }
 
-
-
   @override
-
   void didPopNext() {
-
     for (final controller in _controllers) {
       controller.clear();
     }
     _focusNodes.first.requestFocus();
-
   }
 
-
-
   @override
-
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthUiProvider>().isLoading(
       AuthLoadingKey.otp,
     );
 
     return Scaffold(
-
       backgroundColor: Colors.black,
 
       body: VideoBackground(
-
         videoPath: AppAssets.splashVideo,
 
         overlayOpacity: 0.85,
 
         child: SafeArea(
-
           child: Column(
-
             children: [
-
               // 🔹 Top Bar (Fixed Progress Bar Width)
-
               Padding(
-
                 padding: const EdgeInsets.symmetric(
-
                   horizontal: 24,
 
                   vertical: 16,
-
                 ),
 
                 child: Row(
-
                   children: [
-
                     GestureDetector(
-
                       onTap: () => Navigator.pop(context),
 
                       child: Image.asset(AppAssets.back, height: 25, width: 25),
-
                     ),
 
                     const SizedBox(width: 55),
 
                     // Progress Bar with Fixed Width
-
                     SizedBox(
-
                       width: 210, // ✅ Width yahan se control karein
 
                       child: Container(
-
                         height: 9,
 
                         decoration: BoxDecoration(
-
                           color: Colors.white,
 
                           borderRadius: BorderRadius.circular(10),
-
                         ),
 
                         child: FractionallySizedBox(
-
                           alignment: Alignment.centerLeft,
 
                           widthFactor: 0.2, // 20% progress
 
                           child: Container(
-
                             decoration: BoxDecoration(
-
                               color: const Color(0xFFB86AD0),
 
                               borderRadius: BorderRadius.circular(10),
-
                             ),
-
                           ),
-
                         ),
-
                       ),
-
                     ),
-
                   ],
-
                 ),
-
               ),
 
-
-
               // 🔹 Content Area
-
               const SizedBox(height: 100),
 
               Expanded(
-
                 child: Padding(
-
                   padding: const EdgeInsets.symmetric(horizontal: 24),
 
                   child: SingleChildScrollView(
-
                     // Added scroll to prevent overflow on small screens
-
                     child: Column(
-
                       children: [
-
                         const SizedBox(height: 60),
 
-
-
                         FittedBox(
-
                           fit: BoxFit.scaleDown,
 
                           child: RichText(
-
                             textAlign: TextAlign.center,
 
                             text: const TextSpan(
-
                               style: TextStyle(
-
                                 color: Colors.white,
 
                                 fontSize: 28,
@@ -586,210 +452,125 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                                 letterSpacing: 1.0,
 
                                 fontFamily: AppAssets.syncopateFont,
-
                               ),
 
                               children: [
-
                                 TextSpan(text: 'Enter your '),
 
                                 TextSpan(
-
                                   text: 'Code ',
 
                                   style: TextStyle(color: Color(0xFFB86AD0)),
-
                                 ),
-
                               ],
-
                             ),
-
                           ),
-
                         ),
-
-
 
                         const SizedBox(height: 12),
 
-
-
                         Text(
-
                           "Enter 4-digit code we have sent to you at",
 
                           textAlign: TextAlign.center,
 
                           style: TextStyle(color: Colors.white, fontSize: 13),
-
                         ),
 
                         const SizedBox(height: 10),
 
                         Row(
-
                           mainAxisAlignment: MainAxisAlignment.center,
 
                           children: [
-
                             Text(
-
                               widget.type == "phone"
-
                                   ? _maskPhoneNumber(widget.identifier)
-
                                   : widget.identifier,
 
                               style: const TextStyle(
-
                                 color: Color(0xFFB86AD0),
 
                                 fontSize: 14,
 
                                 fontWeight: FontWeight.w600,
-
                               ),
-
                             ),
 
                             const SizedBox(width: 8),
 
                             GestureDetector(
-
                               onTap: () => Navigator.pop(context),
 
                               child: const Icon(
-
                                 Icons.edit,
 
                                 color: Color(0xFFB86AD0),
 
                                 size: 16,
-
                               ),
-
                             ),
-
                           ],
-
                         ),
-
-
 
                         const SizedBox(height: 40),
 
-
-
                         // OTP Boxes
-
                         Row(
-
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 
                           children: List.generate(4, (i) {
-
                             return OtpInputBox(
-
                               controller: _controllers[i],
 
                               focusNode: _focusNodes[i],
 
                               autoFocus: i == 0,
+                              enableSmsAutofill: i == 0,
 
-                              onChanged: (val) {
+                              onChanged: (val) => _handleOtpChanged(i, val),
 
-                                if (val.isNotEmpty && i < 3) {
-
-                                  _focusNodes[i + 1].requestFocus();
-
-                                }
-
-                              },
-
-                              onBackspace: () {
-
-                                if (i > 0 && _controllers[i].text.isEmpty) {
-
-                                  _focusNodes[i - 1].requestFocus();
-
-                                }
-
-                              },
-
+                              onBackspace: () => _handleOtpBackspace(i),
                             );
-
                           }),
-
                         ),
 
-
-
                         Align(
-
                           alignment: Alignment.centerRight,
 
                           child: TextButton(
-
                             onPressed: () {},
 
                             child: const Text(
-
                               "Resend code",
 
                               style: TextStyle(
-
                                 color: Color(0xFFB86AD0),
 
                                 fontSize: 12,
-
                               ),
-
                             ),
-
                           ),
-
                         ),
-
-
 
                         const SizedBox(height: 40),
 
-
-
                         GetStartedButton(
-
                           text: widget.buttonText,
 
                           isLoading: isLoading,
 
-
-
                           onComplete: _verifyOtpManually,
-
                         ),
-
                       ],
-
                     ),
-
                   ),
-
                 ),
-
               ),
-
             ],
-
           ),
-
         ),
-
       ),
-
     );
-
   }
-
 }
-

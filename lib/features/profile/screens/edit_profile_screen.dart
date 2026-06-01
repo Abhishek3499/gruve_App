@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets.dart';
+import '../../../core/widgets/shimmer/app_shimmer.dart';
 import '../../../features/auth/api/controllers/edit_profile_controller.dart';
 import '../models/profile_model.dart';
 import '../widgets/personal_info_card.dart';
@@ -281,10 +282,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: ProfileImagePicker(
-                      currentImagePath: _profileImagePath,
-                      onImageChanged: _onImageChanged,
-                    ),
+                    child: _controller.isLoading
+                        ? const AppShimmer(child: ShimmerCircle(radius: 61))
+                        : ProfileImagePicker(
+                            currentImagePath: _profileImagePath,
+                            onImageChanged: _onImageChanged,
+                          ),
                   ),
                 ),
               ],
@@ -297,11 +300,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildContent() {
     if (_controller.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      );
+      return const _EditProfileFormShimmer();
     }
 
     if (_controller.errorMessage != null &&
@@ -342,6 +341,80 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       showEmail: _controller.showEmail,
       showPhone: _controller.showPhone,
       isUpdating: _controller.isUpdating,
+    );
+  }
+}
+
+class _EditProfileFormShimmer extends StatelessWidget {
+  const _EditProfileFormShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 320,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: const Color(0xFF9485EA), width: 0.3),
+        ),
+        child: AppShimmer(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ShimmerBox(width: 112, height: 18, borderRadius: 8),
+                    ShimmerBox(width: 22, height: 22, borderRadius: 6),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildField(width: 168),
+                _divider(),
+                _buildField(width: 132),
+                _divider(),
+                _buildField(width: 210),
+                _divider(),
+                _buildField(width: 150),
+                _divider(),
+                _buildField(width: 92),
+                _divider(),
+                _buildField(width: double.infinity, isBio: true),
+                const SizedBox(height: 20),
+                const ShimmerBox(
+                  width: double.infinity,
+                  height: 48,
+                  borderRadius: 30,
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildField({required double width, bool isBio = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const ShimmerBox(width: 72, height: 12, borderRadius: 6),
+        const SizedBox(height: 8),
+        ShimmerBox(width: width, height: isBio ? 58 : 16, borderRadius: 8),
+      ],
+    );
+  }
+
+  static Widget _divider() {
+    return Container(
+      height: 0.5,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      color: Colors.white,
     );
   }
 }

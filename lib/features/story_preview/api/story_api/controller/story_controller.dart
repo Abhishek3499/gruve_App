@@ -5,7 +5,14 @@ import 'package:gruve_app/features/story_preview/api/story_api/service/story_ser
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 
 class StoryController extends ChangeNotifier {
-  final StoryService _service = StoryService();
+  StoryController({
+    StoryService? service,
+    HighlightStateManager? highlightStateManager,
+  }) : _service = service ?? StoryService(),
+       _highlightStateManager = highlightStateManager;
+
+  final StoryService _service;
+  HighlightStateManager? _highlightStateManager;
 
   bool isLoading = false;
   String message = "";
@@ -16,6 +23,10 @@ class StoryController extends ChangeNotifier {
   int totalCount = 0;
   int currentPage = 1;
   bool hasNext = false;
+
+  void attachHighlightStateManager(HighlightStateManager stateManager) {
+    _highlightStateManager = stateManager;
+  }
 
   void reset() {
     message = "";
@@ -123,13 +134,9 @@ class StoryController extends ChangeNotifier {
         currentPage = response.data.page;
         hasNext = response.data.hasNext;
 
-        // BUG 1 FIX: Populate HighlightStateManager with stories that have is_highlighted == true
-        HighlightStateManager.ensureRegistered();
         for (final story in stories) {
           if (story.isHighlighted == true) {
-            await HighlightStateManager.instance.markStoryAsHighlighted(
-              story.id,
-            );
+            await _highlightStateManager?.markStoryAsHighlighted(story.id);
           }
         }
 

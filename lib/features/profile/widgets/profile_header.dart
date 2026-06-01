@@ -42,6 +42,7 @@ class ProfileHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
+
         /// Avatar + User Info Row
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 25),
@@ -53,7 +54,9 @@ class ProfileHeader extends StatelessWidget {
                 profileImage: profileImage,
                 hasActiveStory: hasActiveStory,
                 onTap: () async {
-                  debugPrint('[ProfileHeader] Opening own story - isOwnProfile: true');
+                  debugPrint(
+                    '[ProfileHeader] Opening own story - isOwnProfile: true',
+                  );
                   await StoryUtils.navigateToStoryView(
                     context,
                     userId: null,
@@ -65,6 +68,7 @@ class ProfileHeader extends StatelessWidget {
                 },
               ),
               const SizedBox(width: 25),
+
               /// Name + Username + Button
               Expanded(
                 child: Column(

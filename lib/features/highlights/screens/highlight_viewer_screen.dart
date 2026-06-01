@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:provider/provider.dart';
 
 class HighlightViewerScreen extends StatefulWidget {
   final String highlightId;
@@ -12,17 +13,44 @@ class HighlightViewerScreen extends StatefulWidget {
   State<HighlightViewerScreen> createState() => _HighlightViewerScreenState();
 }
 
-class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
+class _HighlightViewerScreenState extends State<HighlightViewerScreen>
+    with SingleTickerProviderStateMixin {
   int currentIndex = 0;
   bool isLoading = true;
   String? errorMessage;
   HighlightModel? highlight;
+  late final AnimationController _progressController;
 
   @override
   void initState() {
     super.initState();
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..addStatusListener(_onProgressStatusChanged);
     debugPrint('[Viewer] Opened with highlight ID: ${widget.highlightId}');
     _fetchHighlight();
+  }
+
+  @override
+  void dispose() {
+    _progressController
+      ..removeStatusListener(_onProgressStatusChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onProgressStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      _nextStory();
+    }
+  }
+
+  void _restartProgress() {
+    if (!mounted || highlight == null || highlight!.stories.isEmpty) return;
+    _progressController
+      ..reset()
+      ..forward();
   }
 
   Future<void> _fetchHighlight() async {
@@ -37,9 +65,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
         '[API] Fetching highlight stories for ID: ${widget.highlightId}',
       );
 
-      final highlightController = Get.isRegistered<HighlightController>()
-          ? Get.find<HighlightController>()
-          : Get.put(HighlightController());
+      final highlightController = context.read<HighlightController>();
 
       final fetchedHighlight = await highlightController.fetchHighlightStories(
         widget.highlightId,
@@ -53,6 +79,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
             '[Viewer] API success - Stories count: ${highlight!.stories.length}',
           );
         });
+        _restartProgress();
       } else {
         setState(() {
           isLoading = false;
@@ -77,6 +104,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
         currentIndex++;
         debugPrint('[Viewer] Current index: $currentIndex');
       });
+      _restartProgress();
     } else {
       // Last story, close the viewer
       debugPrint('[Viewer] Last story reached, closing');
@@ -90,6 +118,16 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
         currentIndex--;
         debugPrint('[Viewer] Current index: $currentIndex');
       });
+      _restartProgress();
+    }
+  }
+
+  void _handleTap(TapUpDetails details) {
+    final width = MediaQuery.of(context).size.width;
+    if (details.globalPosition.dx > width / 2) {
+      _nextStory();
+    } else {
+      _previousStory();
     }
   }
 
@@ -109,34 +147,14 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
           else
             _buildStoryViewer(),
 
-          // Top overlay
           _buildTopOverlay(),
-
-          // Bottom progress indicator
-          if (!isLoading &&
-              errorMessage == null &&
-              highlight != null &&
-              highlight!.stories.isNotEmpty)
-            _buildProgressIndicator(),
         ],
       ),
     );
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: Colors.white),
-          SizedBox(height: 16),
-          Text(
-            'Loading...',
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-        ],
-      ),
-    );
+    return const _HighlightLoader();
   }
 
   Widget _buildErrorState() {
@@ -181,7 +199,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
     final story = highlight!.stories[currentIndex];
 
     return GestureDetector(
-      onTap: _nextStory,
+      onTapUp: _handleTap,
+      onLongPressStart: (_) => _progressController.stop(),
+      onLongPressEnd: (_) => _progressController.forward(),
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity! > 0) {
           _previousStory();
@@ -214,9 +234,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
         fit: BoxFit.contain,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
+          return const _HighlightLoader();
         },
         errorBuilder: (context, error, stackTrace) {
           return const Center(
@@ -228,59 +246,139 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen> {
   }
 
   Widget _buildTopOverlay() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () {
-              debugPrint('[Viewer] Back button pressed');
-              Navigator.of(context).pop();
-            },
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-          ),
-          if (highlight != null)
-            Expanded(
-              child: Text(
-                highlight!.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+    return SafeArea(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isLoading &&
+                errorMessage == null &&
+                highlight != null &&
+                highlight!.stories.isNotEmpty)
+              AnimatedBuilder(
+                animation: _progressController,
+                builder: (context, _) {
+                  return _InstagramHighlightProgress(
+                    storyCount: highlight!.stories.length,
+                    currentIndex: currentIndex,
+                    progress: _progressController.value,
+                  );
+                },
+              )
+            else
+              const SizedBox(height: 2.6),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    debugPrint('[Viewer] Back button pressed');
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
+                if (highlight != null)
+                  Expanded(
+                    child: Text(
+                      highlight!.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                else
+                  const Spacer(),
+                const SizedBox(width: 48),
+              ],
             ),
-          const SizedBox(width: 48), // Balance the back button
-        ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildProgressIndicator() {
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          highlight!.stories.length,
-          (index) => AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: currentIndex == index ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: currentIndex == index
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(4),
+class _InstagramHighlightProgress extends StatelessWidget {
+  final int storyCount;
+  final int currentIndex;
+  final double progress;
+
+  const _InstagramHighlightProgress({
+    required this.storyCount,
+    required this.currentIndex,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = storyCount <= 0 ? 1 : storyCount;
+
+    return Row(
+      children: List.generate(count, (index) {
+        final fill = index < currentIndex
+            ? 1.0
+            : index == currentIndex
+            ? progress.clamp(0.0, 1.0)
+            : 0.0;
+
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 0 : 2,
+              right: index == count - 1 ? 0 : 2,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: SizedBox(
+                height: 2.6,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: fill,
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
+        );
+      }),
+    );
+  }
+}
+
+class _HighlightLoader extends StatelessWidget {
+  const _HighlightLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(
+          color: AppColors.loaderDark,
+          strokeWidth: 2.6,
         ),
       ),
     );

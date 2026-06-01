@@ -8,6 +8,7 @@ import 'package:gruve_app/features/story_preview/screens/post/more_option_screen
 import 'package:gruve_app/features/story_preview/screens/post/tag_people_screen.dart';
 
 import 'package:gruve_app/features/story_preview/api/post/menu_row.dart';
+import 'package:video_player/video_player.dart';
 
 class SharePostScreen extends StatefulWidget {
   final String mediaPath;
@@ -33,19 +34,56 @@ class _SharePostScreenState extends State<SharePostScreen> {
   List<ChatUser> selectedUsers = [];
   List<ChatUser> taggedUsers = [];
   TextEditingController captionController = TextEditingController();
+  VideoPlayerController? _videoController;
+  bool _isVideo = false;
+  bool _isVideoInitialized = false;
   bool _isSharing = false;
+
   @override
   void initState() {
     super.initState();
     if (widget.taggedUsers != null) {
       taggedUsers = List.from(widget.taggedUsers!);
     }
+    _initializeVideoPreview();
   }
 
   @override
   void dispose() {
+    _videoController?.dispose();
     captionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeVideoPreview() async {
+    _isVideo = _isVideoPath(widget.mediaPath);
+    if (!_isVideo) return;
+
+    try {
+      _videoController = widget.mediaPath.startsWith('http')
+          ? VideoPlayerController.networkUrl(Uri.parse(widget.mediaPath))
+          : VideoPlayerController.file(File(widget.mediaPath));
+
+      await _videoController!.initialize();
+      await _videoController!.setLooping(true);
+      await _videoController!.play();
+
+      if (!mounted) return;
+      setState(() => _isVideoInitialized = true);
+    } catch (e) {
+      debugPrint('SharePostScreen video preview error: $e');
+      if (!mounted) return;
+      setState(() => _isVideoInitialized = false);
+    }
+  }
+
+  bool _isVideoPath(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.avi') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.webm');
   }
 
   void _handleShare() async {
@@ -323,6 +361,40 @@ class _SharePostScreenState extends State<SharePostScreen> {
   }
 
   Widget _buildMediaPreview() {
+    if (_isVideo) {
+      if (_videoController != null && _isVideoInitialized) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _videoController!.value.size.width,
+                height: _videoController!.value.size.height,
+                child: VideoPlayer(_videoController!),
+              ),
+            ),
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill,
+                color: Colors.white70,
+                size: 42,
+              ),
+            ),
+          ],
+        );
+      }
+
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.grey[800],
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
     // Check if it's a network URL or local file
     if (widget.mediaPath.startsWith('http') ||
         widget.mediaPath.startsWith('https')) {
@@ -357,44 +429,23 @@ class _SharePostScreenState extends State<SharePostScreen> {
     } else {
       // Local file
       final file = File(widget.mediaPath);
-      if (widget.mediaPath.toLowerCase().endsWith('.mp4') ||
-          widget.mediaPath.toLowerCase().endsWith('.mov') ||
-          widget.mediaPath.toLowerCase().endsWith('.avi')) {
-        // Video file - show placeholder for now
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.grey[800],
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.play_circle_filled, color: Colors.white, size: 64),
-                SizedBox(height: 8),
-                Text('Video', style: TextStyle(color: Colors.white)),
-              ],
+      // Image file
+      return Image.file(
+        file,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.grey[800],
+            child: const Center(
+              child: Icon(Icons.error, color: Colors.white, size: 48),
             ),
-          ),
-        );
-      } else {
-        // Image file
-        return Image.file(
-          file,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.grey[800],
-              child: const Center(
-                child: Icon(Icons.error, color: Colors.white, size: 48),
-              ),
-            );
-          },
-        );
-      }
+          );
+        },
+      );
     }
   }
 }

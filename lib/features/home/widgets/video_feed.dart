@@ -31,6 +31,7 @@ class _VideoFeedState extends State<VideoFeed> {
   late PageController _pageController;
 
   String selectedContentTab = 'For You';
+  int _lastPaginationTriggerItemCount = 0;
 
   @override
   void initState() {
@@ -40,7 +41,6 @@ class _VideoFeedState extends State<VideoFeed> {
     _pageController = PageController(viewportFraction: 1.0);
 
     _controller.initVideos();
-
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onControllerReady?.call(_controller);
@@ -58,15 +58,17 @@ class _VideoFeedState extends State<VideoFeed> {
     _controller.playVideo(page);
     HapticFeedback.selectionClick();
 
-    // Threshold-based pagination: load more when user is close to end
-    const paginationThreshold = 5; // Load more when 5 items remaining
+    // Threshold-based pagination: load more when user is close to end.
+    const paginationThreshold = 2;
     final remainingItems = _controller.mediaUrls.length - page - 1;
+    final itemCount = _controller.mediaUrls.length;
 
     if (remainingItems <= paginationThreshold &&
+        itemCount != _lastPaginationTriggerItemCount &&
         _controller.hasMore &&
         !_controller.isLoadingMore &&
         !_controller.isRefreshing) {
-      // Don't load more during refresh
+      _lastPaginationTriggerItemCount = itemCount;
       _controller.loadMorePosts();
     }
   }
@@ -90,6 +92,7 @@ class _VideoFeedState extends State<VideoFeed> {
       return;
     }
 
+    _lastPaginationTriggerItemCount = 0;
     await _controller.initVideos(refresh: true);
 
     if (!mounted || !_pageController.hasClients) return;
@@ -123,18 +126,6 @@ class _VideoFeedState extends State<VideoFeed> {
     final videoController = _controller.controllerForMediaIndex(index);
     final hasVideoLoadFailed = _controller.hasVideoLoadFailed(index);
 
-    if (kDebugMode) {
-      if (effectiveVideo) {
-        debugPrint(
-          '🎥 video detected — rendering slot index=$index post=${post.id}',
-        );
-      } else {
-        debugPrint(
-          '🖼 image detected — rendering slot index=$index post=${post.id}',
-        );
-      }
-    }
-
     return RepaintBoundary(
       child: GestureDetector(
         onTap: effectiveVideo ? _onVideoTap : null,
@@ -148,17 +139,21 @@ class _VideoFeedState extends State<VideoFeed> {
                 isValidNetworkUrl: isValidNetworkUrl,
                 videoController: videoController,
                 hasVideoLoadFailed: hasVideoLoadFailed,
+                context: context,
               ),
             ),
             ValueListenableBuilder<int>(
               valueListenable: _controller.currentIndex,
-              builder: (context, currentIdx, _) => OptimizedVideoOverlay(
-                selectedTab: selectedContentTab,
-                onTabChanged: _onTabChanged,
-                controller: _controller,
-                onOwnProfileTap: () => widget.onTabChanged(4),
-                currentIndex: currentIdx,
-              ),
+              builder: (context, currentIdx, _) {
+                if (currentIdx != index) return const SizedBox.shrink();
+                return OptimizedVideoOverlay(
+                  selectedTab: selectedContentTab,
+                  onTabChanged: _onTabChanged,
+                  controller: _controller,
+                  onOwnProfileTap: () => widget.onTabChanged(4),
+                  currentIndex: currentIdx,
+                );
+              },
             ),
           ],
         ),
@@ -172,6 +167,7 @@ class _VideoFeedState extends State<VideoFeed> {
     required bool isValidNetworkUrl,
     required VideoPlayerController? videoController,
     required bool hasVideoLoadFailed,
+    required BuildContext context,
   }) {
     if (isVideo) {
       if (hasVideoLoadFailed) {
@@ -191,10 +187,6 @@ class _VideoFeedState extends State<VideoFeed> {
         return const Center(
           child: CircularProgressIndicator(color: Colors.white),
         );
-      }
-
-      if (kDebugMode) {
-        debugPrint('✅ rendered in feed — video ready url=$url');
       }
 
       return RepaintBoundary(
@@ -222,9 +214,16 @@ class _VideoFeedState extends State<VideoFeed> {
       return _brokenMediaIcon();
     }
 
-    if (kDebugMode) {
-      debugPrint('✅ rendered in feed — image url=$url');
-    }
+    final mediaSize = MediaQuery.sizeOf(context);
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = (mediaSize.width * devicePixelRatio)
+        .round()
+        .clamp(320, 1440)
+        .toInt();
+    final cacheHeight = (mediaSize.height * devicePixelRatio)
+        .round()
+        .clamp(640, 2560)
+        .toInt();
 
     return RepaintBoundary(
       child: CachedNetworkImage(
@@ -232,12 +231,13 @@ class _VideoFeedState extends State<VideoFeed> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        memCacheWidth: 200,
-        memCacheHeight: 400,
-        maxWidthDiskCache: 300,
-        maxHeightDiskCache: 600,
+        memCacheWidth: cacheWidth,
+        memCacheHeight: cacheHeight,
+        maxWidthDiskCache: cacheWidth,
+        maxHeightDiskCache: cacheHeight,
         fadeInDuration: const Duration(milliseconds: 200),
         fadeOutDuration: const Duration(milliseconds: 100),
+        useOldImageOnUrlChange: true,
         placeholder: (context, url) => Container(color: Colors.black),
         errorWidget: (context, url, error) => _brokenMediaIcon(),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -301,9 +302,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
 
   Widget _buildVideoPlayer(VideoPlayerController? controller) {
     if (controller == null || !controller.value.isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const _PostMediaLoader();
     }
     return SizedBox.expand(
       child: FittedBox(
@@ -328,8 +327,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      placeholder: (context, url) =>
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      placeholder: (context, url) => const _PostMediaLoader(),
       errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
       ),
@@ -357,6 +355,24 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PostMediaLoader extends StatelessWidget {
+  const _PostMediaLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(
+          color: AppColors.loaderDark,
+          strokeWidth: 2.6,
+        ),
       ),
     );
   }

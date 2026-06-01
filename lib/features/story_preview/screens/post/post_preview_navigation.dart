@@ -5,3 +5,9 @@ class PostPreviewOpenShare {
 
   const PostPreviewOpenShare(this.mediaPath);
 }
+
+/// Returned when user taps the preview back button after capturing from camera.
+/// The host can reopen the camera instead of falling back to the home feed.
+class PostPreviewBackToCamera {
+  const PostPreviewBackToCamera();
+}

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
 
 import 'package:gruve_app/features/story_preview/api/post/post_action_buttons.dart';
@@ -80,6 +82,27 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                               color: Colors.white,
                             ),
                           ),
+                  ),
+
+                  Positioned(
+                    top: 45,
+                    left: 16,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pop(const PostPreviewBackToCamera()),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+
+                        alignment: Alignment.center,
+                        child: Image.asset(
+                          AppAssets.back,
+                          height: 22,
+                          width: 22,
+                        ),
+                      ),
+                    ),
                   ),
 
                   /// TOP BAR + ACTION BUTTONS (ONE ROW)

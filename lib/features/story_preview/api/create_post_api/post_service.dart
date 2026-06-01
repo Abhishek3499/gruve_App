@@ -90,7 +90,9 @@ class PostService {
       '🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
     );
 
-    final fileSizeKB = await file.length() ~/ 1024;
+    final fileSize = await file.length();
+    debugPrint('File Size MB: ${fileSize / (1024 * 1024)}');
+    final fileSizeKB = fileSize ~/ 1024;
     debugPrint('📏 [PostService] Upload file size: ${fileSizeKB}KB');
 
     // Always create a fresh FormData — reusing a finalized instance causes errors
@@ -172,11 +174,12 @@ class PostService {
 
     final completer = Completer<PaginatedPostsResponse>();
     _inFlightPageRequests[requestKey] = completer.future;
-    unawaited(completer.future.catchError((_) => PaginatedPostsResponse(
-          posts: [],
-          nextCursor: null,
-          hasMore: false,
-        )));
+    unawaited(
+      completer.future.catchError(
+        (_) =>
+            PaginatedPostsResponse(posts: [], nextCursor: null, hasMore: false),
+      ),
+    );
 
     if (_isLoading && !refresh && _lastRequestKey == requestKey) {
       debugPrint('🔄 PostService: Skipping duplicate request');
@@ -387,7 +390,9 @@ class PostService {
       debugPrint("❌ [PostService] SAVE TOGGLE ERROR: $e");
       if (e is DioException) {
         debugPrint("❌ [PostService] Status: ${e.response?.statusCode}");
-        debugPrint("❌ [PostService] Response status: ${e.response?.statusCode}");
+        debugPrint(
+          "❌ [PostService] Response status: ${e.response?.statusCode}",
+        );
         if (e.response?.statusCode == 401) {
           debugPrint("❌ [PostService] Unauthorized error");
         }
@@ -422,7 +427,9 @@ class PostService {
       debugPrint("❌ [PostService] FETCH SAVED POSTS ERROR: $e");
       if (e is DioException) {
         debugPrint("❌ [PostService] Status: ${e.response?.statusCode}");
-        debugPrint("❌ [PostService] Response status: ${e.response?.statusCode}");
+        debugPrint(
+          "❌ [PostService] Response status: ${e.response?.statusCode}",
+        );
       }
       rethrow;
     }

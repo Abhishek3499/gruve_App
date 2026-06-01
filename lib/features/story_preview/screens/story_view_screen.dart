@@ -1,12 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_view_bottom.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_viewer_topbar.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 class StoryViewScreen extends StatefulWidget {
@@ -55,10 +56,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   void initState() {
     super.initState();
 
-    debugPrint('[StoryViewScreen] initState - isOwnProfile: ${widget.isOwnProfile}');
+    debugPrint(
+      '[StoryViewScreen] initState - isOwnProfile: ${widget.isOwnProfile}',
+    );
 
-    StoryStateController.ensureRegistered();
-    _storyStateController = Get.find<StoryStateController>();
+    _storyStateController = context.read<StoryStateController>();
 
     _playbackController.initialize();
     _initializeCurrentStory();
@@ -100,8 +102,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
         : _storyStateController.getStoryIdByMediaPath(mediaPath);
     final createdAt =
         widget.timestamps != null && index < widget.timestamps!.length
-            ? widget.timestamps![index]
-            : DateTime.now();
+        ? widget.timestamps![index]
+        : DateTime.now();
 
     if (storyId == null || storyId.isEmpty) {
       debugPrint(
@@ -187,7 +189,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     _videoController = null;
 
     final mediaPath = widget.mediaPaths[currentIndex];
-    _isVideo = mediaPath.toLowerCase().endsWith('.mp4') ||
+    _isVideo =
+        mediaPath.toLowerCase().endsWith('.mp4') ||
         mediaPath.toLowerCase().endsWith('.mov') ||
         mediaPath.toLowerCase().endsWith('.avi');
 
@@ -213,6 +216,10 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     } else {
       _animationController.duration = const Duration(seconds: 5);
     }
+
+    _animationController
+      ..reset()
+      ..forward();
 
     if (mounted && !_isDisposed) {
       setState(() {});
@@ -331,9 +338,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
     if (_isVideo && _videoController != null) {
       if (!_videoController!.value.isInitialized) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        );
+        return const _StoryMediaLoader();
       }
 
       return FittedBox(
@@ -363,9 +368,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
             }
             return child;
           }
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
+          return const _StoryMediaLoader();
         },
         errorBuilder: (context, error, stackTrace) {
           if (_isImageLoading) {
@@ -402,19 +405,21 @@ class _StoryViewScreenState extends State<StoryViewScreen>
         },
       );
 
-      fileImage.image.resolve(const ImageConfiguration()).addListener(
-        ImageStreamListener((ImageInfo info, bool synchronousCall) {
-          if (_isImageLoading) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _isImageLoading = false;
+      fileImage.image
+          .resolve(const ImageConfiguration())
+          .addListener(
+            ImageStreamListener((ImageInfo info, bool synchronousCall) {
+              if (_isImageLoading) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _isImageLoading = false;
+                    });
+                  }
                 });
               }
-            });
-          }
-        }),
-      );
+            }),
+          );
 
       return fileImage;
     }
@@ -439,17 +444,23 @@ class _StoryViewScreenState extends State<StoryViewScreen>
         child: Stack(
           children: [
             Positioned.fill(child: _buildMedia()),
-            StoryViewerTopBar(
-              username:
-                  widget.displayName.isNotEmpty ? widget.displayName : 'User',
-              time: _getCurrentStoryTime(),
-              avatarUrl: widget.avatarUrl.isNotEmpty
-                  ? widget.avatarUrl
-                  : 'https://i.pravatar.cc/150?img=3',
-              storyCount: widget.mediaPaths.length,
-              currentIndex: currentIndex,
-              progress: _animationController.value,
-              onClose: () => Navigator.pop(context),
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, _) {
+                return StoryViewerTopBar(
+                  username: widget.displayName.isNotEmpty
+                      ? widget.displayName
+                      : 'User',
+                  time: _getCurrentStoryTime(),
+                  avatarUrl: widget.avatarUrl.isNotEmpty
+                      ? widget.avatarUrl
+                      : 'https://i.pravatar.cc/150?img=3',
+                  storyCount: widget.mediaPaths.length,
+                  currentIndex: currentIndex,
+                  progress: _animationController.value,
+                  onClose: () => Navigator.pop(context),
+                );
+              },
             ),
             // Only show bottom bar for own profile stories
             if (widget.isOwnProfile)
@@ -463,6 +474,24 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StoryMediaLoader extends StatelessWidget {
+  const _StoryMediaLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(
+          color: AppColors.loaderDark,
+          strokeWidth: 2.4,
         ),
       ),
     );

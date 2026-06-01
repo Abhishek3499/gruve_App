@@ -72,23 +72,16 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(5),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1A2E), // Deep purple-dark background
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6B46C1).withValues(alpha: 0.3), // Purple glow
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                ),
-              ],
+              color: const Color(0xFF46374D).withValues(alpha: 0.94),
+              borderRadius: BorderRadius.circular(5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,21 +94,22 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0,
                       ),
                     ),
                     GestureDetector(
                       onTap: () => _showFilterMenu(context),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 13,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: Colors.white.withValues(alpha: 0.62),
                             width: 1,
                           ),
                         ),
@@ -124,15 +118,17 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
                             Text(
                               _filterLabel,
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
+                                color: Color(0xFFA8A1B3),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: 0,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 8),
                             const Icon(
                               Icons.keyboard_arrow_down,
-                              color: Colors.white,
-                              size: 18,
+                              color: Color(0xFFA8A1B3),
+                              size: 16,
                             ),
                           ],
                         ),
@@ -140,9 +136,9 @@ class _ActivityInsightsCardState extends State<ActivityInsightsCard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 SizedBox(
-                  height: 300,
+                  height: 215,
                   child: CustomActivityChart(
                     controller: widget.controller,
                     filterType: _selected,

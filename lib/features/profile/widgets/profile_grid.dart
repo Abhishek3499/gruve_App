@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/assets.dart';
+import '../../../core/constants/app_colors.dart';
 import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import '../../../features/story_preview/api/create_post_api/model/post_model.dart';
 import '../screens/real_draft_screen.dart';
@@ -29,7 +30,6 @@ class ProfileGrid extends StatelessWidget {
 
   Widget? _pagingFooter() {
     if (!controller.isLoadingTab(selectedTab)) return null;
-    if (!controller.canLoadMoreForTab(selectedTab)) return null;
     final n = _postsForTab().length;
     if (n == 0) return null;
     return Padding(
@@ -40,7 +40,7 @@ class ProfileGrid extends StatelessWidget {
           height: 22,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Colors.white.withValues(alpha: 0.85),
+            color: AppColors.loaderDark,
           ),
         ),
       ),
@@ -57,9 +57,46 @@ class ProfileGrid extends StatelessWidget {
     );
   }
 
+  Widget _buildGridLoadingPlaceholders({int itemCount = 6}) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.75,
+      ),
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            color: Colors.white.withValues(alpha: 0.10),
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.loaderDark,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final posts = _postsForTab();
+    final tabIsLoading = controller.isLoadingTab(selectedTab);
+
+    if (posts.isEmpty && tabIsLoading) {
+      return _buildGridLoadingPlaceholders();
+    }
 
     if (selectedTab == 2) {
       final likedPosts = posts;
@@ -71,9 +108,7 @@ class ProfileGrid extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.12),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           ),
           child: const Column(
             mainAxisSize: MainAxisSize.min,
@@ -97,10 +132,7 @@ class ProfileGrid extends StatelessWidget {
               Text(
                 'Posts you like will appear here.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
@@ -184,15 +216,15 @@ class ProfileGrid extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              selectedTab == 1 ? Icons.trending_up : Icons.video_library_outlined,
+              selectedTab == 1
+                  ? Icons.trending_up
+                  : Icons.video_library_outlined,
               color: Colors.white,
               size: 34,
             ),
@@ -212,10 +244,7 @@ class ProfileGrid extends StatelessWidget {
                   ? 'Trending posts will appear here.'
                   : 'Your posts will appear here.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ],
         ),
@@ -261,12 +290,10 @@ class ProfileGrid extends StatelessWidget {
                 isOwnProfile: true,
               );
             },
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
           ),
         );
       },
@@ -305,7 +332,7 @@ class ProfileGrid extends StatelessWidget {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: AppColors.loaderDark,
                             strokeWidth: 2,
                           ),
                         ),
@@ -326,8 +353,10 @@ class ProfileGrid extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red,
                     borderRadius: BorderRadius.circular(12),

@@ -34,9 +34,9 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Future<void> _fetchInitialData() async {
+    _prefetchUsersForAvatarRow();
     await context.read<MessageProvider>().fetchConversations();
     debugPrint('[MessageScreen] Conversations loaded');
-    _prefetchUsersForAvatarRow();
   }
 
   void _prefetchUsersForAvatarRow() {
@@ -198,7 +198,7 @@ class _MessageScreenState extends State<MessageScreen> {
     }
 
     // Show shimmer during refresh
-    if (messageProvider.isRefreshing) {
+    if (messageProvider.isRefreshing && !messageProvider.hasConversations) {
       debugPrint('🔄 [buildConversationList] → showing shimmer (refreshing)');
       return const ChatListShimmer(itemCount: 7);
     }

@@ -13,9 +13,9 @@ class CameraHandler {
     try {
       final CameraCaptureResult? capture =
           await Navigator.push<CameraCaptureResult>(
-        context,
-        MaterialPageRoute(builder: (context) => const CameraScreen()),
-      );
+            context,
+            MaterialPageRoute(builder: (context) => const CameraScreen()),
+          );
 
       final imagePath = capture?.mediaPath;
       final captureMode = capture?.mode;
@@ -51,14 +51,16 @@ class CameraHandler {
             return showSharePostOnHomeSheet(result.mediaPath);
           }
 
+          if (result is PostPreviewBackToCamera) {
+            return openCamera(context);
+          }
+
           if (result != null && result is List<ChatUser>) {
             final shareResult = await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => SharePostScreen(
-                  mediaPath: imagePath,
-                  taggedUsers: result,
-                ),
+                builder: (context) =>
+                    SharePostScreen(mediaPath: imagePath, taggedUsers: result),
               ),
             );
             return shareResult;

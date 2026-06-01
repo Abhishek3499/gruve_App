@@ -48,11 +48,13 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> _runFetchUsers({bool loadMore = false}) async {
     // Check cache validity for initial load
-    if (!loadMore && 
-        _lastFetchTime != null && 
+    if (!loadMore &&
+        _lastFetchTime != null &&
         DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration &&
         _users.isNotEmpty) {
-      debugPrint('✅ [UserProvider] Using cached users (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)');
+      debugPrint(
+        '✅ [UserProvider] Using cached users (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
+      );
       return;
     }
 
@@ -88,7 +90,9 @@ class UserProvider extends ChangeNotifier {
       final repo = repository as UserRepositoryImpl;
       final response = await repo.fetchUsersPaginated(page: _currentPage);
 
-      debugPrint('📩 [UserProvider] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}');
+      debugPrint(
+        '📩 [UserProvider] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}',
+      );
 
       if (response.users.isEmpty) {
         debugPrint('⚠️ [UserProvider] API returned EMPTY user list');
@@ -99,13 +103,21 @@ class UserProvider extends ChangeNotifier {
 
       // Update users list
       if (loadMore) {
-        _users.addAll(response.users.map((m) => m.toEntity()));
-        debugPrint('➕ [UserProvider] Appended ${response.users.length} users — total: ${_users.length}');
+        final beforeCount = _users.length;
+        _users = _cleanUsers([
+          ..._users,
+          ...response.users.map((m) => m.toEntity()),
+        ]);
+        debugPrint(
+          '➕ [UserProvider] Appended ${_users.length - beforeCount} users — total: ${_users.length}',
+        );
       } else {
-        _users = response.users.map((m) => m.toEntity()).toList();
+        _users = _cleanUsers(response.users.map((m) => m.toEntity()));
         _lastFetchTime = DateTime.now();
         _hasInitialized = true;
-        debugPrint('🔄 [UserProvider] Replaced list with ${response.users.length} users');
+        debugPrint(
+          '🔄 [UserProvider] Replaced list with ${_users.length} users',
+        );
       }
 
       // Update pagination state
@@ -114,7 +126,9 @@ class UserProvider extends ChangeNotifier {
         _currentPage = response.page + 1;
       }
 
-      debugPrint('✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage');
+      debugPrint(
+        '✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage',
+      );
     } catch (e) {
       _errorMessage = e.toString();
       debugPrint('❌ [UserProvider] Error: $e');
@@ -125,10 +139,26 @@ class UserProvider extends ChangeNotifier {
       } else {
         _isLoading = false;
       }
-      
-      debugPrint('🏁 [UserProvider] Loading states cleared - isLoading: $_isLoading, isFetchingMore: $_isFetchingMore');
+
+      debugPrint(
+        '🏁 [UserProvider] Loading states cleared - isLoading: $_isLoading, isFetchingMore: $_isFetchingMore',
+      );
       notifyListeners();
     }
+  }
+
+  List<UserEntity> _cleanUsers(Iterable<UserEntity> users) {
+    final deduped = <String, UserEntity>{};
+
+    for (final user in users) {
+      final userId = user.userId.trim();
+      final username = user.username.trim();
+      final fullName = user.fullName.trim();
+      if (userId.isEmpty || (username.isEmpty && fullName.isEmpty)) continue;
+      deduped[userId] = user;
+    }
+
+    return deduped.values.toList();
   }
 
   // Method to reset pagination state (for pull-to-refresh)

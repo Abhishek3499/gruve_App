@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
-import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 
 class StorySelectorScreen extends StatefulWidget {
   final List<String> mediaPaths;
@@ -121,9 +121,19 @@ class CreateHighlightSheet extends StatefulWidget {
 
 class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
   final TextEditingController _nameController = TextEditingController();
-  final HighlightCreateController _createController = Get.put(
-    HighlightCreateController(),
-  );
+  late final HighlightCreateController _createController;
+
+  @override
+  void initState() {
+    super.initState();
+    _createController = context.read<HighlightCreateController>();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -306,7 +316,7 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                 );
 
                 // ✅ Success handling
-                if (_createController.isSuccess.value) {
+                if (_createController.isSuccess) {
                   debugPrint("✅ Highlight created successfully");
 
                   if (!mounted) return;

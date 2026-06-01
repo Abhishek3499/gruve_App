@@ -5,6 +5,7 @@ class OtpInputBox extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool autoFocus;
+  final bool enableSmsAutofill;
   final Function(String)? onChanged;
   final Function()? onBackspace;
 
@@ -13,6 +14,7 @@ class OtpInputBox extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     this.autoFocus = false,
+    this.enableSmsAutofill = false,
     this.onChanged,
     this.onBackspace,
   });
@@ -37,14 +39,25 @@ class OtpInputBox extends StatelessWidget {
               width: 1.5,
             ),
           ),
-          child: Center(
+          child: Focus(
+            onKeyEvent: (node, event) {
+              if (event.logicalKey == LogicalKeyboardKey.backspace &&
+                  controller.text.isEmpty) {
+                onBackspace?.call();
+              }
+              return KeyEventResult.ignored;
+            },
             child: TextField(
               controller: controller,
               focusNode: focusNode,
               autofocus: autoFocus,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.next,
+              autofillHints: enableSmsAutofill
+                  ? const [AutofillHints.oneTimeCode]
+                  : null,
               textAlign: TextAlign.center,
-              maxLength: 1,
+              maxLength: 4,
               showCursor: false,
               style: const TextStyle(
                 color: Colors.white,
@@ -68,7 +81,10 @@ class OtpInputBox extends StatelessWidget {
                   onBackspace?.call();
                 }
               },
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
             ),
           ),
         );

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/services.dart';
+
 import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
+
 import '../utils/camera_logger.dart';
 import '../utils/image_filter_processor.dart';
 import 'filter_controller.dart';
@@ -17,9 +19,15 @@ class CameraControllerService {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   int _currentCameraIndex = 0;
+  int _defaultBackCameraIndex = 0;
+  int? _ultraWideCameraIndex;
   bool _isInitialized = false;
   bool _isCapturing = false;
   bool _isRecordingVideo = false;
+  double _minZoom = 1.0;
+  double _maxZoom = 1.0;
+  double _currentZoom = 1.0;
+  double _displayZoom = 1.0;
 
   final StreamController<bool> _initializationStreamController =
       StreamController<bool>.broadcast();
@@ -31,17 +39,17 @@ class CameraControllerService {
       StreamController<String>.broadcast();
   final StreamController<FlashMode> _flashModeStreamController =
       StreamController<FlashMode>.broadcast();
+  final StreamController<double> _zoomStreamController =
+      StreamController<double>.broadcast();
 
   Stream<bool> get initializationStream =>
       _initializationStreamController.stream;
-
   Stream<bool> get captureStream => _captureStreamController.stream;
-
-  Stream<bool> get videoRecordingStream => _videoRecordingStreamController.stream;
-
+  Stream<bool> get videoRecordingStream =>
+      _videoRecordingStreamController.stream;
   Stream<String> get errorStream => _errorStreamController.stream;
-
   Stream<FlashMode> get flashModeStream => _flashModeStreamController.stream;
+  Stream<double> get zoomStream => _zoomStreamController.stream;
 
   bool get isInitialized => _isInitialized;
   bool get isCapturing => _isCapturing;
@@ -49,11 +57,26 @@ class CameraControllerService {
   CameraController? get controller => _controller;
   List<CameraDescription> get cameras => _cameras;
   int get currentCameraIndex => _currentCameraIndex;
+  double get minZoom => _minZoom;
+  double get maxZoom => _maxZoom;
+  double get currentZoom => _currentZoom;
+  double get displayZoom => _displayZoom;
+  bool get isBackCamera =>
+      _cameras.isNotEmpty &&
+      _cameras[_currentCameraIndex].lensDirection == CameraLensDirection.back;
+  bool get hasUltraWideCamera =>
+      isBackCamera &&
+      _ultraWideCameraIndex != null &&
+      _currentCameraIndex != _ultraWideCameraIndex;
 
   FlashMode get currentFlashMode {
     if (_controller == null || !_isInitialized) return FlashMode.off;
     return _controller!.value.flashMode;
   }
+
+  bool get _isUltraWideActive =>
+      _ultraWideCameraIndex != null &&
+      _currentCameraIndex == _ultraWideCameraIndex;
 
   Future<void> toggleFlash() async {
     if (_controller == null || !_isInitialized) return;
@@ -64,50 +87,41 @@ class CameraControllerService {
           ? FlashMode.torch
           : FlashMode.off;
       await _controller!.setFlashMode(nextMode);
-      
-      // Emit flash mode change to stream
       _flashModeStreamController.add(nextMode);
     } catch (e) {
       _errorStreamController.add('Failed to toggle flash: ${e.toString()}');
     }
   }
 
-  // 🔥 OPTIMIZED INITIALIZATION
   Future<void> initializeCamera() async {
     if (_isInitialized) {
       _initializationStreamController.add(true);
+      _zoomStreamController.add(_displayZoom);
       return;
     }
 
     try {
       CameraLogger.logInitializationStart();
-
-      // Get cameras first
       _cameras = await availableCameras();
 
       if (_cameras.isEmpty) {
         throw Exception('No cameras available');
       }
 
-      // Initialize first camera immediately
-      final camera = _cameras.first;
-      _controller = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: true, // Enable audio for video recording
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-
-      // Initialize without delay
-      await _controller!.initialize();
-      await _controller!.setZoomLevel(1.0);
+      _prepareCameraIndexes();
+      await _initializeControllerAt(_defaultBackCameraIndex);
+      await setZoomLevel(1.0);
 
       _isInitialized = true;
       CameraLogger.logInitializationSuccess();
       _initializationStreamController.add(true);
+      _zoomStreamController.add(_displayZoom);
     } catch (e) {
-      CameraLogger.log('Failed to initialize camera: ${_cameras.first.name}');
-      _errorStreamController.add('Camera initialization failed: ${e.toString()}');
+      final cameraName = _cameras.isEmpty ? 'unknown' : _cameras.first.name;
+      CameraLogger.log('Failed to initialize camera: $cameraName');
+      _errorStreamController.add(
+        'Camera initialization failed: ${e.toString()}',
+      );
       _initializationStreamController.add(false);
     }
   }
@@ -116,36 +130,115 @@ class CameraControllerService {
     await initializeCamera();
   }
 
-  // 🔥 FIXED SWITCH CAMERA
-  Future<void> switchCamera() async {
-    if (!_isInitialized || _cameras.length <= 1) return;
+  void _prepareCameraIndexes() {
+    final backIndexes = <int>[];
+
+    for (var i = 0; i < _cameras.length; i++) {
+      if (_cameras[i].lensDirection == CameraLensDirection.back) {
+        backIndexes.add(i);
+      }
+    }
+
+    if (backIndexes.isEmpty) {
+      _defaultBackCameraIndex = 0;
+      _ultraWideCameraIndex = null;
+      return;
+    }
+
+    _defaultBackCameraIndex = backIndexes.first;
+    _ultraWideCameraIndex = backIndexes.length > 1 ? backIndexes.last : null;
+  }
+
+  Future<void> _initializeControllerAt(int cameraIndex) async {
+    _currentCameraIndex = cameraIndex;
+    _controller = CameraController(
+      _cameras[_currentCameraIndex],
+      ResolutionPreset.high,
+      enableAudio: true,
+      imageFormatGroup: ImageFormatGroup.jpeg,
+    );
+
+    await _controller!.initialize();
+    await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+    await _controller!.setFocusMode(FocusMode.auto);
+
+    _minZoom = await _controller!.getMinZoomLevel();
+    _maxZoom = await _controller!.getMaxZoomLevel();
+    _currentZoom = _minZoom;
+    _displayZoom = _isUltraWideActive ? 0.5 : _currentZoom;
+  }
+
+  Future<void> setZoomLevel(double zoomLevel) async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+
+    final nextZoom = zoomLevel.clamp(_minZoom, _maxZoom);
+    _currentZoom = nextZoom;
+    _displayZoom = _isUltraWideActive ? 0.5 : nextZoom;
+    await _controller!.setZoomLevel(nextZoom);
+    _zoomStreamController.add(_displayZoom);
+  }
+
+  Future<void> setScale(double scale) async {
+    if (!_isInitialized) return;
+
+    if (scale == 0.5 && _ultraWideCameraIndex != null) {
+      await _switchToCameraIndex(_ultraWideCameraIndex!, displayZoom: 0.5);
+      return;
+    }
+
+    if (_isUltraWideActive) {
+      await _switchToCameraIndex(_defaultBackCameraIndex);
+    }
+
+    await setZoomLevel(scale);
+  }
+
+  Future<void> _switchToCameraIndex(
+    int cameraIndex, {
+    double? displayZoom,
+  }) async {
+    if (_currentCameraIndex == cameraIndex && _isInitialized) {
+      if (displayZoom != null) {
+        _displayZoom = displayZoom;
+        _zoomStreamController.add(_displayZoom);
+      }
+      return;
+    }
 
     try {
       await _controller?.dispose();
       _isInitialized = false;
       _initializationStreamController.add(false);
 
-      _currentCameraIndex = (_currentCameraIndex + 1) % _cameras.length;
-
-      _controller = CameraController(
-        _cameras[_currentCameraIndex],
-        ResolutionPreset.high,
-        enableAudio: true, // Enable audio for video recording
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-
-      await _controller!.initialize();
-
-      // 🔥 LOCK AGAIN AFTER SWITCH
-      await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
-
-      double minZoom = await _controller!.getMinZoomLevel();
-      await _controller!.setZoomLevel(minZoom);
-
-      await _controller!.setFocusMode(FocusMode.auto);
+      await _initializeControllerAt(cameraIndex);
+      if (displayZoom != null) {
+        _displayZoom = displayZoom;
+      }
+      await _controller!.setZoomLevel(_minZoom);
+      _currentZoom = _minZoom;
 
       _isInitialized = true;
       _initializationStreamController.add(true);
+      _zoomStreamController.add(_displayZoom);
+    } catch (e) {
+      _errorStreamController.add('Failed to switch camera: ${e.toString()}');
+    }
+  }
+
+  Future<void> switchCamera() async {
+    if (!_isInitialized || _cameras.length <= 1) return;
+
+    try {
+      final currentDirection = _cameras[_currentCameraIndex].lensDirection;
+      final nextIndex = currentDirection == CameraLensDirection.front
+          ? _defaultBackCameraIndex
+          : _cameras.indexWhere(
+              (camera) => camera.lensDirection == CameraLensDirection.front,
+            );
+
+      if (nextIndex < 0) return;
+
+      await _switchToCameraIndex(nextIndex, displayZoom: 1.0);
     } catch (e) {
       _errorStreamController.add('Failed to switch camera: ${e.toString()}');
     }
@@ -159,35 +252,27 @@ class CameraControllerService {
       _captureStreamController.add(true);
 
       final image = await _controller!.takePicture();
-      
-      // Get selected filter
       final filter = FilterController().selectedFilter;
-      
-      // If no matrix filter, return original image
+
       if (!filter.hasMatrix) {
         return image;
       }
-      
-      // Apply filter to image
-      final File imageFile = File(image.path);
-      
-      // Resize large images to prevent memory issues
-      final File processedFile = await ImageFilterProcessor.resizeImageIfNeeded(imageFile);
-      
-      // Apply color matrix filter
-      final File filteredFile = await ImageFilterProcessor.applyColorMatrixToImage(
+
+      final imageFile = File(image.path);
+      final processedFile = await ImageFilterProcessor.resizeImageIfNeeded(
+        imageFile,
+      );
+      final filteredFile = await ImageFilterProcessor.applyColorMatrixToImage(
         processedFile,
         filter.matrix,
       );
-      
-      // Clean up temporary resized file if different from original
+
       if (processedFile.path != imageFile.path) {
         await processedFile.delete();
       }
-      
-      // Clean up original file
+
       await imageFile.delete();
-      
+
       CameraLogger.log('Filter applied: ${filter.name}');
       return XFile(filteredFile.path);
     } catch (e) {
@@ -205,13 +290,15 @@ class CameraControllerService {
     try {
       _isRecordingVideo = true;
       _videoRecordingStreamController.add(true);
-      
+
       await _controller!.startVideoRecording();
       CameraLogger.log('Video recording started');
     } catch (e) {
       _isRecordingVideo = false;
       _videoRecordingStreamController.add(false);
-      _errorStreamController.add('Failed to start video recording: ${e.toString()}');
+      _errorStreamController.add(
+        'Failed to start video recording: ${e.toString()}',
+      );
     }
   }
 
@@ -223,7 +310,9 @@ class CameraControllerService {
       CameraLogger.log('Video recording stopped: ${video.path}');
       return video;
     } catch (e) {
-      _errorStreamController.add('Failed to stop video recording: ${e.toString()}');
+      _errorStreamController.add(
+        'Failed to stop video recording: ${e.toString()}',
+      );
       return null;
     } finally {
       _isRecordingVideo = false;
@@ -244,5 +333,6 @@ class CameraControllerService {
     _videoRecordingStreamController.close();
     _errorStreamController.close();
     _flashModeStreamController.close();
+    _zoomStreamController.close();
   }
 }

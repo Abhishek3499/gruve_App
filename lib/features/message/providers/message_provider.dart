@@ -146,21 +146,34 @@ class MessageProvider extends ChangeNotifier {
 
   /// Get conversation by user ID (other user)
   ConversationModel? getConversationByUserId(String userId) {
-    debugPrint('🔍 [MessageProvider] 🔎 Searching conversation by userId: $userId');
-    debugPrint('📊 [MessageProvider] 💬 Total conversations to search: ${_conversations.length}');
-    
+    final normalizedUserId = userId.trim();
+    debugPrint(
+      '🔍 [MessageProvider] 🔎 Searching conversation by userId: $normalizedUserId',
+    );
+    debugPrint(
+      '📊 [MessageProvider] 💬 Total conversations to search: ${_conversations.length}',
+    );
+
     try {
       final conversation = _conversations.firstWhere(
-        (conversation) => conversation.otherUser.id == userId,
+        (conversation) => conversation.otherUser.id.trim() == normalizedUserId,
       );
       debugPrint('✅ [MessageProvider] 🎉 Conversation found!');
       debugPrint('💬 [MessageProvider] 🆔 Conversation ID: ${conversation.id}');
-      debugPrint('👤 [MessageProvider] 👥 Other user: ${conversation.otherUser.name}');
-      debugPrint('📨 [MessageProvider] 💭 Last message: ${conversation.lastMessage.content}');
+      debugPrint(
+        '👤 [MessageProvider] 👥 Other user: ${conversation.otherUser.name}',
+      );
+      debugPrint(
+        '📨 [MessageProvider] 💭 Last message: ${conversation.lastMessage.content}',
+      );
       return conversation;
     } catch (e) {
-      debugPrint('❌ [MessageProvider] 🚫 No conversation found with userId: $userId');
-      debugPrint('📊 [MessageProvider] 📉 Searched through ${_conversations.length} conversations');
+      debugPrint(
+        '❌ [MessageProvider] 🚫 No conversation found with userId: $userId',
+      );
+      debugPrint(
+        '📊 [MessageProvider] 📉 Searched through ${_conversations.length} conversations',
+      );
       return null;
     }
   }
@@ -225,16 +238,22 @@ class MessageProvider extends ChangeNotifier {
   /// [refresh] - If true, will clear existing data and fetch fresh data
   /// [page] - Page number for pagination (default: 1)
   Future<void> fetchConversations({bool refresh = false, int? page}) async {
+    final requestedPage = page ?? 1;
+    final isFirstPage = requestedPage <= 1;
+
     // Check cache validity - reduce cache time for better freshness
-    if (!refresh && 
-        _lastFetchTime != null && 
-        DateTime.now().difference(_lastFetchTime!) < const Duration(minutes: 2) &&
+    if (!refresh &&
+        isFirstPage &&
+        _lastFetchTime != null &&
+        DateTime.now().difference(_lastFetchTime!) <
+            const Duration(minutes: 2) &&
         _conversations.isNotEmpty) {
-      debugPrint('✅ [MessageProvider] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)');
+      debugPrint(
+        '✅ [MessageProvider] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
+      );
       return;
     }
 
-    final requestedPage = page ?? 1;
     final fetchKey = '${refresh ? 'refresh' : 'page'}:$requestedPage';
     final inFlight = _inFlightFetches[fetchKey];
     if (inFlight != null) {
@@ -306,19 +325,19 @@ class MessageProvider extends ChangeNotifier {
       }
 
       if (refresh || !isPagination) {
-        _conversations = conversations;
+        _conversations = _cleanConversations(conversations);
         _lastFetchTime = DateTime.now();
       } else {
-        // Deduplicate by conversation.id before appending
-        final existingIds = _conversations.map((c) => c.id).toSet();
-        final newConversations = conversations
-            .where((c) => !existingIds.contains(c.id))
-            .toList();
-        _conversations.addAll(newConversations);
+        final beforeCount = _conversations.length;
+        _conversations = _cleanConversations([
+          ..._conversations,
+          ...conversations,
+        ]);
+        final addedCount = _conversations.length - beforeCount;
         debugPrint(
-          '📊 [MessageProvider] Added ${newConversations.length} new conversations (${conversations.length - newConversations.length} duplicates skipped)',
+          '📊 [MessageProvider] Added $addedCount new conversations (${conversations.length - addedCount} duplicates/invalid skipped)',
         );
-        if (isPagination && newConversations.isEmpty) {
+        if (isPagination && addedCount <= 0) {
           _hasMoreData = false;
         }
         if (!isPagination) {
@@ -333,9 +352,7 @@ class MessageProvider extends ChangeNotifier {
 
       // Update pagination state
       _hasMoreData = _hasMoreData && conversations.length >= _pageSize;
-      if (!refresh) {
-        _currentPage = requestedPage + 1;
-      }
+      _currentPage = requestedPage + 1;
 
       final totalTime = DateTime.now().difference(fetchStart);
       developer.log(
@@ -358,8 +375,10 @@ class MessageProvider extends ChangeNotifier {
       } else {
         _setLoading(false);
       }
-      
-      debugPrint('🏁 [MessageProvider] Loading states cleared - isLoading: $_isLoading, isRefreshing: $_isRefreshing, isLoadingMore: $_isLoadingMore');
+
+      debugPrint(
+        '🏁 [MessageProvider] Loading states cleared - isLoading: $_isLoading, isRefreshing: $_isRefreshing, isLoadingMore: $_isLoadingMore',
+      );
     }
   }
 
@@ -467,6 +486,8 @@ class MessageProvider extends ChangeNotifier {
         );
       }
 
+      _conversations = _cleanConversations(_conversations);
+
       // Sort to maintain order
       _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
@@ -480,7 +501,15 @@ class MessageProvider extends ChangeNotifier {
   ///
   /// [conversation] - The new conversation to add
   void addConversation(ConversationModel conversation) {
-    if (_conversations.any((item) => item.id == conversation.id)) {
+    if (!_isRenderableConversation(conversation)) {
+      debugPrint(
+        '🚫 [MessageProvider] Invalid conversation skipped: ${conversation.id}',
+      );
+      return;
+    }
+
+    final key = _conversationKey(conversation);
+    if (_conversations.any((item) => _conversationKey(item) == key)) {
       debugPrint(
         '🔒 [MessageProvider] Duplicate conversation skipped: ${conversation.id}',
       );
@@ -500,6 +529,44 @@ class MessageProvider extends ChangeNotifier {
     _conversations.removeWhere((c) => c.id == conversationId);
     notifyListeners();
     debugPrint('➖ [MessageProvider] Removed conversation: $conversationId');
+  }
+
+  List<ConversationModel> _cleanConversations(
+    Iterable<ConversationModel> conversations,
+  ) {
+    final deduped = <String, ConversationModel>{};
+
+    for (final conversation in conversations) {
+      if (!_isRenderableConversation(conversation)) continue;
+
+      final key = _conversationKey(conversation);
+      final existing = deduped[key];
+      if (existing == null ||
+          conversation.updatedAt.isAfter(existing.updatedAt)) {
+        deduped[key] = conversation;
+      }
+    }
+
+    return deduped.values.toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  }
+
+  bool _isRenderableConversation(ConversationModel conversation) {
+    final conversationId = conversation.id.trim();
+    final userId = conversation.otherUser.id.trim();
+    final name = conversation.otherUser.name.trim();
+
+    if (conversationId.isEmpty || userId.isEmpty || name.isEmpty) {
+      return false;
+    }
+
+    return name.toLowerCase() != 'unknown';
+  }
+
+  String _conversationKey(ConversationModel conversation) {
+    final userId = conversation.otherUser.id.trim();
+    if (userId.isNotEmpty) return 'user:$userId';
+    return 'conversation:${conversation.id.trim()}';
   }
 
   /// Reset provider state

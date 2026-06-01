@@ -22,13 +22,13 @@ class _CaptureButtonState extends State<CaptureButton>
   bool _isRecordingVideo = false;
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
-  
+
   double _currentZoom = 1.0;
   double _baseZoom = 1.0;
   double _maxZoom = 1.0;
   double _minZoom = 1.0;
   double _dragStartY = 0.0;
-  
+
   @override
   void initState() {
     super.initState();
@@ -36,13 +36,13 @@ class _CaptureButtonState extends State<CaptureButton>
     _initListeners();
     _initZoomLevels();
   }
-  
+
   Future<void> _initZoomLevels() async {
     final controller = _cameraService.controller;
     if (controller != null && controller.value.isInitialized) {
-      _maxZoom = await controller.getMaxZoomLevel();
-      _minZoom = await controller.getMinZoomLevel();
-      _currentZoom = _minZoom;
+      _maxZoom = _cameraService.maxZoom;
+      _minZoom = _cameraService.minZoom;
+      _currentZoom = _cameraService.currentZoom;
     }
   }
 
@@ -113,14 +113,14 @@ class _CaptureButtonState extends State<CaptureButton>
     if (_isCapturing || _isRecordingVideo) return;
 
     CameraLogger.logUserAction('Video recording started (long press)');
-    
+
     // Store initial position and zoom
     _dragStartY = details.globalPosition.dy;
     _baseZoom = _currentZoom;
 
     // Start video recording
     await _cameraService.startVideoRecording();
-    
+
     // Start timer
     _recordingSeconds = 0;
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -131,25 +131,27 @@ class _CaptureButtonState extends State<CaptureButton>
       }
     });
   }
-  
-  Future<void> _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) async {
+
+  Future<void> _onLongPressMoveUpdate(
+    LongPressMoveUpdateDetails details,
+  ) async {
     if (!_isRecordingVideo) return;
-    
+
     final controller = _cameraService.controller;
     if (controller == null || !controller.value.isInitialized) return;
-    
+
     // Calculate zoom based on vertical drag
     // Swipe up (negative delta) = zoom in
     // Swipe down (positive delta) = zoom out
     final dragDelta = _dragStartY - details.globalPosition.dy;
     final zoomSensitivity = 0.005; // Adjust sensitivity
-    
+
     double newZoom = _baseZoom + (dragDelta * zoomSensitivity);
     newZoom = newZoom.clamp(_minZoom, _maxZoom);
-    
+
     if ((newZoom - _currentZoom).abs() > 0.01) {
       _currentZoom = newZoom;
-      await controller.setZoomLevel(_currentZoom);
+      await _cameraService.setZoomLevel(_currentZoom);
       setState(() {});
     }
   }
@@ -158,15 +160,15 @@ class _CaptureButtonState extends State<CaptureButton>
     if (!_isRecordingVideo) return;
 
     CameraLogger.logUserAction('Video recording stopped (long press released)');
-    
+
     // Stop timer
     _recordingTimer?.cancel();
     _recordingTimer = null;
-    
+
     // Reset zoom to base level
     final controller = _cameraService.controller;
     if (controller != null && controller.value.isInitialized) {
-      await controller.setZoomLevel(_minZoom);
+      await _cameraService.setZoomLevel(_minZoom);
       _currentZoom = _minZoom;
       _baseZoom = _minZoom;
     }
@@ -244,7 +246,10 @@ class _CaptureButtonState extends State<CaptureButton>
                     child: Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(12),
@@ -261,7 +266,10 @@ class _CaptureButtonState extends State<CaptureButton>
                         const SizedBox(height: 4),
                         if (_currentZoom > _minZoom + 0.1)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black54,
                               borderRadius: BorderRadius.circular(8),
@@ -278,13 +286,16 @@ class _CaptureButtonState extends State<CaptureButton>
                       ],
                     ),
                   ),
-                
+
                 /// Zoom hint on first long press
                 if (_isRecordingVideo && _recordingSeconds < 2)
                   Positioned(
                     bottom: -40,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(8),
@@ -292,14 +303,15 @@ class _CaptureButtonState extends State<CaptureButton>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.arrow_upward, color: Colors.white, size: 12),
+                          Icon(
+                            Icons.arrow_upward,
+                            color: Colors.white,
+                            size: 12,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Swipe up to zoom',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 10),
                           ),
                         ],
                       ),

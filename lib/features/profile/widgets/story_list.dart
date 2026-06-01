@@ -20,36 +20,28 @@ class StoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    _log('[StoryList] Building with isLoading: ${provider.isLoading}');
-    
     // Show skeleton loader while loading
-    if (provider.isLoading) {
-      _log('[StoryList] Showing skeleton loader with Add Story button');
+    if (provider.isLoading && provider.highlights.isEmpty) {
       return Row(
         children: [
           const SizedBox(width: 30),
           // Show actual Add Story button during loading
           _buildAddStory(context),
           // Show skeleton for other users' stories
-          Expanded(
-            child: const StoryListSkeleton(otherUsersCount: 6),
-          ),
+          Expanded(child: const StoryListSkeleton(otherUsersCount: 6)),
         ],
       );
     }
 
     // Show error state
     if (provider.errorMessage != null) {
-      _log('[StoryList] Showing error state: ${provider.errorMessage}');
       return _buildErrorState(context);
     }
 
     final highlights = provider.highlights;
-    _log('[Profile] Highlights row count: ${highlights.length}');
 
     // Show empty state
     if (highlights.isEmpty) {
-      _log('[StoryList] Showing empty state');
       return _buildEmptyState(context);
     }
 
@@ -207,11 +199,7 @@ class StoryList extends StatelessWidget {
               color: Colors.red.withValues(alpha: 0.2),
               border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
             ),
-            child: const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 24,
-            ),
+            child: const Icon(Icons.error_outline, color: Colors.red, size: 24),
           ),
           const SizedBox(width: 18),
           // Retry button
@@ -228,11 +216,7 @@ class StoryList extends StatelessWidget {
                 color: Colors.blue.withValues(alpha: 0.2),
                 border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
               ),
-              child: const Icon(
-                Icons.refresh,
-                color: Colors.blue,
-                size: 24,
-              ),
+              child: const Icon(Icons.refresh, color: Colors.blue, size: 24),
             ),
           ),
         ],
@@ -280,10 +264,7 @@ class StoryList extends StatelessWidget {
               SizedBox(height: 2),
               Text(
                 'Create your first highlight',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 10,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 10),
               ),
             ],
           ),

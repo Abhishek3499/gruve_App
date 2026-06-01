@@ -113,7 +113,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     // Check real-time validation errors instead of form validation
     if (emailError != null || passwordError != null) {
       // Show specific error if any
-      String errorMessage = emailError ?? passwordError ?? 'Please fill all fields';
+      String errorMessage =
+          emailError ?? passwordError ?? 'Please fill all fields';
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(errorMessage)));

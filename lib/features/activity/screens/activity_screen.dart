@@ -40,7 +40,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF9544A7), Color(0xFF42174C)],
+            colors: [Color(0xFF431047), Color(0xFF050006)],
           ),
         ),
         child: SafeArea(
@@ -56,13 +56,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 23),
+                      const SizedBox(height: 27),
                       ActivitySummarySection(totalTime: _controller.totalTime),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 28),
                       ActivityDescriptionSection(
                         description: _controller.description,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 34),
                       ActivityInsightsCard(controller: _controller),
                       const SizedBox(height: 20),
                       const ActivityFooter(),

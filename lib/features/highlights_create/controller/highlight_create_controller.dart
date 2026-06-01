@@ -1,36 +1,40 @@
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights_create/api/highlight_create_service.dart';
 
-class HighlightCreateController extends GetxController {
+class HighlightCreateController extends ChangeNotifier {
   static const String duplicateStoryMessage =
       'Story already added to this highlight';
 
-  final HighlightCreateService _service = HighlightCreateService();
-  final HighlightController _highlightController =
-      Get.find<HighlightController>();
-
-  final RxBool isLoading = false.obs;
-  final RxString message = ''.obs;
-  final RxBool isSuccess = false.obs;
-
-  bool isSubmitting = false;
-
-  @override
-  void onInit() {
-    super.onInit();
+  HighlightCreateController({
+    required HighlightController highlightController,
+    required HighlightStateManager stateManager,
+    HighlightCreateService? service,
+  }) : _highlightController = highlightController,
+       _stateManager = stateManager,
+       _service = service ?? HighlightCreateService() {
     debugPrint('[Highlight] Controller initialized');
   }
 
+  final HighlightCreateService _service;
+  final HighlightController _highlightController;
+  final HighlightStateManager _stateManager;
+
+  bool isLoading = false;
+  String message = '';
+  bool isSuccess = false;
+
+  bool isSubmitting = false;
+
   void reset() {
     debugPrint('[Highlight] Resetting controller state');
-    message.value = '';
-    isSuccess.value = false;
-    isLoading.value = false;
+    message = '';
+    isSuccess = false;
+    isLoading = false;
     isSubmitting = false;
+    notifyListeners();
   }
 
   HighlightModel? _findHighlight(String? highlightId) {
@@ -70,8 +74,9 @@ class HighlightCreateController extends GetxController {
     try {
       if (storyId.isEmpty) {
         debugPrint('[Highlight] Story ID cannot be empty');
-        message.value = 'Story ID is required';
-        isSuccess.value = false;
+        message = 'Story ID is required';
+        isSuccess = false;
+        notifyListeners();
         debugPrint('[Highlight] API CALL END');
         return;
       }
@@ -79,8 +84,9 @@ class HighlightCreateController extends GetxController {
       final isUpdate = highlightId != null && highlightId.isNotEmpty;
       if (!isUpdate && (title == null || title.isEmpty)) {
         debugPrint('[Highlight] Title is required for creating new highlight');
-        message.value = 'Title is required for creating new highlight';
-        isSuccess.value = false;
+        message = 'Title is required for creating new highlight';
+        isSuccess = false;
+        notifyListeners();
         debugPrint('[Highlight] API CALL END');
         return;
       }
@@ -99,16 +105,18 @@ class HighlightCreateController extends GetxController {
           '[Highlight] Duplicate detected: highlight_id=$highlightId, '
           'story_id=$storyId',
         );
-        message.value = duplicateStoryMessage;
-        isSuccess.value = false;
+        message = duplicateStoryMessage;
+        isSuccess = false;
+        notifyListeners();
         debugPrint('[Highlight] API CALL END');
         return;
       }
 
       isSubmitting = true;
-      isLoading.value = true;
-      isSuccess.value = false;
-      message.value = '';
+      isLoading = true;
+      isSuccess = false;
+      message = '';
+      notifyListeners();
 
       debugPrint(
         isUpdate
@@ -133,16 +141,15 @@ class HighlightCreateController extends GetxController {
         debugPrint('[Highlight] title: ${response.data.title}');
         debugPrint('[Highlight] storiesCount: ${response.data.storiesCount}');
 
-        message.value = isUpdate
+        message = isUpdate
             ? 'Story added to highlight successfully!'
             : 'New highlight created successfully!';
-        isSuccess.value = true;
+        isSuccess = true;
 
         debugPrint('[Highlight] Refreshing highlights list');
         await _highlightController.fetchMyHighlights();
 
-        HighlightStateManager.ensureRegistered();
-        await HighlightStateManager.instance.markStoryAsHighlighted(storyId);
+        await _stateManager.markStoryAsHighlighted(storyId);
       } else {
         if (response.message == duplicateStoryMessage ||
             response.statusCode == 400 ||
@@ -155,20 +162,21 @@ class HighlightCreateController extends GetxController {
           debugPrint('[Highlight] Failed - API returned false');
         }
 
-        message.value = response.message.isNotEmpty
+        message = response.message.isNotEmpty
             ? response.message
             : 'Operation failed';
-        isSuccess.value = false;
+        isSuccess = false;
       }
     } catch (e) {
       debugPrint('[Highlight] Failed with exception');
       debugPrint('[Highlight] Error: $e');
 
-      message.value = 'Something went wrong';
-      isSuccess.value = false;
+      message = 'Something went wrong';
+      isSuccess = false;
     } finally {
       isSubmitting = false;
-      isLoading.value = false;
+      isLoading = false;
+      notifyListeners();
       debugPrint('[Highlight] API CALL END');
     }
   }

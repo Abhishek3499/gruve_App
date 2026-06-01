@@ -5,6 +5,7 @@ import 'package:gruve_app/features/profile/controller/profile_count_refresh_brid
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import '../data/models/user_profile_model.dart';
 
@@ -114,28 +115,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     // Handle both own profile and other users
     if (widget.userId == null) {
-      // Own profile - use existing ProfileProvider
-      final provider = context.watch<ProfileProvider>();
+      // Own profile - only rebuild shell for top-level profile state changes.
+      final provider = context.read<ProfileProvider>();
+      final user = context.select((ProfileProvider p) => p.user);
+      final errorMessage = context.select(
+        (ProfileProvider p) => p.errorMessage,
+      );
+      final hasLocalStory = context.select(
+        (StoryStateController s) => s.hasUserStory,
+      );
+      final hasActiveStory =
+          (user?.hasActiveStory ?? false) ||
+          (user?.storyCount ?? 0) > 0 ||
+          hasLocalStory;
 
       return Scaffold(
         extendBody: true,
         backgroundColor: const Color(0xFF42174C),
-        endDrawer: provider.user != null
-            ? ProfileMenuDrawer(profileImage: provider.user?.profileImage)
+        endDrawer: user != null
+            ? ProfileMenuDrawer(profileImage: user.profileImage)
             : null,
         body: Builder(
           builder: (context) {
-            _log(
-              '[ProfileScreen] Build state - user: ${provider.user != null}, isLoading: ${provider.isLoading}, error: ${provider.errorMessage}',
-            );
-
-            if (provider.errorMessage != null) {
+            if (errorMessage != null) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      provider.errorMessage!,
+                      errorMessage,
                       style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
@@ -153,11 +161,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
 
             // Show shimmer immediately when user is null (logout or initial load)
-            if (provider.user == null) {
+            if (user == null) {
               return _buildProfileShimmer();
             }
 
-            return _buildMainContentForOwnProfile(provider);
+            return _buildMainContentForOwnProfile(
+              provider,
+              hasActiveStory: hasActiveStory,
+            );
           },
         ),
       );
@@ -215,7 +226,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildMainContentForOwnProfile(ProfileProvider provider) {
+  Widget _buildMainContentForOwnProfile(
+    ProfileProvider provider, {
+    required bool hasActiveStory,
+  }) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -297,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           return username.isEmpty ? '@username' : username;
                         }(),
                         profileImage: user?.profileImage ?? '',
-                        hasActiveStory: user?.hasActiveStory ?? false,
+                        hasActiveStory: hasActiveStory,
                         onProfileUpdated: provider.applyUpdatedProfile,
                       ),
                     ),
@@ -405,9 +419,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: AppShimmer(
-                        child: _buildShimmerGrid(itemCount: 9),
-                      ),
+                      child: _buildOtherUserGrid(userProfile),
                     ),
                     const SizedBox(height: 100),
                   ],
@@ -444,49 +456,237 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       child: SafeArea(
-        child: AppShimmer(
-          child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                const SizedBox(height: 30),
-
-                const ShimmerCircle(radius: 40),
-
-                const SizedBox(height: 10),
-
-                const ShimmerBox(height: 14, width: 120, borderRadius: 6),
-
-                const SizedBox(height: 6),
-
-                const ShimmerBox(height: 12, width: 80, borderRadius: 6),
-
-                const SizedBox(height: 30),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(3, (_) {
-                    return const Column(
-                      children: [
-                        ShimmerBox(height: 14, width: 40, borderRadius: 6),
-                        SizedBox(height: 6),
-                        ShimmerBox(height: 12, width: 30, borderRadius: 6),
-                      ],
-                    );
-                  }),
+        bottom: false,
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Stack(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 130),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7D63D1).withValues(alpha: 0.12),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(100),
+                    topRight: Radius.circular(30),
+                  ),
                 ),
-
-                const SizedBox(height: 30),
-
-                _buildShimmerGrid(
-                  itemCount: 9,
-                  padding: const EdgeInsets.all(10),
+                child: const SizedBox(height: 720),
+              ),
+              AppShimmer(
+                child: Stack(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 130),
+                      width: double.infinity,
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 110),
+                          _buildStatsShimmer(),
+                          const SizedBox(height: 25),
+                          _buildStoriesShimmer(),
+                          const SizedBox(height: 20),
+                          _buildFilterTabsShimmer(),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: _buildShimmerGrid(itemCount: 9),
+                          ),
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 30,
+                      left: 0,
+                      right: 0,
+                      child: _buildHeaderShimmer(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildOtherUserGrid(UserProfile userProfile) {
+    final posts = selectedTab == 2
+        ? userProfile.likedPosts
+        : userProfile.allPosts;
+
+    if (posts.isEmpty) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.video_library_outlined, color: Colors.white, size: 34),
+            SizedBox(height: 12),
+            Text(
+              'No posts yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      itemCount: posts.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.75,
+      ),
+      itemBuilder: (context, index) {
+        final post = posts[index];
+        final media = (post.thumbnailUrl?.trim().isNotEmpty == true)
+            ? post.thumbnailUrl!.trim()
+            : post.mediaUrl.trim();
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: media.isEmpty
+              ? Container(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  child: const Icon(Icons.broken_image, color: Colors.white54),
+                )
+              : Image.network(
+                  media,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeaderShimmer() {
+    return Column(
+      children: [
+        Row(
+          children: const [
+            SizedBox(width: 20),
+            Spacer(),
+            ShimmerBox(height: 30, width: 30, borderRadius: 8),
+            SizedBox(width: 20),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              ShimmerCircle(radius: 50),
+              SizedBox(width: 25),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ShimmerBox(height: 22, width: 150, borderRadius: 8),
+                    SizedBox(height: 8),
+                    ShimmerBox(height: 18, width: 100, borderRadius: 8),
+                    SizedBox(height: 25),
+                    ShimmerBox(height: 40, width: 160, borderRadius: 30),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsShimmer() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildStatShimmer(width: 82),
+          _buildDividerShimmer(),
+          _buildStatShimmer(width: 44),
+          _buildDividerShimmer(),
+          _buildStatShimmer(width: 52),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatShimmer({required double width}) {
+    return Column(
+      children: [
+        const ShimmerBox(height: 22, width: 42, borderRadius: 8),
+        const SizedBox(height: 6),
+        ShimmerBox(height: 14, width: width, borderRadius: 8),
+      ],
+    );
+  }
+
+  Widget _buildDividerShimmer() {
+    return Container(height: 40, width: 1.2, color: Colors.white);
+  }
+
+  Widget _buildStoriesShimmer() {
+    return SizedBox(
+      height: 102,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(left: 30, right: 12),
+        itemCount: 5,
+        separatorBuilder: (_, _) => const SizedBox(width: 18),
+        itemBuilder: (context, index) {
+          return const SizedBox(
+            width: 72,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ShimmerCircle(radius: 32),
+                SizedBox(height: 6),
+                ShimmerBox(height: 12, width: 58, borderRadius: 8),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterTabsShimmer() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: const [
+        ShimmerBox(height: 42, width: 82, borderRadius: 30),
+        ShimmerBox(height: 42, width: 118, borderRadius: 30),
+        ShimmerBox(height: 42, width: 94, borderRadius: 30),
+      ],
     );
   }
 

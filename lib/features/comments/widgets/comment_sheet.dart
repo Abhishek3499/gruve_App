@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../../core/assets.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/optimized/optimized_image.dart';
 import '../../comments/models/comment_model.dart';
 import '../../comments/api/comment_service.dart';
@@ -44,10 +47,13 @@ class _CommentSheetState extends State<CommentSheet> {
 
   Future<void> _runFetchComments() async {
     setState(() => _isLoading = true);
-    final comments = await _commentService.getComments(widget.postId);
+    final comments = await _commentService.getComments(
+      widget.postId,
+      forceRefresh: true,
+    );
     if (mounted) {
       setState(() {
-        _comments = comments;
+        _comments = List<Comment>.of(comments);
         _isLoading = false;
       });
     }
@@ -63,6 +69,106 @@ class _CommentSheetState extends State<CommentSheet> {
         );
       }
     });
+  }
+
+  Future<void> _syncCommentsAfterSend(String postId) async {
+    try {
+      final comments = await _commentService
+          .getComments(postId, forceRefresh: true)
+          .timeout(const Duration(seconds: 12));
+
+      if (!mounted) return;
+      if (comments.isEmpty) {
+        return;
+      }
+
+      setState(() => _comments = List<Comment>.of(comments));
+      _scrollToBottom();
+    } catch (e) {
+      // Keep the optimistic comment visible if the background refresh fails.
+    }
+  }
+
+  Future<void> _submitComment() async {
+    if (_isSending) {
+      return;
+    }
+
+    final text = _commentController.text.trim();
+    if (text.isEmpty) {
+      return;
+    }
+
+    final postId = widget.postId.trim();
+    if (postId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to post comment right now',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    _commentController.clear();
+    FocusScope.of(context).unfocus();
+    setState(() => _isSending = true);
+
+    final optimisticId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final optimistic = Comment(
+      id: optimisticId,
+      body: text,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      user: CommentUser(id: '', username: 'You', isSubscribed: false),
+    );
+    setState(() => _comments = [..._comments, optimistic]);
+    _scrollToBottom();
+
+    Comment? newComment;
+    try {
+      newComment = await _commentService
+          .addComment(postId, text)
+          .timeout(
+            const Duration(seconds: 20),
+            onTimeout: () {
+              return null;
+            },
+          );
+    } catch (_) {
+      newComment = null;
+    }
+    CommentService.invalidatePost(postId);
+
+    if (!mounted) return;
+    if (newComment != null) {
+      final savedComment = newComment;
+      setState(() {
+        final idx = _comments.indexWhere((c) => c.id == optimisticId);
+        if (idx != -1) _comments[idx] = savedComment;
+        _isSending = false;
+      });
+      widget.onCommentAdded?.call();
+      unawaited(_syncCommentsAfterSend(postId));
+      return;
+    }
+
+    setState(() {
+      _comments.removeWhere((c) => c.id == optimisticId);
+      _isSending = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Failed to post comment',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   @override
@@ -97,7 +203,10 @@ class _CommentSheetState extends State<CommentSheet> {
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 12.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -127,20 +236,23 @@ class _CommentSheetState extends State<CommentSheet> {
             child: _isLoading
                 ? const CommentShimmer(itemCount: 5)
                 : _comments.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "No comments yet. Be the first!",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        itemCount: _comments.length,
-                        itemBuilder: (context, index) {
-                          return _buildCommentTile(_comments[index]);
-                        },
-                      ),
+                ? const Center(
+                    child: Text(
+                      "No comments yet. Be the first!",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    itemCount: _comments.length,
+                    itemBuilder: (context, index) {
+                      return _buildCommentTile(_comments[index]);
+                    },
+                  ),
           ),
 
           Container(
@@ -165,6 +277,8 @@ class _CommentSheetState extends State<CommentSheet> {
                   child: TextField(
                     controller: _commentController,
                     style: const TextStyle(color: Colors.white, fontSize: 14),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _submitComment(),
                     decoration: const InputDecoration(
                       hintText: 'Add a comment...',
                       hintStyle: TextStyle(color: Colors.white70, fontSize: 14),
@@ -173,67 +287,29 @@ class _CommentSheetState extends State<CommentSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _isSending ? null : () async {
-                    final text = _commentController.text.trim();
-                    if (text.isEmpty) return;
-
-                    _commentController.clear();
-                    FocusScope.of(context).unfocus();
-                    setState(() => _isSending = true);
-
-                    // Optimistic insert
-                    final optimisticId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-                    final optimistic = Comment(
-                      id: optimisticId,
-                      body: text,
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                      user: CommentUser(id: '', username: 'You', isSubscribed: false),
-                    );
-                    setState(() => _comments.add(optimistic));
-                    _scrollToBottom();
-
-                    final newComment = await _commentService.addComment(widget.postId, text);
-                    CommentService.invalidatePost(widget.postId);
-
-                    if (!mounted) return;
-                    if (newComment != null) {
-                      setState(() {
-                        final idx = _comments.indexWhere((c) => c.id == optimisticId);
-                        if (idx != -1) _comments[idx] = newComment;
-                        _isSending = false;
-                      });
-                      widget.onCommentAdded?.call();
-                    } else {
-                      setState(() {
-                        _comments.removeWhere((c) => c.id == optimisticId);
-                        _isSending = false;
-                      });
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Failed to post comment", style: TextStyle(color: Colors.white)),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: _isSending
-                      ? const SizedBox(
-                          width: 32,
-                          height: 32,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white70,
-                          ),
-                        )
-                      : Image.asset(
-                          AppAssets.sendbutton,
-                          height: 32,
-                          width: 32,
-                        ),
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: InkWell(
+                    onTap: _isSending ? null : _submitComment,
+                    borderRadius: BorderRadius.circular(22),
+                    child: Center(
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.loaderDark,
+                              ),
+                            )
+                          : Image.asset(
+                              AppAssets.sendbutton,
+                              height: 32,
+                              width: 32,
+                            ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -283,21 +359,17 @@ class _CommentSheetState extends State<CommentSheet> {
                 const SizedBox(height: 4),
                 Text(
                   comment.body,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
-                if (comment.updatedAt.isAfter(comment.createdAt.add(const Duration(seconds: 10)))) ...[
+                if (comment.updatedAt.isAfter(
+                  comment.createdAt.add(const Duration(seconds: 10)),
+                )) ...[
                   const SizedBox(height: 2),
                   const Text(
                     "Edited",
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
+                    style: TextStyle(color: Colors.white54, fontSize: 10),
                   ),
-                ]
+                ],
               ],
             ),
           ),

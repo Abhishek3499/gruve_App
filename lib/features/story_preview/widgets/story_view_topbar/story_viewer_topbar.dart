@@ -24,39 +24,20 @@ class StoryViewerTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
         color: Colors.transparent,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// STORY PROGRESS BARS
-            Row(
-              children: List.generate(storyCount, (index) {
-                return Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        minHeight: 3,
-                        value: index == currentIndex
-                            ? progress
-                            : (index < currentIndex ? 1 : 0),
-                        backgroundColor: const Color(0x4DFFFFFF),
-                        valueColor: const AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    ),
-                  ),
-                );
-              }),
+            _InstagramStoryProgress(
+              storyCount: storyCount,
+              currentIndex: currentIndex,
+              progress: progress,
             ),
-
             const SizedBox(height: 10),
 
-            /// USER INFO ROW
             Row(
               children: [
-                /// AVATAR
                 CircleAvatar(
                   radius: 16,
                   backgroundImage: NetworkImage(avatarUrl),
@@ -64,7 +45,6 @@ class StoryViewerTopBar extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                /// USERNAME
                 Text(
                   username,
                   style: const TextStyle(
@@ -76,7 +56,6 @@ class StoryViewerTopBar extends StatelessWidget {
 
                 const SizedBox(width: 6),
 
-                /// TIME
                 Text(
                   time,
                   style: TextStyle(
@@ -87,7 +66,6 @@ class StoryViewerTopBar extends StatelessWidget {
 
                 const Spacer(),
 
-                /// CLOSE BUTTON
                 GestureDetector(
                   onTap: onClose,
                   child: const Icon(Icons.close, color: Colors.white, size: 26),
@@ -97,6 +75,65 @@ class StoryViewerTopBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InstagramStoryProgress extends StatelessWidget {
+  final int storyCount;
+  final int currentIndex;
+  final double progress;
+
+  const _InstagramStoryProgress({
+    required this.storyCount,
+    required this.currentIndex,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = storyCount <= 0 ? 1 : storyCount;
+
+    return Row(
+      children: List.generate(count, (index) {
+        final fill = index < currentIndex
+            ? 1.0
+            : index == currentIndex
+            ? progress.clamp(0.0, 1.0)
+            : 0.0;
+
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 0 : 2,
+              right: index == count - 1 ? 0 : 2,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: SizedBox(
+                height: 2.6,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: fill,
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

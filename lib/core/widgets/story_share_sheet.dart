@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/auth/api/services/edit_profile_service.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/core/widgets/also_share_sheet.dart';
-import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 class AppColors {
@@ -13,6 +14,16 @@ class AppColors {
   static const secondaryPurple = Color(0xFF6A0DAD);
   static const closeFriendsGreen = Color(0xFF00C27A);
   static const selectionPurple = Color(0xFF7B2FBE);
+}
+
+class _StoryShareProfile {
+  final String username;
+  final String profileImage;
+
+  const _StoryShareProfile({
+    required this.username,
+    required this.profileImage,
+  });
 }
 
 class StoryShareSheet extends StatefulWidget {
@@ -42,6 +53,81 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
   bool _yourStorySelected = true;
   bool _closeFriendsSelected = false;
   bool _isLoading = false;
+  bool _isProfileLoading = false;
+  _StoryShareProfile? _profile;
+
+  static _StoryShareProfile? _cachedProfile;
+  static Future<_StoryShareProfile?>? _profileRequest;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureOwnProfileLoaded();
+    });
+  }
+
+  void _ensureOwnProfileLoaded() {
+    if (!mounted) return;
+
+    final profileProvider = context.read<ProfileProvider>();
+    final providerUser = profileProvider.user;
+    if (providerUser != null) {
+      setState(() {
+        _profile = _StoryShareProfile(
+          username: providerUser.username,
+          profileImage: providerUser.profileImage,
+        );
+      });
+      return;
+    }
+
+    final cached = _cachedProfile;
+    if (cached != null) {
+      setState(() => _profile = cached);
+      return;
+    }
+
+    if (_profileRequest != null) {
+      _awaitProfileRequest(_profileRequest!);
+      return;
+    }
+
+    setState(() => _isProfileLoading = true);
+    final request = _fetchOwnProfileForShareSheet();
+    _profileRequest = request;
+    _awaitProfileRequest(request);
+  }
+
+  Future<void> _awaitProfileRequest(Future<_StoryShareProfile?> request) async {
+    final profile = await request;
+    if (!mounted) return;
+    setState(() {
+      _profile = profile;
+      _isProfileLoading = false;
+    });
+  }
+
+  Future<_StoryShareProfile?> _fetchOwnProfileForShareSheet() async {
+    try {
+      final response = await EditProfileService().fetchProfile().timeout(
+        const Duration(seconds: 5),
+      );
+
+      final profile = _StoryShareProfile(
+        username: response.data.username,
+        profileImage: response.data.profilePicture ?? '',
+      );
+
+      _cachedProfile = profile;
+      return profile;
+    } catch (e) {
+      debugPrint('[StoryShareSheet] Own profile load skipped: $e');
+      return null;
+    } finally {
+      _profileRequest = null;
+    }
+  }
 
   Future<void> _handleShareAction() async {
     if (!_yourStorySelected || widget.mediaPath == null || _isLoading) {
@@ -72,8 +158,9 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       if (!mounted) return;
 
       if (storyController.isSuccess) {
-        StoryStateController.ensureRegistered();
-        Get.find<StoryStateController>().markStoryAsShared(widget.mediaPath!);
+        context.read<StoryStateController>().markStoryAsShared(
+          widget.mediaPath!,
+        );
 
         final navigator = Navigator.of(context);
         PostShareFlowBridge.notifyStorySharedNavigateToProfile();
@@ -86,9 +173,9 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(storyController.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(storyController.message)));
       }
     } catch (e) {
       debugPrint('[StoryShareSheet] Error: $e');
@@ -98,7 +185,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       setState(() {
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Something went wrong while sharing story'),
@@ -133,12 +220,15 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
               ),
             ),
             _ShareOptionTile(
-              leading: const CircleAvatar(
-                radius: 24,
-                backgroundImage: NetworkImage('https://i.pravatar.cc/150'),
+              leading: _buildOwnProfileAvatar(
+                imageUrl: _profile?.profileImage,
+                username: _profile?.username ?? '',
+                isLoading: _isProfileLoading,
               ),
               title: 'Your Story',
-              subtitle: '@candice',
+              subtitle: (_profile?.username.trim().isNotEmpty ?? false)
+                  ? '@${_profile!.username.trim()}'
+                  : null,
               trailing: _buildCheckCircle(_yourStorySelected),
               onTap: () =>
                   setState(() => _yourStorySelected = !_yourStorySelected),
@@ -205,6 +295,57 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
     );
   }
 
+  Widget _buildOwnProfileAvatar({
+    required String? imageUrl,
+    required String username,
+    required bool isLoading,
+  }) {
+    final trimmedImageUrl = imageUrl?.trim() ?? '';
+
+    if (isLoading && trimmedImageUrl.isEmpty) {
+      return const CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.white12,
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            color: Colors.white70,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    if (trimmedImageUrl.startsWith('http')) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: Colors.white12,
+        backgroundImage: NetworkImage(trimmedImageUrl),
+      );
+    }
+
+    final fallbackLetter = username.isNotEmpty ? username[0].toUpperCase() : '';
+
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: Colors.white12,
+      backgroundImage: fallbackLetter.isEmpty
+          ? const AssetImage(AppAssets.profile)
+          : null,
+      child: fallbackLetter.isEmpty
+          ? null
+          : Text(
+              fallbackLetter,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+    );
+  }
+
   Widget _buildCheckCircle(bool selected) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -239,9 +380,12 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
           height: 56,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
-            gradient: onPressed != null 
+            gradient: onPressed != null
                 ? const LinearGradient(
-                    colors: [AppColors.primaryPurple, AppColors.secondaryPurple],
+                    colors: [
+                      AppColors.primaryPurple,
+                      AppColors.secondaryPurple,
+                    ],
                   )
                 : LinearGradient(
                     colors: [

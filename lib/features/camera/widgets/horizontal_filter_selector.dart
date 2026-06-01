@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/filter_model.dart';
 import '../controller/filter_controller.dart';
 import '../controller/camera_controller_service.dart';
@@ -18,6 +21,10 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   final CameraControllerService _cameraService = CameraControllerService();
   late PageController _pageController;
   int _selectedIndex = 0;
+  bool _isRecordingVideo = false;
+  int _recordingSeconds = 0;
+  Timer? _recordingTimer;
+  StreamSubscription<bool>? _recordingSub;
 
   @override
   void initState() {
@@ -28,11 +35,21 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       initialPage: _selectedIndex,
     );
     _filterController.addListener(_onFilterChanged);
+    _recordingSub = _cameraService.videoRecordingStream.listen((isRecording) {
+      if (!mounted) return;
+      setState(() => _isRecordingVideo = isRecording);
+      if (!isRecording) {
+        _recordingTimer?.cancel();
+        _recordingTimer = null;
+      }
+    });
   }
 
   @override
   void dispose() {
     _filterController.removeListener(_onFilterChanged);
+    _recordingSub?.cancel();
+    _recordingTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -58,6 +75,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   }
 
   Future<void> _captureFilteredImage() async {
+    if (_isRecordingVideo || _cameraService.isRecordingVideo) return;
+
     CameraLogger.logUserAction('Capturing filtered image');
 
     try {
@@ -84,6 +103,87 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     }
   }
 
+  Future<void> _startVideoRecording() async {
+    if (_isRecordingVideo || _cameraService.isCapturing) return;
+
+    CameraLogger.logUserAction('Video recording started from capture button');
+    HapticFeedback.mediumImpact();
+
+    setState(() {
+      _recordingSeconds = 0;
+    });
+
+    await _cameraService.startVideoRecording();
+
+    if (!_cameraService.isRecordingVideo) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not start recording'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _recordingSeconds++);
+    });
+  }
+
+  Future<void> _stopVideoRecording() async {
+    if (!_cameraService.isRecordingVideo) return;
+
+    CameraLogger.logUserAction('Video recording stopped from capture button');
+    HapticFeedback.lightImpact();
+
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+
+    try {
+      final video = await _cameraService.stopVideoRecording();
+      if (video == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save recording'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      final mode = ModeService().selectedMode;
+      if (mode == CameraMode.story || mode == CameraMode.groove) {
+        Navigator.of(
+          context,
+        ).pop(CameraCaptureResult(mediaPath: video.path, mode: mode));
+      }
+    } catch (e) {
+      CameraLogger.log('Failed to stop video recording: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save recording'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatRecordingDuration() {
+    final minutes = _recordingSeconds ~/ 60;
+    final seconds = _recordingSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -98,9 +198,9 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
           // 2. Filter Selector (PageView) - Placed below the button but interactive
           Positioned(
-            bottom: 20, // Adjusted to sit near the bottom
-            left: -10,
-            right: 0,
+            bottom: 12, // Adjusted to sit near the bottom
+            left: -8,
+            right: -8,
             height: 100, // Give it enough height to be tappable
             child: PageView.builder(
               controller: _pageController,
@@ -173,24 +273,68 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
             bottom: 35, // Positioned above the filter circles
             child: GestureDetector(
               onTap: _captureFilteredImage,
+              onLongPressStart: (_) => _startVideoRecording(),
+              onLongPressEnd: (_) => _stopVideoRecording(),
+              onLongPressCancel: () {
+                _stopVideoRecording();
+              },
               child: Container(
                 width: 75,
                 height: 75,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.black.withAlpha(50),
-                  border: Border.all(color: Colors.white, width: 4),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _cameraService.isRecordingVideo
-                          ? Colors.red
-                          : Colors.white,
-                    ),
+                  border: Border.all(
+                    color: _isRecordingVideo ? Colors.red : Colors.white,
+                    width: 4,
                   ),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isRecordingVideo ? Colors.red : Colors.white,
+                        ),
+                      ),
+                    ),
+                    if (_isRecordingVideo)
+                      const SizedBox(
+                        width: 70,
+                        height: 70,
+                        child: CircularProgressIndicator(
+                          color: Colors.red,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    if (_isRecordingVideo)
+                      Positioned(
+                        top: -38,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _formatRecordingDuration(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),

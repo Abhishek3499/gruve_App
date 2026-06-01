@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/routing/app_route_names.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
@@ -20,8 +20,8 @@ void _log(String message) {
 
 void showInstagramHighlightSheet(BuildContext context) {
   final playbackController = StoryPlaybackController();
-  StoryStateController.ensureRegistered();
-  final storyStateController = Get.find<StoryStateController>();
+  final storyStateController = context.read<StoryStateController>();
+  final highlightController = context.read<HighlightController>();
 
   _log('[HighlightSheet] Opening sheet -> Pause Story');
 
@@ -52,7 +52,6 @@ void showInstagramHighlightSheet(BuildContext context) {
     _log('[HighlightSheet] Sheet closed -> Resume Story');
     playbackController.resumeStory(reason: 'Highlight Sheet Closed');
 
-    final highlightController = Get.find<HighlightController>();
     highlightController.fetchMyHighlights();
   });
 }
@@ -68,23 +67,18 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
   int selectedIndex = -1;
   bool _isLoadingHighlights = true;
 
-  final HighlightController _highlightController =
-      Get.isRegistered<HighlightController>()
-      ? Get.find<HighlightController>()
-      : Get.put(HighlightController());
-
-  final HighlightCreateController _createController = Get.put(
-    HighlightCreateController(),
-  );
-
+  late final HighlightController _highlightController;
+  late final HighlightCreateController _createController;
+  late final HighlightStateManager _highlightStateManager;
   late final StoryStateController _storyStateController;
 
   @override
   void initState() {
     super.initState();
-    StoryStateController.ensureRegistered();
-    HighlightStateManager.ensureRegistered();
-    _storyStateController = Get.find<StoryStateController>();
+    _storyStateController = context.read<StoryStateController>();
+    _highlightController = context.read<HighlightController>();
+    _createController = context.read<HighlightCreateController>();
+    _highlightStateManager = context.read<HighlightStateManager>();
     _log('[HighlightSheet] initState - Fetching highlights');
 
     final currentStory = _storyStateController.currentStory;
@@ -165,12 +159,10 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         storyId: currentStory.id,
       );
 
-      if (_createController.isSuccess.value) {
+      if (_createController.isSuccess) {
         _log('[Flow] API SUCCESS');
 
-        await HighlightStateManager.instance.addHighlightedStory(
-          currentStory.id,
-        );
+        await _highlightStateManager.addHighlightedStory(currentStory.id);
 
         if (!mounted) return;
 
@@ -180,9 +172,9 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         rootNavigator.pushReplacementNamed(AppRouteNames.profile);
       } else {
         _log('[Flow] API FAILED');
-        if (mounted && _createController.message.value.isNotEmpty) {
+        if (mounted && _createController.message.isNotEmpty) {
           scaffoldMessenger.showSnackBar(
-            SnackBar(content: Text(_createController.message.value)),
+            SnackBar(content: Text(_createController.message)),
           );
         }
       }
@@ -224,7 +216,16 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
               SizedBox(
                 height: 250,
                 child: _isLoadingHighlights
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            color: AppColors.loaderPrimary,
+                            strokeWidth: 2.4,
+                          ),
+                        ),
+                      )
                     : _buildHighlightsList(),
               ),
               AnimatedContainer(
@@ -261,7 +262,16 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
           Positioned.fill(
             child: Container(
               color: Colors.black.withValues(alpha: 0.4),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    color: AppColors.loaderDark,
+                    strokeWidth: 2.4,
+                  ),
+                ),
+              ),
             ),
           ),
       ],

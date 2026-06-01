@@ -3,6 +3,7 @@ import 'package:gruve_app/features/Account/widgets/account_body.dart';
 import 'package:gruve_app/features/Account/widgets/account_header.dart';
 import 'package:gruve_app/features/profile/models/profile_model.dart';
 import 'package:gruve_app/features/auth/api/controllers/edit_profile_controller.dart';
+import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import '../../../../core/assets.dart';
 
 /// Account Screen with professional widget separation
@@ -109,109 +110,182 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF7A2C8F),
-      body: Stack(
+      body: Column(
         children: [
-          // Main content
-          Column(
-            children: [
-              /// Header with dynamic fullName
-              AccountHeader(
-                fullName: _controller.fullName,
-                isLoading: _controller.isLoading,
-              ),
-
-              /// Main Body
-              Expanded(
-                child:
-                    _controller.errorMessage != null &&
-                        _controller.profileResponse == null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Error: ${_controller.errorMessage}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: _fetchProfileData,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF72008D),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : AccountBody(
-                        nameController: _nameController,
-                        phoneController: _phoneController,
-                        emailController: _emailController,
-                        usernameController: _usernameController,
-                        genderController: _genderController,
-                        bioController: _bioController,
-                        profileImagePath: _profileImagePath,
-                      ),
-              ),
-            ],
+          /// Header with dynamic fullName
+          AccountHeader(
+            fullName: _controller.fullName,
+            isLoading: _controller.isLoading,
           ),
 
-          // Full-screen loading overlay (only blocks body, not header)
-          if (_controller.isLoading)
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: false,
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  child: SafeArea(
+          /// Main Body
+          Expanded(
+            child: _controller.isLoading
+                ? const _AccountBodyShimmer()
+                : _controller.errorMessage != null &&
+                      _controller.profileResponse == null
+                ? Center(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Empty space for header (so back button is not blocked)
-                        const SizedBox(height: 190),
-
-                        // Loading indicator in body area
-                        Expanded(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                  strokeWidth: 3,
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Loading your profile...',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error: ${_controller.errorMessage}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
                           ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _fetchProfileData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF72008D),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Retry'),
                         ),
                       ],
                     ),
+                  )
+                : AccountBody(
+                    nameController: _nameController,
+                    phoneController: _phoneController,
+                    emailController: _emailController,
+                    usernameController: _usernameController,
+                    genderController: _genderController,
+                    bioController: _bioController,
+                    profileImagePath: _profileImagePath,
                   ),
-                ),
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountBodyShimmer extends StatelessWidget {
+  const _AccountBodyShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 4),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1B182D),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.elliptical(60, 50),
+              topRight: Radius.elliptical(60, 50),
             ),
+          ),
+          padding: const EdgeInsets.only(
+            top: 80,
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: const [
+              _AccountInfoCardShimmer(),
+              SizedBox(height: 20),
+              _AccountFooterShimmer(),
+            ],
+          ),
+        ),
+        const Positioned(
+          top: -70,
+          left: 0,
+          right: 0,
+          child: Center(child: AppShimmer(child: ShimmerCircle(radius: 61))),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountInfoCardShimmer extends StatelessWidget {
+  const _AccountInfoCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 320,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: const Color(0xFF9485EA), width: 0.3),
+        ),
+        child: AppShimmer(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                const ShimmerBox(width: 112, height: 18, borderRadius: 8),
+                const SizedBox(height: 24),
+                _buildField(width: 168),
+                _divider(),
+                _buildField(width: 132),
+                _divider(),
+                _buildField(width: 210),
+                _divider(),
+                _buildField(width: 150),
+                _divider(),
+                _buildField(width: 92),
+                _divider(),
+                _buildField(width: double.infinity, isBio: true),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildField({required double width, bool isBio = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const ShimmerBox(width: 72, height: 12, borderRadius: 6),
+        const SizedBox(height: 8),
+        ShimmerBox(width: width, height: isBio ? 58 : 16, borderRadius: 8),
+      ],
+    );
+  }
+
+  static Widget _divider() {
+    return Container(
+      height: 0.5,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      color: Colors.white,
+    );
+  }
+}
+
+class _AccountFooterShimmer extends StatelessWidget {
+  const _AccountFooterShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppShimmer(
+      child: Column(
+        children: const [
+          ShimmerBox(width: 112, height: 14, borderRadius: 6),
+          SizedBox(height: 8),
+          ShimmerBox(width: 190, height: 14, borderRadius: 6),
         ],
       ),
     );

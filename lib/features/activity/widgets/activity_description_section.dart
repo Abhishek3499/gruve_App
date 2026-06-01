@@ -8,11 +8,16 @@ class ActivityDescriptionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Text(
         description,
-        style: const TextStyle(fontSize: 14, color: Colors.white, height: 1.5),
-        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.white,
+          height: 1.95,
+          letterSpacing: 0,
+        ),
+        textAlign: TextAlign.left,
       ),
     );
   }

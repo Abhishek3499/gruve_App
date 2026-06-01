@@ -1,18 +1,28 @@
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 import 'package:gruve_app/features/highlights/api/highlight_service.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 
-class HighlightController extends GetxController {
-  final HighlightService _service = HighlightService();
+class HighlightController extends ChangeNotifier {
+  HighlightController({
+    HighlightService? service,
+    HighlightStateManager? stateManager,
+  }) : _service = service ?? HighlightService(),
+       _stateManager = stateManager;
 
-  final RxBool isLoading = false.obs;
-  final RxString message = ''.obs;
-  final RxBool isSuccess = false.obs;
+  final HighlightService _service;
+  HighlightStateManager? _stateManager;
 
-  final RxList<HighlightModel> highlights = <HighlightModel>[].obs;
-  final RxInt totalCount = 0.obs;
+  bool isLoading = false;
+  String message = '';
+  bool isSuccess = false;
+
+  List<HighlightModel> highlights = <HighlightModel>[];
+  int totalCount = 0;
+
+  void attachStateManager(HighlightStateManager stateManager) {
+    _stateManager = stateManager;
+  }
 
   void _log(String message) {
     if (kDebugMode) {
@@ -21,21 +31,22 @@ class HighlightController extends GetxController {
   }
 
   Future<void> reset() async {
-    message.value = '';
-    isSuccess.value = false;
-    highlights.clear();
-    totalCount.value = 0;
-    HighlightStateManager.ensureRegistered();
-    await HighlightStateManager.instance.clearAllHighlightedStories();
+    message = '';
+    isSuccess = false;
+    highlights = <HighlightModel>[];
+    totalCount = 0;
+    await _stateManager?.clearAllHighlightedStories();
+    notifyListeners();
   }
 
   Future<void> fetchMyHighlights() async {
     try {
       _log('[HighlightController] fetchMyHighlights start');
 
-      isLoading.value = true;
-      isSuccess.value = false;
-      message.value = '';
+      isLoading = true;
+      isSuccess = false;
+      message = '';
+      notifyListeners();
 
       final response = await _service.fetchMyHighlights();
 
@@ -45,16 +56,16 @@ class HighlightController extends GetxController {
         '${response.data.highlights.length}',
       );
 
-      message.value = response.success
+      message = response.success
           ? 'Highlights fetched successfully'
           : 'Failed to fetch highlights';
-      isSuccess.value = response.success;
+      isSuccess = response.success;
 
       if (response.success) {
-        highlights
-          ..clear()
-          ..addAll(response.data.highlights);
-        totalCount.value = response.data.highlights.length;
+        highlights = List<HighlightModel>.unmodifiable(
+          response.data.highlights,
+        );
+        totalCount = response.data.highlights.length;
 
         for (final highlight in highlights) {
           _log(
@@ -62,15 +73,14 @@ class HighlightController extends GetxController {
             'stories=${highlight.stories.map((story) => story.id).toList()}',
           );
         }
-
-        HighlightStateManager.ensureRegistered();
       }
     } catch (e) {
       _log('[HighlightController] error: $e');
-      message.value = 'Something went wrong';
-      isSuccess.value = false;
+      message = 'Something went wrong';
+      isSuccess = false;
     } finally {
-      isLoading.value = false;
+      isLoading = false;
+      notifyListeners();
       _log('[HighlightController] fetchMyHighlights end');
     }
   }

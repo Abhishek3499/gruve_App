@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/data/api_calls/repository/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
@@ -59,6 +58,7 @@ class _TabPaginationState {
 class ProfileController {
   final ProfileRepository _repository;
   final PostService _postService;
+  final HighlightStateManager? _highlightStateManager;
 
   // Pagination states for each tab
   final _TabPaginationState _allTabState = _TabPaginationState();
@@ -74,9 +74,13 @@ class ProfileController {
   /// After gateway/timeouts, block rapid re-fetch (scroll spam).
   DateTime? _profileFetchBackoffUntil;
 
-  ProfileController({ProfileRepository? repository, PostService? postService})
-    : _repository = repository ?? ProfileRepository(),
-      _postService = postService ?? PostService();
+  ProfileController({
+    ProfileRepository? repository,
+    PostService? postService,
+    HighlightStateManager? highlightStateManager,
+  }) : _repository = repository ?? ProfileRepository(),
+       _postService = postService ?? PostService(),
+       _highlightStateManager = highlightStateManager;
 
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   final ValueNotifier<ProfileStatsModel> statsNotifier = ValueNotifier(
@@ -310,11 +314,12 @@ class ProfileController {
       // Parse highlights from API response (data['data']['highlights'])
       _parseHighlightsFromResponse(userData);
 
-      await Future<void>.delayed(const Duration(milliseconds: 16));
-      if (_disposed) return;
+      _profileFetchBackoffUntil = null;
+      _hasLoadedOnce = true;
 
       debugPrint('🔄 [ProfileController] Starting post hydration');
-      await _hydratePostsAfterProfileLoad(userData, profile);
+      _markTabLoadingIfEmpty(0);
+      unawaited(_hydratePostsAfterProfileLoad(userData, profile));
 
       if (_disposed) {
         debugPrint(
@@ -391,6 +396,13 @@ class ProfileController {
       debugPrint('❌ Error fetching own profile posts: $error');
       return const [];
     }
+  }
+
+  void _markTabLoadingIfEmpty(int tabIndex) {
+    if (_disposed) return;
+    final state = _getTabState(tabIndex);
+    if (state.posts.isNotEmpty || state.isLoading) return;
+    _updateTabState(tabIndex, state.copyWith(isLoading: true));
   }
 
   /// Reads post arrays from the profile payload (root or `data`) when present.
@@ -677,14 +689,18 @@ class ProfileController {
       );
 
       final existing = List<Post>.from(_getTabState(tabIndex).posts);
-      final newPosts = isRefresh ? posts : [...existing, ...posts];
+      final uniquePosts = isRefresh
+          ? _uniquePosts(posts)
+          : _uniquePosts(posts, existingIds: existing.map((p) => p.id).toSet());
+      final newPosts = isRefresh ? uniquePosts : [...existing, ...uniquePosts];
+      final canLoadMore = hasNext && posts.isNotEmpty && uniquePosts.isNotEmpty;
 
       debugPrint(
         '📊 [ProfileController] Tab $tabIndex - existing: ${existing.length}, new: ${posts.length}, total: ${newPosts.length}',
       );
 
       final nextPage = isRefresh
-          ? ((hasNext && posts.isNotEmpty) ? 2 : 1)
+          ? (canLoadMore ? 2 : 1)
           : updatedState.page + 1;
 
       debugPrint(
@@ -693,7 +709,7 @@ class ProfileController {
 
       final finalState = updatedState.copyWith(
         posts: newPosts,
-        hasNext: hasNext,
+        hasNext: canLoadMore,
         isLoading: false,
         page: nextPage,
       );
@@ -865,6 +881,26 @@ class ProfileController {
         .toList();
   }
 
+  List<Post> _uniquePosts(List<Post> posts, {Set<String>? existingIds}) {
+    final seenIds = <String>{...?existingIds};
+    final unique = <Post>[];
+
+    for (final post in posts) {
+      if (post.id.isEmpty) {
+        unique.add(post);
+        continue;
+      }
+
+      if (seenIds.add(post.id)) {
+        unique.add(post);
+      } else if (kDebugMode) {
+        debugPrint('[ProfileController] Duplicate post skipped id=${post.id}');
+      }
+    }
+
+    return unique;
+  }
+
   Map<String, dynamic>? _postsEnvelopeForTab(
     Map<String, dynamic> response,
     int tabIndex,
@@ -1033,7 +1069,7 @@ class ProfileController {
 
   /// Check if tab can load more posts
   bool canLoadMoreForTab(int tabIndex) {
-    return _getTabState(tabIndex).hasNext;
+    return _getTabState(tabIndex).canLoadMore;
   }
 
   /// Get current page for tab
@@ -1231,9 +1267,8 @@ class ProfileController {
     try {
       // For now, create dummy stories from HighlightStateManager to test
       // In a real implementation, this should get stories from StoryController
-      HighlightStateManager.ensureRegistered();
       final highlightedStoryIds =
-          HighlightStateManager.instance.highlightedStoryIds;
+          _highlightStateManager?.highlightedStoryIds ?? <String>{};
 
       debugPrint(
         '🔍 [ProfileController] Creating stories from ${highlightedStoryIds.length} highlighted story IDs',
@@ -1283,9 +1318,8 @@ class ProfileController {
       return _getHighlightedStoriesFromLocalList();
     }
 
-    HighlightStateManager.ensureRegistered();
     final highlightedStoryIds =
-        HighlightStateManager.instance.highlightedStoryIds;
+        _highlightStateManager?.highlightedStoryIds ?? <String>{};
 
     debugPrint(
       '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
@@ -1293,9 +1327,8 @@ class ProfileController {
 
     final highlightedStories = allStories.where((story) {
       final storyId = story['id']?.toString() ?? '';
-      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(
-        storyId,
-      );
+      final isHighlighted =
+          _highlightStateManager?.isStoryHighlighted(storyId) ?? false;
       debugPrint(
         '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
       );
@@ -1330,11 +1363,9 @@ class ProfileController {
       '🔍 [ProfileController] Total stories in local storyList: ${storyList.value.length}',
     );
 
-    HighlightStateManager.ensureRegistered();
-
     final allStories = storyList.value;
     final highlightedStoryIds =
-        HighlightStateManager.instance.highlightedStoryIds;
+        _highlightStateManager?.highlightedStoryIds ?? <String>{};
 
     debugPrint(
       '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
@@ -1342,9 +1373,8 @@ class ProfileController {
 
     final highlightedStories = allStories.where((story) {
       final storyId = story['id']?.toString() ?? '';
-      final isHighlighted = HighlightStateManager.instance.isStoryHighlighted(
-        storyId,
-      );
+      final isHighlighted =
+          _highlightStateManager?.isStoryHighlighted(storyId) ?? false;
       debugPrint(
         '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
       );
@@ -1456,7 +1486,7 @@ class ProfileController {
   /// Reset all profile controller data on logout
   void reset() {
     debugPrint('🔄 [ProfileController] Resetting controller data...');
-    
+
     user = null;
     statsNotifier.value = const ProfileStatsModel.empty();
     _allTabState.posts.clear();
@@ -1475,7 +1505,7 @@ class ProfileController {
     storyList.value = [];
     postsNotifier.value = [];
     gridRevision.value = 0;
-    
+
     debugPrint('✅ [ProfileController] Controller data reset complete');
   }
 }

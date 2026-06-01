@@ -8,9 +8,7 @@ import 'package:gruve_app/features/user_profile/presentation/screens/widgets/use
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
-import 'package:gruve_app/core/widgets/story_list_skeleton.dart';
-import 'package:gruve_app/core/widgets/stats_row_skeleton.dart';
-import 'package:gruve_app/core/widgets/profile_grid_skeleton.dart';
+import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String profileUserId;
@@ -67,7 +65,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     try {
       await _profileController.fetchUser();
-      debugPrint('✅ [UserProfileScreen] Pull-to-refresh completed successfully');
+      debugPrint(
+        '✅ [UserProfileScreen] Pull-to-refresh completed successfully',
+      );
     } catch (e) {
       debugPrint('❌ [UserProfileScreen] Pull-to-refresh failed: $e');
     } finally {
@@ -172,6 +172,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final showSubscribeButton =
         !_isResolvingIdentity &&
         (_identityResolution?.shouldShowSubscribeButton ?? false);
+    final showProfileShimmer =
+        _profileController.isLoading.value || _isRefreshing;
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -184,153 +186,302 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 130),
-                child: Stack(
-                  children: [
-                    Container(
-                      height: constraints.maxHeight,
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      padding: const EdgeInsets.only(top: 250, bottom: 120),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0x267D63D1), Color(0x26212235)],
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(110),
-                          topRight: Radius.circular(30),
-                          bottomLeft: Radius.circular(80),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF7D63D1).withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+              if (showProfileShimmer)
+                _buildUserProfileShimmer(constraints)
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 130),
+                  child: Stack(
+                    children: [
+                      _buildProfilePanelBackground(constraints),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 120),
+                          ValueListenableBuilder(
+                            valueListenable: _profileController.statsNotifier,
+                            builder: (context, stats, child) {
+                              return UserStatsRow(stats: stats);
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          ValueListenableBuilder(
+                            valueListenable: _profileController.highlightList,
+                            builder: (context, highlights, child) {
+                              debugPrint(
+                                '[UserProfileScreen] Highlights count: ${highlights.length}',
+                              );
+                              return UserHighlightsList(
+                                highlights: highlights,
+                                isOwnProfile: false,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          UserFilterTabs(
+                            selectedIndex: _selectedTab,
+                            onTabSelected: (index) {
+                              setState(() {
+                                _selectedTab = index;
+                              });
+                            },
+                          ),
+                          UserProfileGrid(
+                            controller: _profileController,
+                            selectedTab: _selectedTab,
                           ),
                         ],
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    ],
+                  ),
+                ),
+                AnimatedBuilder(
+                  animation: _profileController.contentListenable,
+                  builder: (context, child) {
+                    final profile = _profileController.user;
+                    final resolvedUserId = (profile?.id.isNotEmpty ?? false)
+                        ? profile!.id
+                        : widget.profileUserId;
+                    final resolvedUsername =
+                        (profile?.username.isNotEmpty ?? false)
+                        ? profile!.username
+                        : _normalizedUsername;
+                    final initialIsSubscribed =
+                        _subscribeController
+                            .getUserSubscribeModel(resolvedUserId)
+                            ?.isSubscribed ??
+                        profile?.isFollowing ??
+                        false;
+
+                    return Column(
                       children: [
-                        const SizedBox(height: 120),
-                        ValueListenableBuilder(
-                          valueListenable: _profileController.statsNotifier,
-                          builder: (context, stats, child) {
-                            return AnimatedBuilder(
-                              animation: Listenable.merge([_profileController.contentListenable]),
-                              builder: (context, child) {
-                                // Show skeleton when stats are loading or during refresh
-                                if (_profileController.isLoading.value || _isRefreshing) {
-                                  debugPrint('[UserProfileScreen] Showing skeleton for stats (loading: ${_profileController.isLoading.value}, refreshing: $_isRefreshing)');
-                                  return const StatsRowSkeleton();
-                                }
-                                return UserStatsRow(stats: stats);
-                              },
-                            );
-                          },
-                        ),
                         const SizedBox(height: 20),
-                        // User highlights from API (data['data']['highlights'])
-                        ValueListenableBuilder(
-                          valueListenable: _profileController.highlightList,
-                          builder: (context, highlights, child) {
-                            debugPrint(
-                              '[UserProfileScreen] Highlights count: ${highlights.length}',
-                            );
-                            return AnimatedBuilder(
-                              animation: Listenable.merge([_profileController.contentListenable]),
-                              builder: (context, child) {
-                                // Show skeleton when highlights are loading or during refresh
-                                if (_profileController.isLoading.value || _isRefreshing) {
-                                  debugPrint('[UserProfileScreen] Showing skeleton for highlights (loading: ${_profileController.isLoading.value}, refreshing: $_isRefreshing)');
-                                  return const StoryListSkeleton(otherUsersCount: 6);
-                                }
-                                return UserHighlightsList(
-                                  highlights: highlights,
-                                  isOwnProfile: false,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        UserFilterTabs(
-                          selectedIndex: _selectedTab,
-                          onTabSelected: (index) {
-                            setState(() {
-                              _selectedTab = index;
-                            });
-                          },
-                        ),
-                        AnimatedBuilder(
-                          animation: _profileController.contentListenable,
-                          builder: (context, child) {
-                            // Show skeleton when grid is loading or during refresh
-                            if (_profileController.isLoading.value || _isRefreshing) {
-                              debugPrint('[UserProfileScreen] Showing skeleton for grid (loading: ${_profileController.isLoading.value}, refreshing: $_isRefreshing)');
-                              return const ProfileGridSkeleton(itemCount: 9, showDraftItem: false);
-                            }
-                            return UserProfileGrid(
-                              controller: _profileController,
-                              selectedTab: _selectedTab,
-                            );
-                          },
+                        UserProfileHeader(
+                          displayName: widget.userName,
+                          username: resolvedUsername,
+                          profileUserId: resolvedUserId,
+                          profileImageUrl:
+                              (profile?.profileImage.isNotEmpty ?? false)
+                              ? profile!.profileImage
+                              : widget.profileImageUrl,
+                          hasActiveStory:
+                              profile?.hasActiveStory ??
+                              widget.initialHasActiveStory,
+                          showSubscribeButton: showSubscribeButton,
+                          reserveSubscribeSpace: _isResolvingIdentity,
+                          subscribeController: _subscribeController,
+                          initialIsSubscribed: initialIsSubscribed,
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              ),
-              AnimatedBuilder(
-                animation: _profileController.contentListenable,
-                builder: (context, child) {
-                  final profile = _profileController.user;
-                  final resolvedUserId = (profile?.id.isNotEmpty ?? false)
-                      ? profile!.id
-                      : widget.profileUserId;
-                  final resolvedUsername = (profile?.username.isNotEmpty ?? false)
-                      ? profile!.username
-                      : _normalizedUsername;
-                  final initialIsSubscribed =
-                      _subscribeController
-                          .getUserSubscribeModel(resolvedUserId)
-                          ?.isSubscribed ??
-                      profile?.isFollowing ??
-                      false;
-
-                  return Column(
-                    children: [
-                      const SizedBox(height: 20),
-                      UserProfileHeader(
-                        displayName: widget.userName,
-                        username: resolvedUsername,
-                        profileUserId: resolvedUserId,
-                        profileImageUrl:
-                            (profile?.profileImage.isNotEmpty ?? false)
-                            ? profile!.profileImage
-                            : widget.profileImageUrl,
-                        hasActiveStory:
-                            profile?.hasActiveStory ??
-                            widget.initialHasActiveStory,
-                        showSubscribeButton: showSubscribeButton,
-                        reserveSubscribeSpace: _isResolvingIdentity,
-                        subscribeController: _subscribeController,
-                        initialIsSubscribed: initialIsSubscribed,
-                      ),
-                    ],
-                  );
-                },
-              ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _buildProfilePanelBackground(BoxConstraints constraints) {
+    return Container(
+      height: constraints.maxHeight,
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.only(top: 250, bottom: 120),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x267D63D1), Color(0x26212235)],
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(110),
+          topRight: Radius.circular(30),
+          bottomLeft: Radius.circular(80),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7D63D1).withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserProfileShimmer(BoxConstraints constraints) {
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 130),
+          child: _buildProfilePanelBackground(constraints),
+        ),
+        AppShimmer(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 130),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 120),
+                    _buildStatsShimmer(),
+                    const SizedBox(height: 20),
+                    _buildStoriesShimmer(),
+                    const SizedBox(height: 20),
+                    _buildUserTabsShimmer(),
+                    _buildGridShimmer(itemCount: 9),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  const SizedBox(height: 20),
+                  _buildUserHeaderShimmer(),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserHeaderShimmer() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: const [
+              ShimmerBox(width: 44, height: 44, borderRadius: 22),
+              Spacer(),
+            ],
+          ),
+        ),
+        const SizedBox(height: 30),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              ShimmerCircle(radius: 50),
+              SizedBox(width: 25),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 10),
+                    ShimmerBox(width: 145, height: 22, borderRadius: 8),
+                    SizedBox(height: 8),
+                    ShimmerBox(width: 105, height: 16, borderRadius: 8),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        ShimmerBox(width: 132, height: 42, borderRadius: 30),
+                        SizedBox(width: 21),
+                        ShimmerCircle(radius: 21),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsShimmer() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildStatShimmer(width: 78),
+          _buildDividerShimmer(),
+          _buildStatShimmer(width: 40),
+          _buildDividerShimmer(),
+          _buildStatShimmer(width: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatShimmer({required double width}) {
+    return Column(
+      children: [
+        const ShimmerBox(width: 42, height: 22, borderRadius: 8),
+        const SizedBox(height: 6),
+        ShimmerBox(width: width, height: 14, borderRadius: 8),
+      ],
+    );
+  }
+
+  Widget _buildDividerShimmer() {
+    return Container(height: 40, width: 1.2, color: Colors.white);
+  }
+
+  Widget _buildStoriesShimmer() {
+    return SizedBox(
+      height: 102,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(left: 30, right: 12),
+        itemCount: 5,
+        separatorBuilder: (_, _) => const SizedBox(width: 18),
+        itemBuilder: (context, index) {
+          return const SizedBox(
+            width: 72,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ShimmerCircle(radius: 32),
+                SizedBox(height: 6),
+                ShimmerBox(width: 58, height: 12, borderRadius: 8),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildUserTabsShimmer() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: const [
+        ShimmerBox(width: 94, height: 40, borderRadius: 30),
+        SizedBox(width: 20),
+        ShimmerBox(width: 78, height: 40, borderRadius: 30),
+      ],
+    );
+  }
+
+  Widget _buildGridShimmer({required int itemCount}) {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.75,
+      ),
+      itemBuilder: (context, index) {
+        return const ShimmerBox(
+          width: double.infinity,
+          height: double.infinity,
+          borderRadius: 18,
+        );
+      },
+    );
+  }
 }
-
-

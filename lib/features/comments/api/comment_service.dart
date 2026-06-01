@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+
 import '../models/comment_model.dart';
 
 class _CommentCacheEntry {
@@ -15,17 +16,33 @@ class _CommentCacheEntry {
 }
 
 class CommentService {
-  late final Dio _dio;
-  static final Map<String, _CommentCacheEntry> _cache = {};
-  static final Map<String, Future<List<Comment>>> _inFlight = {};
-
   CommentService() {
     _dio = AppDio.create(
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 60),
       sendTimeout: const Duration(seconds: 30),
     );
+
+    var baseUrl = EnvironmentConfig.baseUrl.trim();
+    if (baseUrl.isNotEmpty && !baseUrl.endsWith('/')) {
+      baseUrl = '$baseUrl/';
+    }
+
+    _writeDio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 12),
+        receiveTimeout: const Duration(seconds: 12),
+        sendTimeout: const Duration(seconds: 12),
+        headers: const {'Content-Type': 'application/json'},
+      ),
+    );
   }
+
+  late final Dio _dio;
+  late final Dio _writeDio;
+  static final Map<String, _CommentCacheEntry> _cache = {};
+  static final Map<String, Future<List<Comment>>> _inFlight = {};
 
   Future<List<Comment>> getComments(
     String postId, {
@@ -37,9 +54,7 @@ class CommentService {
     }
 
     final inFlight = _inFlight[postId];
-    if (inFlight != null) {
-      return inFlight;
-    }
+    if (inFlight != null) return inFlight;
 
     final future = _fetchComments(postId);
     _inFlight[postId] = future;
@@ -52,11 +67,11 @@ class CommentService {
 
   Future<List<Comment>> _fetchComments(String postId) async {
     final token = await TokenStorage.getAccessToken();
-    final opts = Options(headers: {"Authorization": "Bearer $token"});
+    final opts = Options(headers: {'Authorization': 'Bearer $token'});
 
     try {
       final res = await _dio.get(
-        "posts/comments/",
+        'posts/comments/',
         queryParameters: {'post_id': postId},
         options: opts,
       );
@@ -69,43 +84,69 @@ class CommentService {
         _cache[postId] = _CommentCacheEntry(comments, DateTime.now());
         return comments;
       }
+
       return [];
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
-        debugPrint("⏱️ GET COMMENTS TIMEOUT for post $postId");
-      } else {
-        debugPrint("❌ GET COMMENTS ERROR: ${e.message}");
-      }
-      return [];
-    } catch (e) {
-      debugPrint("❌ GET COMMENTS UNEXPECTED ERROR: $e");
+    } catch (_) {
       return [];
     }
   }
 
-  // Returns the new Comment on success, null on failure
   Future<Comment?> addComment(String postId, String body) async {
     final token = await TokenStorage.getAccessToken();
-    final opts = Options(headers: {"Authorization": "Bearer $token"});
+    final opts = Options(headers: {'Authorization': 'Bearer $token'});
 
-    try {
-      final res = await _dio.post(
-        "posts/comments/",
-        data: {"post_id": postId, "body": body},
+    final payloads = <Map<String, dynamic>>[
+      {'post_id': postId, 'body': body},
+      {'post': postId, 'body': body},
+      {'post_id': postId, 'comment': body},
+      {'post': postId, 'comment': body},
+      {'post_id': postId, 'text': body},
+      {'post': postId, 'text': body},
+    ];
+
+    for (var i = 0; i < payloads.length; i++) {
+      final primary = await _tryAddComment(
+        endpoint: 'posts/comments/',
+        payload: payloads[i],
         options: opts,
+        body: body,
+      );
+      if (primary != null) return primary;
+    }
+
+    return _tryAddComment(
+      endpoint: 'posts/get-post/',
+      payload: {'post_id': postId, 'comment': body},
+      options: opts,
+      body: body,
+    );
+  }
+
+  Future<Comment?> _tryAddComment({
+    required String endpoint,
+    required Map<String, dynamic> payload,
+    required Options options,
+    required String body,
+  }) async {
+    try {
+      final requestOptions = options.copyWith(
+        sendTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 8),
+        extra: {...?options.extra, 'skipCache': true, 'bypassCache': true},
+      );
+      final res = await _writeDio.post(
+        endpoint,
+        data: payload,
+        options: requestOptions,
       );
 
-      debugPrint("✅ ADD COMMENT [${res.statusCode}]: ${res.data}");
-
       if (res.statusCode == 200 || res.statusCode == 201) {
-        final data = res.data;
-        final commentJson = data?['data'] ?? data?['comment'];
-        if (commentJson is Map<String, dynamic> && commentJson.containsKey('id')) {
+        final commentJson = _extractCommentJson(res.data);
+
+        if (commentJson != null && commentJson.containsKey('id')) {
           return Comment.fromJson(commentJson);
         }
-        // API succeeded but no comment object — return local placeholder
+
         return Comment(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           body: body,
@@ -114,14 +155,30 @@ class CommentService {
           user: CommentUser(id: '', username: 'You', isSubscribed: false),
         );
       }
+
       return null;
-    } on DioException catch (e) {
-      debugPrint("❌ ADD COMMENT ERROR: ${e.message} [${e.response?.statusCode}]");
-      return null;
-    } catch (e) {
-      debugPrint("❌ ADD COMMENT UNEXPECTED ERROR: $e");
+    } catch (_) {
       return null;
     }
+  }
+
+  Map<String, dynamic>? _extractCommentJson(dynamic data) {
+    if (data is! Map) return null;
+    final map = Map<String, dynamic>.from(data);
+
+    final direct = map['comment'];
+    if (direct is Map) return Map<String, dynamic>.from(direct);
+
+    final nestedData = map['data'];
+    if (nestedData is Map) {
+      final nestedMap = Map<String, dynamic>.from(nestedData);
+      final nestedComment = nestedMap['comment'];
+      if (nestedComment is Map) return Map<String, dynamic>.from(nestedComment);
+      if (nestedMap.containsKey('id')) return nestedMap;
+    }
+
+    if (map.containsKey('id')) return map;
+    return null;
   }
 
   static void invalidatePost(String postId) {

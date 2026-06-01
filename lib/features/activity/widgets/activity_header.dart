@@ -9,24 +9,20 @@ class ActivityHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Back Button
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-
+              onTap: onBackPressed,
               child: Image.asset(AppAssets.back, width: 25, height: 25),
             ),
           ),
-
-          // Title
           const Text(
-            "Activity",
+            "ACTIVITY",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
