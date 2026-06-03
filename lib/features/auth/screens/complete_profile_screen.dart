@@ -19,6 +19,8 @@ class CompleteProfileScreen extends StatefulWidget {
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final CompleteProfileController controller = CompleteProfileController();
+  final GetStartedButtonController _completeButtonController =
+      GetStartedButtonController();
   final TextEditingController _usernameController = TextEditingController();
 
   String? _profileImageError;
@@ -52,7 +54,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     final profileImageError =
         selectedImage == null || selectedImage.path.trim().isEmpty
-        ? 'Please add profile image'
+        ? 'Please add a profile photo to continue'
         : null;
 
     setState(() {
@@ -66,7 +68,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
 
     if (usernameError != null) {
-      _showSnackBar(username.isEmpty ? 'Please enter username' : usernameError);
+      _showSnackBar(
+        username.isEmpty ? 'Please enter a username' : usernameError,
+      );
       return false;
     }
 
@@ -79,7 +83,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       onImageSelected: (image) async {
         if (image.path.trim().isEmpty) {
           if (!mounted) return;
-          _showSnackBar('Please choose a valid profile image');
+          _showSnackBar('Please choose a valid profile photo');
           return;
         }
 
@@ -87,7 +91,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         if (!mounted) return;
 
         if (bytes.isEmpty) {
-          _showSnackBar('Selected profile image is empty');
+          _showSnackBar(
+            'Selected profile photo is empty. Please choose another image',
+          );
           return;
         }
 
@@ -101,6 +107,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (!_validateCompleteProfile()) return false;
 
     final authUi = context.read<AuthUiProvider>();
+    if (authUi.isLoading(AuthLoadingKey.completeProfile)) return false;
     final selectedImage = authUi.selectedProfileImage;
     final username = _usernameController.text.trim();
     final file = selectedImage?.path;
@@ -266,8 +273,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     controller: _usernameController,
                     hintText: 'Enter your username',
                     prefixIcon: AppAssets.user2,
-                    validator: (value) =>
-                        SignupValidator.validateUsernameRealTime(value ?? ''),
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _completeButtonController.submit(),
                     errorText: _usernameError,
                     onChanged: (value) {
                       if (_usernameError == null) return;
@@ -279,6 +286,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                   const SizedBox(height: 40),
                   GetStartedButton(
+                    controller: _completeButtonController,
                     text: 'Complete',
                     isLoading: isLoading,
                     onComplete: _completeProfile,

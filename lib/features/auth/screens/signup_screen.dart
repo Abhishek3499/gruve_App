@@ -56,6 +56,8 @@ class _SignupScreenState extends State<SignupScreen> {
   // ── Other State ──────────────────────────────────────────
 
   final SignupController controller = SignupController();
+  final GetStartedButtonController _signupButtonController =
+      GetStartedButtonController();
 
   final GlobalKey _genderFieldKey = GlobalKey();
 
@@ -312,24 +314,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 context,
                               ).requestFocus(_identifierFocus);
                             },
+                            errorText: nameError,
                           ),
-
-                          if (nameError != null)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16, top: 5),
-
-                              child: Text(
-                                nameError,
-
-                                style: const TextStyle(
-                                  color: Color(0xFFFF6B6B),
-
-                                  fontSize: 11,
-
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
 
@@ -367,6 +353,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   context,
                                 ).requestFocus(_passwordFocus);
                               },
+                              errorText: identifierError,
                             )
                           else
                             PhoneInputField(
@@ -382,23 +369,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   context,
                                 ).requestFocus(_passwordFocus);
                               },
-                            ),
-
-                          if (identifierError != null)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16, top: 5),
-
-                              child: Text(
-                                identifierError,
-
-                                style: const TextStyle(
-                                  color: Color(0xFFFF6B6B),
-
-                                  fontSize: 11,
-
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              errorText: identifierError,
                             ),
                         ],
                       ),
@@ -531,24 +502,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 context,
                               ).requestFocus(_confirmPasswordFocus);
                             },
+                            errorText: passwordError,
                           ),
-
-                          if (passwordError != null)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16, top: 5),
-
-                              child: Text(
-                                passwordError,
-
-                                style: const TextStyle(
-                                  color: Color(0xFFFF6B6B),
-
-                                  fontSize: 11,
-
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
 
@@ -569,24 +524,10 @@ class _SignupScreenState extends State<SignupScreen> {
                             focusNode: _confirmPasswordFocus,
 
                             textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) =>
+                                _signupButtonController.submit(),
+                            errorText: confirmPasswordError,
                           ),
-
-                          if (confirmPasswordError != null)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16, top: 5),
-
-                              child: Text(
-                                confirmPasswordError,
-
-                                style: const TextStyle(
-                                  color: Color(0xFFFF6B6B),
-
-                                  fontSize: 11,
-
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
 
@@ -594,6 +535,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       // ── SIGN UP BUTTON ──────────────────────────────
                       GetStartedButton(
+                        controller: _signupButtonController,
+
                         text: 'Sign Up',
 
                         isLoading: isLoading,
@@ -606,6 +549,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           final authUi = context.read<AuthUiProvider>();
                           final messenger = ScaffoldMessenger.of(context);
                           final nav = Navigator.of(context);
+                          if (authUi.isLoading(AuthLoadingKey.signup)) {
+                            return false;
+                          }
                           authUi.touchGender();
 
                           final isValid = _validateBeforeSubmit();
@@ -613,9 +559,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           if (!isValid) {
                             if (!mounted) return false;
 
-                            messenger.showSnackBar(
-                              SnackBar(content: Text(_firstSignupError())),
-                            );
+                            messenger
+                              ..hideCurrentSnackBar()
+                              ..showSnackBar(
+                                SnackBar(content: Text(_firstSignupError())),
+                              );
                             return false;
                           }
 
@@ -642,9 +590,13 @@ class _SignupScreenState extends State<SignupScreen> {
                           if (!mounted) return false;
 
                           if (controller.errorMessage != null) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text(controller.errorMessage!)),
-                            );
+                            messenger
+                              ..hideCurrentSnackBar()
+                              ..showSnackBar(
+                                SnackBar(
+                                  content: Text(controller.errorMessage!),
+                                ),
+                              );
 
                             return false;
                           }

@@ -33,6 +33,8 @@ class EmailLoginScreen extends StatefulWidget {
 
 class _EmailLoginScreenState extends State<EmailLoginScreen> {
   final EmailSignInController _controller = EmailSignInController();
+  final GetStartedButtonController _loginButtonController =
+      GetStartedButtonController();
 
   // Controllers & focus nodes
   final TextEditingController _emailController = TextEditingController();
@@ -75,7 +77,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
   String? _validatePasswordForLogin(String password) {
     if (password.trim().isEmpty) {
-      return 'Password is required';
+      return 'Please enter your password';
     }
 
     return null;
@@ -99,12 +101,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   //
 
   Future<bool> _handleLogin() async {
+    final authUi = context.read<AuthUiProvider>();
+    if (authUi.isLoading(AuthLoadingKey.login)) return false;
+
     final emailError = SignupValidator.validateEmailRealTime(
       _emailController.text,
     );
     final passwordError = _validatePasswordForLogin(_passwordController.text);
 
-    final authUi = context.read<AuthUiProvider>();
     authUi.setErrors({
       'login_email': emailError,
       'login_password': passwordError,
@@ -115,9 +119,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       // Show specific error if any
       String errorMessage =
           emailError ?? passwordError ?? 'Please fill all fields';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(errorMessage)));
       return false;
     }
 
@@ -138,9 +142,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     //
 
     if (_controller.errorMessage != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_controller.errorMessage!)));
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(_controller.errorMessage!)));
 
       return false;
     }
@@ -313,22 +317,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             onFieldSubmitted: (_) => FocusScope.of(
                               context,
                             ).requestFocus(_passwordFocus),
-
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Email is required';
-                              }
-
-                              final emailRegex = RegExp(
-                                r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
-                              );
-
-                              if (!emailRegex.hasMatch(value.trim())) {
-                                return 'Enter a valid email address';
-                              }
-
-                              return null;
-                            },
+                            errorText: authUi.error('login_email'),
                           ),
 
                           const SizedBox(height: 20),
@@ -361,15 +350,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
                             textInputAction: TextInputAction.done,
 
-                            onFieldSubmitted: (_) => _handleLogin(),
+                            onFieldSubmitted: (_) =>
+                                _loginButtonController.submit(),
 
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Password is required';
-                              }
-
-                              return null;
-                            },
+                            errorText: authUi.error('login_password'),
                           ),
 
                           const SizedBox(height: 10),
@@ -408,6 +392,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             alignment: Alignment.center,
 
                             child: GetStartedButton(
+                              controller: _loginButtonController,
+
                               text: 'Login',
 
                               isLoading: isLoading,

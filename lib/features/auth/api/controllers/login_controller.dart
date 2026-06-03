@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
+import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 
 import '../models/login_model.dart';
 import '../services/login_services.dart';
@@ -48,13 +49,31 @@ class EmailSignInController {
 
         debugPrint("✅ TOKENS SAVED SUCCESSFULLY");
       } else {
-        errorMessage = res.message;
+        errorMessage = _loginErrorMessage(res.message);
       }
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = _loginErrorMessage(e);
       debugPrint("❌ CONTROLLER ERROR: $e");
     } finally {
       isLoading = false;
     }
+  }
+
+  String _loginErrorMessage(Object? error) {
+    final message = AuthApiException.userFacingMessage(
+      error,
+      fallback: 'Please enter the correct password.',
+    );
+    final lower = message.toLowerCase();
+
+    if (lower.contains('invalid') ||
+        lower.contains('incorrect') ||
+        lower.contains('unauthorized') ||
+        lower.contains('credential') ||
+        lower.contains('password')) {
+      return 'Please enter the correct password.';
+    }
+
+    return message;
   }
 }

@@ -11,10 +11,8 @@ class PhoneSiginServices {
   Future<PhoneloginResponse> signIn({required String phoneNumber}) async {
     try {
       const endpoint = "auth/phone-login/";
-      final requestData = {
-        "phone_number": phoneNumber,
-      };
-      
+      final requestData = {"phone_number": phoneNumber};
+
       AuthApiLogger.request(
         'PhoneLogin',
         dio: _dio,
@@ -35,7 +33,10 @@ class PhoneSiginServices {
     } on DioException catch (e) {
       AuthApiLogger.error('PhoneLogin', e);
 
-      throw AuthApiException.extractMessage(e);
+      throw AuthApiException.extractMessage(
+        e,
+        fallback: 'Please enter a valid phone number.',
+      );
     } catch (e) {
       debugPrint("Phone login failed: $e");
       rethrow;

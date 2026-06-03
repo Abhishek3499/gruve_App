@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show debugPrint;
+import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
@@ -35,8 +36,10 @@ class SignupController {
 
       debugPrint("✅ User ID: ${signupResponse?.data?.id}");
     } catch (e) {
-      final rawMessage = e.toString();
-      errorMessage = rawMessage.replaceFirst("Exception: ", "").trim();
+      errorMessage = AuthApiException.userFacingMessage(
+        e,
+        fallback: 'Please check your signup details and try again.',
+      );
       debugPrint("❌ Signup Error: $errorMessage");
     } finally {
       isLoading = false;

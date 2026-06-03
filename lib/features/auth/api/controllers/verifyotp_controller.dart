@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
+import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/token_storage.dart' show TokenStorage;
 
 import '../models/verify_otp_response.dart';
@@ -43,7 +44,10 @@ class VerifyotpController {
       verifyOtpResponse = response;
 
       if (!response.success) {
-        errorMessage = response.message;
+        errorMessage = AuthApiException.userFacingMessage(
+          response.message,
+          fallback: 'Please enter the correct OTP.',
+        );
         return;
       }
 
@@ -72,7 +76,10 @@ class VerifyotpController {
 
       debugPrint('VerifyOtpController tokens saved');
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = AuthApiException.userFacingMessage(
+        e,
+        fallback: 'Please enter the correct OTP.',
+      );
     } finally {
       isLoading = false;
     }

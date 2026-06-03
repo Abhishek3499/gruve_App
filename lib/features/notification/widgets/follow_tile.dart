@@ -18,12 +18,12 @@ class FollowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(22, 8, 24, 8),
       child: Row(
         children: [
-          CircleAvatar(radius: 24, backgroundImage: AssetImage(profileImage)),
+          CircleAvatar(radius: 20, backgroundImage: AssetImage(profileImage)),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
           Expanded(
             child: Column(
@@ -31,26 +31,43 @@ class FollowTile extends StatelessWidget {
               children: [
                 Text(
                   "$username started following you.",
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: 1.15,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   time,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
 
           OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white),
+              minimumSize: const Size(76, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              side: const BorderSide(color: Color(0xFF2B2B2B)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
             onPressed: () => _handleMessageTap(context),
-            child: const Text("Message", style: TextStyle(color: Colors.white)),
+            child: const Text(
+              "Message",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

@@ -26,10 +26,13 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final ResetPasswordController _controller = ResetPasswordController();
+  final GetStartedButtonController _resetButtonController =
+      GetStartedButtonController();
 
   late final TextEditingController _newPasswordController;
 
   late final TextEditingController _confirmPasswordController;
+  late final FocusNode _confirmPasswordFocus;
   String? _passwordError;
   String? _confirmPasswordError;
 
@@ -43,6 +46,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _newPasswordController = TextEditingController();
 
     _confirmPasswordController = TextEditingController();
+    _confirmPasswordFocus = FocusNode();
     _newPasswordController.addListener(_validatePasswordsAfterFirstError);
     _confirmPasswordController.addListener(_validatePasswordsAfterFirstError);
   }
@@ -75,6 +79,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _newPasswordController.dispose();
 
     _confirmPasswordController.dispose();
+    _confirmPasswordFocus.dispose();
 
     super.dispose();
   }
@@ -189,10 +194,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           hintText: 'Enter new password',
 
                           controller: _newPasswordController,
-                          validator: (value) =>
-                              SignupValidator.validatePasswordRealTime(
-                                value ?? '',
-                              ),
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _confirmPasswordFocus.requestFocus(),
                           errorText: _passwordError,
                         ),
 
@@ -220,11 +224,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           hintText: 'Confirm new password',
 
                           controller: _confirmPasswordController,
-                          validator: (value) =>
-                              SignupValidator.validateConfirmPasswordRealTime(
-                                _newPasswordController.text,
-                                value ?? '',
-                              ),
+                          focusNode: _confirmPasswordFocus,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) =>
+                              _resetButtonController.submit(),
                           errorText: _confirmPasswordError,
                         ),
 
@@ -234,6 +237,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           alignment: AlignmentGeometry.center,
 
                           child: GetStartedButton(
+                            controller: _resetButtonController,
+
                             text: 'Reset ',
 
                             isLoading: isLoading,
@@ -244,19 +249,26 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               final nav = Navigator.of(context);
                               final password = _newPasswordController.text
                                   .trim();
+                              if (authUi.isLoading(
+                                AuthLoadingKey.resetPassword,
+                              )) {
+                                return false;
+                              }
 
                               if (!_validatePasswords()) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      _passwordError ??
-                                          _confirmPasswordError ??
-                                          'Please fill in all fields',
-                                    ),
+                                messenger
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        _passwordError ??
+                                            _confirmPasswordError ??
+                                            'Please fill in all fields',
+                                      ),
 
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
 
                                 return false;
                               }
@@ -268,15 +280,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               if (token == null) {
                                 if (!mounted) return false;
 
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      "Session expired. Please try again.",
-                                    ),
+                                messenger
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Session expired. Please try again.",
+                                      ),
 
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
 
                                 return false;
                               }
@@ -311,9 +325,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                                 if (!mounted) return false;
 
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text(message)),
-                                );
+                                messenger
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    SnackBar(content: Text(message)),
+                                  );
 
                                 if (!nav.mounted) return false;
 
@@ -329,13 +345,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               } else {
                                 if (!mounted) return false;
 
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(message),
+                                messenger
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text(message),
 
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
 
                                 return false;
                               }

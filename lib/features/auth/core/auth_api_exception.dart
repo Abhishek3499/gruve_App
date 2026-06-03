@@ -27,16 +27,20 @@ class AuthApiException implements Exception {
       for (final key in const ['message', 'detail', 'error', 'msg']) {
         final value = map[key];
         final text = _coerceMessage(value);
-        if (text.isNotEmpty) return text;
+        if (text.isNotEmpty) {
+          return userFacingMessage(text, fallback: fallback);
+        }
       }
 
       final errors = map['errors'];
       final text = _coerceMessage(errors);
-      if (text.isNotEmpty) return text;
+      if (text.isNotEmpty) {
+        return userFacingMessage(text, fallback: fallback);
+      }
     }
 
     if (data is String && data.trim().isNotEmpty) {
-      return data.trim();
+      return userFacingMessage(data, fallback: fallback);
     }
 
     switch (error.type) {
@@ -49,6 +53,36 @@ class AuthApiException implements Exception {
       default:
         return fallback;
     }
+  }
+
+  static String userFacingMessage(
+    Object? error, {
+    String fallback = 'Something went wrong. Please try again.',
+  }) {
+    if (error == null) return fallback;
+
+    final raw = error is AuthApiException ? error.message : error.toString();
+    var message = raw.trim();
+    if (message.isEmpty) return fallback;
+
+    const exceptionPrefix = 'Exception:';
+    while (message.startsWith(exceptionPrefix)) {
+      message = message.substring(exceptionPrefix.length).trim();
+    }
+
+    final lower = message.toLowerCase();
+    final isTechnical =
+        lower == 'null' ||
+        lower.contains('request failed') ||
+        lower.contains('dioexception') ||
+        lower.contains('http status') ||
+        lower.contains('status code') ||
+        lower.contains('xmlhttprequest') ||
+        lower.contains('socketexception') ||
+        lower.contains('httpexception') ||
+        lower.contains('failed host lookup');
+
+    return isTechnical ? fallback : message;
   }
 
   static String _coerceMessage(dynamic value) {

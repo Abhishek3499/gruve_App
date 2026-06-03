@@ -2,19 +2,19 @@ class PhoneNumberValidator {
   // Real-time validation for phone number
   static String? validatePhoneRealTime(String phone) {
     final trimmed = phone.trim();
-    if (trimmed.isEmpty) return "Phone number is required";
+    if (trimmed.isEmpty) return "Please enter your phone number";
 
     if (!RegExp(r'^[0-9\s().-]+$').hasMatch(trimmed)) {
-      return "Phone number can only contain digits and basic separators";
+      return "Please enter a valid phone number";
     }
 
     final digitsOnly = trimmed.replaceAll(RegExp(r'\D'), '');
     if (digitsOnly.length < 7 || digitsOnly.length > 15) {
-      return "Enter valid phone number";
+      return "Please enter a valid phone number";
     }
 
     if (RegExp(r'([().-])\1').hasMatch(trimmed)) {
-      return "Enter valid phone number";
+      return "Please enter a valid phone number";
     }
 
     return null;

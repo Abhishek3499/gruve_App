@@ -9,30 +9,24 @@ class TodaySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 02),
-      padding: const EdgeInsets.symmetric(vertical: 45),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 18, 24, 42),
       decoration: const BoxDecoration(
         color: Color(0xFF33123B),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(100), // 🔥 curve yaha
-        ),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(88)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15),
-            child: Text(
-              "Today",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+          Text(
+            "Today",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: 15),
-
+          SizedBox(height: 14),
           NotificationTile(
             username: "kiero_d",
             message: "liked your video.",

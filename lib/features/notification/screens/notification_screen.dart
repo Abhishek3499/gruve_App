@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 import '../widgets/header.dart';
-import '../widgets/section_title.dart';
 import '../widgets/today_section.dart';
 import '../widgets/new_section.dart';
 import '../widgets/this_week_section.dart';
@@ -22,28 +21,22 @@ class NotificationScreen extends StatelessWidget {
             colors: [AppColors.gradientTop, AppColors.gradientBottom],
           ),
         ),
-        child: const SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 16),
-
-                Header(),
-
-                SizedBox(height: 30),
-
-                TodaySection(),
-
-                NewSection(),
-
-                SizedBox(height: 20),
-
-                SectionTitle(title: "This Week"),
-                ThisWeekSection(),
-
-                SizedBox(height: 30),
-              ],
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: const SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Header(),
+                    TodaySection(),
+                    NewSection(),
+                    ThisWeekSection(),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

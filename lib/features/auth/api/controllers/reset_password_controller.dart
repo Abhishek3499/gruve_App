@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import '../services/reset_password_service.dart';
 
 class ResetPasswordController {
@@ -20,7 +21,10 @@ class ResetPasswordController {
 
       return response.message;
     } catch (e) {
-      return e.toString();
+      return AuthApiException.userFacingMessage(
+        e,
+        fallback: 'Password could not be reset. Please try again.',
+      );
     } finally {
       isLoading.value = false;
     }

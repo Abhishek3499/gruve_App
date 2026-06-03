@@ -9,36 +9,30 @@ class NewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 01),
-      padding: const EdgeInsets.symmetric(vertical: 30),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(22, 18, 24, 38),
       decoration: const BoxDecoration(
-        color: Color(0xFF833FB0),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(70), // 🔥 curve yaha
-        ),
+        color: Color(0xFF8E44B9),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(76)),
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15),
-            child: Text(
-              "New",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+          Text(
+            "New",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: 15),
-
+          SizedBox(height: 14),
           NotificationTile(
             username: "karennne",
             message: "liked your video.",
             time: "1h",
             profileImage: AppAssets.newprofile,
+            postImage: AppAssets.today,
           ),
         ],
       ),

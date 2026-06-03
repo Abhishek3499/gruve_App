@@ -72,6 +72,8 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   final VerifyotpController controller = VerifyotpController();
+  final GetStartedButtonController _otpButtonController =
+      GetStartedButtonController();
 
   final List<TextEditingController> _controllers = List.generate(
     4,
@@ -219,9 +221,11 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     // ✅ STEP 1: EMPTY CHECK
 
     if (otp.isEmpty || otp.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter complete OTP")),
-      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text("Please enter the complete OTP")),
+        );
 
       return false;
     }
@@ -229,9 +233,11 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     // ✅ STEP 2: REGEX VALIDATION (ADD HERE 🔥)
 
     if (!RegExp(r'^\d{4}$').hasMatch(otp)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Enter valid 4 digit OTP")));
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text("Enter a valid 4 digit OTP")),
+        );
 
       return false;
     }
@@ -273,9 +279,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     if (!mounted) return false;
 
     if (controller.errorMessage != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
 
       return false;
     }
@@ -313,11 +319,15 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
       return true;
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(controller.verifyOtpResponse?.message ?? "Invalid OTP"),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              controller.verifyOtpResponse?.message ?? "Invalid OTP",
+            ),
+          ),
+        );
 
       return false;
     }
@@ -527,10 +537,18 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
                               autoFocus: i == 0,
                               enableSmsAutofill: i == 0,
+                              textInputAction: i == _controllers.length - 1
+                                  ? TextInputAction.done
+                                  : TextInputAction.next,
 
                               onChanged: (val) => _handleOtpChanged(i, val),
 
                               onBackspace: () => _handleOtpBackspace(i),
+                              onSubmitted: (_) {
+                                if (i == _controllers.length - 1) {
+                                  _otpButtonController.submit();
+                                }
+                              },
                             );
                           }),
                         ),
@@ -556,6 +574,8 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                         const SizedBox(height: 40),
 
                         GetStartedButton(
+                          controller: _otpButtonController,
+
                           text: widget.buttonText,
 
                           isLoading: isLoading,

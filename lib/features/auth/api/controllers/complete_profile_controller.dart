@@ -1,4 +1,5 @@
 import 'package:gruve_app/features/auth/api/services/complete_profile_service.dart';
+import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/complete_profile_request.dart';
@@ -29,7 +30,11 @@ class CompleteProfileController {
       response = result;
     } catch (e) {
       response = null;
-      errorMessage = e.toString().replaceFirst('Exception: ', '');
+      errorMessage = AuthApiException.userFacingMessage(
+        e,
+        fallback:
+            'Profile could not be saved. Please check your username and photo.',
+      );
     } finally {
       isLoading = false;
     }

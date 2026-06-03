@@ -8,6 +8,8 @@ class OtpInputBox extends StatelessWidget {
   final bool enableSmsAutofill;
   final Function(String)? onChanged;
   final Function()? onBackspace;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   const OtpInputBox({
     super.key,
@@ -17,6 +19,8 @@ class OtpInputBox extends StatelessWidget {
     this.enableSmsAutofill = false,
     this.onChanged,
     this.onBackspace,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   @override
@@ -52,7 +56,8 @@ class OtpInputBox extends StatelessWidget {
               focusNode: focusNode,
               autofocus: autoFocus,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.next,
+              textInputAction: textInputAction ?? TextInputAction.next,
+              onSubmitted: onSubmitted,
               autofillHints: enableSmsAutofill
                   ? const [AutofillHints.oneTimeCode]
                   : null,

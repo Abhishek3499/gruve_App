@@ -4,8 +4,8 @@ class NotificationTile extends StatelessWidget {
   final String username;
   final String message;
   final String time;
-  final String profileImage; // 👈 add
-  final String? postImage; // 👈 optional thumbnail
+  final String profileImage;
+  final String? postImage;
 
   const NotificationTile({
     super.key,
@@ -19,39 +19,42 @@ class NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          /// 🔥 PROFILE IMAGE
-          CircleAvatar(radius: 24, backgroundImage: AssetImage(profileImage)),
-
-          const SizedBox(width: 12),
-
-          /// 🔥 TEXT AREA
+          CircleAvatar(radius: 20, backgroundImage: AssetImage(profileImage)),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   "$username $message",
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: 1.15,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   time,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),
           ),
-
-          /// 🔥 RIGHT THUMBNAIL (if exists)
+          const SizedBox(width: 12),
           if (postImage != null)
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(2),
               child: SizedBox(
-                width: 55,
-                height: 55,
+                width: 38,
+                height: 38,
                 child: Image.asset(postImage!, fit: BoxFit.cover),
               ),
             ),

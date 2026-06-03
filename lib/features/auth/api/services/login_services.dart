@@ -21,7 +21,7 @@ class EmailSignInService {
     try {
       const endpoint = "auth/login/";
       final requestData = {"identifier": identifier, "password": password};
-      
+
       AuthApiLogger.request(
         'EmailLogin',
         dio: _dio,
@@ -29,7 +29,7 @@ class EmailSignInService {
         method: 'POST',
         body: requestData,
       );
-      
+
       final response = await _dio.post(
         endpoint,
         data: requestData,
@@ -43,7 +43,7 @@ class EmailSignInService {
       AuthApiLogger.error('EmailLogin', e);
       throw AuthApiException.extractMessage(
         e,
-        fallback: 'Unable to sign in right now. Please try again.',
+        fallback: 'Please enter the correct password.',
       );
     } catch (e) {
       debugPrint("Email login failed: $e");

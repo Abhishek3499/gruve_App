@@ -35,8 +35,9 @@ class AuthUiProvider extends ChangeNotifier {
     return path.endsWith('.mp4') || path.endsWith('.mov');
   }
 
-  String? get genderError =>
-      _genderTouched && _selectedGender == null ? 'Please select gender' : null;
+  String? get genderError => _genderTouched && _selectedGender == null
+      ? 'Please select your gender'
+      : null;
 
   void setLoading(AuthLoadingKey key, bool value) {
     final changed = value ? _loading.add(key) : _loading.remove(key);

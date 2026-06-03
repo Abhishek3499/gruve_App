@@ -29,6 +29,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
   late final TextEditingController _phoneController;
 
   final PhoneSignInController _controller = PhoneSignInController();
+  final GetStartedButtonController _phoneButtonController =
+      GetStartedButtonController();
 
   @override
   void initState() {
@@ -150,10 +152,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       /// PHONE INPUT
                       PhoneInputField(
                         controller: _phoneController,
-                        validator: (value) =>
-                            PhoneNumberValidator.validatePhoneRealTime(
-                              value ?? '',
-                            ),
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) =>
+                            _phoneButtonController.submit(),
                         errorText: authUi.error('phone_login_phone'),
                       ),
 
@@ -162,6 +163,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       /// LOGIN BUTTON
                       Center(
                         child: GetStartedButton(
+                          controller: _phoneButtonController,
+
                           text: 'Login',
 
                           isLoading: isLoading,
@@ -179,14 +182,19 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             );
 
                             if (phoneError != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(phoneError)),
-                              );
+                              ScaffoldMessenger.of(context)
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  SnackBar(content: Text(phoneError)),
+                                );
 
                               return false;
                             }
 
                             final authUi = context.read<AuthUiProvider>();
+                            if (authUi.isLoading(AuthLoadingKey.phoneLogin)) {
+                              return false;
+                            }
                             authUi.setLoading(AuthLoadingKey.phoneLogin, true);
 
                             try {
@@ -205,11 +213,13 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             if (_controller.errorMessage != null) {
                               if (!mounted) return false;
                               if (!context.mounted) return false;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(_controller.errorMessage!),
-                                ),
-                              );
+                              ScaffoldMessenger.of(context)
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  SnackBar(
+                                    content: Text(_controller.errorMessage!),
+                                  ),
+                                );
 
                               return false;
                             }

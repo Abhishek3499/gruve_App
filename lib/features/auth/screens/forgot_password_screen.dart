@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:gruve_app/core/assets.dart';
 
+import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/api/services/forgot_password_service.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +30,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   late final TextEditingController _emailController;
 
   final ForgotPasswordService _service = ForgotPasswordService();
+  final GetStartedButtonController _forgotButtonController =
+      GetStartedButtonController();
 
   @override
   void initState() {
@@ -183,10 +186,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           prefixIcon: AppAssets.user2,
 
                           keyboardType: TextInputType.emailAddress,
-                          validator: (value) =>
-                              SignupValidator.validateEmailRealTime(
-                                value ?? '',
-                              ),
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) =>
+                              _forgotButtonController.submit(),
                           errorText: authUi.error('forgot_email'),
                         ),
 
@@ -196,6 +198,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         // GetStartedButton ke andar onComplete ko replace karein:
                         GetStartedButton(
+                          controller: _forgotButtonController,
+
                           text: 'RESET PASSWORD',
 
                           isLoading: isLoading,
@@ -206,14 +210,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(context);
                             final authUi = context.read<AuthUiProvider>();
+                            if (authUi.isLoading(
+                              AuthLoadingKey.forgotPassword,
+                            )) {
+                              return false;
+                            }
                             final emailError =
                                 SignupValidator.validateEmailRealTime(email);
                             authUi.setError('forgot_email', emailError);
 
                             if (emailError != null) {
-                              messenger.showSnackBar(
-                                SnackBar(content: Text(emailError)),
-                              );
+                              messenger
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  SnackBar(content: Text(emailError)),
+                                );
                               return false;
                             }
 
@@ -273,11 +284,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 false,
                               );
 
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text("Error: ${e.toString()}"),
-                                ),
-                              );
+                              messenger
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      AuthApiException.userFacingMessage(
+                                        e,
+                                        fallback:
+                                            'We could not send the reset code. Please try again.',
+                                      ),
+                                    ),
+                                  ),
+                                );
 
                               return false;
                             }
