@@ -54,6 +54,10 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // ── Real-time Validation State ───────────────────────────
+  bool _nameTouched = false;
+  bool _identifierTouched = false;
+  bool _passwordTouched = false;
+  bool _confirmPasswordTouched = false;
 
   // ── Other State ──────────────────────────────────────────
 
@@ -82,21 +86,45 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameFocus.addListener(() {
       if (_nameFocus.hasFocus) {
         _scrollToField(_nameKey);
+      } else {
+        if (mounted) {
+          setState(() {
+            _nameTouched = true;
+          });
+        }
       }
     });
     _identifierFocus.addListener(() {
       if (_identifierFocus.hasFocus) {
         _scrollToField(_identifierKey);
+      } else {
+        if (mounted) {
+          setState(() {
+            _identifierTouched = true;
+          });
+        }
       }
     });
     _passwordFocus.addListener(() {
       if (_passwordFocus.hasFocus) {
         _scrollToField(_passwordKey);
+      } else {
+        if (mounted) {
+          setState(() {
+            _passwordTouched = true;
+          });
+        }
       }
     });
     _confirmPasswordFocus.addListener(() {
       if (_confirmPasswordFocus.hasFocus) {
         _scrollToField(_confirmPasswordKey);
+      } else {
+        if (mounted) {
+          setState(() {
+            _confirmPasswordTouched = true;
+          });
+        }
       }
     });
   }
@@ -111,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
             targetContext,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            alignment: 0.0,
+            alignment: 0.1,
           );
         }
       });
@@ -228,6 +256,12 @@ class _SignupScreenState extends State<SignupScreen> {
     final authUi = context.read<AuthUiProvider>();
     if (authUi.useEmail == useEmail) return;
 
+    if (mounted) {
+      setState(() {
+        _identifierTouched = false;
+      });
+    }
+
     authUi.setContactMode(useEmail);
     _identifierFocus.unfocus();
     _identifierController.clear();
@@ -258,17 +292,35 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authUi = context.watch<AuthUiProvider>();
-    final isLoading = authUi.isLoading(AuthLoadingKey.signup);
-    final selectedGender = authUi.selectedGender;
-    final genderError = authUi.genderError;
-    final useEmail = authUi.useEmail;
-    final nameError = authUi.error('signup_name');
-    final identifierError = authUi.error('signup_identifier');
-    final passwordError = authUi.error('signup_password');
-    final confirmPasswordError = authUi.error('signup_confirm_password');
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.signup),
+    );
+    final selectedGender = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.selectedGender,
+    );
+    final genderError = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.genderError,
+    );
+    final useEmail = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.useEmail,
+    );
+    final nameErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('signup_name'),
+    );
+    final identifierErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('signup_identifier'),
+    );
+    final passwordErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('signup_password'),
+    );
+    final confirmPasswordErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('signup_confirm_password'),
+    );
 
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final nameError = _nameTouched ? nameErrorRaw : null;
+    final identifierError = _identifierTouched ? identifierErrorRaw : null;
+    final passwordError = _passwordTouched ? passwordErrorRaw : null;
+    final confirmPasswordError = _confirmPasswordTouched ? confirmPasswordErrorRaw : null;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -288,8 +340,6 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Form(
                 // ✅ Form wrap
                 key: _formKey,
-
-                autovalidateMode: AutovalidateMode.onUserInteraction,
 
                 child: SingleChildScrollView(
                   controller: _scrollController,
@@ -374,7 +424,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 20),
 
                       // ── TOGGLE ──────────────────────────────────────
-                      _buildContactToggle(),
+                      _buildContactToggle(useEmail),
 
                       const SizedBox(height: 12),
 
@@ -598,6 +648,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                         onComplete: () async {
                           if (!mounted) return false;
+                          FocusScope.of(context).unfocus();
 
                           // ✅ Gender touched mark — error dikhao agar empty
 
@@ -608,6 +659,15 @@ class _SignupScreenState extends State<SignupScreen> {
                             return false;
                           }
                           authUi.touchGender();
+
+                          if (mounted) {
+                            setState(() {
+                              _nameTouched = true;
+                              _identifierTouched = true;
+                              _passwordTouched = true;
+                              _confirmPasswordTouched = true;
+                            });
+                          }
 
                           final isValid = _validateBeforeSubmit();
 
@@ -676,13 +736,13 @@ class _SignupScreenState extends State<SignupScreen> {
                                 isLogin: false,
 
                                 onVerified: () {
-                                  Navigator.push(
+                                  Navigator.pushAndRemoveUntil(
                                     context,
-
                                     MaterialPageRoute(
                                       builder: (_) =>
                                           const CompleteProfileScreen(),
                                     ),
+                                    (route) => false,
                                   );
                                 },
                               ),
@@ -706,8 +766,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
 
                       const SizedBox(height: 20),
-
-                      SizedBox(height: keyboardHeight > 0 ? keyboardHeight + 150 : 20),
                     ],
                   ),
                 ),
@@ -735,7 +793,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildContactToggle() {
+  Widget _buildContactToggle(bool useEmail) {
     return Container(
       width: double.infinity,
 
@@ -755,7 +813,7 @@ class _SignupScreenState extends State<SignupScreen> {
             child: _buildToggleOption(
               title: 'Email',
 
-              isSelected: context.watch<AuthUiProvider>().useEmail,
+              isSelected: useEmail,
 
               onTap: () => _setContactMode(true),
             ),
@@ -765,7 +823,7 @@ class _SignupScreenState extends State<SignupScreen> {
             child: _buildToggleOption(
               title: 'Phone',
 
-              isSelected: !context.watch<AuthUiProvider>().useEmail,
+              isSelected: !useEmail,
 
               onTap: () => _setContactMode(false),
             ),
@@ -850,7 +908,13 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               Icon(Icons.male, color: Color(0xFFB86AD0), size: 18),
               SizedBox(width: 8),
-              Text('Male', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                'Male',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -862,7 +926,13 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               Icon(Icons.female, color: Color(0xFFB86AD0), size: 18),
               SizedBox(width: 8),
-              Text('Female', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                'Female',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -874,7 +944,13 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               Icon(Icons.transgender, color: Color(0xFFB86AD0), size: 18),
               SizedBox(width: 8),
-              Text('Other', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                'Other',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),

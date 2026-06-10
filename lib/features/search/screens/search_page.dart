@@ -279,12 +279,18 @@ class _SearchPageState extends State<SearchPage> {
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+              begin: Alignment(-0.2, -1.0),
+              end: Alignment(0.2, 1.0),
+              colors: [
+                Color(0xFF42174C),
+                Color(0xFF210C26),
+                Color(0xFF000000),
+              ],
+              stops: [0.0, 0.4172, 0.9933],
             ),
           ),
           child: SafeArea(
+            bottom: false,
             child: Column(
               children: [
                 /// HEADER
@@ -318,6 +324,7 @@ class _SearchPageState extends State<SearchPage> {
                 /// CONTENT
                 Expanded(
                   child: ListView(
+                    padding: const EdgeInsets.only(bottom: 34),
                     children: [
                       // CHANGED: Single if-else if chain - only ONE state shows at a time
 

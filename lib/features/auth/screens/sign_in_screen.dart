@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/api/controllers/google_sign_in_controller.dart';
 import 'package:gruve_app/features/auth/screens/complete_profile_screen.dart';
 import 'package:gruve_app/features/auth/screens/phone_number_screen.dart';
@@ -9,6 +11,9 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/auth/screens/email_login_screen.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 
 import 'package:gruve_app/features/auth/screens/signup_screen.dart';
 import 'package:gruve_app/core/widgets/primary_button.dart';
@@ -25,6 +30,21 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final GoogleAuthController _googleController = GoogleAuthController();
   bool _isGoogleLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Warm up Google sign-in configuration asynchronously so it's ready when the button is clicked
+    try {
+      GoogleSignIn.instance.initialize(
+        serverClientId: EnvironmentConfig.googleWebClientId,
+      ).catchError((e) {
+        debugPrint('Failed to warm up Google Sign In: $e');
+      });
+    } catch (e) {
+      debugPrint('Failed to warm up Google Sign In: $e');
+    }
+  }
 
   void _navigate(BuildContext context, Widget screen) {
     Navigator.push(
@@ -74,7 +94,35 @@ class _SignInScreenState extends State<SignInScreen> {
       SocketService().connect(accessToken);
     }
 
-    final nextScreen = _googleController.needsProfileSetup
+    final isNewUser = _googleController.needsProfileSetup;
+
+    if (!isNewUser) {
+      final profileProvider = Provider.of<ProfileProvider>(
+        context,
+        listen: false,
+      );
+      final storyController = Provider.of<StoryController>(
+        context,
+        listen: false,
+      );
+
+      // Refresh application state in the background to keep login fast.
+      Future<void>.delayed(Duration.zero, () async {
+        try {
+          debugPrint('🔄 [Google Login] 🔄 Refreshing providers in background...');
+          await profileProvider.refreshProfile();
+          debugPrint('👤 [Google Login] 👤 Profile data refreshed');
+          storyController.reset();
+          debugPrint('📖 [Google Login] 📖 Story data reset');
+          debugPrint('✅ [Google Login] ✅ Background refresh completed');
+        } catch (e, stackTrace) {
+          debugPrint('❌ [Google Login] ❌ Background refresh failed: $e');
+          debugPrint('$stackTrace');
+        }
+      });
+    }
+
+    final nextScreen = isNewUser
         ? const CompleteProfileScreen()
         : const HomeScreen();
 

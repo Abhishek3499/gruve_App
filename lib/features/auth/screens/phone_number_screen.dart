@@ -27,6 +27,8 @@ class PhoneNumberScreen extends StatefulWidget {
 
 class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
   late final TextEditingController _phoneController;
+  final FocusNode _phoneFocus = FocusNode();
+  bool _phoneTouched = false;
 
   final PhoneSignInController _controller = PhoneSignInController();
   final GetStartedButtonController _phoneButtonController =
@@ -40,6 +42,19 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     });
     _phoneController = TextEditingController();
     _setupRealTimeValidation();
+    _setupFocusListeners();
+  }
+
+  void _setupFocusListeners() {
+    _phoneFocus.addListener(() {
+      if (!_phoneFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _phoneTouched = true;
+          });
+        }
+      }
+    });
   }
 
   void _setupRealTimeValidation() {
@@ -57,14 +72,20 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _phoneFocus.dispose();
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final authUi = context.watch<AuthUiProvider>();
-    final isLoading = authUi.isLoading(AuthLoadingKey.phoneLogin);
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.phoneLogin),
+    );
+    final phoneErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('phone_login_phone'),
+    );
+    final phoneError = _phoneTouched ? phoneErrorRaw : null;
     return Scaffold(
       resizeToAvoidBottomInset: true,
 
@@ -140,9 +161,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       PhoneInputField(
                         controller: _phoneController,
                         textInputAction: TextInputAction.done,
+                        focusNode: _phoneFocus,
                         onFieldSubmitted: (_) =>
                             _phoneButtonController.submit(),
-                        errorText: authUi.error('phone_login_phone'),
+                        errorText: phoneError,
                       ),
 
                       const SizedBox(height: 36),
@@ -157,7 +179,12 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           isLoading: isLoading,
 
                           onComplete: () async {
-                            final phone = _phoneController.text.trim();
+                             if (mounted) {
+                               setState(() {
+                                 _phoneTouched = true;
+                               });
+                             }
+                             final phone = _phoneController.text.trim();
 
                             final phoneError =
                                 PhoneNumberValidator.validatePhoneRealTime(

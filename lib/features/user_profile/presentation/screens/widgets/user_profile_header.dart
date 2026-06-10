@@ -121,7 +121,7 @@ class UserProfileHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 21),
                         ] else if (reserveSubscribeSpace) ...[
-                          const SizedBox(width: 132, height: 42),
+                          const SizedBox(width: 120, height: 36),
                           const SizedBox(width: 21),
                         ],
                         GiftButton(

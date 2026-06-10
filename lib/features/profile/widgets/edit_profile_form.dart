@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../features/auth/validators/signup_validator.dart';
 
 class EditProfileForm extends StatelessWidget {
   final TextEditingController usernameController;
@@ -24,15 +25,7 @@ class EditProfileForm extends StatelessWidget {
           label: 'Username',
           hint: 'Enter your username',
           prefixIcon: Icons.person_outline,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Username is required';
-            }
-            if (value.trim().length < 3) {
-              return 'Username must be at least 3 characters';
-            }
-            return null;
-          },
+          validator: (value) => SignupValidator.validateUsernameRealTime(value ?? ''),
         ),
 
         const SizedBox(height: 24),
@@ -44,15 +37,7 @@ class EditProfileForm extends StatelessWidget {
           hint: 'Tell us about yourself',
           prefixIcon: Icons.info_outline,
           maxLines: 3,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Bio is required';
-            }
-            if (value.trim().length > 150) {
-              return 'Bio must be less than 150 characters';
-            }
-            return null;
-          },
+          validator: (value) => SignupValidator.validateBioRealTime(value ?? ''),
         ),
 
         const SizedBox(height: 24),
@@ -64,15 +49,7 @@ class EditProfileForm extends StatelessWidget {
           hint: 'Enter your Email',
           prefixIcon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Email is required';
-            }
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-              return 'Please enter a valid email';
-            }
-            return null;
-          },
+          validator: (value) => SignupValidator.validateEmailRealTime(value ?? ''),
         ),
       ],
     );

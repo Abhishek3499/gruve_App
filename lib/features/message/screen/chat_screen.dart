@@ -300,6 +300,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
         final incomingConversationId = _extractConversationId(data);
 
+        // Adopt conversation ID if empty and message is relevant to this user
+        if (incomingConversationId.isNotEmpty && _conversationId.isEmpty) {
+          final senderIdStr = (messageData['sender_id'] ?? messageData['senderId'] ?? '').toString();
+          final receiverIdStr = (messageData['receiver_id'] ?? messageData['receiverId'] ?? '').toString();
+          final isRelevant = senderIdStr == _userId || receiverIdStr == _userId;
+
+          if (isRelevant) {
+            debugPrint('[ChatScreen] Adopting new conversation ID from socket: $incomingConversationId');
+            _resolvedConversationId = incomingConversationId;
+            _messageController.conversationId = incomingConversationId;
+            _messageController.onConversationIdChanged?.call(incomingConversationId);
+          }
+        }
+
         if (incomingConversationId.isNotEmpty &&
             incomingConversationId != _conversationId) {
           return;
@@ -460,8 +474,7 @@ class _ChatScreenState extends State<ChatScreen> {
       );
 
       debugPrint('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      await _messageController.fetchInitialMessages();
+      // The socket listener handles adding and replacing the optimistic message
       _scrollToBottom();
     } catch (e) {
       debugPrint('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
@@ -827,21 +840,34 @@ class _ChatScreenState extends State<ChatScreen> {
                         },
                       ),
                     ),
-                    if (_activeReply != null && !_isDeleteMode)
-                      ReplyPreviewBar(
-                        replyMessage: _activeReply!,
-                        onClose: _clearReply,
-                      ),
-                    if (_isDeleteMode)
-                      _buildDeleteBottomBar()
-                    else if (isBlocked)
-                      _buildBlockedBottomBar()
-                    else
-                      ChatInputField(
-                        onSendMessage: _sendMessage,
-                        onSendImage: _sendImage,
-                        isLoading: _isSending,
-                      ),
+                    ListenableBuilder(
+                      listenable: _messageController,
+                      builder: (context, _) {
+                        if (_messageController.isInitialLoading) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_activeReply != null && !_isDeleteMode)
+                              ReplyPreviewBar(
+                                replyMessage: _activeReply!,
+                                onClose: _clearReply,
+                              ),
+                            if (_isDeleteMode)
+                              _buildDeleteBottomBar()
+                            else if (isBlocked)
+                              _buildBlockedBottomBar()
+                            else
+                              ChatInputField(
+                                onSendMessage: _sendMessage,
+                                onSendImage: _sendImage,
+                                isLoading: _isSending,
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ],
                 ),
                 if (_showPopup)

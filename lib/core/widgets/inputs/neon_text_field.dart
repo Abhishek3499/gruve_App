@@ -99,16 +99,20 @@ class _NeonTextFieldState extends State<NeonTextField> {
             onFieldSubmitted: widget.onFieldSubmitted,
             inputFormatters: isEmailField
                 ? [
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._+-]')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'[a-zA-Z0-9@._+-]'),
+                    ),
                   ]
                 : null,
-            validator: (value) {
-              final error = widget.validator?.call(value);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() => _errorText = error);
-              });
-              return null; // andar mat dikhao
-            },
+            validator: widget.validator == null
+                ? null
+                : (value) {
+                    final error = widget.validator?.call(value);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _errorText = error);
+                    });
+                    return null; // andar mat dikhao
+                  },
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,

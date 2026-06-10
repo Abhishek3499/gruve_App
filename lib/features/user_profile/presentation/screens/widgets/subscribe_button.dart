@@ -149,54 +149,67 @@ class _SubscribeButtonState extends State<SubscribeButton> {
             onTap: () => _handleTap(context, isSubscribed),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              height: 42,
-              padding: const EdgeInsets.only(left: 2, right: 12),
+              width: 120,
+              height: 36,
+              padding: const EdgeInsets.only(left: 2, right: 6),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0xFFFE24E0),
+                    Color(0xFF72008D),
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6BA9F6).withValues(alpha: 0.6),
+                    offset: const Offset(0, 6),
+                    blurRadius: 16,
+                  ),
+                ],
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 34,
-                    height: 40,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(
-                            0xFFD42BC2,
-                          ).withValues(alpha: 0.6),
+                          color: const Color(0xFFFE24E0).withValues(alpha: 0.6),
                           blurRadius: 8,
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.add,
-                      size: 18,
-                      color: Color(0xFFD42BC2),
+                    child: Icon(
+                      isSubscribed ? Icons.check : Icons.add,
+                      size: 16,
+                      color: const Color(0xFFFE24E0),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    child: Text(
-                      isSubscribed ? 'Subscribed' : 'Subscribe',
-                      key: ValueKey(isSubscribed),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Center(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        child: Text(
+                          isSubscribed ? 'Subscribed' : 'Subscribe',
+                          key: ValueKey(isSubscribed),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ),

@@ -402,7 +402,15 @@ class MessageController extends ChangeNotifier {
   }
 
   void _upsertMessage(MessageModel message) {
-    final index = _messages.indexWhere((item) => item.id == message.id);
+    var index = _messages.indexWhere((item) => item.id == message.id);
+
+    // If message is sent by me, try to match and replace local optimistic message
+    if (index == -1 && message.isSent) {
+      index = _messages.indexWhere((item) =>
+          item.id.startsWith('local-') &&
+          item.text.trim() == message.text.trim());
+    }
+
     if (index == -1) {
       _messages.add(message);
     } else {

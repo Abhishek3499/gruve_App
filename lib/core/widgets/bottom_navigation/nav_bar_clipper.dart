@@ -5,7 +5,14 @@ class NavBarPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+        begin: Alignment(-0.2, -1.0),
+        end: Alignment(0.2, 1.0),
+        colors: [
+          Color(0xFF42174C),
+          Color(0xFF210C26),
+          Color(0xFF000000),
+        ],
+        stops: [0.0, 0.4172, 0.9933],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final borderPaint = Paint()

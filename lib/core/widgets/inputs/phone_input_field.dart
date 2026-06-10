@@ -171,13 +171,15 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                   ],
                   textInputAction: widget.textInputAction,
                   onFieldSubmitted: widget.onFieldSubmitted,
-                  validator: (value) {
-                    final error = widget.validator?.call(value);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) setState(() => _errorText = error);
-                    });
-                    return null; // andar mat dikhao
-                  },
+                  validator: widget.validator == null
+                      ? null
+                      : (value) {
+                          final error = widget.validator?.call(value);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) setState(() => _errorText = error);
+                          });
+                          return null; // andar mat dikhao
+                        },
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
                     hintText: "(454) 726-0592",

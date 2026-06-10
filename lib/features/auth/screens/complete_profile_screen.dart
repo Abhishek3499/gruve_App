@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/widgets/get_started_button.dart';
 import 'package:gruve_app/core/widgets/inputs/neon_text_field.dart';
@@ -22,7 +23,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final GetStartedButtonController _completeButtonController =
       GetStartedButtonController();
   final TextEditingController _usernameController = TextEditingController();
+  final FocusNode _usernameFocus = FocusNode();
 
+  bool _usernameTouched = false;
+  bool _profileImageTouched = false;
   String? _profileImageError;
   String? _usernameError;
 
@@ -32,11 +36,31 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<AuthUiProvider>().resetCompleteProfile();
     });
+
+    _usernameController.addListener(() {
+      final error = SignupValidator.validateUsernameRealTime(_usernameController.text);
+      if (mounted) {
+        setState(() {
+          _usernameError = error;
+        });
+      }
+    });
+
+    _usernameFocus.addListener(() {
+      if (!_usernameFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _usernameTouched = true;
+          });
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _usernameFocus.dispose();
     super.dispose();
   }
 
@@ -47,6 +71,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   bool _validateCompleteProfile() {
+    if (mounted) {
+      setState(() {
+        _usernameTouched = true;
+        _profileImageTouched = true;
+      });
+    }
+
     final authUi = context.read<AuthUiProvider>();
     final selectedImage = authUi.selectedProfileImage;
     final username = _usernameController.text.trim();
@@ -57,10 +88,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         ? 'Please add a profile photo to continue'
         : null;
 
-    setState(() {
-      _profileImageError = profileImageError;
-      _usernameError = usernameError;
-    });
+    if (mounted) {
+      setState(() {
+        _profileImageError = profileImageError;
+        _usernameError = usernameError;
+      });
+    }
 
     if (profileImageError != null) {
       _showSnackBar(profileImageError);
@@ -154,10 +187,15 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authUi = context.watch<AuthUiProvider>();
-    final selectedImage = authUi.selectedProfileImage;
-    final selectedImageBytes = authUi.selectedProfileImageBytes;
-    final isLoading = authUi.isLoading(AuthLoadingKey.completeProfile);
+    final selectedImage = context.select<AuthUiProvider, Object?>(
+      (authUi) => authUi.selectedProfileImage,
+    );
+    final selectedImageBytes = context.select<AuthUiProvider, Uint8List?>(
+      (authUi) => authUi.selectedProfileImageBytes,
+    );
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.completeProfile),
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -256,7 +294,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                   AnimatedSize(
                     duration: const Duration(milliseconds: 200),
-                    child: _profileImageError != null
+                    child: (_profileImageTouched ? _profileImageError : null) != null
                         ? Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: Text(
@@ -273,18 +311,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   const SizedBox(height: 40),
                   NeonTextField(
                     controller: _usernameController,
+                    focusNode: _usernameFocus,
                     hintText: 'Enter your username',
                     prefixIcon: AppAssets.user2,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _completeButtonController.submit(),
-                    errorText: _usernameError,
-                    onChanged: (value) {
-                      if (_usernameError == null) return;
-                      setState(() {
-                        _usernameError =
-                            SignupValidator.validateUsernameRealTime(value);
-                      });
-                    },
+                    errorText: _usernameTouched ? _usernameError : null,
                   ),
                   const SizedBox(height: 40),
                   GetStartedButton(

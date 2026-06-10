@@ -55,19 +55,23 @@ class GiftCategoryTabs extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          title,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
           style: TextStyle(
             color: isActive ? const Color(0xFFCD72E3) : Colors.white,
             fontSize: 14,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
           ),
+          child: Text(title),
         ),
       ),
     );

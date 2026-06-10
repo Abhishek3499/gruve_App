@@ -61,6 +61,12 @@ class AuthUiProvider extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
+  bool _removeError(String key) {
+    final hadKey = _errors.containsKey(key);
+    _errors.remove(key);
+    return hadKey;
+  }
+
   void setContactMode(bool useEmail) {
     if (_useEmail == useEmail) return;
     _useEmail = useEmail;
@@ -86,6 +92,11 @@ class AuthUiProvider extends ChangeNotifier {
   }
 
   void resetSignup() {
+    var changed = false;
+    changed = _selectedGender != null || changed;
+    changed = _genderTouched || changed;
+    changed = _useEmail != true || changed;
+
     _selectedGender = null;
     _genderTouched = false;
     _useEmail = true;
@@ -95,44 +106,46 @@ class AuthUiProvider extends ChangeNotifier {
       'signup_password',
       'signup_confirm_password',
     ]) {
-      _errors.remove(key);
+      changed = _removeError(key) || changed;
     }
-    notifyListeners();
+    if (changed) notifyListeners();
   }
 
   void resetLogin() {
-    _loading.remove(AuthLoadingKey.login);
-    _errors.remove('login_email');
-    _errors.remove('login_password');
-    notifyListeners();
+    var changed = _loading.remove(AuthLoadingKey.login);
+    changed = _removeError('login_email') || changed;
+    changed = _removeError('login_password') || changed;
+    if (changed) notifyListeners();
   }
 
   void resetForgotPassword() {
-    _loading.remove(AuthLoadingKey.forgotPassword);
-    _errors.remove('forgot_email');
-    notifyListeners();
+    var changed = _loading.remove(AuthLoadingKey.forgotPassword);
+    changed = _removeError('forgot_email') || changed;
+    if (changed) notifyListeners();
   }
 
   void resetPhoneLogin() {
-    _loading.remove(AuthLoadingKey.phoneLogin);
-    _errors.remove('phone_login_phone');
-    notifyListeners();
+    var changed = _loading.remove(AuthLoadingKey.phoneLogin);
+    changed = _removeError('phone_login_phone') || changed;
+    if (changed) notifyListeners();
   }
 
   void resetCompleteProfile() {
-    _loading.remove(AuthLoadingKey.completeProfile);
+    var changed = _loading.remove(AuthLoadingKey.completeProfile);
+    changed = _selectedProfileImage != null || changed;
+    changed = _selectedProfileImageBytes != null || changed;
     _selectedProfileImage = null;
     _selectedProfileImageBytes = null;
-    notifyListeners();
+    if (changed) notifyListeners();
   }
 
   void resetOtp() {
-    _loading.remove(AuthLoadingKey.otp);
-    notifyListeners();
+    final changed = _loading.remove(AuthLoadingKey.otp);
+    if (changed) notifyListeners();
   }
 
   void resetResetPassword() {
-    _loading.remove(AuthLoadingKey.resetPassword);
-    notifyListeners();
+    final changed = _loading.remove(AuthLoadingKey.resetPassword);
+    if (changed) notifyListeners();
   }
 }

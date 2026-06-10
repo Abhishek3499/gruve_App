@@ -28,6 +28,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   late final TextEditingController _emailController;
+  final FocusNode _emailFocus = FocusNode();
+  bool _emailTouched = false;
 
   final ForgotPasswordService _service = ForgotPasswordService();
   final GetStartedButtonController _forgotButtonController =
@@ -43,6 +45,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     _emailController = TextEditingController();
 
     _setupRealTimeValidation();
+    _setupFocusListeners();
+  }
+
+  void _setupFocusListeners() {
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _emailTouched = true;
+          });
+        }
+      }
+    });
   }
 
   void _setupRealTimeValidation() {
@@ -60,14 +75,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _emailFocus.dispose();
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final authUi = context.watch<AuthUiProvider>();
-    final isLoading = authUi.isLoading(AuthLoadingKey.forgotPassword);
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.forgotPassword),
+    );
+    final emailErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('forgot_email'),
+    );
+    final emailError = _emailTouched ? emailErrorRaw : null;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -146,9 +167,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             prefixIcon: AppAssets.user2,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.done,
+                            focusNode: _emailFocus,
                             onFieldSubmitted: (_) =>
                                 _forgotButtonController.submit(),
-                            errorText: authUi.error('forgot_email'),
+                            errorText: emailError,
                           ),
                           const SizedBox(height: 40),
                           Center(
@@ -164,6 +186,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               text: 'RESET PASSWORD',
                               isLoading: isLoading,
                               onComplete: () async {
+                                if (mounted) {
+                                  setState(() {
+                                    _emailTouched = true;
+                                  });
+                                }
                                 final email = _emailController.text.trim();
                                 if (!mounted) return false;
                                 final messenger = ScaffoldMessenger.of(context);
@@ -174,6 +201,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 )) {
                                   return false;
                                 }
+
                                 final emailError =
                                     SignupValidator.validateEmailRealTime(
                                       email,
@@ -196,7 +224,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 );
 
                                 try {
-                                  await _service.sendResetLink(identifier: email);
+                                  await _service.sendResetLink(
+                                    identifier: email,
+                                  );
                                   if (!mounted) return false;
 
                                   // ✅ LOADER STOP

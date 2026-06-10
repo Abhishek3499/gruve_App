@@ -17,6 +17,7 @@ import 'package:gruve_app/main.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:provider/provider.dart';
+import '../validators/signup_validator.dart';
 
 class OtpScreen extends StatefulWidget {
   // final AuthFlow authFlow;
@@ -242,9 +243,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text(
-                controller.errorMessage ?? "Failed to resend OTP",
-              ),
+              content: Text(controller.errorMessage ?? "Failed to resend OTP"),
             ),
           );
       }
@@ -263,27 +262,13 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     debugPrint("OTP entered");
 
-    // ✅ STEP 1: EMPTY CHECK
-
-    if (otp.isEmpty || otp.length < 4) {
+    final otpError = SignupValidator.validateOtpRealTime(otp);
+    if (otpError != null) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text("Please enter the complete OTP")),
+          SnackBar(content: Text(otpError)),
         );
-
-      return false;
-    }
-
-    // ✅ STEP 2: REGEX VALIDATION (ADD HERE 🔥)
-
-    if (!RegExp(r'^\d{4}$').hasMatch(otp)) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text("Enter a valid 4 digit OTP")),
-        );
-
       return false;
     }
 
@@ -419,8 +404,8 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<AuthUiProvider>().isLoading(
-      AuthLoadingKey.otp,
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.otp),
     );
 
     return Scaffold(

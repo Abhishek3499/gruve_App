@@ -108,6 +108,20 @@ class SignupValidator {
     return validateUsernameRealTime(username);
   }
 
+  static String? validateBioRealTime(String bio) {
+    if (bio.trim().isEmpty) return "Bio is required";
+    if (bio.trim().length > 150) return "Bio must be 150 characters or less";
+    return null;
+  }
+
+  static String? validateOtpRealTime(String otp) {
+    if (otp.isEmpty) return "Please enter the OTP";
+    if (otp.length < 4 || !RegExp(r'^\d{4}$').hasMatch(otp)) {
+      return "Enter a valid 4 digit OTP";
+    }
+    return null;
+  }
+
   // Single method to validate ALL fields at once
   static String? validateAll({
     required String fullName,

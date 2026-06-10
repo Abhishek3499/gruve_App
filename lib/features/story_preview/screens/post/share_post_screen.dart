@@ -363,25 +363,38 @@ class _SharePostScreenState extends State<SharePostScreen> {
   Widget _buildMediaPreview() {
     if (_isVideo) {
       if (_videoController != null && _isVideoInitialized) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _videoController!.value.size.width,
-                height: _videoController!.value.size.height,
-                child: VideoPlayer(_videoController!),
+        return GestureDetector(
+          onTap: () {
+            if (_videoController == null) return;
+            setState(() {
+              if (_videoController!.value.isPlaying) {
+                _videoController!.pause();
+              } else {
+                _videoController!.play();
+              }
+            });
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
               ),
-            ),
-            const Center(
-              child: Icon(
-                Icons.play_circle_fill,
-                color: Colors.white70,
-                size: 42,
-              ),
-            ),
-          ],
+              if (!_videoController!.value.isPlaying)
+                const Center(
+                  child: Icon(
+                    Icons.play_circle_fill,
+                    color: Colors.white70,
+                    size: 42,
+                  ),
+                ),
+            ],
+          ),
         );
       }
 

@@ -1,4 +1,5 @@
 import 'package:gruve_app/features/auth/api/services/edit_profile_service.dart';
+import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 
 import '../models/edit_profile_request.dart';
 import '../models/edit_profile_response.dart';
@@ -93,20 +94,15 @@ class EditProfileController {
     required String username,
     String? bio,
   }) {
-    if (fullName.trim().isEmpty) {
-      return 'Full name is required';
-    }
+    final nameError = SignupValidator.validateFullNameRealTime(fullName);
+    if (nameError != null) return nameError;
 
-    if (username.trim().isEmpty) {
-      return 'Username is required';
-    }
+    final usernameError = SignupValidator.validateUsernameRealTime(username);
+    if (usernameError != null) return usernameError;
 
-    if (username.trim().length < 3) {
-      return 'Username must be at least 3 characters';
-    }
-
-    if (bio != null && bio.trim().length > 150) {
-      return 'Bio must be less than 150 characters';
+    if (bio != null) {
+      final bioError = SignupValidator.validateBioRealTime(bio);
+      if (bioError != null) return bioError;
     }
 
     return null;

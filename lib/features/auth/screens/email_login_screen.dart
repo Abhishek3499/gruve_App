@@ -48,6 +48,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   // Form key for backward compatibility
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  bool _emailTouched = false;
+  bool _passwordTouched = false;
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +58,28 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       if (mounted) context.read<AuthUiProvider>().resetLogin();
     });
     _setupRealTimeValidation();
+    _setupFocusListeners();
+  }
+
+  void _setupFocusListeners() {
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _emailTouched = true;
+          });
+        }
+      }
+    });
+    _passwordFocus.addListener(() {
+      if (!_passwordFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _passwordTouched = true;
+          });
+        }
+      }
+    });
   }
 
   void _setupRealTimeValidation() {
@@ -101,6 +126,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   //
 
   Future<bool> _handleLogin() async {
+    if (mounted) {
+      setState(() {
+        _emailTouched = true;
+        _passwordTouched = true;
+      });
+    }
+
     final authUi = context.read<AuthUiProvider>();
     if (authUi.isLoading(AuthLoadingKey.login)) return false;
 
@@ -194,8 +226,17 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authUi = context.watch<AuthUiProvider>();
-    final isLoading = authUi.isLoading(AuthLoadingKey.login);
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.login),
+    );
+    final emailErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('login_email'),
+    );
+    final passwordErrorRaw = context.select<AuthUiProvider, String?>(
+      (authUi) => authUi.error('login_password'),
+    );
+    final emailError = _emailTouched ? emailErrorRaw : null;
+    final passwordError = _passwordTouched ? passwordErrorRaw : null;
     return Scaffold(
       resizeToAvoidBottomInset: true,
 
@@ -302,7 +343,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             onFieldSubmitted: (_) => FocusScope.of(
                               context,
                             ).requestFocus(_passwordFocus),
-                            errorText: authUi.error('login_email'),
+                            errorText: emailError,
                           ),
 
                           const SizedBox(height: 20),
@@ -338,7 +379,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             onFieldSubmitted: (_) =>
                                 _loginButtonController.submit(),
 
-                            errorText: authUi.error('login_password'),
+                            errorText: passwordError,
                           ),
 
                           const SizedBox(height: 10),

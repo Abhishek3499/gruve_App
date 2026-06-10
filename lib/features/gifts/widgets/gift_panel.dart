@@ -14,14 +14,10 @@ class GiftPanel extends StatefulWidget {
   State<GiftPanel> createState() => _GiftPanelState();
 }
 
-class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
+class _GiftPanelState extends State<GiftPanel> {
   GiftCategory _selectedCategory = GiftCategory.new_;
   final int _stonesCount = 0;
   final TextEditingController _searchController = TextEditingController();
-  late AnimationController _slideController;
-  late AnimationController _fadeController;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _fadeAnimation;
 
   // Gift data with specific AppAssets icons and stone costs
   final List<Map<String, dynamic>> _gifts = [
@@ -36,45 +32,16 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _slideAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutQuart),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-
-    // Start animations
-    _slideController.forward();
-    _fadeController.forward();
-  }
-
-  @override
   void dispose() {
-    _slideController.dispose();
-    _fadeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   void _onCategorySelected(GiftCategory category) {
+    if (_selectedCategory == category) return;
     setState(() {
       _selectedCategory = category;
     });
-
-    // Add a subtle scale animation when category changes
-    _fadeController.reset();
-    _fadeController.forward();
   }
 
   void _showGiftSnackBar(String message, BuildContext context) {
@@ -142,190 +109,103 @@ class _GiftPanelState extends State<GiftPanel> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_slideAnimation, _fadeAnimation]),
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _slideAnimation.value * 50),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.60,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
-                ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(
-                    40,
-                  ), // Increased curve for more rounded look
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Handle bar for smooth drag indication
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    width: 65,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
-                  // Header with staggered animation
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 600),
-                    tween: Tween<double>(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, (1 - value) * 20),
-                        child: Opacity(
-                          opacity: value,
-                          child: GiftHeader(stonesCount: _stonesCount),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Category tabs with staggered animation
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 700),
-                    tween: Tween<double>(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, (1 - value) * 20),
-                        child: Opacity(
-                          opacity: value,
-                          child: GiftCategoryTabs(
-                            selectedCategory: _selectedCategory,
-                            onCategorySelected: _onCategorySelected,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Flash sale section with staggered animation
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 800),
-                    tween: Tween<double>(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, (1 - value) * 20),
-                        child: Opacity(
-                          opacity: value,
-                          child: FlashSaleSection(
-                            timeRemaining: const Duration(
-                              hours: 10,
-                              minutes: 24,
-                              seconds: 0,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Gift grid with staggered animation
-                  Expanded(
-                    child: TweenAnimationBuilder<double>(
-                      duration: const Duration(milliseconds: 900),
-                      tween: Tween<double>(begin: 0.0, end: 1.0),
-                      builder: (context, value, child) {
-                        return Transform.translate(
-                          offset: Offset(0, (1 - value) * 20),
-                          child: Opacity(
-                            opacity: value,
-                            child: GridView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 4,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 14,
-                                    childAspectRatio: 0.70, // 👈 alignment fix
-                                  ),
-                              itemCount: _gifts.length,
-                              itemBuilder: (context, index) {
-                                final gift = _gifts[index];
-                                return TweenAnimationBuilder<double>(
-                                  duration: Duration(
-                                    milliseconds: 300 + (index * 50),
-                                  ),
-                                  tween: Tween<double>(begin: 0.0, end: 1.0),
-                                  builder: (context, value, child) {
-                                    return Transform.scale(
-                                      scale: 0.8 + (value * 0.2),
-                                      child: Opacity(
-                                        opacity: value,
-                                        child: GiftItem(
-                                          imagePath: gift['image'],
-                                          stonesCost: gift['cost'],
-                                          onTap: () {
-                                            // Add haptic feedback
-                                            HapticFeedback.lightImpact();
-
-                                            // Handle gift selection with custom overlay
-                                            _showGiftSnackBar(
-                                              'Selected ${gift['cost']} stones gift',
-                                              context,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Search bar with staggered animation
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 1000),
-                    tween: Tween<double>(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, (1 - value) * 20),
-                        child: Opacity(
-                          opacity: value,
-                          child: GiftSearchBar(
-                            controller: _searchController,
-                            onSearch: () {
-                              HapticFeedback.lightImpact();
-                              _showGiftSnackBar(
-                                'Search functionality coming soon!',
-                                context,
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.60,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+        ),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(40), // Increased curve for more rounded look
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Handle bar for smooth drag indication
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 65,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        );
-      },
+
+          // Header
+          GiftHeader(stonesCount: _stonesCount),
+
+          // Category tabs
+          GiftCategoryTabs(
+            selectedCategory: _selectedCategory,
+            onCategorySelected: _onCategorySelected,
+          ),
+
+          // Flash sale section
+          FlashSaleSection(
+            timeRemaining: const Duration(
+              hours: 10,
+              minutes: 24,
+              seconds: 0,
+            ),
+          ),
+
+          // Gift grid
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+              ),
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: 0.70, // 👈 alignment fix
+                  ),
+              itemCount: _gifts.length,
+              itemBuilder: (context, index) {
+                final gift = _gifts[index];
+                return GiftItem(
+                  imagePath: gift['image'],
+                  stonesCost: gift['cost'],
+                  onTap: () {
+                    // Add haptic feedback
+                    HapticFeedback.lightImpact();
+
+                    // Handle gift selection with custom overlay
+                    _showGiftSnackBar(
+                      'Selected ${gift['cost']} stones gift',
+                      context,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          // Search bar
+          GiftSearchBar(
+            controller: _searchController,
+            onSearch: () {
+              HapticFeedback.lightImpact();
+              _showGiftSnackBar(
+                'Search functionality coming soon!',
+                context,
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

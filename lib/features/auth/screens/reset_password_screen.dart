@@ -37,9 +37,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       GetStartedButtonController();
 
   late final TextEditingController _newPasswordController;
-
   late final TextEditingController _confirmPasswordController;
+  final FocusNode _newPasswordFocus = FocusNode();
   late final FocusNode _confirmPasswordFocus;
+  bool _passwordTouched = false;
+  bool _confirmPasswordTouched = false;
   String? _passwordError;
   String? _confirmPasswordError;
 
@@ -51,16 +53,33 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
 
     _newPasswordController = TextEditingController();
-
     _confirmPasswordController = TextEditingController();
     _confirmPasswordFocus = FocusNode();
-    _newPasswordController.addListener(_validatePasswordsAfterFirstError);
-    _confirmPasswordController.addListener(_validatePasswordsAfterFirstError);
+
+    _newPasswordController.addListener(_validatePasswords);
+    _confirmPasswordController.addListener(_validatePasswords);
+    _setupFocusListeners();
   }
 
-  void _validatePasswordsAfterFirstError() {
-    if (_passwordError == null && _confirmPasswordError == null) return;
-    _validatePasswords();
+  void _setupFocusListeners() {
+    _newPasswordFocus.addListener(() {
+      if (!_newPasswordFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _passwordTouched = true;
+          });
+        }
+      }
+    });
+    _confirmPasswordFocus.addListener(() {
+      if (!_confirmPasswordFocus.hasFocus) {
+        if (mounted) {
+          setState(() {
+            _confirmPasswordTouched = true;
+          });
+        }
+      }
+    });
   }
 
   bool _validatePasswords() {
@@ -73,10 +92,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           confirmPassword,
         );
 
-    setState(() {
-      _passwordError = passwordError;
-      _confirmPasswordError = confirmPasswordError;
-    });
+    if (mounted) {
+      setState(() {
+        _passwordError = passwordError;
+        _confirmPasswordError = confirmPasswordError;
+      });
+    }
 
     return passwordError == null && confirmPasswordError == null;
   }
@@ -84,7 +105,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   void dispose() {
     _newPasswordController.dispose();
-
+    _newPasswordFocus.dispose();
     _confirmPasswordController.dispose();
     _confirmPasswordFocus.dispose();
 
@@ -93,8 +114,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<AuthUiProvider>().isLoading(
-      AuthLoadingKey.resetPassword,
+    final isLoading = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.resetPassword),
     );
 
     return Scaffold(
@@ -201,10 +222,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           hintText: 'Enter Your Password',
 
                           controller: _newPasswordController,
+                          focusNode: _newPasswordFocus,
                           textInputAction: TextInputAction.next,
                           onFieldSubmitted: (_) =>
                               _confirmPasswordFocus.requestFocus(),
-                          errorText: _passwordError,
+                          errorText: _passwordTouched ? _passwordError : null,
                         ),
 
                         const SizedBox(height: 20),
@@ -235,7 +257,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) =>
                               _resetButtonController.submit(),
-                          errorText: _confirmPasswordError,
+                          errorText: _confirmPasswordTouched ? _confirmPasswordError : null,
                         ),
 
                         const SizedBox(height: 40),
@@ -251,6 +273,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             isLoading: isLoading,
 
                             onComplete: () async {
+                              if (mounted) {
+                                setState(() {
+                                  _passwordTouched = true;
+                                  _confirmPasswordTouched = true;
+                                });
+                              }
                               final authUi = context.read<AuthUiProvider>();
                               final messenger = ScaffoldMessenger.of(context);
                               final nav = Navigator.of(context);
