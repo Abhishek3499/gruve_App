@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
+import 'package:gruve_app/features/video_editor/screens/video_editor_screen.dart';
+
 
 import 'package:gruve_app/features/story_preview/api/post/post_action_buttons.dart';
 
@@ -141,21 +143,37 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         /// EDIT VIDEO (LEFT)
-                        SizedBox(
-                          width: 120, // 👈 control size
-                          child: Container(
-                            height: 42,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              color: const ui.Color.fromARGB(155, 120, 2, 99),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              "Edit Video",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                        GestureDetector(
+                          onTap: () {
+                            try {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => VideoEditorScreen(
+                                    mediaPath: widget.mediaPath,
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('Error navigating to video editor: $e');
+                            }
+                          },
+                          child: SizedBox(
+                            width: 120, // 👈 control size
+                            child: Container(
+                              height: 42,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                color: const ui.Color.fromARGB(155, 120, 2, 99),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                "Edit Video",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),

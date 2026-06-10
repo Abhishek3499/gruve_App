@@ -77,4 +77,43 @@ class VerifyOtpService {
       rethrow;
     }
   }
+
+  Future<void> resendOtp({
+    required String identifier,
+    required String purpose,
+  }) async {
+    try {
+      final body = {
+        "identifier": identifier,
+        "purpose": purpose,
+      };
+
+      AuthApiLogger.request(
+        'ResendOtp',
+        dio: dio,
+        endpoint: 'auth/resend-otp/',
+        method: 'POST',
+        body: body,
+      );
+
+      final response = await dio.post(
+        'auth/resend-otp/',
+        data: body,
+        options: AuthEndpointPaths.skipAuthOptions(),
+      );
+
+      AuthApiLogger.response('ResendOtp', response);
+
+      final isSuccess = response.data?['success'] == true;
+      if (!isSuccess) {
+        throw response.data?['message']?.toString() ?? "Failed to resend OTP";
+      }
+    } on DioException catch (e) {
+      AuthApiLogger.error('ResendOtp', e);
+      throw AuthApiException.extractMessage(e);
+    } catch (e) {
+      debugPrint("Resend OTP failed: $e");
+      rethrow;
+    }
+  }
 }

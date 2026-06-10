@@ -8,14 +8,16 @@ class ResetPasswordController {
   ValueNotifier<bool> isLoading = ValueNotifier(false);
 
   Future<String> resetPassword({
-    required String token,
+    required String identifier,
+    required String otp,
     required String password,
   }) async {
     try {
       isLoading.value = true;
 
       final response = await _service.resetPassword(
-        token: token,
+        identifier: identifier,
+        otp: otp,
         password: password,
       );
 

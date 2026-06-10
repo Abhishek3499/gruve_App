@@ -18,7 +18,14 @@ import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:provider/provider.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+  final String identifier;
+  final String otp;
+
+  const ResetPasswordScreen({
+    super.key,
+    required this.identifier,
+    required this.otp,
+  });
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -191,7 +198,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         const SizedBox(height: 10),
 
                         NeonPasswordField(
-                          hintText: 'Enter new password',
+                          hintText: 'Enter Your Password',
 
                           controller: _newPasswordController,
                           textInputAction: TextInputAction.next,
@@ -221,7 +228,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         const SizedBox(height: 10),
 
                         NeonPasswordField(
-                          hintText: 'Confirm new password',
+                          hintText: 'Confirm Your Password',
 
                           controller: _confirmPasswordController,
                           focusNode: _confirmPasswordFocus,
@@ -273,28 +280,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 return false;
                               }
 
-                              // ✅ GET TOKEN FROM STORAGE
-
-                              final token = await TokenStorage.getResetToken();
-
-                              if (token == null) {
-                                if (!mounted) return false;
-
-                                messenger
-                                  ..hideCurrentSnackBar()
-                                  ..showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Session expired. Please try again.",
-                                      ),
-
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-
-                                return false;
-                              }
-
                               authUi.setLoading(
                                 AuthLoadingKey.resetPassword,
                                 true,
@@ -305,8 +290,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               late final String message;
                               try {
                                 message = await _controller.resetPassword(
-                                  token: token,
-
+                                  identifier: widget.identifier,
+                                  otp: widget.otp,
                                   password: password,
                                 );
                               } finally {

@@ -38,6 +38,8 @@ class _SearchPageState extends State<SearchPage> {
   List<SearchUser> _users = [];
   bool _isSearching = false;
   bool _isNavigating = false;
+  bool _isClosing = false;
+  bool _allowPop = false;
   String? _searchError;
 
   @override
@@ -91,6 +93,25 @@ class _SearchPageState extends State<SearchPage> {
     if (query.trim().isEmpty) return;
 
     _addToHistory(query);
+  }
+
+  Future<void> _closeSearch() async {
+    if (_isClosing) return;
+
+    _isClosing = true;
+    _searchFocusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    if (mounted) {
+      setState(() {
+        _allowPop = true;
+      });
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
+
+    Navigator.of(context).pop();
   }
 
   void _onSearchChanged(String query) {
@@ -248,236 +269,247 @@ class _SearchPageState extends State<SearchPage> {
         isEmptySearch &&
         !hasRecentSearches; // Only show empty when no searches and no recents
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _closeSearch();
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              /// HEADER
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Image.asset(AppAssets.back, height: 24, width: 24),
-                    ),
-                    const SizedBox(width: 22),
-
-                    /// SEARCH BAR
-                    Expanded(
-                      child: CustomSearchBar(
-                        controller: _searchController,
-                        focusNode: _searchFocusNode,
-                        onChanged: _onSearchChanged,
-                        onSubmitted: _onSearchSubmitted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              /// CONTENT
-              Expanded(
-                child: ListView(
-                  children: [
-                    // CHANGED: Single if-else if chain - only ONE state shows at a time
-
-                    // STATE 1: Empty search with no recent searches - show empty hint
-                    if (showEmptyState) ...[
-                      const Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.search_outlined,
-                                color: Colors.white54,
-                                size: 48,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No recent searches',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Start typing to see suggestions',
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                /// HEADER
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _closeSearch,
+                        child: Image.asset(
+                          AppAssets.back,
+                          height: 24,
+                          width: 24,
                         ),
                       ),
-                    ]
-                    // STATE 2: Empty search with recent searches - show recent searches only
-                    else if (isEmptySearch && hasRecentSearches) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Recent',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                await _recentSearchService.clearAll();
-                                _loadRecentSearches();
-                              },
-                              child: const Text(
-                                'Clear all',
-                                style: TextStyle(
-                                  color: Color(0xFFD42BC2),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(width: 22),
 
-                      ..._recentSearches.map(
-                        (user) => ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white24,
-                            backgroundImage: user.avatar.isNotEmpty
-                                ? NetworkImage(user.avatar)
-                                : AssetImage(AppAssets.profile)
-                                      as ImageProvider,
-                          ),
-                          title: Text(
-                            user.name,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            '@${user.username}',
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                          trailing: GestureDetector(
-                            onTap: () async {
-                              await _recentSearchService.removeRecentSearch(
-                                user.id,
-                              );
-                              _loadRecentSearches();
-                            },
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white54,
-                              size: 20,
-                            ),
-                          ),
-                          onTap: () => _navigateToUserProfile(user),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                    ]
-                    // STATE 3: Loading state - show shimmer only when user has typed and API is in progress
-                    else if (isLoading) ...[
-                      // CHANGED: Only show loader when user has typed something AND search is in progress
-                      const Padding(
-                        padding: EdgeInsets.only(top: 16),
-                        child: SearchResultsShimmer(itemCount: 6),
-                      ),
-                    ]
-                    // STATE 4: Error state - show error message only when API has failed
-                    else if (hasError) ...[
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Center(
-                          child: Text(
-                            _searchError!,
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ]
-                    // STATE 5: Results state - show search results only when API has responded with data
-                    else if (hasResults) ...[
-                      ..._users.map(
-                        (user) => ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.white24,
-                            backgroundImage: user.avatar.isNotEmpty
-                                ? NetworkImage(user.avatar)
-                                : AssetImage(AppAssets.profile)
-                                      as ImageProvider,
-                          ),
-                          title: Text(
-                            user.name,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            '@${user.username}',
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                          onTap: () => _navigateToUserProfile(user),
-                        ),
-                      ),
-                    ]
-                    // STATE 6: No results found - when search completed but returned empty
-                    else if (!isEmptySearch &&
-                        !isLoading &&
-                        !hasError &&
-                        !hasResults) ...[
-                      const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.search_off,
-                                color: Colors.white54,
-                                size: 48,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No results found',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Try different keywords',
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
+                      /// SEARCH BAR
+                      Expanded(
+                        child: CustomSearchBar(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          onChanged: _onSearchChanged,
+                          onSubmitted: _onSearchSubmitted,
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+
+                /// CONTENT
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // CHANGED: Single if-else if chain - only ONE state shows at a time
+
+                      // STATE 1: Empty search with no recent searches - show empty hint
+                      if (showEmptyState) ...[
+                        const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.search_outlined,
+                                  color: Colors.white54,
+                                  size: 48,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No recent searches',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Start typing to see suggestions',
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]
+                      // STATE 2: Empty search with recent searches - show recent searches only
+                      else if (isEmptySearch && hasRecentSearches) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Recent',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  await _recentSearchService.clearAll();
+                                  _loadRecentSearches();
+                                },
+                                child: const Text(
+                                  'Clear all',
+                                  style: TextStyle(
+                                    color: Color(0xFFD42BC2),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        ..._recentSearches.map(
+                          (user) => ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white24,
+                              backgroundImage: user.avatar.isNotEmpty
+                                  ? NetworkImage(user.avatar)
+                                  : AssetImage(AppAssets.profile)
+                                        as ImageProvider,
+                            ),
+                            title: Text(
+                              user.name,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              '@${user.username}',
+                              style: const TextStyle(color: Colors.white54),
+                            ),
+                            trailing: GestureDetector(
+                              onTap: () async {
+                                await _recentSearchService.removeRecentSearch(
+                                  user.id,
+                                );
+                                _loadRecentSearches();
+                              },
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
+                                size: 20,
+                              ),
+                            ),
+                            onTap: () => _navigateToUserProfile(user),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+                      ]
+                      // STATE 3: Loading state - show shimmer only when user has typed and API is in progress
+                      else if (isLoading) ...[
+                        // CHANGED: Only show loader when user has typed something AND search is in progress
+                        const Padding(
+                          padding: EdgeInsets.only(top: 16),
+                          child: SearchResultsShimmer(itemCount: 6),
+                        ),
+                      ]
+                      // STATE 4: Error state - show error message only when API has failed
+                      else if (hasError) ...[
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              _searchError!,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ]
+                      // STATE 5: Results state - show search results only when API has responded with data
+                      else if (hasResults) ...[
+                        ..._users.map(
+                          (user) => ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white24,
+                              backgroundImage: user.avatar.isNotEmpty
+                                  ? NetworkImage(user.avatar)
+                                  : AssetImage(AppAssets.profile)
+                                        as ImageProvider,
+                            ),
+                            title: Text(
+                              user.name,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              '@${user.username}',
+                              style: const TextStyle(color: Colors.white54),
+                            ),
+                            onTap: () => _navigateToUserProfile(user),
+                          ),
+                        ),
+                      ]
+                      // STATE 6: No results found - when search completed but returned empty
+                      else if (!isEmptySearch &&
+                          !isLoading &&
+                          !hasError &&
+                          !hasResults) ...[
+                        const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  color: Colors.white54,
+                                  size: 48,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No results found',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Try different keywords',
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

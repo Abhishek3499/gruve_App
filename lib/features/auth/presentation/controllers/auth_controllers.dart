@@ -1,5 +1,6 @@
 export '../../api/controllers/complete_profile_controller.dart';
 export '../../api/controllers/forgot_password_controller.dart';
+export '../../api/controllers/google_sign_in_controller.dart';
 export '../../api/controllers/login_controller.dart';
 export '../../api/controllers/logout_controller.dart';
 export '../../api/controllers/phone_sigin_controller.dart';

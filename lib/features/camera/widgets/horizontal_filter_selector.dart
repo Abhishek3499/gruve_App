@@ -25,6 +25,14 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   StreamSubscription<bool>? _recordingSub;
+  StreamSubscription<bool>? _initSub;
+  StreamSubscription<double>? _zoomSub;
+
+  double _currentZoom = 1.0;
+  double _targetZoom = 1.0;
+  double _maxZoom = 1.0;
+  double _minZoom = 1.0;
+  double _lastDragY = 0.0;
 
   @override
   void initState() {
@@ -43,12 +51,45 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
         _recordingTimer = null;
       }
     });
+    _initZoomLevels();
+    _subscribeToZoomStreams();
+  }
+
+  void _initZoomLevels() {
+    _maxZoom = _cameraService.maxZoom;
+    _minZoom = _cameraService.minZoom;
+    _currentZoom = _cameraService.displayZoom;
+    _targetZoom = _cameraService.displayZoom;
+  }
+
+  void _subscribeToZoomStreams() {
+    _initSub = _cameraService.initializationStream.listen((isInitialized) {
+      if (!mounted) return;
+      if (isInitialized) {
+        setState(() {
+          _maxZoom = _cameraService.maxZoom;
+          _minZoom = _cameraService.minZoom;
+          _currentZoom = _cameraService.displayZoom;
+          _targetZoom = _cameraService.displayZoom;
+        });
+      }
+    });
+
+    _zoomSub = _cameraService.zoomStream.listen((zoom) {
+      if (!mounted) return;
+      setState(() {
+        _currentZoom = zoom;
+        _targetZoom = zoom;
+      });
+    });
   }
 
   @override
   void dispose() {
     _filterController.removeListener(_onFilterChanged);
     _recordingSub?.cancel();
+    _initSub?.cancel();
+    _zoomSub?.cancel();
     _recordingTimer?.cancel();
     _pageController.dispose();
     super.dispose();
@@ -103,7 +144,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     }
   }
 
-  Future<void> _startVideoRecording() async {
+  Future<void> _startVideoRecording(LongPressStartDetails details) async {
     if (_isRecordingVideo || _cameraService.isCapturing) return;
 
     CameraLogger.logUserAction('Video recording started from capture button');
@@ -112,6 +153,10 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     setState(() {
       _recordingSeconds = 0;
     });
+
+    _lastDragY = details.globalPosition.dy;
+    _targetZoom = _cameraService.displayZoom;
+    _currentZoom = _cameraService.displayZoom;
 
     await _cameraService.startVideoRecording();
 
@@ -134,6 +179,31 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     });
   }
 
+  Future<void> _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) async {
+    if (!_cameraService.isRecordingVideo) return;
+
+    final controller = _cameraService.controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final currentY = details.globalPosition.dy;
+    final deltaY = _lastDragY - currentY; // Swipe up = zoom in
+    _lastDragY = currentY;
+
+    // Adjust sensitivity. 0.005 is a good baseline sensitivity.
+    const zoomSensitivity = 0.005;
+
+    _targetZoom = (_targetZoom + deltaY * zoomSensitivity).clamp(
+      _minZoom,
+      _maxZoom,
+    );
+
+    if ((_targetZoom - _cameraService.displayZoom).abs() > 0.01) {
+      _currentZoom = _targetZoom;
+      await _cameraService.setZoomLevel(_targetZoom);
+      setState(() {});
+    }
+  }
+
   Future<void> _stopVideoRecording() async {
     if (!_cameraService.isRecordingVideo) return;
 
@@ -142,6 +212,14 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
     _recordingTimer?.cancel();
     _recordingTimer = null;
+
+    // Reset zoom
+    final controller = _cameraService.controller;
+    if (controller != null && controller.value.isInitialized) {
+      await _cameraService.setZoomLevel(_minZoom);
+      _currentZoom = _minZoom;
+      _targetZoom = _minZoom;
+    }
 
     try {
       final video = await _cameraService.stopVideoRecording();
@@ -273,7 +351,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
             bottom: 35, // Positioned above the filter circles
             child: GestureDetector(
               onTap: _captureFilteredImage,
-              onLongPressStart: (_) => _startVideoRecording(),
+              onLongPressStart: _startVideoRecording,
+              onLongPressMoveUpdate: _onLongPressMoveUpdate,
               onLongPressEnd: (_) => _stopVideoRecording(),
               onLongPressCancel: () {
                 _stopVideoRecording();
@@ -314,24 +393,49 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
                       ),
                     if (_isRecordingVideo)
                       Positioned(
-                        top: -38,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _formatRecordingDuration(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                        top: -62,
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _formatRecordingDuration(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (_currentZoom > _minZoom + 0.1) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${_currentZoom.toStringAsFixed(1)}x',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                   ],

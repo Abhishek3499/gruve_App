@@ -50,16 +50,17 @@ class NavItem extends StatelessWidget {
                   ),
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 2),
 
-            /// WHITE DOT with scale animation
+            /// WHITE DOT with scale and position animation
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              transform: Matrix4.diagonal3Values(
-                isActive ? 1.2 : 1.0, // Scale up when active
-                isActive ? 1.2 : 1.0,
-                1.0,
-              ),
+              transform: Matrix4.translationValues(0.0, isActive ? -10.0 : -5.0, 0.0)
+                ..multiply(Matrix4.diagonal3Values(
+                  isActive ? 1.2 : 1.0,
+                  isActive ? 1.2 : 1.0,
+                  1.0,
+                )),
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
                 opacity: isActive ? 1 : 0,

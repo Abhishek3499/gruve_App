@@ -208,21 +208,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
         child: Stack(
           children: [
-            // Back button
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 8),
-
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-
-                  onTap: () => Navigator.pop(context),
-
-                  child: Image.asset(AppAssets.back, height: 25, width: 25),
-                ),
-              ),
-            ),
-
             // Main content
             LayoutBuilder(
               builder: (context, constraints) {
@@ -302,7 +287,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
                           // ✅ FIX 8: Removed erroneous `const` — passing runtime controller
                           NeonTextField(
-                            hintText: 'Loisbecket@gmail.com',
+                            hintText: 'Enter your Email',
 
                             prefixIcon: AppAssets.user2,
 
@@ -342,7 +327,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
                           // ✅ FIX 9: Removed erroneous `const` — passing runtime controller
                           NeonPasswordField(
-                            hintText: 'Password',
+                            hintText: 'Enter Your Password',
 
                             controller: _passwordController,
 
@@ -469,6 +454,21 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                   ),
                 );
               },
+            ),
+
+            // Back button
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 24, top: 25),
+
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+
+                  onTap: () => Navigator.pop(context),
+
+                  child: Image.asset(AppAssets.back, height: 25, width: 25),
+                ),
+              ),
             ),
           ],
         ),

@@ -186,8 +186,7 @@ class _CameraZoomSelectorState extends State<_CameraZoomSelector>
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized ||
-        !_cameraService.isBackCamera ||
-        _cameraService.isRecordingVideo) {
+        !_cameraService.isBackCamera) {
       return const SizedBox.shrink();
     }
 

@@ -93,6 +93,25 @@ class EnvironmentConfig {
   static Environment get environment => _environment;
   static String get baseUrl => _baseUrl;
   static String get wsUrl => _wsUrl;
+  static String get googleWebClientId {
+    final clientId = dotenv.env['GOOGLE_WEB_CLIENT_ID']?.trim();
+    if (clientId == null || clientId.isEmpty) {
+      throw StateError(
+        '[Environment] Missing GOOGLE_WEB_CLIENT_ID in .env. '
+        'Use the OAuth 2.0 Web application client ID as GoogleSignIn.serverClientId.',
+      );
+    }
+
+    if (!clientId.endsWith('.apps.googleusercontent.com')) {
+      throw StateError(
+        '[Environment] GOOGLE_WEB_CLIENT_ID must be a Google OAuth client ID ending with '
+        '.apps.googleusercontent.com.',
+      );
+    }
+
+    return clientId;
+  }
+
   static bool get isDevelopment => _environment == Environment.development;
   static bool get isStaging => _environment == Environment.staging;
   static bool get isProduction => _environment == Environment.production;

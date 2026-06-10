@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/auth/api/controllers/google_sign_in_controller.dart';
+import 'package:gruve_app/features/auth/screens/complete_profile_screen.dart';
 import 'package:gruve_app/features/auth/screens/phone_number_screen.dart';
 import 'package:gruve_app/features/auth/widgets/auth_header.dart';
 import 'package:gruve_app/features/auth/widgets/auth_divider.dart';
 import 'package:gruve_app/features/auth/widgets/social_login_row.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/auth/screens/email_login_screen.dart';
+import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 import 'package:gruve_app/features/auth/screens/signup_screen.dart';
 import 'package:gruve_app/core/widgets/primary_button.dart';
 import 'package:gruve_app/core/widgets/outline_button.dart';
 import 'package:gruve_app/core/widgets/video_background.dart';
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
+
+  @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  final GoogleAuthController _googleController = GoogleAuthController();
+  bool _isGoogleLoading = false;
 
   void _navigate(BuildContext context, Widget screen) {
     Navigator.push(
@@ -34,6 +46,41 @@ class SignInScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isGoogleLoading) return;
+
+    setState(() => _isGoogleLoading = true);
+
+    final success = await _googleController.signIn();
+
+    if (!mounted) return;
+    setState(() => _isGoogleLoading = false);
+
+    if (!success) {
+      final message = _googleController.errorMessage;
+      if (message != null && message.trim().isNotEmpty) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+      }
+      return;
+    }
+
+    final accessToken = _googleController.response?.data?.accessToken;
+    if (accessToken != null && accessToken.isNotEmpty) {
+      SocketService().connect(accessToken);
+    }
+
+    final nextScreen = _googleController.needsProfileSetup
+        ? const CompleteProfileScreen()
+        : const HomeScreen();
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => nextScreen),
+      (route) => false,
     );
   }
 
@@ -76,7 +123,19 @@ class SignInScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                const SocialLoginRow(),
+                _isGoogleLoading
+                    ? const SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    : SocialLoginRow(onGooglePressed: _handleGoogleSignIn),
                 const Spacer(),
 
                 GestureDetector(

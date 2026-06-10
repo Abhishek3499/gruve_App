@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/assets.dart';
 import '../../message/utils/conversation_utils.dart';
 
 class FollowTile extends StatelessWidget {
@@ -6,6 +7,8 @@ class FollowTile extends StatelessWidget {
   final String time;
   final String profileImage;
   final String userId;
+  final bool isRead;
+  final VoidCallback? onTap;
 
   const FollowTile({
     super.key,
@@ -13,63 +16,93 @@ class FollowTile extends StatelessWidget {
     required this.time,
     required this.profileImage,
     required this.userId,
+    this.isRead = true,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 8, 24, 8),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 20, backgroundImage: AssetImage(profileImage)),
+    ImageProvider avatarProvider;
+    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+      avatarProvider = NetworkImage(profileImage);
+    } else if (profileImage.isNotEmpty) {
+      avatarProvider = AssetImage(profileImage);
+    } else {
+      avatarProvider = const AssetImage(AppAssets.nprofile);
+    }
 
-          const SizedBox(width: 10),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "$username started following you.",
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    height: 1.15,
-                    fontWeight: FontWeight.w500,
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.white12,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 8, 24, 8),
+        child: Row(
+          children: [
+            // Unread dot indicator
+            if (!isRead)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFC06CFF),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "$username started following you.",
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isRead ? Colors.white.withValues(alpha: 0.85) : Colors.white,
+                      fontSize: 12,
+                      height: 1.15,
+                      fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  time,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(76, 32),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              side: const BorderSide(color: Color(0xFF2B2B2B)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
+                  const SizedBox(height: 2),
+                  Text(
+                    time,
+                    style: TextStyle(
+                      color: isRead ? Colors.white60 : Colors.white70,
+                      fontSize: 11,
+                      fontWeight: isRead ? FontWeight.normal : FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
-            onPressed: () => _handleMessageTap(context),
-            child: const Text(
-              "Message",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+            const SizedBox(width: 12),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(76, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                side: const BorderSide(color: Color(0xFF2B2B2B)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              onPressed: () {
+                if (onTap != null) onTap!();
+                _handleMessageTap(context);
+              },
+              child: const Text(
+                "Message",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

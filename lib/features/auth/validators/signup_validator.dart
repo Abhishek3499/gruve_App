@@ -11,7 +11,10 @@ class SignupValidator {
 
   static String? validateEmailRealTime(String email) {
     if (email.trim().isEmpty) return "Please enter your email address";
-    if (!RegExp(r"^[\w\.-]+@[\w\.-]+\.\w{2,}$").hasMatch(email.trim())) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(email.trim())) {
       return "Enter a valid email address";
     }
     return null;

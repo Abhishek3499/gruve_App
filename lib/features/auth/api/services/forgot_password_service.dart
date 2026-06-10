@@ -7,10 +7,10 @@ import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 
 class ForgotPasswordService {
   final Dio _dio = AppDio.create();
-  Future<String> sendResetLink({required String email}) async {
+  Future<String> sendResetLink({required String identifier}) async {
     try {
       const endpoint = 'auth/forgot-password/';
-      final requestData = {"email": email};
+      final requestData = {"identifier": identifier};
       
       AuthApiLogger.request(
         'ForgotPassword',

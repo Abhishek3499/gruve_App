@@ -13,14 +13,16 @@ class ResetPasswordService {
   );
 
   Future<ResetPasswordResponse> resetPassword({
-    required String token,
+    required String identifier,
+    required String otp,
     required String password,
   }) async {
     try {
-      const endpoint = "auth/password/reset/confirm/";
+      const endpoint = "auth/reset-password/";
       final requestData = {
-        "reset_token": token,
-        "password": password,
+        "identifier": identifier,
+        "otp": otp,
+        "new_password": password,
       };
 
       AuthApiLogger.request(

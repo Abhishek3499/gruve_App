@@ -27,6 +27,7 @@ import 'package:gruve_app/features/message/presentation/provider/user_provider.d
 import 'package:gruve_app/features/message/data/repository/user_repository_impl.dart';
 import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
 import 'package:gruve_app/core/network/api_client.dart';
+import 'package:gruve_app/features/notification/providers/notification_provider.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -119,6 +120,9 @@ class MyApp extends StatelessWidget {
           create: (_) => UserProvider(
             UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(),
         ),
       ],
       child: MaterialApp(

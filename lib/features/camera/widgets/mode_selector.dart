@@ -7,6 +7,7 @@ import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';
+import 'package:gruve_app/features/ideas/screen/ideas_screen.dart';
 import 'package:provider/provider.dart';
 import '../utils/camera_logger.dart';
 import '../services/mode_service.dart';
@@ -133,6 +134,12 @@ class _ModeSelectorState extends State<ModeSelector> {
           IconButton(
             onPressed: () {
               CameraLogger.logUserAction('Idea icon clicked');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const IdeasScreen(),
+                ),
+              );
             },
             icon: Image.asset(AppAssets.idea, width: 32, height: 32),
           ),

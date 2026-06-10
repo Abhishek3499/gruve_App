@@ -11,7 +11,7 @@ class ForgotPasswordController {
     try {
       isLoading.value = true;
 
-      final message = await _service.sendResetLink(email: email);
+      final message = await _service.sendResetLink(identifier: email);
       return message;
     } catch (e) {
       return e.toString();

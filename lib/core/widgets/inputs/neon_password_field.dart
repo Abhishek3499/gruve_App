@@ -12,7 +12,7 @@ class NeonPasswordField extends StatefulWidget {
   const NeonPasswordField({
     super.key,
     this.controller,
-    this.hintText = 'Enter your password',
+    this.hintText = 'Enter Your Password',
     this.focusNode,
     this.textInputAction,
     this.onFieldSubmitted,

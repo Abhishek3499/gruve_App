@@ -30,66 +30,75 @@ class OtpInputBox extends StatelessWidget {
       builder: (context, value, child) {
         final hasValue = value.text.isNotEmpty;
 
-        return Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: hasValue
-                ? const Color(0xFFB86AD0)
-                : Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(22), // ✅ perfect shape
-            border: Border.all(
-              color: hasValue ? Colors.transparent : Colors.white,
-              width: 1.5,
+        return GestureDetector(
+          onTap: () => focusNode.requestFocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: hasValue
+                  ? const Color(0xFFB86AD0)
+                  : Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(22), // ✅ perfect shape
+              border: Border.all(
+                color: hasValue ? Colors.transparent : Colors.white,
+                width: 1.5,
+              ),
             ),
-          ),
-          child: Focus(
-            onKeyEvent: (node, event) {
-              if (event.logicalKey == LogicalKeyboardKey.backspace &&
-                  controller.text.isEmpty) {
-                onBackspace?.call();
-              }
-              return KeyEventResult.ignored;
-            },
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              autofocus: autoFocus,
-              keyboardType: TextInputType.number,
-              textInputAction: textInputAction ?? TextInputAction.next,
-              onSubmitted: onSubmitted,
-              autofillHints: enableSmsAutofill
-                  ? const [AutofillHints.oneTimeCode]
-                  : null,
-              textAlign: TextAlign.center,
-              maxLength: 4,
-              showCursor: false,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: const InputDecoration(
-                counterText: '',
-                border: InputBorder.none, // ✅ IMPORTANT
-                hintText: '-',
-                hintStyle: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onChanged: (val) {
-                if (val.isNotEmpty) {
-                  onChanged?.call(val);
-                } else {
+            child: Focus(
+              onKeyEvent: (node, event) {
+                if (event.logicalKey == LogicalKeyboardKey.backspace &&
+                    controller.text.isEmpty) {
                   onBackspace?.call();
                 }
+                return KeyEventResult.ignored;
               },
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
+              child: Center(
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  autofocus: autoFocus,
+                  keyboardType: TextInputType.number,
+                  textInputAction: textInputAction ?? TextInputAction.next,
+                  onSubmitted: onSubmitted,
+                  autofillHints: enableSmsAutofill
+                      ? const [AutofillHints.oneTimeCode]
+                      : null,
+                  textAlign: TextAlign.center,
+                  textAlignVertical: TextAlignVertical.center,
+                  maxLength: 4,
+                  showCursor: false,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: const InputDecoration(
+                    counterText: '',
+                    border: InputBorder.none, // ✅ IMPORTANT
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
+                    hintText: '-',
+                    hintStyle: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onChanged: (val) {
+                    if (val.isNotEmpty) {
+                      onChanged?.call(val);
+                    } else {
+                      onBackspace?.call();
+                    }
+                  },
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                  ],
+                ),
+              ),
             ),
           ),
         );

@@ -104,6 +104,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<bool> _completeProfile() async {
+    FocusScope.of(context).unfocus();
+
     if (!_validateCompleteProfile()) return false;
 
     final authUi = context.read<AuthUiProvider>();

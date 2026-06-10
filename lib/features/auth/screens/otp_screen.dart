@@ -210,6 +210,51 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     }
   }
 
+  Future<void> _resendOtp() async {
+    final authUi = context.read<AuthUiProvider>();
+    if (authUi.isLoading(AuthLoadingKey.otp)) return;
+
+    authUi.setLoading(AuthLoadingKey.otp, true);
+
+    String purpose = "signup";
+    if (widget.isForgot) {
+      purpose = "reset_password";
+    } else if (widget.isLogin) {
+      purpose = "login";
+    }
+
+    try {
+      final success = await controller.resendOtp(
+        identifier: widget.identifier,
+        purpose: purpose,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text("OTP has been resent successfully.")),
+          );
+      } else {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                controller.errorMessage ?? "Failed to resend OTP",
+              ),
+            ),
+          );
+      }
+    } finally {
+      if (mounted) {
+        authUi.setLoading(AuthLoadingKey.otp, false);
+      }
+    }
+  }
+
   Future<bool> _verifyOtpManually() async {
     final authUi = context.read<AuthUiProvider>();
     if (authUi.isLoading(AuthLoadingKey.otp)) return false;
@@ -243,6 +288,13 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     }
 
     FocusScope.of(context).unfocus();
+
+    if (widget.isForgot) {
+      if (widget.onVerifiedWithToken != null) {
+        widget.onVerifiedWithToken!(otp);
+      }
+      return true;
+    }
 
     authUi.setLoading(AuthLoadingKey.otp, true);
 
@@ -557,17 +609,28 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                           alignment: Alignment.centerRight,
 
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: isLoading ? null : _resendOtp,
 
-                            child: const Text(
-                              "Resend code",
+                            child: isLoading
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.0,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFFB86AD0),
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    "Resend code",
 
-                              style: TextStyle(
-                                color: Color(0xFFB86AD0),
+                                    style: TextStyle(
+                                      color: Color(0xFFB86AD0),
 
-                                fontSize: 12,
-                              ),
-                            ),
+                                      fontSize: 12,
+                                    ),
+                                  ),
                           ),
                         ),
 

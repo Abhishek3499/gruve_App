@@ -84,4 +84,28 @@ class VerifyotpController {
       isLoading = false;
     }
   }
+
+  Future<bool> resendOtp({
+    required String identifier,
+    required String purpose,
+  }) async {
+    isLoading = true;
+    errorMessage = null;
+
+    try {
+      await _service.resendOtp(
+        identifier: identifier,
+        purpose: purpose,
+      );
+      return true;
+    } catch (e) {
+      errorMessage = AuthApiException.userFacingMessage(
+        e,
+        fallback: 'Failed to resend OTP. Please try again.',
+      );
+      return false;
+    } finally {
+      isLoading = false;
+    }
+  }
 }

@@ -20,30 +20,72 @@ class ProfileMenuDrawer extends StatelessWidget {
   final String? profileImage;
   const ProfileMenuDrawer({super.key, this.profileImage});
 
+  static Future<void> show(BuildContext context, {String? profileImage}) {
+    return Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black54,
+        transitionDuration: const Duration(milliseconds: 350),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return ProfileMenuDrawer(profileImage: profileImage);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slideTransition = Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            ),
+          );
+
+          return SlideTransition(
+            position: slideTransition,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black54, // overlay
-      body: Align(
-        alignment: Alignment.centerRight,
-        child: Container(
-          width: 285,
-          margin: const EdgeInsets.symmetric(vertical: 01),
-          decoration: const BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topRight: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                // Top color
-                Color.fromARGB(255, 50, 10, 59),
-                Color.fromARGB(255, 3, 0, 4), // Bottom color // 👈 Bottom
-              ],
-            ),
+    return Stack(
+      children: [
+        // Transparent dismissible barrier area on the left
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.pop(context),
+            child: const SizedBox.expand(),
           ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: 285,
+            child: Material(
+              type: MaterialType.transparency,
+              child: Container(
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    bottomLeft: Radius.circular(30),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      // Top color
+                      Color.fromARGB(255, 50, 10, 59),
+                      Color.fromARGB(255, 3, 0, 4), // Bottom color // 👈 Bottom
+                    ],
+                  ),
+                ),
           child: SafeArea(
             child: Column(
               children: [
@@ -347,8 +389,11 @@ class ProfileMenuDrawer extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+],
+);
+}
 
   Widget _menuItem(dynamic icon, String title, {VoidCallback? onTap}) {
     return GestureDetector(

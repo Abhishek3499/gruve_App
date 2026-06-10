@@ -55,6 +55,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
   bool _isLoading = false;
   bool _isProfileLoading = false;
   _StoryShareProfile? _profile;
+  String? _errorMessage;
 
   static _StoryShareProfile? _cachedProfile;
   static Future<_StoryShareProfile?>? _profileRequest;
@@ -130,7 +131,25 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
   }
 
   Future<void> _handleShareAction() async {
-    if (!_yourStorySelected || widget.mediaPath == null || _isLoading) {
+    if (_isLoading) {
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+    });
+
+    if (!_yourStorySelected && !_closeFriendsSelected) {
+      setState(() {
+        _errorMessage = 'Please select at least one destination to share.';
+      });
+      return;
+    }
+
+    if (widget.mediaPath == null) {
+      setState(() {
+        _errorMessage = 'No media selected to share.';
+      });
       return;
     }
 
@@ -172,10 +191,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       } else {
         setState(() {
           _isLoading = false;
+          _errorMessage = storyController.message;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(storyController.message)));
       }
     } catch (e) {
       debugPrint('[StoryShareSheet] Error: $e');
@@ -184,13 +201,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
 
       setState(() {
         _isLoading = false;
+        _errorMessage = 'Something went wrong while sharing story';
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Something went wrong while sharing story'),
-        ),
-      );
     }
   }
 
@@ -264,6 +276,33 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
                 );
               },
             ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             _buildGradientButton(
               text: _isLoading ? 'Sharing...' : 'Share',

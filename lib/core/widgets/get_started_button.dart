@@ -32,6 +32,8 @@ class GetStartedButton extends StatefulWidget {
   final Future<bool> Function() onComplete;
   final bool isLoading;
   final GetStartedButtonController? controller;
+  final TextStyle? textStyle;
+  final double? width;
 
   const GetStartedButton({
     super.key,
@@ -39,6 +41,8 @@ class GetStartedButton extends StatefulWidget {
     required this.onComplete,
     this.isLoading = false,
     this.controller,
+    this.textStyle,
+    this.width,
   });
 
   @override
@@ -47,9 +51,10 @@ class GetStartedButton extends StatefulWidget {
 
 class _GetStartedButtonState extends State<GetStartedButton>
     with RouteAware, SingleTickerProviderStateMixin {
-  static const double _buttonWidth = 200;
+  double get _buttonWidth => widget.width ?? 200;
   static const double _buttonHeight = 50;
   static const double _circleSize = 45;
+  double get _startOffset => 9.0;
 
   double _dragX = 0;
   bool _internalLoading = false;
@@ -60,7 +65,7 @@ class _GetStartedButtonState extends State<GetStartedButton>
   Animation<double>? _snapAnimation;
   VoidCallback? _snapAnimationListener;
 
-  double get _maxDrag => _buttonWidth - _circleSize - 5;
+  double get _maxDrag => _buttonWidth - _circleSize - (_startOffset * 2);
   double get _center => _maxDrag / 2;
   bool get _isBusy => widget.isLoading || _internalLoading || _isSubmitting;
 
@@ -254,20 +259,20 @@ class _GetStartedButtonState extends State<GetStartedButton>
                     opacity: (1 - (_dragX / _center)).clamp(0.0, 1.0),
                     child: Text(
                       widget.text,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'syncopate',
-                        letterSpacing: 0.6,
-                      ),
+                      style:
+                          widget.textStyle ??
+                          const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w400,
+                          ),
                     ),
                   ),
                 ),
               ),
             ),
             Positioned(
-              left: _dragX,
+              left: _dragX + _startOffset,
               top: (_buttonHeight - _circleSize) / 2,
               child: GestureDetector(
                 onPanStart: isBusy

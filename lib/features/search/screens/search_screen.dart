@@ -30,7 +30,9 @@ class SearchScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: CustomSearchBar(
+                    readOnly: true,
                     onTap: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
                       Navigator.push(
                         context,
                         MaterialPageRoute(

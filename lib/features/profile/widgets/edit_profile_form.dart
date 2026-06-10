@@ -61,7 +61,7 @@ class EditProfileForm extends StatelessWidget {
         _buildTextField(
           controller: emailController,
           label: 'Email',
-          hint: 'Enter your email',
+          hint: 'Enter your Email',
           prefixIcon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           validator: (value) {

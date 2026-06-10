@@ -23,6 +23,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   VideoPlayerController? _videoController;
   bool _isVideo = false;
   bool _isInitialized = false;
+  bool _isMuted = false;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
       _videoController!
         ..setLooping(true)
+        ..setVolume(_isMuted ? 0.0 : 1.0)
         ..play();
 
       setState(() {
@@ -53,6 +55,19 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     } else {
       setState(() {
         _isInitialized = true;
+      });
+    }
+  }
+
+  void _toggleMute() {
+    if (_videoController != null) {
+      setState(() {
+        _isMuted = !_isMuted;
+        _videoController!.setVolume(_isMuted ? 0.0 : 1.0);
+      });
+    } else {
+      setState(() {
+        _isMuted = !_isMuted;
       });
     }
   }
@@ -95,7 +110,10 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         StoryTopBar(onClose: () => Navigator.pop(context)),
-                        StoryActionButtons(),
+                        StoryActionButtons(
+                          isMuted: _isMuted,
+                          onMuteToggle: _toggleMute,
+                        ),
                       ],
                     ),
                   ),

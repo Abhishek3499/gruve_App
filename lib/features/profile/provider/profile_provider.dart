@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
@@ -84,9 +86,12 @@ class ProfileProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      await controller
-          .fetchUser(reason: fetchUserReason)
-          .timeout(const Duration(seconds: 18));
+      await Future.wait([
+        controller
+            .fetchUser(reason: fetchUserReason)
+            .timeout(const Duration(seconds: 18)),
+        _loadHighlights(),
+      ]);
 
       user = controller.user;
       if (user == null) {
@@ -95,10 +100,6 @@ class ProfileProvider extends ChangeNotifier {
 
       stats = controller.stats;
       posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
-      isLoading = false;
-      notifyListeners();
-
-      unawaited(_loadHighlightsInBackground());
 
       _log('[Profile] API success');
       _log('[Profile] Posts count: ${posts.length}');
@@ -112,7 +113,7 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadHighlightsInBackground() async {
+  Future<void> _loadHighlights() async {
     if (_isFetchingHighlights) return;
 
     _isFetchingHighlights = true;
@@ -125,12 +126,63 @@ class ProfileProvider extends ChangeNotifier {
       );
       controller.highlightList.value = highlights;
       _log('[Profile] Highlights count: ${highlights.length}');
-      notifyListeners();
+
+      unawaited(_precacheHighlightCovers(highlights));
     } catch (error) {
       _log('[Profile] Highlights failed: $error');
     } finally {
       _isFetchingHighlights = false;
     }
+  }
+
+  Future<void> _precacheHighlightCovers(List<HighlightModel> list) async {
+    final futures = <Future<void>>[];
+    for (final highlight in list) {
+      final cover = _coverFor(highlight);
+      if (cover != null && cover.startsWith('http')) {
+        final completer = Completer<void>();
+        final provider = CachedNetworkImageProvider(cover);
+        final stream = provider.resolve(ImageConfiguration.empty);
+        late ImageStreamListener listener;
+        listener = ImageStreamListener(
+          (info, synchronousCall) {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            stream.removeListener(listener);
+          },
+          onError: (exception, stackTrace) {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            stream.removeListener(listener);
+          },
+        );
+        stream.addListener(listener);
+        futures.add(completer.future.timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          },
+        ));
+      }
+    }
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+
+  String? _coverFor(HighlightModel highlight) {
+    if (highlight.coverMediaUrl.trim().isNotEmpty) {
+      return highlight.coverMediaUrl.trim();
+    }
+    if (highlight.stories.isNotEmpty &&
+        highlight.stories.first.mediaUrl.trim().isNotEmpty) {
+      return highlight.stories.first.mediaUrl.trim();
+    }
+    return null;
   }
 
   Future<void> refreshProfileData({String reason = 'manual_refresh'}) {

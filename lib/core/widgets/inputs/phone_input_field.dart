@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:country_picker/country_picker.dart';
 
 class PhoneInputField extends StatefulWidget {
@@ -24,6 +25,9 @@ class PhoneInputField extends StatefulWidget {
 }
 
 class _PhoneInputFieldState extends State<PhoneInputField> {
+  static const int _indiaPhoneDigits = 10;
+  static const int _internationalPhoneDigits = 15;
+
   Country selectedCountry = Country.parse('US');
   String? _errorText;
   late FocusNode _effectiveFocusNode;
@@ -53,6 +57,22 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
   }
 
   String get dialCode => '+${selectedCountry.phoneCode}';
+  int get _maxPhoneDigits => selectedCountry.countryCode == 'IN'
+      ? _indiaPhoneDigits
+      : _internationalPhoneDigits;
+
+  void _trimPhoneToCountryLimit() {
+    final controller = widget.controller;
+    if (controller == null) return;
+
+    final limitedText = _limitPhoneDigits(controller.text, _maxPhoneDigits);
+    if (limitedText == controller.text) return;
+
+    controller.value = TextEditingValue(
+      text: limitedText,
+      selection: TextSelection.collapsed(offset: limitedText.length),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +119,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                     context: context,
                     onSelect: (country) {
                       setState(() => selectedCountry = country);
+                      _trimPhoneToCountryLimit();
                     },
                   );
                 },
@@ -145,6 +166,9 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                   controller: widget.controller,
                   focusNode: _effectiveFocusNode,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    _MaxPhoneDigitsInputFormatter(_maxPhoneDigits),
+                  ],
                   textInputAction: widget.textInputAction,
                   onFieldSubmitted: widget.onFieldSubmitted,
                   validator: (value) {
@@ -188,4 +212,40 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
       ],
     );
   }
+}
+
+class _MaxPhoneDigitsInputFormatter extends TextInputFormatter {
+  final int maxDigits;
+
+  const _MaxPhoneDigitsInputFormatter(this.maxDigits);
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final limitedText = _limitPhoneDigits(newValue.text, maxDigits);
+    if (limitedText == newValue.text) return newValue;
+
+    return TextEditingValue(
+      text: limitedText,
+      selection: TextSelection.collapsed(offset: limitedText.length),
+    );
+  }
+}
+
+String _limitPhoneDigits(String text, int maxDigits) {
+  final buffer = StringBuffer();
+  var digitCount = 0;
+
+  for (final rune in text.runes) {
+    final char = String.fromCharCode(rune);
+    if (RegExp(r'\d').hasMatch(char)) {
+      if (digitCount >= maxDigits) continue;
+      digitCount++;
+    }
+    buffer.write(char);
+  }
+
+  return buffer.toString();
 }

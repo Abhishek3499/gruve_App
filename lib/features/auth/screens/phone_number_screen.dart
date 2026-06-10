@@ -78,19 +78,6 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              /// BACK BUTTON
-              Positioned(
-                top: 4,
-
-                left: 24,
-
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-
-                  child: Image.asset(AppAssets.back, height: 22, width: 22),
-                ),
-              ),
-
               /// MAIN CONTENT
               SingleChildScrollView(
                 padding: EdgeInsets.only(
@@ -325,6 +312,21 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                       const SizedBox(height: 40),
                     ],
                   ),
+                ),
+              ),
+
+              /// BACK BUTTON
+              Positioned(
+                top: 40,
+
+                left: 24,
+
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+
+                  onTap: () => Navigator.pop(context),
+
+                  child: Image.asset(AppAssets.back, height: 25, width: 25),
                 ),
               ),
             ],

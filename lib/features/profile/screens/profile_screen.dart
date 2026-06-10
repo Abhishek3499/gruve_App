@@ -11,7 +11,6 @@ import '../data/models/user_profile_model.dart';
 
 import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
-import '../widgets/profile_menu_drawer.dart';
 import '../widgets/stats_row.dart';
 import '../widgets/story_list.dart';
 
@@ -132,9 +131,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         extendBody: true,
         backgroundColor: const Color(0xFF42174C),
-        endDrawer: user != null
-            ? ProfileMenuDrawer(profileImage: user.profileImage)
-            : null,
         body: Builder(
           builder: (context) {
             if (errorMessage != null) {

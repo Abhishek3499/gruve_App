@@ -6,6 +6,7 @@ import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import '../models/profile_model.dart';
 import 'edit_profile_button.dart';
 import 'story_avatar_indicator.dart';
+import 'profile_menu_drawer.dart';
 
 class ProfileHeader extends StatelessWidget {
   final String fullName;
@@ -34,7 +35,7 @@ class ProfileHeader extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 debugPrint("[ProfileHeader] Menu button tapped");
-                Scaffold.of(context).openEndDrawer();
+                ProfileMenuDrawer.show(context, profileImage: profileImage);
               },
               child: const Icon(Icons.menu, color: Colors.white, size: 30),
             ),

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/notification/providers/notification_provider.dart';
+import 'package:provider/provider.dart';
 
 class Header extends StatelessWidget {
   const Header({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<NotificationProvider>();
+
     return Container(
-      color: const Color(0xFF33123B),
+      color: Colors.transparent,
       padding: const EdgeInsets.fromLTRB(18, 24, 18, 0),
       child: Column(
         children: [
@@ -37,66 +41,118 @@ class Header extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              const SizedBox(width: 34),
+              // Double checkmark to mark all as read
+              if (provider.unreadCount > 0)
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 34,
+                    minHeight: 34,
+                    maxWidth: 34,
+                    maxHeight: 34,
+                  ),
+                  icon: const Icon(
+                    Icons.done_all,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    provider.markAllNotificationsAsRead();
+                  },
+                  tooltip: 'Mark all as read',
+                )
+              else
+                const SizedBox(width: 34),
             ],
           ),
           const SizedBox(height: 32),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
-                "All",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  decoration: TextDecoration.underline,
-                  decorationColor: Colors.white,
-                  fontWeight: FontWeight.w600,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => provider.setUnreadOnly(false),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    "All",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      decoration: !provider.unreadOnly
+                          ? TextDecoration.underline
+                          : TextDecoration.none,
+                      decorationColor: Colors.white,
+                      fontWeight:
+                          !provider.unreadOnly ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 56),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundImage: AssetImage(AppAssets.nprofile),
-                  ),
-                  Positioned(
-                    right: -5,
-                    bottom: -5,
-                    child: Container(
-                      width: 15,
-                      height: 15,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF8E44B9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Text(
-                          "9",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => provider.setUnreadOnly(true),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundImage: AssetImage(AppAssets.nprofile),
                           ),
+                          if (provider.unreadCount > 0)
+                            Positioned(
+                              right: -5,
+                              bottom: -5,
+                              child: Container(
+                                width: 15,
+                                height: 15,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF8E44B9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    provider.unreadCount > 99
+                                        ? "99+"
+                                        : provider.unreadCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Unread",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          decoration: provider.unreadOnly
+                              ? TextDecoration.underline
+                              : TextDecoration.none,
+                          decorationColor: Colors.white,
+                          fontWeight:
+                              provider.unreadOnly ? FontWeight.w700 : FontWeight.w500,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                "Unread",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );

@@ -5,6 +5,7 @@ class AuthEndpointPaths {
 
   static const Set<String> _skipAuthPaths = {
     'auth/login',
+    'auth/google',
     'auth/signup',
     'auth/phone-login',
     'auth/verify-otp',
@@ -15,6 +16,7 @@ class AuthEndpointPaths {
     'auth/reset-password',
     'auth/refresh',
     'auth/logout',
+    'auth/resend-otp',
   };
 
   static String normalize(String path) {

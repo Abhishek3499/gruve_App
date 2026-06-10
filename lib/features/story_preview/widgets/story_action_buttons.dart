@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
 class StoryActionButtons extends StatelessWidget {
-  StoryActionButtons({super.key});
+  final bool isMuted;
+  final VoidCallback onMuteToggle;
+
+  StoryActionButtons({
+    super.key,
+    required this.isMuted,
+    required this.onMuteToggle,
+  });
 
   final GlobalKey _moreKey = GlobalKey();
 
@@ -12,9 +19,13 @@ class StoryActionButtons extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildActionButton(
-          const Icon(Icons.volume_up, color: Colors.white),
+          Icon(
+            isMuted ? Icons.volume_off : Icons.volume_up,
+            color: Colors.white,
+          ),
           "Volume",
           size: 28,
+          onTap: onMuteToggle,
         ),
         const SizedBox(width: 15),
 

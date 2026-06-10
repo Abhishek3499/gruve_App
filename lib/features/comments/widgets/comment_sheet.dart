@@ -113,20 +113,8 @@ class _CommentSheetState extends State<CommentSheet> {
       return;
     }
 
-    _commentController.clear();
     FocusScope.of(context).unfocus();
     setState(() => _isSending = true);
-
-    final optimisticId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    final optimistic = Comment(
-      id: optimisticId,
-      body: text,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      user: CommentUser(id: '', username: 'You', isSubscribed: false),
-    );
-    setState(() => _comments = [..._comments, optimistic]);
-    _scrollToBottom();
 
     Comment? newComment;
     try {
@@ -146,18 +134,18 @@ class _CommentSheetState extends State<CommentSheet> {
     if (!mounted) return;
     if (newComment != null) {
       final savedComment = newComment;
+      _commentController.clear();
       setState(() {
-        final idx = _comments.indexWhere((c) => c.id == optimisticId);
-        if (idx != -1) _comments[idx] = savedComment;
+        _comments = [..._comments, savedComment];
         _isSending = false;
       });
+      _scrollToBottom();
       widget.onCommentAdded?.call();
       unawaited(_syncCommentsAfterSend(postId));
       return;
     }
 
     setState(() {
-      _comments.removeWhere((c) => c.id == optimisticId);
       _isSending = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/core/assets.dart';
@@ -59,7 +61,12 @@ class _SignupScreenState extends State<SignupScreen> {
   final GetStartedButtonController _signupButtonController =
       GetStartedButtonController();
 
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _nameKey = GlobalKey();
+  final GlobalKey _identifierKey = GlobalKey();
   final GlobalKey _genderFieldKey = GlobalKey();
+  final GlobalKey _passwordKey = GlobalKey();
+  final GlobalKey _confirmPasswordKey = GlobalKey();
 
   @override
   void initState() {
@@ -68,6 +75,47 @@ class _SignupScreenState extends State<SignupScreen> {
       if (mounted) context.read<AuthUiProvider>().resetSignup();
     });
     _setupRealTimeValidation();
+    _setupFocusListeners();
+  }
+
+  void _setupFocusListeners() {
+    _nameFocus.addListener(() {
+      if (_nameFocus.hasFocus) {
+        _scrollToField(_nameKey);
+      }
+    });
+    _identifierFocus.addListener(() {
+      if (_identifierFocus.hasFocus) {
+        _scrollToField(_identifierKey);
+      }
+    });
+    _passwordFocus.addListener(() {
+      if (_passwordFocus.hasFocus) {
+        _scrollToField(_passwordKey);
+      }
+    });
+    _confirmPasswordFocus.addListener(() {
+      if (_confirmPasswordFocus.hasFocus) {
+        _scrollToField(_confirmPasswordKey);
+      }
+    });
+  }
+
+  void _scrollToField(GlobalKey key) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 250), () {
+        if (!mounted) return;
+        final targetContext = key.currentContext;
+        if (targetContext != null) {
+          Scrollable.ensureVisible(
+            targetContext,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: 0.0,
+          );
+        }
+      });
+    });
   }
 
   void _setupRealTimeValidation() {
@@ -181,10 +229,9 @@ class _SignupScreenState extends State<SignupScreen> {
     if (authUi.useEmail == useEmail) return;
 
     authUi.setContactMode(useEmail);
-    authUi.setError(
-      'signup_identifier',
-      _validateIdentifier(_identifierController.text),
-    );
+    _identifierFocus.unfocus();
+    _identifierController.clear();
+    authUi.setError('signup_identifier', null);
   }
 
   @override
@@ -204,6 +251,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordFocus.dispose();
 
     _confirmPasswordFocus.dispose();
+    _scrollController.dispose();
 
     super.dispose();
   }
@@ -220,6 +268,8 @@ class _SignupScreenState extends State<SignupScreen> {
     final passwordError = authUi.error('signup_password');
     final confirmPasswordError = authUi.error('signup_confirm_password');
 
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
 
@@ -231,7 +281,7 @@ class _SignupScreenState extends State<SignupScreen> {
         overlayOpacity: 0.85,
 
         child: LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (layoutContext, constraints) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
 
@@ -242,6 +292,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
 
                 child: SingleChildScrollView(
+                  controller: _scrollController,
                   child: Column(
                     children: [
                       SizedBox(height: constraints.maxHeight * 0.15),
@@ -295,6 +346,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       _buildLabel('Full Name'),
 
                       Column(
+                        key: _nameKey,
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
@@ -330,6 +382,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       _buildLabel(useEmail ? 'Email' : 'Phone Number'),
 
                       Column(
+                        key: _identifierKey,
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
@@ -338,7 +391,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             NeonTextField(
                               controller: _identifierController,
 
-                              hintText: 'example@gmail.com',
+                              hintText: 'Enter your Email',
 
                               prefixIcon: AppAssets.emailicon,
 
@@ -485,13 +538,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       _buildLabel('Password'),
 
                       Column(
+                        key: _passwordKey,
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
                           NeonPasswordField(
                             controller: _passwordController,
 
-                            hintText: '********',
+                            hintText: 'Enter Your Password',
 
                             focusNode: _passwordFocus,
 
@@ -513,13 +567,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       _buildLabel('Confirm Password'),
 
                       Column(
+                        key: _confirmPasswordKey,
                         crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
                           NeonPasswordField(
                             controller: _confirmPasswordController,
 
-                            hintText: '********',
+                            hintText: 'Confirm Your Password',
 
                             focusNode: _confirmPasswordFocus,
 
@@ -651,6 +706,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
 
                       const SizedBox(height: 20),
+
+                      SizedBox(height: keyboardHeight > 0 ? keyboardHeight + 150 : 20),
                     ],
                   ),
                 ),
@@ -769,13 +826,18 @@ class _SignupScreenState extends State<SignupScreen> {
       context: this.context,
 
       color: const Color(0xFF461851),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFB86AD0), width: 1.5),
+      ),
+      elevation: 8,
 
       position: RelativeRect.fromLTRB(
-        topLeft.dx,
+        topLeft.dx + size.width - 165,
 
-        topLeft.dy + size.height + 6,
+        topLeft.dy + 2,
 
-        topLeft.dx + size.width,
+        topLeft.dx + size.width - 35,
 
         0,
       ),
@@ -783,20 +845,38 @@ class _SignupScreenState extends State<SignupScreen> {
       items: const [
         PopupMenuItem(
           value: 'Male',
-
-          child: Text('Male', style: TextStyle(color: Colors.white)),
+          height: 40,
+          child: Row(
+            children: [
+              Icon(Icons.male, color: Color(0xFFB86AD0), size: 18),
+              SizedBox(width: 8),
+              Text('Male', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ],
+          ),
         ),
 
         PopupMenuItem(
           value: 'Female',
-
-          child: Text('Female', style: TextStyle(color: Colors.white)),
+          height: 40,
+          child: Row(
+            children: [
+              Icon(Icons.female, color: Color(0xFFB86AD0), size: 18),
+              SizedBox(width: 8),
+              Text('Female', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ],
+          ),
         ),
 
         PopupMenuItem(
           value: 'Other',
-
-          child: Text('Other', style: TextStyle(color: Colors.white)),
+          height: 40,
+          child: Row(
+            children: [
+              Icon(Icons.transgender, color: Color(0xFFB86AD0), size: 18),
+              SizedBox(width: 8),
+              Text('Other', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ],
+          ),
         ),
       ],
     );
@@ -804,5 +884,6 @@ class _SignupScreenState extends State<SignupScreen> {
     if (selected == null || !mounted) return;
 
     this.context.read<AuthUiProvider>().setGender(selected);
+    FocusScope.of(this.context).requestFocus(_passwordFocus);
   }
 }

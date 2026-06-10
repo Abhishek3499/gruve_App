@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
@@ -131,13 +132,13 @@ class StoryList extends StatelessWidget {
             _HighlightCircle(
               child: ClipOval(
                 child: cover != null
-                    ? Image.network(
-                        cover,
+                    ? CachedNetworkImage(
+                        imageUrl: cover,
                         fit: BoxFit.cover,
                         width: 60,
                         height: 60,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _placeholderIcon(),
+                        placeholder: (context, url) => _placeholderIcon(),
+                        errorWidget: (context, url, error) => _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),

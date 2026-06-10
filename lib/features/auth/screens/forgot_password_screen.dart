@@ -81,232 +81,201 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
         child: Stack(
           children: [
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, top: 10),
-
-                child: GestureDetector(
-                  onTap: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-
-                  child: Image.asset(AppAssets.back, height: 25, width: 25),
-                ),
-              ),
-            ),
-
             LayoutBuilder(
               builder: (context, constraints) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-
-                    child: Column(
-                      children: [
-                        SizedBox(height: constraints.maxHeight * 0.18),
-
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-
-                          child: Text.rich(
-                            TextSpan(
-                              style: const TextStyle(
+                return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 24,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text.rich(
+                              TextSpan(
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: AppAssets.syncopateFont,
+                                ),
+                                children: const [
+                                  TextSpan(text: 'FORGOT '),
+                                  TextSpan(
+                                    text: 'PASSWORD',
+                                    style: TextStyle(color: Color(0xFFB86AD0)),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Lorem Ipsum is simply dummy text of the printing and typesetting industry',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white, fontSize: 15),
+                          ),
+                          const SizedBox(height: 40),
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Email',
+                              style: TextStyle(
                                 color: Colors.white,
-
-                                fontSize: 26,
-
-                                fontWeight: FontWeight.w700,
-
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          NeonTextField(
+                            controller: _emailController,
+                            hintText: 'Enter your Email',
+                            prefixIcon: AppAssets.user2,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) =>
+                                _forgotButtonController.submit(),
+                            errorText: authUi.error('forgot_email'),
+                          ),
+                          const SizedBox(height: 40),
+                          Center(
+                            child: GetStartedButton(
+                              controller: _forgotButtonController,
+                              width: 250,
+                              textStyle: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                                 fontFamily: AppAssets.syncopateFont,
                               ),
+                              text: 'RESET PASSWORD',
+                              isLoading: isLoading,
+                              onComplete: () async {
+                                final email = _emailController.text.trim();
+                                if (!mounted) return false;
+                                final messenger = ScaffoldMessenger.of(context);
+                                final nav = Navigator.of(context);
+                                final authUi = context.read<AuthUiProvider>();
+                                if (authUi.isLoading(
+                                  AuthLoadingKey.forgotPassword,
+                                )) {
+                                  return false;
+                                }
+                                final emailError =
+                                    SignupValidator.validateEmailRealTime(
+                                      email,
+                                    );
+                                authUi.setError('forgot_email', emailError);
 
-                              children: const [
-                                TextSpan(text: 'Forgot '),
+                                if (emailError != null) {
+                                  messenger
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(
+                                      SnackBar(content: Text(emailError)),
+                                    );
+                                  return false;
+                                }
 
-                                TextSpan(
-                                  text: 'Password ',
-
-                                  style: TextStyle(color: Color(0xFFB86AD0)),
-                                ),
-                              ],
-                            ),
-
-                            maxLines: 1,
-
-                            softWrap: false,
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        const Text(
-                          'Enter your email address and we will send\nyou a code to reset your password.',
-
-                          textAlign: TextAlign.center,
-
-                          style: TextStyle(
-                            color: Colors.white70,
-
-                            fontSize: 13,
-
-                            height: 1.4,
-                          ),
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        const Align(
-                          alignment: Alignment.centerLeft,
-
-                          child: Text(
-                            'Email Address',
-
-                            style: TextStyle(
-                              color: Colors.white,
-
-                              fontSize: 16,
-
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        NeonTextField(
-                          controller: _emailController,
-
-                          hintText: 'Enter your email address',
-
-                          prefixIcon: AppAssets.user2,
-
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) =>
-                              _forgotButtonController.submit(),
-                          errorText: authUi.error('forgot_email'),
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        // ... baki imports same ...
-
-                        // GetStartedButton ke andar onComplete ko replace karein:
-                        GetStartedButton(
-                          controller: _forgotButtonController,
-
-                          text: 'RESET PASSWORD',
-
-                          isLoading: isLoading,
-
-                          onComplete: () async {
-                            final email = _emailController.text.trim();
-                            if (!mounted) return false;
-                            final messenger = ScaffoldMessenger.of(context);
-                            final nav = Navigator.of(context);
-                            final authUi = context.read<AuthUiProvider>();
-                            if (authUi.isLoading(
-                              AuthLoadingKey.forgotPassword,
-                            )) {
-                              return false;
-                            }
-                            final emailError =
-                                SignupValidator.validateEmailRealTime(email);
-                            authUi.setError('forgot_email', emailError);
-
-                            if (emailError != null) {
-                              messenger
-                                ..hideCurrentSnackBar()
-                                ..showSnackBar(
-                                  SnackBar(content: Text(emailError)),
+                                // ✅ LOADER START 🔥
+                                authUi.setLoading(
+                                  AuthLoadingKey.forgotPassword,
+                                  true,
                                 );
-                              return false;
-                            }
 
-                            // ✅ LOADER START 🔥
-                            authUi.setLoading(
-                              AuthLoadingKey.forgotPassword,
-                              true,
-                            );
+                                try {
+                                  await _service.sendResetLink(identifier: email);
+                                  if (!mounted) return false;
 
-                            try {
-                              await _service.sendResetLink(email: email);
-                              if (!mounted) return false;
+                                  // ✅ LOADER STOP
+                                  authUi.setLoading(
+                                    AuthLoadingKey.forgotPassword,
+                                    false,
+                                  );
 
-                              // ✅ LOADER STOP
-
-                              authUi.setLoading(
-                                AuthLoadingKey.forgotPassword,
-                                false,
-                              );
-
-                              if (!mounted) return false;
-                              nav.push(
-                                MaterialPageRoute(
-                                  builder: (_) => OtpScreen(
-                                    identifier: email,
-
-                                    type: "email",
-
-                                    title: 'Reset Password',
-
-                                    description:
-                                        'Enter the code sent to your email address.',
-
-                                    buttonText: 'Reset Password',
-
-                                    isForgot: true,
-
-                                    onVerifiedWithToken: (token) {
-                                      if (!nav.mounted) return;
-                                      nav.push(
-                                        MaterialPageRoute(
-                                          builder: (_) => ResetPasswordScreen(),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              );
-
-                              return true;
-                            } catch (e) {
-                              // ✅ LOADER STOP ON ERROR
-
-                              if (!mounted) return false;
-                              authUi.setLoading(
-                                AuthLoadingKey.forgotPassword,
-                                false,
-                              );
-
-                              messenger
-                                ..hideCurrentSnackBar()
-                                ..showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      AuthApiException.userFacingMessage(
-                                        e,
-                                        fallback:
-                                            'We could not send the reset code. Please try again.',
+                                  if (!mounted) return false;
+                                  nav.push(
+                                    MaterialPageRoute(
+                                      builder: (_) => OtpScreen(
+                                        identifier: email,
+                                        type: "email",
+                                        title: 'Reset Password',
+                                        description:
+                                            'Enter the code sent to your email address.',
+                                        buttonText: 'Reset Password',
+                                        isForgot: true,
+                                        onVerifiedWithToken: (token) {
+                                          if (!nav.mounted) return;
+                                          nav.push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ResetPasswordScreen(
+                                                    identifier: email,
+                                                    otp: token,
+                                                  ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
-                                  ),
-                                );
+                                  );
 
-                              return false;
-                            }
-                          },
-                        ),
-                      ],
+                                  return true;
+                                } catch (e) {
+                                  // ✅ LOADER STOP ON ERROR
+                                  if (!mounted) return false;
+                                  authUi.setLoading(
+                                    AuthLoadingKey.forgotPassword,
+                                    false,
+                                  );
+
+                                  messenger
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          AuthApiException.userFacingMessage(
+                                            e,
+                                            fallback:
+                                                'We could not send the reset code. Please try again.',
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  return false;
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               },
+            ),
+
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 24, top: 33),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.pop(context),
+                  child: Image.asset(AppAssets.back, height: 25, width: 25),
+                ),
+              ),
             ),
           ],
         ),

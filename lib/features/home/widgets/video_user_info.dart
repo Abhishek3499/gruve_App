@@ -157,6 +157,22 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
     );
   }
 
+  bool get _hasVisibleSubscribeButton {
+    if (_isResolvingIdentity) {
+      return true;
+    }
+
+    if (!(_identityResolution?.shouldShowSubscribeButton ?? false)) {
+      return false;
+    }
+
+    // Hide button if already subscribed
+    final isSubscribed = widget.subscribeController.isUserSubscribed(
+      widget.userId,
+    );
+    return !isSubscribed;
+  }
+
   Widget _buildSubscribeButton() {
     if (_isResolvingIdentity) {
       return const SizedBox(width: 96, height: 32);
@@ -223,7 +239,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: GestureDetector(
                   onTap: () => _openProfile(context),
                   child: Text(
@@ -238,8 +254,10 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                   ),
                 ),
               ),
-              const SizedBox(width: 15),
-              _buildSubscribeButton(),
+              if (_hasVisibleSubscribeButton) ...[
+                const SizedBox(width: 15),
+                _buildSubscribeButton(),
+              ],
             ],
           ),
           const SizedBox(height: 12),

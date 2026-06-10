@@ -1,34 +1,82 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
-
+import 'package:gruve_app/features/notification/api/models/notification_model.dart';
+import 'package:gruve_app/features/notification/providers/notification_provider.dart';
+import 'package:provider/provider.dart';
 import '../widgets/follow_tile.dart';
 import '../widgets/notification_tile.dart';
 
 class ThisWeekSection extends StatelessWidget {
-  const ThisWeekSection({super.key});
+  final List<AppNotification> thisWeekNotifications;
+  final List<AppNotification> earlierNotifications;
+
+  const ThisWeekSection({
+    super.key,
+    required this.thisWeekNotifications,
+    required this.earlierNotifications,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.read<NotificationProvider>();
+
     return Container(
       width: double.infinity,
-      color: Colors.black,
+      color: Colors.transparent,
       child: Column(
-        children: const [
-          _ThisWeekBand(),
-          SizedBox(height: 8),
-          FollowTile(
-            username: "martini_rond",
-            time: "3d",
-            profileImage: AppAssets.frame2,
-            userId: "user_martini_rond",
-          ),
-          FollowTile(
-            username: "maxjacobson",
-            time: "3d",
-            profileImage: AppAssets.frame1,
-            userId: "user_maxjacobson",
-          ),
-          SizedBox(height: 34),
+        children: [
+          if (thisWeekNotifications.isNotEmpty)
+            _ThisWeekBand(notifications: thisWeekNotifications),
+          if (earlierNotifications.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Earlier",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            ...earlierNotifications.map((n) {
+              final actorUsername = n.actor?.username ?? 'Someone';
+              final profilePic = n.actor?.profilePicture ?? '';
+              final timeDisplay = NotificationProvider.formatTime(n.createdAt);
+
+              if (n.type == 'follow' || n.type == 'user_follow') {
+                return FollowTile(
+                  username: actorUsername,
+                  time: timeDisplay,
+                  profileImage: profilePic,
+                  userId: n.actor?.id ?? '',
+                  isRead: n.isRead,
+                  onTap: () => provider.markNotificationAsRead(n.id),
+                );
+              } else {
+                String msg = 'interacted with your post.';
+                if (n.type == 'post_like' || n.type == 'like') {
+                  msg = 'liked your video.';
+                } else if (n.type == 'comment' || n.type == 'post_comment') {
+                  msg = 'commented on your video.';
+                } else if (n.type == 'comment_mention') {
+                  msg = 'mentioned you in a comment.';
+                }
+                return NotificationTile(
+                  username: actorUsername,
+                  message: msg,
+                  time: timeDisplay,
+                  profileImage: profilePic,
+                  isRead: n.isRead,
+                  onTap: () => provider.markNotificationAsRead(n.id),
+                );
+              }
+            }),
+          ],
+          const SizedBox(height: 34),
         ],
       ),
     );
@@ -36,21 +84,22 @@ class ThisWeekSection extends StatelessWidget {
 }
 
 class _ThisWeekBand extends StatelessWidget {
-  const _ThisWeekBand();
+  final List<AppNotification> notifications;
+
+  const _ThisWeekBand({required this.notifications});
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.read<NotificationProvider>();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 16, 24, 28),
-      decoration: const BoxDecoration(
-        color: Color(0xFF5A126B),
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(76)),
-      ),
+      color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             "This Week",
             style: TextStyle(
               color: Colors.white,
@@ -58,14 +107,40 @@ class _ThisWeekBand extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: 14),
-          NotificationTile(
-            username: "craig_love",
-            message: "mentioned you in a comment.",
-            time: "2d",
-            profileImage: AppAssets.thisweek,
-            postImage: AppAssets.today,
-          ),
+          const SizedBox(height: 14),
+          ...notifications.map((n) {
+            final actorUsername = n.actor?.username ?? 'Someone';
+            final profilePic = n.actor?.profilePicture ?? '';
+            final timeDisplay = NotificationProvider.formatTime(n.createdAt);
+
+            if (n.type == 'follow' || n.type == 'user_follow') {
+              return FollowTile(
+                username: actorUsername,
+                time: timeDisplay,
+                profileImage: profilePic,
+                userId: n.actor?.id ?? '',
+                isRead: n.isRead,
+                onTap: () => provider.markNotificationAsRead(n.id),
+              );
+            } else {
+              String msg = 'interacted with your post.';
+              if (n.type == 'post_like' || n.type == 'like') {
+                msg = 'liked your video.';
+              } else if (n.type == 'comment' || n.type == 'post_comment') {
+                msg = 'commented on your video.';
+              } else if (n.type == 'comment_mention') {
+                msg = 'mentioned you in a comment.';
+              }
+              return NotificationTile(
+                username: actorUsername,
+                message: msg,
+                time: timeDisplay,
+                profileImage: profilePic,
+                isRead: n.isRead,
+                onTap: () => provider.markNotificationAsRead(n.id),
+              );
+            }
+          }),
         ],
       ),
     );

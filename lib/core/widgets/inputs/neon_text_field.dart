@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class NeonTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -96,6 +97,11 @@ class _NeonTextFieldState extends State<NeonTextField> {
             textInputAction: widget.textInputAction,
             onChanged: widget.onChanged,
             onFieldSubmitted: widget.onFieldSubmitted,
+            inputFormatters: isEmailField
+                ? [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._+-]')),
+                  ]
+                : null,
             validator: (value) {
               final error = widget.validator?.call(value);
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,7 +109,13 @@ class _NeonTextFieldState extends State<NeonTextField> {
               });
               return null; // andar mat dikhao
             },
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              decoration: isEmailField
+                  ? TextDecoration.underline
+                  : TextDecoration.none,
+            ),
             decoration: InputDecoration(
               isDense: true,
               hintText: widget.hintText,
