@@ -281,11 +281,7 @@ class _SearchPageState extends State<SearchPage> {
             gradient: LinearGradient(
               begin: Alignment(-0.2, -1.0),
               end: Alignment(0.2, 1.0),
-              colors: [
-                Color(0xFF42174C),
-                Color(0xFF210C26),
-                Color(0xFF000000),
-              ],
+              colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
               stops: [0.0, 0.4172, 0.9933],
             ),
           ),
@@ -369,11 +365,11 @@ class _SearchPageState extends State<SearchPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'Recent',
+                                'Recent Search',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               TextButton(
