@@ -84,6 +84,23 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
+  bool _allowSignupOtpPop = false;
+
+  bool get _blocksSystemBack => !widget.isLogin && !widget.isForgot;
+
+  void _popFromOtp() {
+    if (!_blocksSystemBack) {
+      Navigator.pop(context);
+      return;
+    }
+
+    setState(() => _allowSignupOtpPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pop(context);
+    });
+  }
+
   // Mask phone number function (crash-proof)
 
   String _maskPhoneNumber(String phone) {
@@ -266,9 +283,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     if (otpError != null) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(otpError)),
-        );
+        ..showSnackBar(SnackBar(content: Text(otpError)));
       return false;
     }
 
@@ -408,234 +423,247 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       (authUi) => authUi.isLoading(AuthLoadingKey.otp),
     );
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return PopScope(
+      canPop: !_blocksSystemBack || _allowSignupOtpPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _blocksSystemBack) {
+          FocusScope.of(context).unfocus();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
 
-      body: VideoBackground(
-        videoPath: AppAssets.splashVideo,
+        body: VideoBackground(
+          videoPath: AppAssets.splashVideo,
 
-        overlayOpacity: 0.85,
+          overlayOpacity: 0.85,
 
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 🔹 Top Bar (Fixed Progress Bar Width)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // 🔹 Top Bar (Fixed Progress Bar Width)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
 
-                  vertical: 16,
-                ),
+                    vertical: 16,
+                  ),
 
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _popFromOtp,
 
-                      child: Image.asset(AppAssets.back, height: 25, width: 25),
-                    ),
-
-                    const SizedBox(width: 55),
-
-                    // Progress Bar with Fixed Width
-                    SizedBox(
-                      width: 210, // ✅ Width yahan se control karein
-
-                      child: Container(
-                        height: 9,
-
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-
-                          borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          AppAssets.back,
+                          height: 25,
+                          width: 25,
                         ),
+                      ),
 
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
+                      const SizedBox(width: 55),
 
-                          widthFactor: 0.2, // 20% progress
+                      // Progress Bar with Fixed Width
+                      SizedBox(
+                        width: 210, // ✅ Width yahan se control karein
 
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFB86AD0),
+                        child: Container(
+                          height: 9,
 
-                              borderRadius: BorderRadius.circular(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+
+                            widthFactor: 0.2, // 20% progress
+
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFB86AD0),
+
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // 🔹 Content Area
-              const SizedBox(height: 100),
+                // 🔹 Content Area
+                const SizedBox(height: 100),
 
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
 
-                  child: SingleChildScrollView(
-                    // Added scroll to prevent overflow on small screens
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 60),
+                    child: SingleChildScrollView(
+                      // Added scroll to prevent overflow on small screens
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 60),
 
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
 
-                          child: RichText(
+                            child: RichText(
+                              textAlign: TextAlign.center,
+
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  color: Colors.white,
+
+                                  fontSize: 28,
+
+                                  fontWeight: FontWeight.bold,
+
+                                  letterSpacing: 1.0,
+
+                                  fontFamily: AppAssets.syncopateFont,
+                                ),
+
+                                children: [
+                                  TextSpan(text: 'Enter your '),
+
+                                  TextSpan(
+                                    text: 'Code ',
+
+                                    style: TextStyle(color: Color(0xFFB86AD0)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Text(
+                            "Enter 4-digit code we have sent to you at",
+
                             textAlign: TextAlign.center,
 
-                            text: const TextSpan(
-                              style: TextStyle(
-                                color: Colors.white,
-
-                                fontSize: 28,
-
-                                fontWeight: FontWeight.bold,
-
-                                letterSpacing: 1.0,
-
-                                fontFamily: AppAssets.syncopateFont,
-                              ),
-
-                              children: [
-                                TextSpan(text: 'Enter your '),
-
-                                TextSpan(
-                                  text: 'Code ',
-
-                                  style: TextStyle(color: Color(0xFFB86AD0)),
-                                ),
-                              ],
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 13),
                           ),
-                        ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 10),
 
-                        Text(
-                          "Enter 4-digit code we have sent to you at",
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
 
-                          textAlign: TextAlign.center,
+                            children: [
+                              Text(
+                                widget.type == "phone"
+                                    ? _maskPhoneNumber(widget.identifier)
+                                    : widget.identifier,
 
-                          style: TextStyle(color: Colors.white, fontSize: 13),
-                        ),
+                                style: const TextStyle(
+                                  color: Color(0xFFB86AD0),
 
-                        const SizedBox(height: 10),
+                                  fontSize: 14,
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-
-                          children: [
-                            Text(
-                              widget.type == "phone"
-                                  ? _maskPhoneNumber(widget.identifier)
-                                  : widget.identifier,
-
-                              style: const TextStyle(
-                                color: Color(0xFFB86AD0),
-
-                                fontSize: 14,
-
-                                fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
 
-                            const SizedBox(width: 8),
+                              const SizedBox(width: 8),
 
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
+                              GestureDetector(
+                                onTap: _popFromOtp,
 
-                              child: const Icon(
-                                Icons.edit,
+                                child: const Icon(
+                                  Icons.edit,
 
-                                color: Color(0xFFB86AD0),
+                                  color: Color(0xFFB86AD0),
 
-                                size: 16,
+                                  size: 16,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
 
-                        const SizedBox(height: 40),
+                          const SizedBox(height: 40),
 
-                        // OTP Boxes
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          // OTP Boxes
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
 
-                          children: List.generate(4, (i) {
-                            return OtpInputBox(
-                              controller: _controllers[i],
+                            children: List.generate(4, (i) {
+                              return OtpInputBox(
+                                controller: _controllers[i],
 
-                              focusNode: _focusNodes[i],
+                                focusNode: _focusNodes[i],
 
-                              autoFocus: i == 0,
-                              enableSmsAutofill: i == 0,
-                              textInputAction: i == _controllers.length - 1
-                                  ? TextInputAction.done
-                                  : TextInputAction.next,
+                                autoFocus: i == 0,
+                                enableSmsAutofill: i == 0,
+                                textInputAction: i == _controllers.length - 1
+                                    ? TextInputAction.done
+                                    : TextInputAction.next,
 
-                              onChanged: (val) => _handleOtpChanged(i, val),
+                                onChanged: (val) => _handleOtpChanged(i, val),
 
-                              onBackspace: () => _handleOtpBackspace(i),
-                              onSubmitted: (_) {
-                                if (i == _controllers.length - 1) {
-                                  _otpButtonController.submit();
-                                }
-                              },
-                            );
-                          }),
-                        ),
+                                onBackspace: () => _handleOtpBackspace(i),
+                                onSubmitted: (_) {
+                                  if (i == _controllers.length - 1) {
+                                    _otpButtonController.submit();
+                                  }
+                                },
+                              );
+                            }),
+                          ),
 
-                        Align(
-                          alignment: Alignment.centerRight,
+                          Align(
+                            alignment: Alignment.centerRight,
 
-                          child: TextButton(
-                            onPressed: isLoading ? null : _resendOtp,
+                            child: TextButton(
+                              onPressed: isLoading ? null : _resendOtp,
 
-                            child: isLoading
-                                ? const SizedBox(
-                                    height: 16,
-                                    width: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.0,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Color(0xFFB86AD0),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.0,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFFB86AD0),
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Resend code",
+
+                                      style: TextStyle(
+                                        color: Color(0xFFB86AD0),
+
+                                        fontSize: 12,
                                       ),
                                     ),
-                                  )
-                                : const Text(
-                                    "Resend code",
-
-                                    style: TextStyle(
-                                      color: Color(0xFFB86AD0),
-
-                                      fontSize: 12,
-                                    ),
-                                  ),
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 40),
+                          const SizedBox(height: 40),
 
-                        GetStartedButton(
-                          controller: _otpButtonController,
+                          GetStartedButton(
+                            controller: _otpButtonController,
 
-                          text: widget.buttonText,
+                            text: widget.buttonText,
 
-                          isLoading: isLoading,
+                            isLoading: isLoading,
 
-                          onComplete: _verifyOtpManually,
-                        ),
-                      ],
+                            onComplete: _verifyOtpManually,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

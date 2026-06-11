@@ -30,6 +30,8 @@ class _ConfirmPasswordInputFieldState extends State<ConfirmPasswordInputField> {
       ),
       child: Row(
         children: [
+          const Icon(Icons.lock_outline, color: Colors.white70, size: 20),
+          const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: widget.controller,

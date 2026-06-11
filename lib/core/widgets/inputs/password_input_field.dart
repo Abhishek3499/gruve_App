@@ -31,6 +31,8 @@ class _PasswordInputFieldState extends State<PasswordInputField> {
       ),
       child: Row(
         children: [
+          const Icon(Icons.lock_outline, color: Colors.white70, size: 20),
+          const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: widget.controller,

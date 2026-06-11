@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -40,10 +42,19 @@ class _VideoFeedState extends State<VideoFeed> {
     _controller = VideoFeedController();
     _pageController = PageController(viewportFraction: 1.0);
 
+    _controller.onScrollToTop = () {
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    };
+
     _controller.initVideos();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onControllerReady?.call(_controller);
+      if (mounted) {
+        context.read<SavePostProvider>().fetchSavedPosts();
+      }
     });
   }
 
@@ -97,15 +108,10 @@ class _VideoFeedState extends State<VideoFeed> {
 
     if (!mounted || !_pageController.hasClients) return;
 
-    // Only jump to top if we have new content (current index changed due to merge)
+    // Jump to top directly to ensure UI and controller state are instantly in sync
     final currentIndex = _controller.currentIndex.value;
     if (currentIndex > 0) {
-      // Smooth scroll to show new content instead of jumping
-      _pageController.animateToPage(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      _pageController.jumpToPage(0);
     }
   }
 

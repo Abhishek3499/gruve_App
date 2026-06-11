@@ -8,6 +8,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_mode
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/paginated_response_model.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 
 class PostService {
   late final Dio _dio;
@@ -90,7 +91,16 @@ class PostService {
       '🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
     );
 
-    final fileSize = await file.length();
+    File uploadFile = file;
+    if (!isVideo) {
+      debugPrint('🗜️ [PostService] Compressing image...');
+      uploadFile = await ImageFilterProcessor.compressImageForUpload(
+        file,
+        maxFileSizeKB: 400,
+      );
+    }
+
+    final fileSize = await uploadFile.length();
     debugPrint('File Size MB: ${fileSize / (1024 * 1024)}');
     final fileSizeKB = fileSize ~/ 1024;
     debugPrint('📏 [PostService] Upload file size: ${fileSizeKB}KB');
@@ -99,7 +109,7 @@ class PostService {
     return FormData.fromMap({
       'caption': caption,
       'file': await MultipartFile.fromFile(
-        file.path,
+        uploadFile.path,
         filename: fileName,
         contentType: isVideo
             ? DioMediaType('video', 'mp4')

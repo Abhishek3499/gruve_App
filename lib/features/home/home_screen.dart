@@ -42,10 +42,6 @@ class _HomeScreenState extends State<HomeScreen>
   // 🚀 PERFORMANCE: Track rebuild metrics
   int _rebuildCount = 0;
 
-  // Double tap detection for Home tab with smooth animations
-  int? _lastHomeTapTime;
-  static const int _doubleTapThreshold = 400; // milliseconds
-  bool _isScrollingToTop = false;
   bool _cameraFlowInProgress = false;
   bool _videoProcessingDismissScheduled = false;
 
@@ -68,12 +64,14 @@ class _HomeScreenState extends State<HomeScreen>
 
     PostShareFlowBridge.onShareStartProcessing = (isVideo) {
       if (kDebugMode) {
-        debugPrint("🏠 Home Screen: Share start processing callback triggered (isVideo=$isVideo)");
+        debugPrint(
+          "🏠 Home Screen: Share start processing callback triggered (isVideo=$isVideo)",
+        );
       }
       if (mounted && !_isDisposed) _startVideoProcessing(isVideo);
     };
 
-    PostShareFlowBridge.onShareUploadError = () {
+    PostShareFlowBridge.onShareUploadError = (errorMessage) {
       if (!mounted || _isDisposed) return;
       _currentVideoService?.dispose();
       _currentVideoService = null;
@@ -82,12 +80,32 @@ class _HomeScreenState extends State<HomeScreen>
         Navigator.of(context).pop();
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Upload failed. Check your connection or try again.',
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  errorMessage ??
+                      'Upload failed. Check your connection or try again.',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+          backgroundColor: const Color(0xFFD32F2F),
+          behavior: SnackBarBehavior.floating,
+          elevation: 6,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          duration: const Duration(seconds: 4),
         ),
       );
     };
@@ -96,11 +114,38 @@ class _HomeScreenState extends State<HomeScreen>
       if (!mounted || _isDisposed) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            isVideo ? 'Video posted successfully' : 'Photo posted successfully',
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isVideo
+                      ? 'Video posted successfully!'
+                      : 'Photo posted successfully!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
+          backgroundColor: const Color(
+            0xFF8B25C6,
+          ), // Premium violet color matching app theme
+          behavior: SnackBarBehavior.floating,
+          elevation: 6,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          duration: const Duration(seconds: 3),
         ),
       );
     };
@@ -120,7 +165,9 @@ class _HomeScreenState extends State<HomeScreen>
           onTabChanged: _onItemTapped,
           onControllerReady: (controller) {
             if (kDebugMode) {
-              debugPrint("ðŸ  Home Screen: VideoFeed onControllerReady called!");
+              debugPrint(
+                "ðŸ  Home Screen: VideoFeed onControllerReady called!",
+              );
             }
             _videoController = controller;
             PostShareFlowBridge.setVideoController(controller);
@@ -191,7 +238,6 @@ class _HomeScreenState extends State<HomeScreen>
   void _handleAppBackgrounded() {
     _pauseVideo('App backgrounded');
     _isInBackground.value = true;
-    
   }
 
   void _handleAppResumed() {
@@ -258,27 +304,13 @@ class _HomeScreenState extends State<HomeScreen>
   void _onItemTapped(int index) async {
     if (_isDisposed) return;
 
-    // Handle Home tab double tap logic with smooth animations
+    // Handle Home tab logic
     if (index == 0) {
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-
       if (_currentIndex.value == 0) {
-        // Already on Home tab - check for double tap
-        if (_lastHomeTapTime != null &&
-            currentTime - _lastHomeTapTime! < _doubleTapThreshold) {
-          // Double tap detected - refresh feed smoothly
-          _lastHomeTapTime = null; // Reset to prevent triple taps
-          await _handleHomeTabDoubleTap();
-          return;
-        } else {
-          // Single tap on Home tab - scroll to top smoothly
-          _lastHomeTapTime = currentTime;
-          await _scrollToTop();
-          return;
-        }
+        // Already on Home tab - do nothing
+        return;
       } else {
         // Navigating to Home tab from another tab
-        _lastHomeTapTime = currentTime;
         // 🚀 OPTIMIZED: Use ValueNotifier instead of setState
         _activateTab(index);
         _previousIndex.value = _currentIndex.value;
@@ -385,41 +417,6 @@ class _HomeScreenState extends State<HomeScreen>
     _videoController!.playVideo(_videoController!.currentIndex.value);
   }
 
-  // Smooth scroll to top functionality
-  Future<void> _scrollToTop() async {
-    if (_isScrollingToTop || _videoController == null) return;
-
-    _isScrollingToTop = true;
-
-    try {
-      if (_videoController!.posts.isNotEmpty) {
-        // Smooth animation to first video
-        for (int i = _videoController!.currentIndex.value; i >= 0; i--) {
-          _videoController!.playVideo(i);
-          await Future.delayed(const Duration(milliseconds: 50));
-        }
-      }
-    } finally {
-      _isScrollingToTop = false;
-    }
-  }
-
-  // Handle double tap refresh with smooth animation
-  Future<void> _handleHomeTabDoubleTap() async {
-    if (_isScrollingToTop) return;
-
-    // First scroll to top smoothly
-    await _scrollToTop();
-
-    // Small delay to ensure scroll completes
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    // Then refresh feed
-    if (_videoController != null) {
-      await _videoController!.initVideos(refresh: true);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // 🚀 PERFORMANCE: Track rebuild metrics
@@ -435,6 +432,7 @@ class _HomeScreenState extends State<HomeScreen>
     return RepaintBoundary(
       child: Scaffold(
         extendBody: true,
+        resizeToAvoidBottomInset: false,
         backgroundColor: Colors.black,
         // 🚀 PERFORMANCE: Use ValueListenableBuilder for efficient rebuilds
         body: ValueListenableBuilder<int>(

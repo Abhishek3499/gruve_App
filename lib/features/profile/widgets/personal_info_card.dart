@@ -17,6 +17,10 @@ class PersonalInfoCard extends StatelessWidget {
   final bool showPhone;
   final bool isUpdating;
 
+  final FocusNode? nameFocusNode;
+  final FocusNode? usernameFocusNode;
+  final FocusNode? bioFocusNode;
+
   const PersonalInfoCard({
     super.key,
     required this.nameController,
@@ -32,6 +36,9 @@ class PersonalInfoCard extends StatelessWidget {
     this.showEmail = true,
     this.showPhone = true,
     this.isUpdating = false,
+    this.nameFocusNode,
+    this.usernameFocusNode,
+    this.bioFocusNode,
   });
 
   @override
@@ -54,7 +61,7 @@ class PersonalInfoCard extends StatelessWidget {
               _buildHeader(),
               const SizedBox(height: 24),
 
-              _buildField("Full Name", nameController),
+              _buildField("Full Name", nameController, focusNode: nameFocusNode),
               _divider(),
 
               // Show phone field only if showPhone is true
@@ -69,19 +76,19 @@ class PersonalInfoCard extends StatelessWidget {
                 _divider(),
               ],
 
-              _buildField("Username", usernameController),
+              _buildField("Username", usernameController, focusNode: usernameFocusNode),
               _divider(),
 
               _buildField("Gender", genderController, forceReadOnly: true),
               _divider(),
 
-              _buildField("Bio", bioController, isBio: true),
+              _buildField("Bio", bioController, isBio: true, focusNode: bioFocusNode),
 
               // Show update button only if showUpdateButton is true
               if (showUpdateButton) ...[
                 const SizedBox(height: 20),
                 _buildUpdateButton(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
               ],
             ],
           ),
@@ -120,6 +127,7 @@ class PersonalInfoCard extends StatelessWidget {
     TextEditingController controller, {
     bool isBio = false,
     bool forceReadOnly = false,
+    FocusNode? focusNode,
   }) {
     final bool fieldReadOnly = isReadOnly || forceReadOnly;
     return Column(
@@ -136,6 +144,8 @@ class PersonalInfoCard extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
+          focusNode: focusNode,
+          scrollPadding: EdgeInsets.zero,
           enabled: !fieldReadOnly, // ✅ Read-only mode
           readOnly: fieldReadOnly, // ✅ Read-only mode
           maxLines: isBio ? 3 : 1,

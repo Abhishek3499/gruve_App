@@ -101,10 +101,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
     if (!mounted) return;
 
     final navigator = Navigator.of(context);
-    navigator.pop();
-    if (widget.popPostPreviewRouteAfterShare && navigator.canPop()) {
-      navigator.pop();
-    }
+    navigator.popUntil((route) => route.isFirst);
 
     PostShareFlowBridge.scheduleShareUploadAfterReturningHome(
       caption: caption,

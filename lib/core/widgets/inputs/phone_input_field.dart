@@ -74,6 +74,34 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
     );
   }
 
+  String _getHintText() {
+    switch (selectedCountry.countryCode) {
+      case 'IN':
+        return "98765 43210";
+      case 'US':
+      case 'CA':
+        return "(454) 726-0592";
+      case 'GB':
+        return "7911 123456";
+      case 'SG':
+        return "9123 4567";
+      case 'AE':
+        return "50 123 4567";
+      case 'AU':
+        return "412 345 678";
+      default:
+        if (_maxPhoneDigits == 10) {
+          return "98765 43210";
+        } else if (_maxPhoneDigits == 8) {
+          return "8123 4567";
+        } else if (_maxPhoneDigits == 9) {
+          return "912 345 678";
+        } else {
+          return "12345 67890";
+        }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveErrorText = widget.errorText ?? _errorText;
@@ -115,8 +143,34 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               // ── COUNTRY PICKER ──────────────────────────
               GestureDetector(
                 onTap: () {
+                  // Dismiss keyboard first to avoid modal layout animation jank/lag
+                  FocusScope.of(context).unfocus();
+
                   showCountryPicker(
                     context: context,
+                    favorite: const <String>['IN', 'US', 'GB'],
+                    countryListTheme: CountryListThemeData(
+                      backgroundColor: const Color(0xFF2A0D33),
+                      textStyle: const TextStyle(color: Colors.white, fontSize: 15),
+                      searchTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
+                      inputDecoration: InputDecoration(
+                        hintText: 'Search country',
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFFB86AD0)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: Color(0xFFB86AD0)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: Color(0xFFB86AD0), width: 1.5),
+                        ),
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                    ),
                     onSelect: (country) {
                       setState(() => selectedCountry = country);
                       _trimPhoneToCountryLimit();
@@ -181,12 +235,12 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                           return null; // andar mat dikhao
                         },
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    hintText: "(454) 726-0592",
-                    hintStyle: TextStyle(color: Colors.white60),
+                  decoration: InputDecoration(
+                    hintText: _getHintText(),
+                    hintStyle: const TextStyle(color: Colors.white60),
                     border: InputBorder.none,
-                    errorStyle: TextStyle(fontSize: 0, height: 0),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14),
+                    errorStyle: const TextStyle(fontSize: 0, height: 0),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                 ),
               ),

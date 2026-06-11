@@ -26,6 +26,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _genderController;
   late TextEditingController _bioController;
 
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _usernameFocusNode = FocusNode();
+  final FocusNode _bioFocusNode = FocusNode();
+
+  bool _wasKeyboardOpen = false;
   String _profileImagePath = AppAssets.profile;
 
   @override
@@ -34,6 +40,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _controller = EditProfileController();
     _initializeControllers();
     _fetchProfileData();
+    _setupFocusListeners();
+  }
+
+  void _setupFocusListeners() {
+    _nameFocusNode.addListener(_onFocusChange);
+    _usernameFocusNode.addListener(_onFocusChange);
+    _bioFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (!mounted) return;
+    if (_nameFocusNode.hasFocus) {
+      _scrollToOffset(0);
+    } else if (_usernameFocusNode.hasFocus) {
+      _scrollToOffset(120);
+    } else if (_bioFocusNode.hasFocus) {
+      _scrollToOffset(350);
+    }
+  }
+
+  void _scrollToOffset(double offset) {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        offset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _scrollToFocusedField() {
+    if (_nameFocusNode.hasFocus) {
+      _scrollToOffset(0);
+    } else if (_usernameFocusNode.hasFocus) {
+      _scrollToOffset(120);
+    } else if (_bioFocusNode.hasFocus) {
+      _scrollToOffset(350);
+    }
   }
 
   void _initializeControllers() {
@@ -93,6 +137,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _usernameController.dispose();
     _genderController.dispose();
     _bioController.dispose();
+
+    _nameFocusNode.dispose();
+    _usernameFocusNode.dispose();
+    _bioFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -180,7 +229,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF7A2C8F),
+      backgroundColor: const Color(0xFF1B182D),
       body: Column(
         children: [
           Container(
@@ -245,52 +294,89 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
           Expanded(
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1B182D),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.elliptical(60, 50),
-                      topRight: Radius.elliptical(60, 50),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+                if (_wasKeyboardOpen != isKeyboardOpen) {
+                  _wasKeyboardOpen = isKeyboardOpen;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (isKeyboardOpen) {
+                      _scrollToFocusedField();
+                    } else {
+                      _scrollToOffset(0);
+                    }
+                  });
+                }
+
+                return SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: isKeyboardOpen
+                      ? const ClampingScrollPhysics()
+                      : const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Background color split to maintain top header purple and bottom dark body
+                        Positioned.fill(
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 120,
+                                color: const Color(0xFF7A2C8F),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  color: const Color(0xFF1B182D),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // The dark form container
+                        Container(
+                          margin: const EdgeInsets.only(top: 60),
+                          width: double.infinity,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1B182D),
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.elliptical(60, 50),
+                              topRight: Radius.elliptical(60, 50),
+                            ),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.only(
-                              top: 120,
+                            padding: EdgeInsets.only(
+                              top: 80,
                               left: 20,
                               right: 20,
-                              bottom: 60,
+                              bottom: isKeyboardOpen ? 10 : 60,
                             ),
                             child: _buildContent(),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-                Positioned(
-                  top: -60,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: _controller.isLoading
-                        ? const AppShimmer(child: ShimmerCircle(radius: 61))
-                        : ProfileImagePicker(
-                            currentImagePath: _profileImagePath,
-                            onImageChanged: _onImageChanged,
+                        // The avatar positioned at the top of the container
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: _controller.isLoading
+                                ? const AppShimmer(child: ShimmerCircle(radius: 61))
+                                : ProfileImagePicker(
+                                    currentImagePath: _profileImagePath,
+                                    onImageChanged: _onImageChanged,
+                                  ),
                           ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
@@ -337,6 +423,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       usernameController: _usernameController,
       genderController: _genderController,
       bioController: _bioController,
+      nameFocusNode: _nameFocusNode,
+      usernameFocusNode: _usernameFocusNode,
+      bioFocusNode: _bioFocusNode,
       onSave: _saveProfile,
       showEmail: _controller.showEmail,
       showPhone: _controller.showPhone,

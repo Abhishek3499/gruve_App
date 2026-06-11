@@ -17,6 +17,7 @@ import 'package:video_player/video_player.dart';
 /// Now _ensureControllersAroundIndex auto-plays when init completes.
 
 class VideoFeedController {
+  VoidCallback? onScrollToTop;
   bool _disposed = false;
   int _feedLoadGeneration = 0;
   bool _isAnyOperationInProgress = false;

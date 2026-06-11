@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
@@ -11,7 +12,7 @@ class PostShareFlowBridge {
   static Function(bool isVideo)? onShareStartProcessing;
 
   /// Home registers: dismiss overlay + cleanup [VideoService] if upload fails.
-  static Function()? onShareUploadError;
+  static Function(String? errorMessage)? onShareUploadError;
   
   /// Home registers: show success snackbar with appropriate message
   static Function(bool isVideo)? onShowSuccessSnackbar;
@@ -119,7 +120,22 @@ class PostShareFlowBridge {
       if (kDebugMode) {
         debugPrint("❌ [Bridge] POST ERROR: $e");
       }
-      onShareUploadError?.call();
+      String? errorMessage;
+      if (e is DioException) {
+        final resData = e.response?.data;
+        if (resData != null && resData is Map) {
+          errorMessage = resData['message']?.toString() ?? resData['error']?.toString();
+        } else if (resData != null && resData is String) {
+          errorMessage = resData;
+        } else if (e.response?.statusMessage != null) {
+          errorMessage = "Server error: ${e.response?.statusCode} ${e.response?.statusMessage}";
+        } else {
+          errorMessage = e.message;
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+      onShareUploadError?.call(errorMessage);
     }
   }
 
@@ -144,6 +160,8 @@ class PostShareFlowBridge {
       }
       if (result == true) {
         _needsRefresh = false;
+        _videoControllerRef!.playVideo(0);
+        _videoControllerRef!.onScrollToTop?.call();
       } else if (result == false) {
         _needsRefresh = true;
       }

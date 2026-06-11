@@ -41,11 +41,6 @@ class StoryList extends StatelessWidget {
 
     final highlights = provider.highlights;
 
-    // Show empty state
-    if (highlights.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
     // Show normal content
     return SizedBox(
       height: 102,
@@ -94,7 +89,7 @@ class StoryList extends StatelessWidget {
             SizedBox(
               width: 72,
               child: Text(
-                'Add Story',
+                'new',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -138,7 +133,8 @@ class StoryList extends StatelessWidget {
                         width: 60,
                         height: 60,
                         placeholder: (context, url) => _placeholderIcon(),
-                        errorWidget: (context, url, error) => _placeholderIcon(),
+                        errorWidget: (context, url, error) =>
+                            _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),
@@ -219,55 +215,6 @@ class StoryList extends StatelessWidget {
               ),
               child: const Icon(Icons.refresh, color: Colors.blue, size: 24),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return SizedBox(
-      height: 102,
-      child: Row(
-        children: [
-          const SizedBox(width: 30),
-          // Add Story button (always visible)
-          _buildAddStory(context, key: const Key('add_story_empty')),
-          const SizedBox(width: 18),
-          // Empty state indicator
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.withValues(alpha: 0.2),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.5)),
-            ),
-            child: const Icon(
-              Icons.highlight_off,
-              color: Colors.grey,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'No highlights',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Create your first highlight',
-                style: TextStyle(color: Colors.grey, fontSize: 10),
-              ),
-            ],
           ),
         ],
       ),

@@ -16,6 +16,12 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectivePrefixIcon =
+        prefixIcon ??
+        (obscure
+            ? const Icon(Icons.lock_outline, color: Colors.white54, size: 20)
+            : null);
+
     return TextField(
       obscureText: obscure,
       keyboardType: keyboardType,
@@ -29,10 +35,10 @@ class AuthTextField extends StatelessWidget {
           horizontal: 18,
           vertical: 16,
         ),
-        prefixIcon: prefixIcon != null
+        prefixIcon: effectivePrefixIcon != null
             ? Padding(
                 padding: const EdgeInsets.only(left: 16, right: 12),
-                child: prefixIcon,
+                child: effectivePrefixIcon,
               )
             : null,
         prefixIconConstraints: const BoxConstraints(

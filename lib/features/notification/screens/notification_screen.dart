@@ -87,6 +87,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         message: msg,
         time: timeDisplay,
         profileImage: profilePic,
+        postImage: n.postImage,
         isRead: n.isRead,
         onTap: () => provider.markNotificationAsRead(n.id),
       );

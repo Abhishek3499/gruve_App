@@ -757,11 +757,20 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-
-                        child: const Text(
-                          'Already have an account? Sign In',
-
-                          style: TextStyle(color: Colors.white),
+                        child: RichText(
+                          text: const TextSpan(
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            children: [
+                              TextSpan(text: 'Already have an account? '),
+                              TextSpan(
+                                text: 'Sign In',
+                                style: TextStyle(
+                                  color: Color(0xFFB86AD0),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
 

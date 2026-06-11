@@ -67,7 +67,7 @@ class Header extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,

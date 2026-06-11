@@ -3,10 +3,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
+import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 
 import 'package:gruve_app/features/story_preview/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_top_bar.dart';
 import 'package:gruve_app/core/widgets/story_share_sheet.dart';
+import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -24,11 +28,107 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   bool _isVideo = false;
   bool _isInitialized = false;
   bool _isMuted = false;
+  bool _isYourStorySharing = false;
+
+  Widget _buildUserAvatar(String? imageUrl, String username) {
+    final trimmed = imageUrl?.trim() ?? '';
+    if (trimmed.startsWith('http')) {
+      return CircleAvatar(
+        radius: 13,
+        backgroundColor: Colors.white12,
+        backgroundImage: NetworkImage(trimmed),
+      );
+    }
+    final fallbackLetter = username.isNotEmpty ? username[0].toUpperCase() : '';
+    return CircleAvatar(
+      radius: 13,
+      backgroundColor: Colors.white12,
+      backgroundImage: fallbackLetter.isEmpty
+          ? const AssetImage(AppAssets.profile)
+          : null,
+      child: fallbackLetter.isEmpty
+          ? null
+          : Text(
+              fallbackLetter,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+    );
+  }
+
+  Future<void> _shareToYourStory() async {
+    if (_isYourStorySharing) return;
+
+    setState(() {
+      _isYourStorySharing = true;
+    });
+
+    try {
+      final storyController = Provider.of<StoryController>(
+        context,
+        listen: false,
+      );
+
+      await storyController.createStory(
+        caption: '',
+        mediaPath: widget.mediaPath,
+      );
+
+      if (!mounted) return;
+
+      if (storyController.isSuccess) {
+        context.read<StoryStateController>().markStoryAsShared(
+          widget.mediaPath,
+        );
+
+        // Notify that the counts/story changed so Profile screen updates.
+        ProfileCountRefreshBridge.notifyCountsChanged(reason: 'story_shared');
+
+        final navigator = Navigator.of(context);
+        PostShareFlowBridge.notifyStorySharedNavigateToProfile();
+        navigator.popUntil((route) => route.isFirst);
+      } else {
+        setState(() {
+          _isYourStorySharing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(storyController.message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isYourStorySharing = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to share story: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _initializeMedia();
+
+    // Fetch own profile data if not loaded yet so that the avatar image is shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+        if (profileProvider.user == null && !profileProvider.isLoading) {
+          profileProvider.fetchProfileData(fetchUserReason: 'story_preview_init');
+        }
+      }
+    });
   }
 
   void _initializeMedia() async {
@@ -80,6 +180,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<ProfileProvider>(context).user;
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -146,40 +247,45 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                       children: [
                         /// YOUR STORY
                         Expanded(
-                          child: Container(
-                            height: 42,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                            ), // 🔥 add this
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              color: const Color(0xFF72008D),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    image: DecorationImage(
-                                      image: AssetImage(AppAssets.profile),
-                                      fit: BoxFit.cover,
+                          child: GestureDetector(
+                            onTap: _isYourStorySharing ? null : _shareToYourStory,
+                            child: Container(
+                              height: 42,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                color: const Color(0xFF72008D),
+                              ),
+                              child: Row(
+                                children: [
+                                  _isYourStorySharing
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : _buildUserAvatar(
+                                          user?.profileImage,
+                                          user?.username ?? '',
+                                        ),
+                                  const SizedBox(
+                                    width: 8,
+                                  ),
+                                  Text(
+                                    _isYourStorySharing ? "Sharing..." : "Your Story",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(
-                                  width: 6,
-                                ), // 🔥 spacing same karo
-                                const Text(
-                                  "Your Story",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),

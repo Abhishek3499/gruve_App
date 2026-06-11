@@ -184,10 +184,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
         final navigator = Navigator.of(context);
         PostShareFlowBridge.notifyStorySharedNavigateToProfile();
 
-        navigator.pop();
-        if (navigator.canPop()) {
-          navigator.pop();
-        }
+        navigator.popUntil((route) => route.isFirst);
       } else {
         setState(() {
           _isLoading = false;

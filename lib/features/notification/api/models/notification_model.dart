@@ -64,6 +64,7 @@ class AppNotification {
   final bool isRead;
   final String createdAt;
   final NotificationActor? actor;
+  final String? postImage;
 
   AppNotification({
     required this.id,
@@ -74,6 +75,7 @@ class AppNotification {
     required this.isRead,
     required this.createdAt,
     this.actor,
+    this.postImage,
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
@@ -86,6 +88,13 @@ class AppNotification {
       isRead: json['is_read'] ?? false,
       createdAt: json['created_at'] ?? '',
       actor: json['actor'] != null ? NotificationActor.fromJson(json['actor']) : null,
+      postImage: json['post_image']?.toString() ??
+          json['post_thumbnail']?.toString() ??
+          json['post_thumbnail_url']?.toString() ??
+          json['thumbnail_url']?.toString() ??
+          json['post']?['thumbnail_url']?.toString() ??
+          json['post']?['post_image']?.toString() ??
+          json['post']?['thumbnail']?.toString(),
     );
   }
 
@@ -98,6 +107,7 @@ class AppNotification {
     bool? isRead,
     String? createdAt,
     NotificationActor? actor,
+    String? postImage,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -108,6 +118,7 @@ class AppNotification {
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
       actor: actor ?? this.actor,
+      postImage: postImage ?? this.postImage,
     );
   }
 }

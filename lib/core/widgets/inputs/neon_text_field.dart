@@ -73,6 +73,7 @@ class _NeonTextFieldState extends State<NeonTextField> {
   Widget build(BuildContext context) {
     final bool isEmailField = widget.keyboardType == TextInputType.emailAddress;
     final effectiveErrorText = widget.errorText ?? _errorText;
+    const fieldIconColor = Color(0x99FF00FF);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,29 +114,29 @@ class _NeonTextFieldState extends State<NeonTextField> {
                     });
                     return null; // andar mat dikhao
                   },
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
-              decoration: isEmailField
-                  ? TextDecoration.underline
-                  : TextDecoration.none,
+              decoration: TextDecoration.none,
             ),
             decoration: InputDecoration(
               isDense: true,
               hintText: widget.hintText,
-              hintStyle: TextStyle(
+              hintStyle: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                decoration: isEmailField
-                    ? TextDecoration.underline
-                    : TextDecoration.none,
+                decoration: TextDecoration.none,
               ),
               border: InputBorder.none,
               errorStyle: const TextStyle(fontSize: 0, height: 0), // hide
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 44,
+                minHeight: 20,
               ),
               prefixIcon: widget.prefixIcon != null
                   ? Padding(
@@ -144,7 +145,16 @@ class _NeonTextFieldState extends State<NeonTextField> {
                         widget.prefixIcon!,
                         width: 22,
                         height: 22,
-                        color: const Color(0x99FF00FF),
+                        color: fieldIconColor,
+                      ),
+                    )
+                  : widget.obscureText
+                  ? const Padding(
+                      padding: EdgeInsets.only(left: 16, right: 8),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: 21,
+                        color: fieldIconColor,
                       ),
                     )
                   : null,

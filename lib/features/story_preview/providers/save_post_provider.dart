@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../api/create_post_api/post_service.dart';
 import '../api/create_post_api/model/post_model.dart';
@@ -6,6 +7,8 @@ class SavePostProvider extends ChangeNotifier {
   final PostService _postService = PostService();
   final Map<String, bool> _savedPosts = {};
   final Set<String> _loadingPosts = {};
+  final Map<String, bool> _stableSavedPosts = {};
+  final Map<String, Timer> _debounceTimers = {};
   
   List<Post> _savedPostsList = [];
   bool _isLoadingSavedPosts = false;
@@ -26,50 +29,52 @@ class SavePostProvider extends ChangeNotifier {
   }
 
   Future<void> toggleSavePost(String postId) async {
-    if (_loadingPosts.contains(postId)) {
-      debugPrint('🔄 [SavePostProvider] Already loading postId=$postId');
-      return;
+    debugPrint('🔄 [SavePostProvider] TOGGLE START postId=$postId');
+
+    final previousState = _savedPosts[postId] ?? false;
+    final targetState = !previousState;
+
+    if (!_stableSavedPosts.containsKey(postId)) {
+      _stableSavedPosts[postId] = previousState;
     }
 
-    debugPrint('🔄 [SavePostProvider] TOGGLE START postId=$postId');
-    
-    _loadingPosts.add(postId);
-    
-    final previousState = _savedPosts[postId] ?? false;
-    final optimisticState = !previousState;
-    
-    debugPrint('🔁 [SavePostProvider] OPTIMISTIC UPDATE: $previousState → $optimisticState');
-    _savedPosts[postId] = optimisticState;
+    _savedPosts[postId] = targetState;
     notifyListeners();
 
-    try {
-      final result = await _postService.toggleSavePost(postId);
-      final serverState = result['is_saved'] as bool;
+    _debounceTimers[postId]?.cancel();
+
+    _debounceTimers[postId] = Timer(const Duration(milliseconds: 300), () async {
+      _debounceTimers.remove(postId);
       
-      debugPrint('✅ [SavePostProvider] SERVER STATE: $serverState');
-      _savedPosts[postId] = serverState;
-      
-      // If unsaved, remove from saved list
-      if (!serverState) {
-        _savedPostsList.removeWhere((post) => post.id == postId);
-        debugPrint('🗑️ [SavePostProvider] Removed from saved list postId=$postId');
+      final stableState = _stableSavedPosts.remove(postId);
+      final finalClientState = _savedPosts[postId] ?? false;
+
+      if (stableState != null && finalClientState != stableState) {
+        _loadingPosts.add(postId);
+        notifyListeners();
+
+        try {
+          final result = await _postService.toggleSavePost(postId);
+          final serverState = result['is_saved'] as bool;
+          
+          debugPrint('✅ [SavePostProvider] SERVER STATE: $serverState');
+          _savedPosts[postId] = serverState;
+          
+          if (!serverState) {
+            _savedPostsList.removeWhere((post) => post.id == postId);
+            debugPrint('🗑️ [SavePostProvider] Removed from saved list postId=$postId');
+          }
+        } catch (e) {
+          debugPrint('❌ [SavePostProvider] ERROR: $e');
+          _savedPosts[postId] = stableState;
+        } finally {
+          _loadingPosts.remove(postId);
+          notifyListeners();
+        }
+      } else {
+        debugPrint('ℹ️ [SavePostProvider] Taps cancelled out. No API request sent.');
       }
-      
-      notifyListeners();
-      
-      debugPrint('✅ [SavePostProvider] STATE UPDATED postId=$postId isSaved=$serverState');
-    } catch (e) {
-      debugPrint('❌ [SavePostProvider] ERROR: $e');
-      debugPrint('🔁 [SavePostProvider] ROLLBACK: $optimisticState → $previousState');
-      
-      _savedPosts[postId] = previousState;
-      notifyListeners();
-      
-      rethrow;
-    } finally {
-      _loadingPosts.remove(postId);
-      notifyListeners();
-    }
+    });
   }
 
   Future<void> fetchSavedPosts({bool forceRefresh = false}) async {
@@ -126,6 +131,11 @@ class SavePostProvider extends ChangeNotifier {
   /// Reset all save post data on logout
   void reset() {
     debugPrint('🔄 [SavePostProvider] Resetting save post data...');
+    _stableSavedPosts.clear();
+    for (final timer in _debounceTimers.values) {
+      timer.cancel();
+    }
+    _debounceTimers.clear();
     _savedPosts.clear();
     _loadingPosts.clear();
     _savedPostsList.clear();
@@ -138,6 +148,11 @@ class SavePostProvider extends ChangeNotifier {
   }
 
   void clearSavedState() {
+    _stableSavedPosts.clear();
+    for (final timer in _debounceTimers.values) {
+      timer.cancel();
+    }
+    _debounceTimers.clear();
     _savedPosts.clear();
     _loadingPosts.clear();
     _savedPostsList.clear();

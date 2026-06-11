@@ -8,33 +8,27 @@ class VideoService {
     double progress = 0.0;
     while (progress <= 100 && !_isCompleted) {
       await Future.delayed(Duration(milliseconds: _getDelay(progress)));
-      progress += 1;
+      progress += 1.0;
       _progressController.add(progress);
       yield progress;
     }
     
-    // Ensure we reach 100% when completed
-    if (_isCompleted && progress < 100) {
-      while (progress <= 100) {
-        await Future.delayed(Duration(milliseconds: 50));
-        progress += 5;
-        if (progress > 100) progress = 100;
-        _progressController.add(progress);
-        yield progress;
-      }
+    // Ensure we yield 100% immediately when completed
+    if (_isCompleted) {
+      _progressController.add(100.0);
+      yield 100.0;
     }
   }
 
   void markCompleted() {
     _isCompleted = true;
-    // Fast forward to 100%
     _progressController.add(100.0);
   }
 
   int _getDelay(double progress) {
-    if (progress < 15) return 400; // Slow
-    if (progress < 50) return 100; // Fast
-    return 50; // Super fast
+    if (progress < 15) return 120; // Fast initial ticks
+    if (progress < 50) return 40;  // Very fast ticks
+    return 15; // Super fast ticks
   }
 
   void dispose() {

@@ -59,6 +59,7 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
   @override
   Widget build(BuildContext context) {
     final effectiveErrorText = widget.errorText ?? _errorText;
+    const fieldIconColor = Color(0x99FF00FF);
 
     return Column(
       // ✅ Column — error bahar dikhega
@@ -104,6 +105,18 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
                 horizontal: 16,
                 vertical: 16,
               ),
+              prefixIconConstraints: const BoxConstraints(
+                minHeight: 20,
+                minWidth: 44,
+              ),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.only(left: 16, right: 8),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 21,
+                  color: fieldIconColor,
+                ),
+              ),
               suffixIconConstraints: const BoxConstraints(
                 minHeight: 20,
                 minWidth: 20,
@@ -118,7 +131,7 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
                         ? Icons.visibility_off
                         : Icons.visibility, // ✅ no asset needed
                     size: 22,
-                    color: const Color(0x99FF00FF),
+                    color: fieldIconColor,
                   ),
                 ),
               ),
