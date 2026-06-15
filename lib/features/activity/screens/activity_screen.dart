@@ -5,6 +5,7 @@ import '../widgets/activity_summary_section.dart';
 import '../widgets/activity_description_section.dart';
 import '../widgets/activity_insights_card.dart';
 import '../widgets/activity_footer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -19,13 +20,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint("[ActivityScreen] Screen initialized");
+    AppLogger.d("[ActivityScreen] Screen initialized");
     _controller = ActivityController();
   }
 
   @override
   void dispose() {
-    debugPrint("[ActivityScreen] Screen disposed");
+    AppLogger.d("[ActivityScreen] Screen disposed");
     _controller.dispose();
     super.dispose();
   }
@@ -48,7 +49,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
             children: [
               ActivityHeader(
                 onBackPressed: () {
-                  debugPrint("[ActivityScreen] Back button tapped");
+                  AppLogger.d("[ActivityScreen] Back button tapped");
                   Navigator.of(context).pop();
                 },
               ),

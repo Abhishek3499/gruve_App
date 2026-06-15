@@ -1,18 +1,14 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart' show debugPrint;
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import '../models/signup_request.dart';
 import '../models/signup_response.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SignupService {
-  final Dio dio = AppDio.create(
-    connectTimeout: const Duration(seconds: 20),
-    receiveTimeout: const Duration(seconds: 20),
-    sendTimeout: const Duration(seconds: 20),
-  );
+  final Dio dio = AppDio.getInstance();
 
   Future<SignupResponse> signup(SignupRequest request) async {
 
@@ -49,7 +45,7 @@ class SignupService {
       // Retry once when no response is received (timeout / connection issue).
       if (_shouldRetry(e)) {
         try {
-          debugPrint("Signup retry attempt");
+          AppLogger.d("Signup retry attempt");
           final retryResponse = await dio.post(
             endpoint,
             data: payload,
@@ -66,7 +62,7 @@ class SignupService {
             fallback: 'Unable to reach server right now. Please try again.',
           );
         } catch (retryError) {
-          debugPrint("Signup retry failed: $retryError");
+          AppLogger.d("Signup retry failed: $retryError");
           throw retryError.toString();
         }
       }
@@ -76,7 +72,7 @@ class SignupService {
         fallback: 'Unable to reach server right now. Please try again.',
       );
     } catch (e) {
-      debugPrint("Signup failed: $e");
+      AppLogger.d("Signup failed: $e");
       throw "Signup failed. Please try again.";
     }
   }

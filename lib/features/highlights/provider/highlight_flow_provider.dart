@@ -1,3 +1,4 @@
+import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 
 class HighlightFlowProvider extends ChangeNotifier {
@@ -13,9 +14,9 @@ class HighlightFlowProvider extends ChangeNotifier {
 
   /// Reset highlight flow state on logout
   void reset() {
-    debugPrint('🔄 [HighlightFlowProvider] Resetting highlight flow...');
+    AppLogger.d('🔄 [HighlightFlowProvider] Resetting highlight flow...');
     _isProcessing = false;
     notifyListeners();
-    debugPrint('✅ [HighlightFlowProvider] Highlight flow reset complete');
+    AppLogger.d('✅ [HighlightFlowProvider] Highlight flow reset complete');
   }
 }

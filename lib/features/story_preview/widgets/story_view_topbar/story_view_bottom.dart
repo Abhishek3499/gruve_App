@@ -9,6 +9,7 @@ import 'package:gruve_app/features/story_preview/api/story_api/model/story_model
 import 'package:gruve_app/features/story_preview/screens/more_screen.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/highlight_sheet.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class StoryViewBottom extends StatefulWidget {
   final bool isOwnProfile;
@@ -52,7 +53,7 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
       });
     }
 
-    debugPrint(
+    AppLogger.d(
       '[StoryViewBottom] initState - isOwnProfile: ${widget.isOwnProfile}',
     );
   }
@@ -111,7 +112,7 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
 
     if (currentStory == null) return null;
 
-    debugPrint('[HighlightButton] Resolving missing story id');
+    AppLogger.d('[HighlightButton] Resolving missing story id');
     await _storyController.fetchStories(userId: null);
 
     if (!_storyController.isSuccess || _storyController.stories.isEmpty) {
@@ -162,7 +163,7 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
 
     if (isHighlighted) {
       final highlightName = _matchedHighlight?.title;
-      debugPrint(
+      AppLogger.d(
         '[HighlightButton] Tap ignored: already added'
         '${highlightName == null ? '' : ' to $highlightName'}',
       );
@@ -191,10 +192,10 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
         return;
       }
 
-      debugPrint('[HighlightButton] Opening highlight sheet');
+      AppLogger.d('[HighlightButton] Opening highlight sheet');
       showInstagramHighlightSheet(context);
     } catch (e) {
-      debugPrint('[HighlightButton] Failed to prepare highlight sheet: $e');
+      AppLogger.d('[HighlightButton] Failed to prepare highlight sheet: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -212,7 +213,7 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
   /// Build the Highlight button (only shown for own profile)
   Widget _buildHighlightButton() {
     if (!widget.isOwnProfile) {
-      debugPrint('[StoryViewBottom] Highlight button hidden - not own profile');
+      AppLogger.d('[StoryViewBottom] Highlight button hidden - not own profile');
       return const SizedBox.shrink();
     }
 
@@ -225,7 +226,7 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
             _stateManager.isStoryHighlighted(currentStoryId);
         final buttonColor = isHighlighted ? _selectedColor : _inactiveColor;
 
-        debugPrint(
+        AppLogger.d(
           '[HighlightButton] isOwnProfile: ${widget.isOwnProfile}, '
           'isHighlighted: $isHighlighted, storyId: ${currentStoryId ?? 'null'}',
         );

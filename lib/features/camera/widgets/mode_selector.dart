@@ -11,6 +11,7 @@ import 'package:gruve_app/features/ideas/screen/ideas_screen.dart';
 import 'package:provider/provider.dart';
 import '../utils/camera_logger.dart';
 import '../services/mode_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Simple text mode selector (Story / Gruve)
 class ModeSelector extends StatefulWidget {
@@ -47,7 +48,7 @@ class _ModeSelectorState extends State<ModeSelector> {
       final XFile? pickedFile = await _imagePicker.pickMedia();
 
       if (pickedFile != null) {
-        debugPrint('Selected gallery file path: ${pickedFile.path}');
+        AppLogger.d('Selected gallery file path: ${pickedFile.path}');
 
         if (!mounted) return;
         if (_modeService.selectedMode == CameraMode.story) {
@@ -87,7 +88,7 @@ class _ModeSelectorState extends State<ModeSelector> {
         }
       }
     } catch (e) {
-      debugPrint('Error picking from gallery: $e');
+      AppLogger.d('Error picking from gallery: $e');
     }
   }
 

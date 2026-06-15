@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/auth/logout/logout_provider.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Widget to handle logout navigation safely
 class LogoutNavigationHandler extends StatefulWidget {
@@ -33,7 +34,7 @@ class _LogoutNavigationHandlerState extends State<LogoutNavigationHandler> {
   }
 
   void _handleLogoutNavigation(BuildContext context, LogoutProvider logoutProvider) {
-    debugPrint('🚀 [LogoutNavigation] Navigating to SignIn screen...');
+    AppLogger.d('🚀 [LogoutNavigation] Navigating to SignIn screen...');
 
     // Use rootNavigatorKey for safe navigation regardless of context
     rootNavigatorKey.currentState?.pushAndRemoveUntil(

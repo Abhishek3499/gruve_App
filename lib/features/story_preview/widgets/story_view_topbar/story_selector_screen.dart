@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class StorySelectorScreen extends StatefulWidget {
   final List<String> mediaPaths;
@@ -255,7 +256,7 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
             padding: const EdgeInsets.all(16),
             child: ElevatedButton(
               onPressed: () async {
-                debugPrint("➕ New highlight submit → API CALL START");
+                AppLogger.d("➕ New highlight submit → API CALL START");
 
                 // ✅ Validate title
                 if (_nameController.text.trim().isEmpty) {
@@ -273,14 +274,14 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                 // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
                 final storyId = widget.storyId;
 
-                debugPrint("🧪 [DEBUG] FIXED Story ID: $storyId");
-                debugPrint(
+                AppLogger.d("🧪 [DEBUG] FIXED Story ID: $storyId");
+                AppLogger.d(
                   "🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}",
                 );
 
                 // ❌ prevent null / empty
                 if (storyId.isEmpty) {
-                  debugPrint("❌ ERROR: Story ID is empty");
+                  AppLogger.d("❌ ERROR: Story ID is empty");
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -296,7 +297,7 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                 if (storyId.endsWith('.jpg') ||
                     storyId.endsWith('.png') ||
                     storyId.endsWith('.mp4')) {
-                  debugPrint("❌ ERROR: Wrong storyId (image file detected)");
+                  AppLogger.d("❌ ERROR: Wrong storyId (image file detected)");
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -317,7 +318,7 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
 
                 // ✅ Success handling
                 if (_createController.isSuccess) {
-                  debugPrint("✅ Highlight created successfully");
+                  AppLogger.d("✅ Highlight created successfully");
 
                   if (!mounted) return;
 
@@ -331,7 +332,7 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                     );
                   }
                 } else {
-                  debugPrint("❌ Highlight creation failed");
+                  AppLogger.d("❌ Highlight creation failed");
                 }
               },
               style: ElevatedButton.styleFrom(

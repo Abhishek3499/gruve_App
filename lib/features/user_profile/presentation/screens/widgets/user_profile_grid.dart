@@ -43,9 +43,80 @@ class UserProfileGrid extends StatelessWidget {
     );
   }
 
+  Widget _buildGridLoadingPlaceholders({int itemCount = 6}) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      itemCount: itemCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.75,
+      ),
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            color: Colors.white.withValues(alpha: 0.10),
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white54,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final posts = _postsForTab();
+    final tabIsLoading = controller.isLoadingTab(selectedTab == 0 ? 0 : 2);
+    final totalPostsCount = controller.statsNotifier.value.videosCount;
+
+    if (totalPostsCount == 0 || (posts.isEmpty && !tabIsLoading)) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.video_library_outlined,
+              color: Colors.white,
+              size: 34,
+            ),
+            SizedBox(height: 12),
+            Text(
+              'No posts yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (posts.isEmpty && tabIsLoading) {
+      return _buildGridLoadingPlaceholders();
+    }
 
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),

@@ -1,16 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import '../models/verify_otp_response.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VerifyOtpService {
-  final Dio dio = AppDio.create(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  );
+  final Dio dio = AppDio.getInstance();
   Future<VerifyOtpResponse> verifyOtp({
     required String identifier,
     required String email,
@@ -21,7 +18,7 @@ class VerifyOtpService {
     bool isForgot = false, // ✅ ADD THIS
   }) async {
     try {
-      debugPrint(
+      AppLogger.d(
         "Verify OTP flow: forgot=$isForgot login=$isLogin type=$type",
       );
 
@@ -73,7 +70,7 @@ class VerifyOtpService {
       AuthApiLogger.error('VerifyOtp', e);
       throw AuthApiException.extractMessage(e);
     } catch (e) {
-      debugPrint("Verify OTP failed: $e");
+      AppLogger.d("Verify OTP failed: $e");
       rethrow;
     }
   }
@@ -112,7 +109,7 @@ class VerifyOtpService {
       AuthApiLogger.error('ResendOtp', e);
       throw AuthApiException.extractMessage(e);
     } catch (e) {
-      debugPrint("Resend OTP failed: $e");
+      AppLogger.d("Resend OTP failed: $e");
       rethrow;
     }
   }

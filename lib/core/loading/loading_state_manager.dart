@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/loading/load_state.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Generic loading state manager for consistent UI states
 /// Replaces scattered CircularProgressIndicator usage
@@ -32,7 +33,7 @@ class LoadingStateManager<T> {
       _state = state;
       if (data != null) _data = data;
       if (error != null) _error = error;
-      debugPrint('⏳ [LoadingState] State changed: ${state.description}');
+      AppLogger.d('⏳ [LoadingState] State changed: ${state.description}');
     }
   }
 
@@ -62,7 +63,7 @@ class LoadingStateManager<T> {
     _state = LoadState.firstLoad;
     _data = null;
     _error = null;
-    debugPrint('🔄 [LoadingState] State reset');
+    AppLogger.d('🔄 [LoadingState] State reset');
   }
 
   /// Add data during pagination
@@ -70,14 +71,14 @@ class LoadingStateManager<T> {
     if (_data is List<T>) {
       final currentList = _data as List<T>;
       _data = [...currentList, ...newData] as T;
-      debugPrint('➕ [LoadingState] Added ${newData.length} items to existing data');
+      AppLogger.d('➕ [LoadingState] Added ${newData.length} items to existing data');
     }
   }
 
   /// Update data during background refresh
   void updateData(T newData) {
     _data = newData;
-    debugPrint('🔄 [LoadingState] Updated data in background');
+    AppLogger.d('🔄 [LoadingState] Updated data in background');
   }
 
   /// Get state duration

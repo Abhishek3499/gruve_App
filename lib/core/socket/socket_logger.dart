@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Comprehensive Socket Logging Utility
 /// 
@@ -21,7 +21,7 @@ class SocketLogger {
     _logs.clear();
     _initializeLogFile();
     
-    debugPrint('🔌 [SOCKET LOGGER] Started capturing socket logs');
+    AppLogger.d('🔌 [SOCKET LOGGER] Started capturing socket logs');
     logEvent('LOGGER_START', 'Socket logging session started');
   }
   
@@ -32,7 +32,7 @@ class SocketLogger {
     _isCapturing = false;
     await _saveLogsToFile();
     
-    debugPrint('🔌 [SOCKET LOGGER] Stopped capturing. Logs saved to socket_logs.txt');
+    AppLogger.d('🔌 [SOCKET LOGGER] Stopped capturing. Logs saved to socket_logs.txt');
     logEvent('LOGGER_STOP', 'Socket logging session stopped');
   }
   
@@ -51,9 +51,9 @@ class SocketLogger {
     }
     
     // Also print to console for immediate visibility
-    debugPrint('🔌 [SOCKET LOG] $logEntry');
+    AppLogger.d('🔌 [SOCKET LOG] $logEntry');
     if (data != null) {
-      debugPrint('📊 [SOCKET DATA] $data');
+      AppLogger.d('📊 [SOCKET DATA] $data');
     }
   }
   
@@ -117,13 +117,13 @@ class SocketLogger {
   /// Clear all logs
   static void clearLogs() {
     _logs.clear();
-    debugPrint('🔌 [SOCKET LOGGER] Logs cleared');
+    AppLogger.d('🔌 [SOCKET LOGGER] Logs cleared');
   }
   
   /// Print summary of captured events
   static void printSummary() {
     if (_logs.isEmpty) {
-      debugPrint('🔌 [SOCKET LOGGER] No logs captured');
+      AppLogger.d('🔌 [SOCKET LOGGER] No logs captured');
       return;
     }
     
@@ -132,12 +132,12 @@ class SocketLogger {
     final errorCount = _logs.where((log) => log.contains('ERROR')).length;
     final heartbeatCount = _logs.where((log) => log.contains('HEARTBEAT')).length;
     
-    debugPrint('🔌 [SOCKET LOGGER SUMMARY]');
-    debugPrint('📤 Outgoing messages: $outgoingCount');
-    debugPrint('📥 Incoming messages: $incomingCount');
-    debugPrint('💥 Errors: $errorCount');
-    debugPrint('💓 Heartbeats: $heartbeatCount');
-    debugPrint('📊 Total events: ${_logs.length}');
+    AppLogger.d('🔌 [SOCKET LOGGER SUMMARY]');
+    AppLogger.d('📤 Outgoing messages: $outgoingCount');
+    AppLogger.d('📥 Incoming messages: $incomingCount');
+    AppLogger.d('💥 Errors: $errorCount');
+    AppLogger.d('💓 Heartbeats: $heartbeatCount');
+    AppLogger.d('📊 Total events: ${_logs.length}');
   }
   
   static void _initializeLogFile() {
@@ -149,9 +149,9 @@ class SocketLogger {
     try {
       final content = _logs.join('\n\n');
       await _logFile.writeAsString(content);
-      debugPrint('🔌 [SOCKET LOGGER] Logs saved to ${_logFile.path}');
+      AppLogger.d('🔌 [SOCKET LOGGER] Logs saved to ${_logFile.path}');
     } catch (e) {
-      debugPrint('❌ [SOCKET LOGGER] Failed to save logs: $e');
+      AppLogger.d('❌ [SOCKET LOGGER] Failed to save logs: $e');
     }
   }
 }

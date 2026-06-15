@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:gruve_app/features/profile/data/api_calls/services/profile_services.dart';
 
 class ProfileRepository {
@@ -13,6 +14,7 @@ class ProfileRepository {
     int? trendingLimit,
     int? likedPage,
     int? likedLimit,
+    CancelToken? cancelToken,
   }) {
     return _service.getUser(
       allPage: allPage,
@@ -21,6 +23,7 @@ class ProfileRepository {
       trendingLimit: trendingLimit,
       likedPage: likedPage,
       likedLimit: likedLimit,
+      cancelToken: cancelToken,
     );
   }
 }

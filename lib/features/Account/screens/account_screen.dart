@@ -5,6 +5,7 @@ import 'package:gruve_app/features/profile/models/profile_model.dart';
 import 'package:gruve_app/features/auth/api/controllers/edit_profile_controller.dart';
 import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import '../../../../core/assets.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Account Screen with professional widget separation
 class AccountScreen extends StatefulWidget {
@@ -56,33 +57,33 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _fetchProfileData() async {
-    debugPrint('🔄 [AccountScreen] Fetching profile data...');
+    AppLogger.d('🔄 [AccountScreen] Fetching profile data...');
     await _controller.fetchProfile();
 
     if (!mounted) return;
 
     if (_controller.profileResponse != null) {
       _populateFormFields();
-      debugPrint('✅ [AccountScreen] Profile data loaded successfully');
+      AppLogger.d('✅ [AccountScreen] Profile data loaded successfully');
     } else {
-      debugPrint('❌ [AccountScreen] Failed to load profile data');
+      AppLogger.d('❌ [AccountScreen] Failed to load profile data');
       setState(() {});
     }
   }
 
   void _populateFormFields() {
     if (_controller.profileResponse == null) {
-      debugPrint('⚠️ [AccountScreen] Profile response is null');
+      AppLogger.d('⚠️ [AccountScreen] Profile response is null');
       return;
     }
 
-    debugPrint('📝 [AccountScreen] Populating form fields with profile data');
-    debugPrint('👤 Full Name: ${_controller.fullName}');
-    debugPrint('📧 Email: ${_controller.email}');
-    debugPrint('📱 Phone: ${_controller.phone}');
-    debugPrint('👥 Username: ${_controller.username}');
-    debugPrint('⚧️ Gender: ${_controller.gender}');
-    debugPrint('📝 Bio: ${_controller.bio}');
+    AppLogger.d('📝 [AccountScreen] Populating form fields with profile data');
+    AppLogger.d('👤 Full Name: ${_controller.fullName}');
+    AppLogger.d('📧 Email: ${_controller.email}');
+    AppLogger.d('📱 Phone: ${_controller.phone}');
+    AppLogger.d('👥 Username: ${_controller.username}');
+    AppLogger.d('⚧️ Gender: ${_controller.gender}');
+    AppLogger.d('📝 Bio: ${_controller.bio}');
 
     _nameController.text = _controller.fullName;
     _usernameController.text = _controller.username;

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
-/// Skeleton loader for message avatar list with shimmer effect
-class MessageAvatarSkeleton extends StatelessWidget {
+/// Shimmer loader for message avatar list
+class MessageAvatarShimmer extends StatelessWidget {
   final int avatarCount;
 
-  const MessageAvatarSkeleton({super.key, this.avatarCount = 6});
+  const MessageAvatarShimmer({super.key, this.avatarCount = 6});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,6 @@ class MessageAvatarSkeleton extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Avatar circle with shimmer
         Container(
           width: 60,
           height: 60,
@@ -43,7 +42,6 @@ class MessageAvatarSkeleton extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        // Username text placeholder
         SizedBox(
           width: 60,
           child: Container(
@@ -60,8 +58,8 @@ class MessageAvatarSkeleton extends StatelessWidget {
 }
 
 /// Small skeleton loader for pagination (shown at end of list)
-class MessageAvatarPaginationSkeleton extends StatelessWidget {
-  const MessageAvatarPaginationSkeleton({super.key});
+class MessageAvatarPaginationShimmer extends StatelessWidget {
+  const MessageAvatarPaginationShimmer({super.key});
 
   @override
   Widget build(BuildContext context) {

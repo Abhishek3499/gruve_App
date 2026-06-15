@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/features/highlights/api/highlight_service.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class HighlightController extends ChangeNotifier {
   HighlightController({
@@ -19,15 +21,25 @@ class HighlightController extends ChangeNotifier {
 
   List<HighlightModel> highlights = <HighlightModel>[];
   int totalCount = 0;
+  CancelToken? _cancelToken;
+
+  CancelToken _getCancelToken() {
+    _cancelToken ??= CancelToken();
+    return _cancelToken!;
+  }
+
+  void cancelActiveRequests() {
+    _cancelToken?.cancel('Highlights view disposed');
+    _cancelToken = null;
+  }
 
   void attachStateManager(HighlightStateManager stateManager) {
     _stateManager = stateManager;
   }
 
   void _log(String message) {
-    if (kDebugMode) {
-      debugPrint(message);
-    }
+    AppLogger.d(message);
+    
   }
 
   Future<void> reset() async {
@@ -48,7 +60,7 @@ class HighlightController extends ChangeNotifier {
       message = '';
       notifyListeners();
 
-      final response = await _service.fetchMyHighlights();
+      final response = await _service.fetchMyHighlights(cancelToken: _getCancelToken());
 
       _log('[HighlightController] API success: ${response.success}');
       _log(
@@ -75,6 +87,10 @@ class HighlightController extends ChangeNotifier {
         }
       }
     } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('[HighlightController] fetchMyHighlights cancelled');
+        return;
+      }
       _log('[HighlightController] error: $e');
       message = 'Something went wrong';
       isSuccess = false;
@@ -98,7 +114,7 @@ class HighlightController extends ChangeNotifier {
         return null;
       }
 
-      final response = await _service.fetchHighlightStories(highlightId);
+      final response = await _service.fetchHighlightStories(highlightId, cancelToken: _getCancelToken());
 
       if (response.success) {
         _log(
@@ -111,8 +127,47 @@ class HighlightController extends ChangeNotifier {
         return null;
       }
     } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('[HighlightController] fetchHighlightStories cancelled');
+        return null;
+      }
       _log('[HighlightController] error: $e');
       return null;
     }
+  }
+
+  Future<bool> deleteHighlight(String highlightId) async {
+    try {
+      _log('[HighlightController] deleteHighlight start: $highlightId');
+      isLoading = true;
+      isSuccess = false;
+      message = '';
+      notifyListeners();
+
+      // Simulated local deletion delay
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      final updated = highlights.where((h) => h.id != highlightId).toList();
+      highlights = List<HighlightModel>.unmodifiable(updated);
+      totalCount = highlights.length;
+
+      _log('[HighlightController] deleteHighlight simulated local success');
+      isSuccess = true;
+      message = 'Highlight deleted successfully';
+      return true;
+    } catch (e) {
+      _log('[HighlightController] delete error: $e');
+      message = 'Failed to delete highlight';
+      isSuccess = false;
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+  @override
+  void dispose() {
+    cancelActiveRequests();
+    super.dispose();
   }
 }

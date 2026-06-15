@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/routing/app_route_names.dart';
@@ -11,11 +10,11 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_selector_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 void _log(String message) {
-  if (kDebugMode) {
-    debugPrint(message);
-  }
+  AppLogger.d(message);
+  
 }
 
 void showInstagramHighlightSheet(BuildContext context) {

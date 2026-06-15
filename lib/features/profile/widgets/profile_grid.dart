@@ -93,8 +93,9 @@ class ProfileGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final posts = _postsForTab();
     final tabIsLoading = controller.isLoadingTab(selectedTab);
+    final totalPostsCount = controller.statsNotifier.value.videosCount;
 
-    if (posts.isEmpty && tabIsLoading) {
+    if (posts.isEmpty && tabIsLoading && totalPostsCount > 0) {
       return _buildGridLoadingPlaceholders();
     }
 
@@ -288,6 +289,7 @@ class ProfileGrid extends StatelessWidget {
                 allPosts: allPosts,
                 initialIndex: index,
                 isOwnProfile: true,
+                profileController: controller,
               );
             },
             transitionsBuilder:

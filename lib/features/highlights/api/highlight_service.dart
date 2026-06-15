@@ -1,27 +1,22 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class HighlightService {
   late final Dio _dio;
 
   HighlightService() {
-    _dio = AppDio.create(
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 45),
-      sendTimeout: const Duration(seconds: 20),
-    );
+    _dio = AppDio.getInstance();
   }
 
   void _log(String message) {
-    if (kDebugMode) {
-      debugPrint(message);
-    }
+    AppLogger.d(message);
+    
   }
 
-  Future<HighlightsResponse> fetchMyHighlights() async {
+  Future<HighlightsResponse> fetchMyHighlights({CancelToken? cancelToken}) async {
     try {
       _log('[HighlightService] fetchMyHighlights called');
 
@@ -33,6 +28,7 @@ class HighlightService {
 
       final response = await _dio.get(
         "highlights/mine/",
+        cancelToken: cancelToken,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
@@ -40,6 +36,14 @@ class HighlightService {
 
       return HighlightsResponse.fromJson(response.data);
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [HighlightService] fetchMyHighlights cancelled');
+        return HighlightsResponse(
+          code: 200,
+          success: false,
+          data: HighlightsData(highlights: []),
+        );
+      }
       _log('[HighlightService] Dio error status: ${e.response?.statusCode}');
       rethrow;
     } catch (e) {
@@ -48,7 +52,7 @@ class HighlightService {
     }
   }
 
-  Future<HighlightResponse> fetchHighlightStories(String highlightId) async {
+  Future<HighlightResponse> fetchHighlightStories(String highlightId, {CancelToken? cancelToken}) async {
     try {
       _log('[HighlightService] fetchHighlightStories called');
       _log('[HighlightService] highlightId: $highlightId');
@@ -61,6 +65,7 @@ class HighlightService {
 
       final response = await _dio.get(
         "highlights/$highlightId/stories/",
+        cancelToken: cancelToken,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
@@ -74,6 +79,21 @@ class HighlightService {
 
       return HighlightResponse.fromJson(response.data);
     } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [HighlightService] fetchHighlightStories cancelled');
+        return HighlightResponse(
+          code: 200,
+          success: false,
+          message: 'Cancelled',
+          data: HighlightModel(
+            id: '',
+            title: '',
+            storiesCount: 0,
+            coverMediaUrl: '',
+            createdAt: '',
+          ),
+        );
+      }
       _log('[HighlightService] Dio error status: ${e.response?.statusCode}');
       _log('[HighlightService] endpoint: /highlights/$highlightId/stories/');
       rethrow;

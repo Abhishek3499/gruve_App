@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EditProfileResponse {
   final int code;
@@ -14,29 +14,29 @@ class EditProfileResponse {
     required this.data,
     this.error,
   }) {
-    debugPrint("🏗️ [EditProfileResponse] Creating response object...");
-    debugPrint(
+    AppLogger.d("🏗️ [EditProfileResponse] Creating response object...");
+    AppLogger.d(
       "📊 [EditProfileResponse] Data: code=$code, success=$success, message='$message', error=$error",
     );
   }
 
   factory EditProfileResponse.fromJson(Map<String, dynamic> json) {
-    debugPrint("🔄 [EditProfileResponse] Parsing from JSON...");
-    debugPrint("📄 [EditProfileResponse] Raw JSON: $json");
+    AppLogger.d("🔄 [EditProfileResponse] Parsing from JSON...");
+    AppLogger.d("📄 [EditProfileResponse] Raw JSON: $json");
 
     final code = json['code'] ?? 200;
     final success = json['success'] ?? false;
     final message = json['message'] ?? '';
     final error = json['error'];
 
-    debugPrint(
+    AppLogger.d(
       "📝 [EditProfileResponse] Parsed fields: code=$code, success=$success, message='$message', error=$error",
     );
 
-    debugPrint("🔧 [EditProfileResponse] Parsing nested data object...");
+    AppLogger.d("🔧 [EditProfileResponse] Parsing nested data object...");
     final data = EditProfileData.fromJson(json['data'] ?? {});
 
-    debugPrint("✅ [EditProfileResponse] JSON parsing completed successfully");
+    AppLogger.d("✅ [EditProfileResponse] JSON parsing completed successfully");
 
     return EditProfileResponse(
       code: code,
@@ -48,7 +48,7 @@ class EditProfileResponse {
   }
 
   Map<String, dynamic> toJson() {
-    debugPrint("🔄 [EditProfileResponse] Converting to JSON...");
+    AppLogger.d("🔄 [EditProfileResponse] Converting to JSON...");
 
     final json = {
       'code': code,
@@ -58,7 +58,7 @@ class EditProfileResponse {
       'error': error,
     };
 
-    debugPrint("✅ [EditProfileResponse] JSON conversion completed: $json");
+    AppLogger.d("✅ [EditProfileResponse] JSON conversion completed: $json");
     return json;
   }
 
@@ -88,15 +88,15 @@ class EditProfileData {
     required this.gender,
     this.bio,
   }) {
-    debugPrint("🏗️ [EditProfileData] Creating data object...");
-    debugPrint(
+    AppLogger.d("🏗️ [EditProfileData] Creating data object...");
+    AppLogger.d(
       "👤 [EditProfileData] User data: userId=$userId, username=$username, fullName=$fullName, email=$email",
     );
   }
 
   factory EditProfileData.fromJson(Map<String, dynamic> json) {
-    debugPrint("🔄 [EditProfileData] Parsing from JSON...");
-    debugPrint("📄 [EditProfileData] Raw JSON: $json");
+    AppLogger.d("🔄 [EditProfileData] Parsing from JSON...");
+    AppLogger.d("📄 [EditProfileData] Raw JSON: $json");
 
     final userId = json['user_id'];
     final username = json['username'] ?? '';
@@ -107,17 +107,17 @@ class EditProfileData {
     final gender = json['gender'] ?? '';
     final bio = json['bio'];
 
-    debugPrint("📝 [EditProfileData] Parsed fields:");
-    debugPrint("  🆔 userId: $userId");
-    debugPrint("  👤 username: '$username'");
-    debugPrint("  🖼️ profile_picture: '$profilePicture'");
-    debugPrint("  🏷️ fullName: '$fullName'");
-    debugPrint("  📞 phone: '$phone'");
-    debugPrint("  📧 email: '$email'");
-    debugPrint("  ⚧️ gender: '$gender'");
-    debugPrint("  📝 bio: '$bio'");
+    AppLogger.d("📝 [EditProfileData] Parsed fields:");
+    AppLogger.d("  🆔 userId: $userId");
+    AppLogger.d("  👤 username: '$username'");
+    AppLogger.d("  🖼️ profile_picture: '$profilePicture'");
+    AppLogger.d("  🏷️ fullName: '$fullName'");
+    AppLogger.d("  📞 phone: '$phone'");
+    AppLogger.d("  📧 email: '$email'");
+    AppLogger.d("  ⚧️ gender: '$gender'");
+    AppLogger.d("  📝 bio: '$bio'");
 
-    debugPrint("✅ [EditProfileData] JSON parsing completed successfully");
+    AppLogger.d("✅ [EditProfileData] JSON parsing completed successfully");
 
     return EditProfileData(
       userId: userId,
@@ -132,7 +132,7 @@ class EditProfileData {
   }
 
   Map<String, dynamic> toJson() {
-    debugPrint("🔄 [EditProfileData] Converting to JSON...");
+    AppLogger.d("🔄 [EditProfileData] Converting to JSON...");
 
     final json = {
       'user_id': userId,
@@ -145,7 +145,7 @@ class EditProfileData {
       'bio': bio,
     };
 
-    debugPrint("✅ [EditProfileData] JSON conversion completed: $json");
+    AppLogger.d("✅ [EditProfileData] JSON conversion completed: $json");
     return json;
   }
 

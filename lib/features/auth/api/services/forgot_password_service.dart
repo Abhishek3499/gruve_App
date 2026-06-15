@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ForgotPasswordService {
-  final Dio _dio = AppDio.create();
+  final Dio _dio = AppDio.getInstance();
   Future<String> sendResetLink({required String identifier}) async {
     try {
       const endpoint = 'auth/forgot-password/';
@@ -38,7 +38,7 @@ class ForgotPasswordService {
 
       throw Exception(AuthApiException.extractMessage(e));
     } catch (e) {
-      debugPrint("Forgot password failed: $e");
+      AppLogger.d("Forgot password failed: $e");
       rethrow;
     }
   }

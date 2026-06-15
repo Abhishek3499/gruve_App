@@ -12,14 +12,15 @@ import '../../features/auth/token_storage.dart';
 import '../config/environment_config.dart';
 import '../debug/debug_logger.dart';
 import 'socket_logger.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 // 🚀 PRODUCTION: Connection tracking
 final String _connectionId = DateTime.now().millisecondsSinceEpoch.toString();
 
 void _socketPrint(String message, {Object? data}) {
-  debugPrint('[SOCKET] $message');
+  AppLogger.d('[SOCKET] $message');
   if (data != null) {
-    debugPrint('[SOCKET DATA] $data');
+    AppLogger.d('[SOCKET DATA] $data');
   }
 }
 
@@ -341,7 +342,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
       });
 
       // 🔥 DEBUG: Print active WebSocket URL before connection
-      debugPrint("[SOCKET] ACTIVE WS URL => ${_redactSocketUri(socketUri)}");
+      AppLogger.d("[SOCKET] ACTIVE WS URL => ${_redactSocketUri(socketUri)}");
 
       //  PRODUCTION: Connect with proper authentication
       try {
@@ -669,11 +670,11 @@ class SocketReconnectManager with WidgetsBindingObserver {
       data: stateChangeData,
     );
 
-    debugPrint(
+    AppLogger.d(
       '🔄 [SOCKET DEBUG] State changed: ${oldState.name} → ${newState.name}',
     );
-    debugPrint('📊 [SOCKET DEBUG] Reconnect attempts: $_reconnectAttempts');
-    debugPrint('🔗 [SOCKET DEBUG] Connection ID: $_connectionId');
+    AppLogger.d('📊 [SOCKET DEBUG] Reconnect attempts: $_reconnectAttempts');
+    AppLogger.d('🔗 [SOCKET DEBUG] Connection ID: $_connectionId');
 
     if (newState == SocketState.connected) {
       _reconnectAttempts = 0;
@@ -685,7 +686,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
         'WebSocket connection established',
       );
       _socketPrint('connection established successfully');
-      debugPrint('✅ [SOCKET DEBUG] Connection established successfully');
+      AppLogger.d('✅ [SOCKET DEBUG] Connection established successfully');
     }
   }
 

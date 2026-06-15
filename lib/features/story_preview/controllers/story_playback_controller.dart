@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Global controller for managing story playback state
 /// Handles pause/resume logic across the entire app
@@ -19,9 +20,8 @@ class StoryPlaybackController extends ChangeNotifier {
 
   /// Initialize the controller
   void initialize() {
-    if (kDebugMode) {
-      debugPrint("🎬 [StoryPlaybackController] Initialized");
-    }
+    AppLogger.d("🎬 [StoryPlaybackController] Initialized");
+    
     _isInitialized = true;
     _isPaused = false;
   }
@@ -29,68 +29,61 @@ class StoryPlaybackController extends ChangeNotifier {
   /// Pause story playback
   void pauseStory({String? reason}) {
     if (!_isInitialized) {
-      if (kDebugMode) {
-        debugPrint(
+      AppLogger.d(
           "⚠️ [StoryPlaybackController] Cannot pause - not initialized",
         );
-      }
+      
       return;
     }
 
     if (_isPaused) {
-      if (kDebugMode) {
-        debugPrint(
+      AppLogger.d(
           "⚠️ [StoryPlaybackController] Already paused - ignoring duplicate call",
         );
-      }
+      
       return;
     }
 
     _isPaused = true;
     notifyListeners();
 
-    if (kDebugMode) {
-      debugPrint(
+    AppLogger.d(
         "⏸️ [StoryPlaybackController] Story Paused${reason != null ? ' - $reason' : ''}",
       );
-    }
+    
   }
 
   /// Resume story playback
   void resumeStory({String? reason}) {
     if (!_isInitialized) {
-      if (kDebugMode) {
-        debugPrint(
+      AppLogger.d(
           "⚠️ [StoryPlaybackController] Cannot resume - not initialized",
         );
-      }
+      
       return;
     }
 
     if (!_isPaused) {
-      if (kDebugMode) {
-        debugPrint(
+      AppLogger.d(
           "⚠️ [StoryPlaybackController] Already playing - ignoring duplicate call",
         );
-      }
+      
       return;
     }
 
     _isPaused = false;
     notifyListeners();
 
-    if (kDebugMode) {
-      debugPrint(
+    AppLogger.d(
         "▶️ [StoryPlaybackController] Story Resumed${reason != null ? ' - $reason' : ''}",
       );
-    }
+    
   }
 
   /// Reset controller state
   void reset() {
-    if (kDebugMode) {
-      debugPrint("🔄 [StoryPlaybackController] Resetting controller");
-    }
+    AppLogger.d("🔄 [StoryPlaybackController] Resetting controller");
+    
     _isPaused = false;
     _isInitialized = false;
     notifyListeners();

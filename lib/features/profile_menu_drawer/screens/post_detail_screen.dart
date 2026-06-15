@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -56,7 +57,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             }
           })
           .catchError((e) {
-            debugPrint('❌ Video init error: $e');
+            AppLogger.d('❌ Video init error: $e');
           });
     }
   }

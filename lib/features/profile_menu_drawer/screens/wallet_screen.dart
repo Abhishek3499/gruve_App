@@ -4,6 +4,7 @@ import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_center_car
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_diamond_stats_card.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_footer.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_header.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -29,7 +30,7 @@ class WalletScreen extends StatelessWidget {
                     title: "Cheers",
                     buttonText: "Add cheers",
                     onTap: () {
-                      debugPrint("Add Cheers button clicked");
+                      AppLogger.d("Add Cheers button clicked");
                     },
                   ),
                   const SizedBox(height: 20),
@@ -37,7 +38,7 @@ class WalletScreen extends StatelessWidget {
                     title: "Mints",
                     buttonText: "Redeem",
                     onTap: () {
-                      debugPrint("Add mints button clicked");
+                      AppLogger.d("Add mints button clicked");
                     },
                   ),
                 ],

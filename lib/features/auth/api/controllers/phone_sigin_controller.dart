@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 
 import '../models/phone_login_model.dart';
 import '../services/phone_login_services.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PhoneSignInController {
   final PhoneSiginServices _service = PhoneSiginServices();
@@ -19,7 +19,7 @@ class PhoneSignInController {
       final res = await _service.signIn(phoneNumber: phoneNumber);
       response = res;
 
-      debugPrint('Phone login success=${res.success}');
+      AppLogger.d('Phone login success=${res.success}');
       if (!res.success) {
         errorMessage = AuthApiException.userFacingMessage(
           res.message,
@@ -31,7 +31,7 @@ class PhoneSignInController {
         e,
         fallback: 'Please enter a valid phone number.',
       );
-      debugPrint('Phone login controller error: $e');
+      AppLogger.d('Phone login controller error: $e');
     } finally {
       isLoading = false;
     }

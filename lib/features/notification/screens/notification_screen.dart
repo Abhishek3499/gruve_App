@@ -4,6 +4,8 @@ import 'package:gruve_app/core/widgets/shimmer/notification_shimmer.dart';
 import 'package:gruve_app/features/notification/api/models/notification_model.dart';
 import 'package:gruve_app/features/notification/providers/notification_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';
 
 import '../widgets/header.dart';
 import '../widgets/follow_tile.dart';
@@ -26,7 +28,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<NotificationProvider>();
       provider.fetchInitialNotifications(showLoading: true);
-      provider.fetchUnreadCount();
     });
   }
 
@@ -34,6 +35,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    context.read<NotificationProvider>().cancelActiveRequests();
     super.dispose();
   }
 
@@ -58,8 +60,57 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotificationTile(AppNotification n) {
+  Future<void> _handleNotificationTap(AppNotification n) async {
     final provider = context.read<NotificationProvider>();
+    
+    // Always mark notification as read
+    if (!n.isRead) {
+      provider.markNotificationAsRead(n.id);
+    }
+    
+    // If it has a post_id, fetch the post and open it!
+    if (n.postId != null && n.postId!.isNotEmpty) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+      
+      try {
+        final postService = PostService();
+        final post = await postService.fetchPostById(n.postId!);
+        
+        if (mounted) {
+          Navigator.pop(context); // pop loading dialog
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfilePostDetailScreen(
+                post: post,
+                allPosts: [post],
+                initialIndex: 0,
+                isOwnProfile: false,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // pop loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Failed to load post: $e"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildNotificationTile(AppNotification n) {
     final actorUsername = n.actor?.username ?? 'Someone';
     final profilePic = n.actor?.profilePicture ?? '';
     final timeDisplay = NotificationProvider.formatTime(n.createdAt);
@@ -71,7 +122,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         profileImage: profilePic,
         userId: n.actor?.id ?? '',
         isRead: n.isRead,
-        onTap: () => provider.markNotificationAsRead(n.id),
+        onTap: () => _handleNotificationTap(n),
       );
     } else {
       String msg = 'interacted with your post.';
@@ -81,6 +132,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
         msg = 'commented on your video.';
       } else if (n.type == 'comment_mention') {
         msg = 'mentioned you in a comment.';
+      } else if (n.type == 'post_tag' || n.type == 'tag') {
+        msg = 'tagged you in a post.';
       }
       return NotificationTile(
         username: actorUsername,
@@ -89,7 +142,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         profileImage: profilePic,
         postImage: n.postImage,
         isRead: n.isRead,
-        onTap: () => provider.markNotificationAsRead(n.id),
+        onTap: () => _handleNotificationTap(n),
       );
     }
   }
@@ -113,10 +166,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             backgroundColor: AppColors.bottomBlack,
             onRefresh: () async {
               final provider = context.read<NotificationProvider>();
-              await Future.wait([
-                provider.fetchInitialNotifications(showLoading: false),
-                provider.fetchUnreadCount(),
-              ]);
+              await provider.fetchInitialNotifications(showLoading: false);
             },
             child: Consumer<NotificationProvider>(
               builder: (context, provider, child) {

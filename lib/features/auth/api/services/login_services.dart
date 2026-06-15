@@ -1,14 +1,14 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 
 import '../models/login_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EmailSignInService {
-  final Dio _dio = AppDio.create();
+  final Dio _dio = AppDio.getInstance();
 
   Future<EmailSignInResponse> signIn({
     required String identifier,
@@ -46,7 +46,7 @@ class EmailSignInService {
         fallback: 'Please enter the correct password.',
       );
     } catch (e) {
-      debugPrint("Email login failed: $e");
+      AppLogger.d("Email login failed: $e");
       rethrow;
     }
   }

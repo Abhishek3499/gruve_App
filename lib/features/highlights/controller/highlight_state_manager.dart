@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Global state manager for tracking which stories are added to highlights
 /// This is needed because the API doesn't provide stories data in highlights response
@@ -23,7 +23,7 @@ class HighlightStateManager extends ChangeNotifier {
       _highlightedStoryIds.add(storyId);
       await _saveToPreferences();
       notifyListeners();
-      debugPrint(
+      AppLogger.d(
         '[HighlightStateManager] Story $storyId marked as highlighted',
       );
     }
@@ -39,7 +39,7 @@ class HighlightStateManager extends ChangeNotifier {
     _highlightedStoryIds.remove(storyId);
     await _saveToPreferences();
     notifyListeners();
-    debugPrint(
+    AppLogger.d(
       '[HighlightStateManager] Story $storyId removed from highlighted list',
     );
   }
@@ -49,7 +49,7 @@ class HighlightStateManager extends ChangeNotifier {
     _highlightedStoryIds.clear();
     await _saveToPreferences();
     notifyListeners();
-    debugPrint('[HighlightStateManager] All highlighted stories cleared');
+    AppLogger.d('[HighlightStateManager] All highlighted stories cleared');
   }
 
   /// Save highlighted story IDs to SharedPreferences
@@ -58,11 +58,11 @@ class HighlightStateManager extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final storyIdsList = _highlightedStoryIds.toList();
       await prefs.setStringList(_highlightedStoriesKey, storyIdsList);
-      debugPrint(
+      AppLogger.d(
         '[HighlightStateManager] Saved ${storyIdsList.length} highlighted stories to preferences',
       );
     } catch (e) {
-      debugPrint('[HighlightStateManager] Error saving to preferences: $e');
+      AppLogger.d('[HighlightStateManager] Error saving to preferences: $e');
     }
   }
 
@@ -75,11 +75,11 @@ class HighlightStateManager extends ChangeNotifier {
         ..clear()
         ..addAll(storyIdsList);
       notifyListeners();
-      debugPrint(
+      AppLogger.d(
         '[HighlightStateManager] Loaded ${storyIdsList.length} highlighted stories from preferences',
       );
     } catch (e) {
-      debugPrint('[HighlightStateManager] Error loading from preferences: $e');
+      AppLogger.d('[HighlightStateManager] Error loading from preferences: $e');
     }
   }
 }

@@ -9,6 +9,7 @@ import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_viewer_topbar.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class StoryViewScreen extends StatefulWidget {
   final String? userId;
@@ -56,7 +57,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   void initState() {
     super.initState();
 
-    debugPrint(
+    AppLogger.d(
       '[StoryViewScreen] initState - isOwnProfile: ${widget.isOwnProfile}',
     );
 
@@ -106,7 +107,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
         : DateTime.now();
 
     if (storyId == null || storyId.isEmpty) {
-      debugPrint(
+      AppLogger.d(
         '[StoryState] Missing story id for media=$mediaPath at index=$index',
       );
     }
@@ -151,7 +152,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     final storyItem = _storyItemForIndex(currentIndex);
 
     if (storyItem == null) {
-      debugPrint(
+      AppLogger.d(
         '[StoryState] Unable to set currentStory: index=$currentIndex, '
         'stories=${widget.mediaPaths.length}, reason=$reason',
       );
@@ -159,11 +160,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     }
 
     _storyStateController.setCurrentStory(storyItem);
-    debugPrint(
+    AppLogger.d(
       '[Playback] story changed: index=$currentIndex, '
       'id=${storyItem.id.isEmpty ? 'MISSING' : storyItem.id}, reason=$reason',
     );
-    debugPrint('[StoryState] current story media: ${storyItem.mediaUrl}');
+    AppLogger.d('[StoryState] current story media: ${storyItem.mediaUrl}');
   }
 
   void _onPlaybackStateChanged() {
@@ -230,7 +231,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     if (_isDisposed) return;
 
     if (_isImageLoading && !_isVideo) {
-      debugPrint('[Playback] Cannot navigate - image still loading');
+      AppLogger.d('[Playback] Cannot navigate - image still loading');
       return;
     }
 
@@ -249,7 +250,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     if (_isDisposed) return;
 
     if (_isImageLoading && !_isVideo) {
-      debugPrint('[Playback] Cannot navigate - image still loading');
+      AppLogger.d('[Playback] Cannot navigate - image still loading');
       return;
     }
 
@@ -262,7 +263,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
   void _handleTap(TapUpDetails details) {
     if (_isImageLoading && !_isVideo) {
-      debugPrint('[Playback] Cannot navigate - image still loading');
+      AppLogger.d('[Playback] Cannot navigate - image still loading');
       return;
     }
 
@@ -295,7 +296,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
   void _handleSwipe(DragEndDetails details) {
     if (_isImageLoading && !_isVideo) {
-      debugPrint('[Playback] Cannot navigate - image still loading');
+      AppLogger.d('[Playback] Cannot navigate - image still loading');
       return;
     }
 
@@ -432,11 +433,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
       body: GestureDetector(
         onTapUp: _handleTap,
         onLongPressStart: (details) {
-          debugPrint('[Playback] Long press detected');
+          AppLogger.d('[Playback] Long press detected');
           _pauseStory();
         },
         onLongPressEnd: (details) {
-          debugPrint('[Playback] Long press released');
+          AppLogger.d('[Playback] Long press released');
           _resumeStory();
         },
         onHorizontalDragEnd: _handleSwipe,

@@ -18,6 +18,7 @@ import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:provider/provider.dart';
 import '../validators/signup_validator.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class OtpScreen extends StatefulWidget {
   // final AuthFlow authFlow;
@@ -146,15 +147,15 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     _focusNodes.first.requestFocus();
 
-    debugPrint("🔥 OTP SCREEN INIT");
+    AppLogger.d("🔥 OTP SCREEN INIT");
 
-    debugPrint("👉 isForgot: ${widget.isForgot}");
+    AppLogger.d("👉 isForgot: ${widget.isForgot}");
 
-    debugPrint("👉 isLogin: ${widget.isLogin}");
+    AppLogger.d("👉 isLogin: ${widget.isLogin}");
 
-    debugPrint("👉 type: ${widget.type}");
+    AppLogger.d("👉 type: ${widget.type}");
 
-    debugPrint("👉 identifier: ${widget.identifier}");
+    AppLogger.d("👉 identifier: ${widget.identifier}");
   }
 
   @override
@@ -277,7 +278,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     final otp = _controllers.map((e) => e.text).join();
 
-    debugPrint("OTP entered");
+    AppLogger.d("OTP entered");
 
     final otpError = SignupValidator.validateOtpRealTime(otp);
     if (otpError != null) {
@@ -298,13 +299,13 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     authUi.setLoading(AuthLoadingKey.otp, true);
 
-    debugPrint("🟡 BEFORE API CALL");
+    AppLogger.d("🟡 BEFORE API CALL");
 
-    debugPrint("👉 isForgot: ${widget.isForgot}");
+    AppLogger.d("👉 isForgot: ${widget.isForgot}");
 
-    debugPrint("👉 isLogin: ${widget.isLogin}");
+    AppLogger.d("👉 isLogin: ${widget.isLogin}");
 
-    debugPrint("📡 CALLING CONTROLLER...");
+    AppLogger.d("📡 CALLING CONTROLLER...");
 
     try {
       await controller.verifyOtp(
@@ -345,27 +346,27 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
         if (widget.onVerifiedWithToken != null) {
           widget.onVerifiedWithToken!(token);
         } else {
-          debugPrint("⚠️ onVerifiedWithToken is null");
+          AppLogger.d("⚠️ onVerifiedWithToken is null");
         }
       } else {
         // 🔌 CONNECT WEBSOCKET FOR LOGIN/SIGNUP SUCCESS
         final accessToken = controller.verifyOtpResponse?.data?.accessToken;
         if (accessToken != null && accessToken.isNotEmpty) {
-          debugPrint("OTP success: connecting websocket after verification");
+          AppLogger.d("OTP success: connecting websocket after verification");
           SocketService().connect(accessToken);
-          debugPrint("✅ [OTP Success] ✅ WebSocket connection initiated");
+          AppLogger.d("✅ [OTP Success] ✅ WebSocket connection initiated");
         } else {
-          debugPrint(
+          AppLogger.d(
             "⚠️ [OTP Success] ⚠️ No access token available for websocket connection",
           );
         }
 
         if (widget.onVerified != null) {
-          debugPrint("🎯 [OTP Success] 🎯 Calling onVerified callback");
+          AppLogger.d("🎯 [OTP Success] 🎯 Calling onVerified callback");
           widget.onVerified!();
-          debugPrint("✅ [OTP Success] ✅ onVerified callback executed");
+          AppLogger.d("✅ [OTP Success] ✅ onVerified callback executed");
         } else {
-          debugPrint("⚠️ [OTP Success] ⚠️ onVerified is null");
+          AppLogger.d("⚠️ [OTP Success] ⚠️ onVerified is null");
         }
       }
 

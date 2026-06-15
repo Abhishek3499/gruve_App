@@ -1,20 +1,16 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart' show TokenStorage;
 
 import '../models/edit_profile_request.dart';
 import '../models/edit_profile_response.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EditProfileService {
   EditProfileService()
-    : dio = AppDio.create(
-        connectTimeout: const Duration(minutes: 5),
-        receiveTimeout: const Duration(minutes: 5),
-        sendTimeout: const Duration(minutes: 5),
-      );
+    : dio = AppDio.getInstance();
 
   final Dio dio;
 
@@ -60,7 +56,7 @@ class EditProfileService {
   }
 
   Future<dynamic> _buildUpdatePayload(EditProfileRequest request) async {
-    debugPrint(
+    AppLogger.d(
       '[EditProfileService] Always using FormData for profile update...',
     );
     final baseData = request.toJson();
@@ -86,19 +82,19 @@ class EditProfileService {
             ),
           ),
         );
-        debugPrint('[EditProfileService] Added local file: ${file.path}');
+        AppLogger.d('[EditProfileService] Added local file: ${file.path}');
       } else {
         // Remote image URL, add as string field
         // Remote images handled by FormData.fromMap(baseData)
-        debugPrint(
+        AppLogger.d(
           '[EditProfileService] Added remote image URL: $profilePicture',
         );
       }
     } else {
-      debugPrint('[EditProfileService] No profile_picture provided, omitted');
+      AppLogger.d('[EditProfileService] No profile_picture provided, omitted');
     }
 
-    debugPrint(
+    AppLogger.d(
       '[EditProfileService] FormData: ${formData.fields.length} fields, ${formData.files.length} files',
     );
     return formData;
@@ -108,8 +104,8 @@ class EditProfileService {
     try {
       final token = await TokenStorage.getAccessToken();
 
-      debugPrint('=== FETCH PROFILE REQUEST ===');
-      debugPrint(
+      AppLogger.d('=== FETCH PROFILE REQUEST ===');
+      AppLogger.d(
         'TOKEN: ${token == null || token.isEmpty ? "missing" : "present"}',
       );
 
@@ -120,10 +116,10 @@ class EditProfileService {
       const endpoint = 'user/edit_profile';
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
 
-      debugPrint('=== FETCH PROFILE REQUEST DETAILS ===');
-      debugPrint('URL: ${dio.options.baseUrl}$endpoint');
-      debugPrint('METHOD: GET');
-      debugPrint(
+      AppLogger.d('=== FETCH PROFILE REQUEST DETAILS ===');
+      AppLogger.d('URL: ${dio.options.baseUrl}$endpoint');
+      AppLogger.d('METHOD: GET');
+      AppLogger.d(
         "HEADERS: authorization=${headers.containsKey('Authorization')}",
       );
 
@@ -132,9 +128,9 @@ class EditProfileService {
         options: Options(headers: headers),
       );
 
-      debugPrint('=== FETCH PROFILE RESPONSE ===');
-      debugPrint('STATUS CODE: ${response.statusCode}');
-      debugPrint('RESPONSE DATA TYPE: ${response.data.runtimeType}');
+      AppLogger.d('=== FETCH PROFILE RESPONSE ===');
+      AppLogger.d('STATUS CODE: ${response.statusCode}');
+      AppLogger.d('RESPONSE DATA TYPE: ${response.data.runtimeType}');
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = _asJsonMap(response.data);
@@ -143,10 +139,10 @@ class EditProfileService {
 
       throw Exception('Failed to fetch profile: ${response.statusCode}');
     } on DioException catch (e) {
-      debugPrint('=== FETCH PROFILE DIO ERROR ===');
-      debugPrint('ERROR TYPE: ${e.type}');
-      debugPrint('ERROR MESSAGE: ${e.message}');
-      debugPrint('STATUS CODE: ${e.response?.statusCode}');
+      AppLogger.d('=== FETCH PROFILE DIO ERROR ===');
+      AppLogger.d('ERROR TYPE: ${e.type}');
+      AppLogger.d('ERROR MESSAGE: ${e.message}');
+      AppLogger.d('STATUS CODE: ${e.response?.statusCode}');
 
       String errorMessage = 'Network error occurred';
       final backendMessage = _extractErrorMessage(e.response?.data);
@@ -172,8 +168,8 @@ class EditProfileService {
 
       throw Exception(errorMessage);
     } catch (e) {
-      debugPrint('=== FETCH PROFILE GENERAL ERROR ===');
-      debugPrint('ERROR: $e');
+      AppLogger.d('=== FETCH PROFILE GENERAL ERROR ===');
+      AppLogger.d('ERROR: $e');
       throw Exception('Failed to fetch profile: $e');
     }
   }
@@ -181,22 +177,22 @@ class EditProfileService {
   Future<EditProfileResponse> updateProfile({
     required EditProfileRequest request,
   }) async {
-    debugPrint('[EditProfileService] Starting updateProfile...');
-    debugPrint(
+    AppLogger.d('[EditProfileService] Starting updateProfile...');
+    AppLogger.d(
       '[EditProfileService] Service initialized with base URL: ${dio.options.baseUrl}',
     );
 
     try {
-      debugPrint('[EditProfileService] Getting access token...');
+      AppLogger.d('[EditProfileService] Getting access token...');
       final token = await TokenStorage.getAccessToken();
       final tokenPreview = token == null || token.isEmpty
           ? 'null_or_empty'
           : '${token.substring(0, token.length > 12 ? 12 : token.length)}...';
 
-      debugPrint('[EditProfileService] Token status: $tokenPreview');
+      AppLogger.d('[EditProfileService] Token status: $tokenPreview');
 
       if (token == null || token.isEmpty) {
-        debugPrint('[EditProfileService] Authentication token is missing');
+        AppLogger.d('[EditProfileService] Authentication token is missing');
         throw Exception('Authentication token is missing');
       }
 
@@ -204,34 +200,34 @@ class EditProfileService {
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
       final requestData = await _buildUpdatePayload(request);
 
-      debugPrint('[EditProfileService] PATCH $endpoint');
-      debugPrint('[EditProfileService] Headers: $headers');
-      debugPrint('[EditProfileService] Request object analysis:');
-      debugPrint(
+      AppLogger.d('[EditProfileService] PATCH $endpoint');
+      AppLogger.d('[EditProfileService] Headers: $headers');
+      AppLogger.d('[EditProfileService] Request object analysis:');
+      AppLogger.d(
         "  fullname='${request.fullname}' length=${request.fullname.length}",
       );
-      debugPrint(
+      AppLogger.d(
         "  username='${request.username}' length=${request.username.length}",
       );
-      debugPrint(
+      AppLogger.d(
         "  bio='${request.bio ?? 'null'}' ${request.bio != null ? 'length=${request.bio!.length}' : ''}",
       );
-      debugPrint(
+      AppLogger.d(
         "  profile_picture='${request.profilePicture ?? 'null'}' isFile=${_isLocalFilePath(request.profilePicture)}",
       );
 
       if (requestData is FormData) {
-        debugPrint(
+        AppLogger.d(
           '[EditProfileService] Request fields: ${requestData.fields}',
         );
-        debugPrint(
+        AppLogger.d(
           '[EditProfileService] Request files: ${requestData.files.map((file) => '${file.key}: ${file.value.filename}').toList()}',
         );
       } else {
-        debugPrint('[EditProfileService] Request data: $requestData');
+        AppLogger.d('[EditProfileService] Request data: $requestData');
       }
 
-      debugPrint('[EditProfileService] Making API call...');
+      AppLogger.d('[EditProfileService] Making API call...');
 
       final response = await dio.patch(
         endpoint,
@@ -239,14 +235,14 @@ class EditProfileService {
         options: Options(headers: headers),
       );
 
-      debugPrint('[EditProfileService] Response received');
-      debugPrint('[EditProfileService] Status code: ${response.statusCode}');
-      debugPrint('[EditProfileService] Response data: ${response.data}');
+      AppLogger.d('[EditProfileService] Response received');
+      AppLogger.d('[EditProfileService] Status code: ${response.statusCode}');
+      AppLogger.d('[EditProfileService] Response data: ${response.data}');
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = _asJsonMap(response.data);
         final parsedResponse = EditProfileResponse.fromJson(responseData);
-        debugPrint(
+        AppLogger.d(
           '[EditProfileService] Profile updated successfully: ${parsedResponse.message}',
         );
         return parsedResponse;
@@ -254,12 +250,12 @@ class EditProfileService {
 
       throw Exception('Failed to update profile: ${response.statusCode}');
     } on DioException catch (e) {
-      debugPrint('[EditProfileService] DioException caught');
-      debugPrint('[EditProfileService] Error type: ${e.type}');
-      debugPrint('[EditProfileService] Error message: ${e.message}');
-      debugPrint('[EditProfileService] Status code: ${e.response?.statusCode}');
+      AppLogger.d('[EditProfileService] DioException caught');
+      AppLogger.d('[EditProfileService] Error type: ${e.type}');
+      AppLogger.d('[EditProfileService] Error message: ${e.message}');
+      AppLogger.d('[EditProfileService] Status code: ${e.response?.statusCode}');
       if (e.response?.data != null) {
-        debugPrint(
+        AppLogger.d(
           '[EditProfileService] Backend error response: ${e.response?.data}',
         );
       }
@@ -292,7 +288,7 @@ class EditProfileService {
 
       throw Exception(errorMessage);
     } catch (e) {
-      debugPrint('[EditProfileService] General exception caught: $e');
+      AppLogger.d('[EditProfileService] General exception caught: $e');
       throw Exception('Failed to update profile: $e');
     }
   }

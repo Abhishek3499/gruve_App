@@ -8,7 +8,8 @@ import 'package:gruve_app/features/user_profile/presentation/screens/widgets/use
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
-import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
+import 'package:gruve_app/core/widgets/shimmer/profile_shimmer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String profileUserId;
@@ -65,11 +66,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     try {
       await _profileController.fetchUser();
-      debugPrint(
+      AppLogger.d(
         '✅ [UserProfileScreen] Pull-to-refresh completed successfully',
       );
     } catch (e) {
-      debugPrint('❌ [UserProfileScreen] Pull-to-refresh failed: $e');
+      AppLogger.d('❌ [UserProfileScreen] Pull-to-refresh failed: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -173,7 +174,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         !_isResolvingIdentity &&
         (_identityResolution?.shouldShowSubscribeButton ?? false);
     final showProfileShimmer =
-        _profileController.isLoading.value || _isRefreshing;
+        _profileController.isLoading.value && _profileController.user == null;
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -208,7 +209,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ValueListenableBuilder(
                             valueListenable: _profileController.highlightList,
                             builder: (context, highlights, child) {
-                              debugPrint(
+                              AppLogger.d(
                                 '[UserProfileScreen] Highlights count: ${highlights.length}',
                               );
                               return UserHighlightsList(
@@ -319,169 +320,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           padding: const EdgeInsets.only(top: 130),
           child: _buildProfilePanelBackground(constraints),
         ),
-        AppShimmer(
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 130),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 120),
-                    _buildStatsShimmer(),
-                    const SizedBox(height: 20),
-                    _buildStoriesShimmer(),
-                    const SizedBox(height: 20),
-                    _buildUserTabsShimmer(),
-                    _buildGridShimmer(itemCount: 9),
-                  ],
-                ),
-              ),
-              Column(
-                children: [
-                  const SizedBox(height: 20),
-                  _buildUserHeaderShimmer(),
-                ],
-              ),
-            ],
-          ),
-        ),
+        const UserProfileShimmer(),
       ],
-    );
-  }
-
-  Widget _buildUserHeaderShimmer() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: const [
-              ShimmerBox(width: 44, height: 44, borderRadius: 22),
-              Spacer(),
-            ],
-          ),
-        ),
-        const SizedBox(height: 30),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              ShimmerCircle(radius: 50),
-              SizedBox(width: 25),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 10),
-                    ShimmerBox(width: 145, height: 22, borderRadius: 8),
-                    SizedBox(height: 8),
-                    ShimmerBox(width: 105, height: 16, borderRadius: 8),
-                    SizedBox(height: 16),
-                    Row(
-                      children: [
-                        ShimmerBox(width: 132, height: 42, borderRadius: 30),
-                        SizedBox(width: 21),
-                        ShimmerCircle(radius: 21),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsShimmer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildStatShimmer(width: 78),
-          _buildDividerShimmer(),
-          _buildStatShimmer(width: 40),
-          _buildDividerShimmer(),
-          _buildStatShimmer(width: 48),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatShimmer({required double width}) {
-    return Column(
-      children: [
-        const ShimmerBox(width: 42, height: 22, borderRadius: 8),
-        const SizedBox(height: 6),
-        ShimmerBox(width: width, height: 14, borderRadius: 8),
-      ],
-    );
-  }
-
-  Widget _buildDividerShimmer() {
-    return Container(height: 40, width: 1.2, color: Colors.white);
-  }
-
-  Widget _buildStoriesShimmer() {
-    return SizedBox(
-      height: 102,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(left: 30, right: 12),
-        itemCount: 5,
-        separatorBuilder: (_, _) => const SizedBox(width: 18),
-        itemBuilder: (context, index) {
-          return const SizedBox(
-            width: 72,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ShimmerCircle(radius: 32),
-                SizedBox(height: 6),
-                ShimmerBox(width: 58, height: 12, borderRadius: 8),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildUserTabsShimmer() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        ShimmerBox(width: 94, height: 40, borderRadius: 30),
-        SizedBox(width: 20),
-        ShimmerBox(width: 78, height: 40, borderRadius: 30),
-      ],
-    );
-  }
-
-  Widget _buildGridShimmer({required int itemCount}) {
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: itemCount,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.75,
-      ),
-      itemBuilder: (context, index) {
-        return const ShimmerBox(
-          width: double.infinity,
-          height: double.infinity,
-          borderRadius: 18,
-        );
-      },
     );
   }
 }

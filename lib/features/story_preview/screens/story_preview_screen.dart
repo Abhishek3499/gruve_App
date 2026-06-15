@@ -13,11 +13,20 @@ import 'package:gruve_app/core/widgets/story_share_sheet.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/features/camera/models/sticker_data.dart';
+import 'package:gruve_app/features/camera/widgets/sticker_overlay.dart';
+import 'package:gruve_app/features/camera/widgets/emoji_picker_sheet.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class StoryPreviewScreen extends StatefulWidget {
   final String mediaPath;
+  final List<StickerData> initialStickers;
 
-  const StoryPreviewScreen({super.key, required this.mediaPath});
+  const StoryPreviewScreen({
+    super.key,
+    required this.mediaPath,
+    this.initialStickers = const [],
+  });
 
   @override
   State<StoryPreviewScreen> createState() => _StoryPreviewScreenState();
@@ -29,6 +38,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   bool _isInitialized = false;
   bool _isMuted = false;
   bool _isYourStorySharing = false;
+  late final List<StickerData> _stickers;
+  String? _selectedStickerId;
+  double _videoSpeed = 1.0;
 
   Widget _buildUserAvatar(String? imageUrl, String username) {
     final trimmed = imageUrl?.trim() ?? '';
@@ -118,13 +130,14 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   @override
   void initState() {
     super.initState();
+    _stickers = List.from(widget.initialStickers);
     _initializeMedia();
 
     // Fetch own profile data if not loaded yet so that the avatar image is shown
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
-        if (profileProvider.user == null && !profileProvider.isLoading) {
+        final profileProvider = context.read<ProfileProvider>();
+        if (profileProvider.profile == null && !profileProvider.isLoading) {
           profileProvider.fetchProfileData(fetchUserReason: 'story_preview_init');
         }
       }
@@ -172,6 +185,97 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     }
   }
 
+  void _changeVideoSpeed() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              color: const Color(0xEB161616),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Video Playback Speed',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Adjust the playback speed of this video',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildSpeedOption('Slow (0.5x)', 0.5),
+                      _buildSpeedOption('Normal (1.0x)', 1.0),
+                      _buildSpeedOption('Fast (2.0x)', 2.0),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSpeedOption(String label, double speed) {
+    final isSelected = _videoSpeed == speed;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _videoSpeed = speed;
+          if (_videoController != null) {
+            _videoController!.setPlaybackSpeed(speed);
+          }
+        });
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Playback speed set to $label'),
+            backgroundColor: const Color(0xFFC358D7),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFC358D7) : Colors.white12,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.white24 : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _videoController?.dispose();
@@ -192,14 +296,49 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                 children: [
                   /// MEDIA
                   Positioned.fill(
-                    child: _isInitialized
-                        ? _buildMediaPreview()
-                        : const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedStickerId = null;
+                        });
+                      },
+                      child: _isInitialized
+                          ? _buildMediaPreview()
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
+                    ),
                   ),
+
+                  ..._stickers.map((sticker) {
+                    return StickerOverlay(
+                      key: ValueKey(sticker.id),
+                      sticker: sticker,
+                      isSelected: _selectedStickerId == sticker.id,
+                      onTap: () {
+                        setState(() {
+                          _selectedStickerId = sticker.id;
+                        });
+                      },
+                      onDelete: () {
+                        setState(() {
+                          _stickers.removeWhere((s) => s.id == sticker.id);
+                          if (_selectedStickerId == sticker.id) {
+                            _selectedStickerId = null;
+                          }
+                        });
+                      },
+                      onUpdate: (position, scale, rotation) {
+                        setState(() {
+                          sticker.position = position;
+                          sticker.scale = scale;
+                          sticker.rotation = rotation;
+                        });
+                      },
+                    );
+                  }),
 
                   /// TOP BAR + ACTION BUTTONS (ONE ROW)
                   Positioned(
@@ -214,6 +353,27 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         StoryActionButtons(
                           isMuted: _isMuted,
                           onMuteToggle: _toggleMute,
+                          currentSpeed: _videoSpeed,
+                          onSpeedTap: _isVideo ? _changeVideoSpeed : null,
+                          onTextTap: () async {
+                            final emoji = await showModalBottomSheet<String>(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              isScrollControlled: true,
+                              builder: (context) => const EmojiPickerSheet(),
+                            );
+                            if (emoji != null) {
+                              setState(() {
+                                final newSticker = StickerData(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  text: emoji,
+                                  position: const Offset(150, 250),
+                                );
+                                _stickers.add(newSticker);
+                                _selectedStickerId = newSticker.id;
+                              });
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -333,9 +493,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         /// SEND
                         GestureDetector(
                           onTap: () {
-                            debugPrint("\n🚀 SEND BUTTON CLICKED");
-                            debugPrint("📤 Opening Story Share Sheet...");
-                            debugPrint("📁 MediaPath: ${widget.mediaPath}");
+                            AppLogger.d("\n🚀 SEND BUTTON CLICKED");
+                            AppLogger.d("📤 Opening Story Share Sheet...");
+                            AppLogger.d("📁 MediaPath: ${widget.mediaPath}");
 
                             showModalBottomSheet(
                               context: context,

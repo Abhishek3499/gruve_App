@@ -3,6 +3,7 @@ import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation
@@ -30,15 +31,24 @@ class AuthStateManager extends ChangeNotifier {
 
   /// Initializes auth state by checking stored tokens
   Future<void> initialize() async {
-    final accessToken = await TokenStorage.getAccessToken();
-    final userId = await TokenStorage.getCurrentUserId();
+    try {
+      final accessToken = await TokenStorage.getAccessToken();
+      final userId = await TokenStorage.getCurrentUserId();
 
-    _isAuthenticated = accessToken != null && accessToken.isNotEmpty;
-    _currentUserId = userId;
+      _isAuthenticated = accessToken != null && accessToken.isNotEmpty;
+      _currentUserId = userId;
 
-    debugPrint(
-      '🔐 [AuthState] Initialized - Authenticated: $_isAuthenticated, UserId: $_currentUserId',
-    );
+      AppLogger.d(
+        '🔐 [AuthState] Initialized - Authenticated: $_isAuthenticated, UserId: $_currentUserId',
+      );
+    } catch (e) {
+      AppLogger.d('🚨 [AuthState] Initialization failed, resetting state: $e');
+      _isAuthenticated = false;
+      _currentUserId = null;
+      try {
+        await TokenStorage.clearTokens();
+      } catch (_) {}
+    }
     notifyListeners();
   }
 
@@ -58,13 +68,13 @@ class AuthStateManager extends ChangeNotifier {
     _currentUserId = userId;
     _isLoggingOut = false;
 
-    debugPrint('✅ [AuthState] Authentication successful for user: $userId');
+    AppLogger.d('✅ [AuthState] Authentication successful for user: $userId');
     notifyListeners();
   }
 
   /// Called when authentication fails (logout, token refresh failure)
   Future<void> onAuthFailure() async {
-    debugPrint('🚨 [AuthState] Authentication failed - initiating logout flow');
+    AppLogger.d('🚨 [AuthState] Authentication failed - initiating logout flow');
 
     _isLoggingOut = true;
     notifyListeners();
@@ -80,15 +90,15 @@ class AuthStateManager extends ChangeNotifier {
       // Clear all caches
       final cacheManager = CacheManager();
       await cacheManager.clear();
-      debugPrint('✅ [AuthState] All caches cleared');
+      AppLogger.d('✅ [AuthState] All caches cleared');
 
       // Reset state
       _isAuthenticated = false;
       _currentUserId = null;
 
-      debugPrint('✅ [AuthState] Auth failure cleanup completed');
+      AppLogger.d('✅ [AuthState] Auth failure cleanup completed');
     } catch (e) {
-      debugPrint('❌ [AuthState] Error during auth failure cleanup: $e');
+      AppLogger.d('❌ [AuthState] Error during auth failure cleanup: $e');
     } finally {
       _isLoggingOut = false;
       notifyListeners();
@@ -97,7 +107,7 @@ class AuthStateManager extends ChangeNotifier {
 
   /// Manually triggers logout (user-initiated)
   Future<void> logout() async {
-    debugPrint('👋 [AuthState] Manual logout initiated');
+    AppLogger.d('👋 [AuthState] Manual logout initiated');
     await onAuthFailure();
   }
 

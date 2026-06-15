@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/features/profile/data/models/user_profile_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProfileService {
   UserProfileService()
-    : _dio = AppDio.create(receiveTimeout: const Duration(seconds: 45));
+    : _dio = AppDio.getInstance();
 
   final Dio _dio;
 
@@ -28,11 +29,12 @@ class UserProfileService {
     int? trendingLimit,
     int? likedPage,
     int? likedLimit,
+    CancelToken? cancelToken,
   }) async {
-    debugPrint(" User Profile API Called");
-    final endpoint = "user/profile/$userId";
-    debugPrint(" Endpoint: $endpoint");
-    debugPrint(" Fetching user profile for userId: $userId");
+    AppLogger.d(" User Profile API Called");
+    final endpoint = "user/profile/$userId/";
+    AppLogger.d(" Endpoint: $endpoint");
+    AppLogger.d(" Fetching user profile for userId: $userId");
 
     final token = await TokenStorage.getAccessToken();
 
@@ -44,24 +46,25 @@ class UserProfileService {
     if (likedPage != null) queryParams['liked_page'] = likedPage;
     if (likedLimit != null) queryParams['liked_limit'] = likedLimit;
 
-    debugPrint("[UserProfileService] GET $endpoint");
-    debugPrint("[UserProfileService] Query params: $queryParams");
+    AppLogger.d("[UserProfileService] GET $endpoint");
+    AppLogger.d("[UserProfileService] Query params: $queryParams");
     const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        debugPrint(
+        AppLogger.d(
           "[UserProfileService] Attempt $attempt/$maxAttempts - Making API call...",
         );
 
         final response = await _dio.get(
           endpoint,
           queryParameters: queryParams.isNotEmpty ? queryParams : null,
+          cancelToken: cancelToken,
           options: Options(headers: {"Authorization": "Bearer $token"}),
         );
 
-        debugPrint(" Status Code: ${response.statusCode}");
-        debugPrint(" Response received successfully");
-        debugPrint(
+        AppLogger.d(" Status Code: ${response.statusCode}");
+        AppLogger.d(" Response received successfully");
+        AppLogger.d(
           "[UserProfileService] RAW RESPONSE TYPE: ${response.data.runtimeType}",
         );
 
@@ -75,36 +78,44 @@ class UserProfileService {
 
         return <String, dynamic>{};
       } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) {
+          AppLogger.d("[UserProfileService] getUserProfile cancelled");
+          return <String, dynamic>{};
+        }
         final transient = _isTransientDioFailure(e);
         final code = e.response?.statusCode;
 
-        debugPrint("[UserProfileService] DioException caught:");
-        debugPrint("  - Type: ${e.type}");
-        debugPrint("  - Status Code: $code");
-        debugPrint("  - Message: ${e.message}");
-        debugPrint("  - Is Transient: $transient");
-        debugPrint("  - Attempt: $attempt/$maxAttempts");
+        AppLogger.d("[UserProfileService] DioException caught:");
+        AppLogger.d("  - Type: ${e.type}");
+        AppLogger.d("  - Status Code: $code");
+        AppLogger.d("  - Message: ${e.message}");
+        AppLogger.d("  - Is Transient: $transient");
+        AppLogger.d("  - Attempt: $attempt/$maxAttempts");
 
         if (transient && attempt < maxAttempts) {
           final waitMs = 500 * attempt;
-          debugPrint(
+          AppLogger.d(
             " [UserProfileService] Transient failure - retry in ${waitMs}ms",
           );
           await Future<void>.delayed(Duration(milliseconds: waitMs));
           continue;
         }
 
-        debugPrint(" [UserProfileService] Giving up after $attempt attempts");
-        debugPrint(" [UserProfileService] Final error: $e");
+        AppLogger.d(" [UserProfileService] Giving up after $attempt attempts");
+        AppLogger.d(" [UserProfileService] Final error: $e");
         rethrow;
       } catch (e, st) {
-        debugPrint("[UserProfileService] UNEXPECTED ERROR:");
-        debugPrint("  - Error: $e");
-        debugPrint("  - Stack trace: $st");
+        AppLogger.d("[UserProfileService] UNEXPECTED ERROR:");
+        AppLogger.d("  - Error: $e");
+        AppLogger.d("  - Stack trace: $st");
         rethrow;
       }
     }
 
     throw StateError('UserProfileService.getUserProfile: exhausted attempts');
+  }
+  Future<UserProfile> getUserProfileModel(String userId, {CancelToken? cancelToken}) async {
+    final data = await getUserProfile(userId: userId, cancelToken: cancelToken);
+    return UserProfile.fromJson(data['data'] ?? data);
   }
 }

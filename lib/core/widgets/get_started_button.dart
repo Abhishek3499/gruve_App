@@ -165,6 +165,8 @@ class _GetStartedButtonState extends State<GetStartedButton>
   Future<bool> _runCompletion({required bool animateForwardFirst}) async {
     if (_isBusy) return false;
 
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (animateForwardFirst) {
       _snapTo(_maxDrag);
     }
@@ -278,6 +280,7 @@ class _GetStartedButtonState extends State<GetStartedButton>
                 onPanStart: isBusy
                     ? null
                     : (_) {
+                        FocusManager.instance.primaryFocus?.unfocus();
                         _snapController.stop();
                         if (_snapAnimation != null) {
                           _dragX = _snapAnimation!.value;

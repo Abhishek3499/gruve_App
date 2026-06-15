@@ -1,16 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart' show debugPrint;
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import '../models/reset_password_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ResetPasswordService {
-  final Dio _dio = AppDio.create(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  );
+  final Dio _dio = AppDio.getInstance();
 
   Future<ResetPasswordResponse> resetPassword({
     required String identifier,
@@ -50,7 +47,7 @@ class ResetPasswordService {
         success: false,
       );
     } catch (e) {
-      debugPrint("Reset password failed: $e");
+      AppLogger.d("Reset password failed: $e");
 
       return ResetPasswordResponse(
         message: "Something went wrong",

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
@@ -8,11 +7,12 @@ import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 
 import '../models/google_sign_in_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class GoogleAuthService {
   GoogleAuthService({GoogleSignIn? googleSignIn, Dio? dio})
     : _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
-      _dio = dio ?? AppDio.create();
+      _dio = dio ?? AppDio.getInstance();
 
   final GoogleSignIn _googleSignIn;
   final Dio _dio;
@@ -61,7 +61,7 @@ class GoogleAuthService {
 
       return GoogleSignInResponse.fromJson(response.data);
     } on GoogleSignInException catch (e) {
-      debugPrint('Google sign-in native error: $e');
+      AppLogger.d('Google sign-in native error: $e');
       throw AuthApiException(_googleSignInExceptionMessage(e));
     } on DioException catch (e) {
       AuthApiLogger.error('GoogleSignIn', e);
@@ -70,7 +70,7 @@ class GoogleAuthService {
         fallback: 'Google sign-in failed. Please try again.',
       );
     } catch (e) {
-      debugPrint('Google sign-in failed: $e');
+      AppLogger.d('Google sign-in failed: $e');
       rethrow;
     }
   }

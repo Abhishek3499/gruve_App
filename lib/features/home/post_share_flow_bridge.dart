@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PostShareFlowBridge {
   /// Home registers: show the existing processing overlay (same as camera flow).
@@ -41,23 +42,20 @@ class PostShareFlowBridge {
 
   static void setVideoController(dynamic controller) {
     _videoControllerRef = controller;
-    if (kDebugMode) {
-      debugPrint("🔔 Bridge: Video controller reference set");
-    }
+    AppLogger.d("🔔 Bridge: Video controller reference set");
+    
   }
 
   static void setVideoService(VideoService service) {
     _currentVideoService = service;
-    if (kDebugMode) {
-      debugPrint("🔔 Bridge: Video service reference set");
-    }
+    AppLogger.d("🔔 Bridge: Video service reference set");
+    
   }
 
   static void markProcessingCompleted() {
     if (_currentVideoService != null) {
-      if (kDebugMode) {
-        debugPrint("🔔 Bridge: Marking processing as completed");
-      }
+      AppLogger.d("🔔 Bridge: Marking processing as completed");
+      
       _currentVideoService!.markCompleted();
     }
   }
@@ -66,11 +64,30 @@ class PostShareFlowBridge {
   /// visible: open overlay → upload → refresh feed (same [VideoFeedController.initVideos]
   /// as initial load) → mark completed.
   static void scheduleShareUploadAfterReturningHome({
-    required String caption,
-    required String mediaPath,
+    String? caption,
+    String? mediaPath,
+    String? locationName,
+    bool audienceEveryone = true,
+    bool audienceCloseFriends = false,
+    bool scheduleReel = false,
+    bool uploadHighQuality = false,
+    bool hideLikeCount = false,
+    bool hideShareCount = false,
+    List<String>? taggedUserIds,
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _runShareUploadChain(caption, mediaPath);
+      _runShareUploadChain(
+        caption: caption,
+        mediaPath: mediaPath,
+        locationName: locationName,
+        audienceEveryone: audienceEveryone,
+        audienceCloseFriends: audienceCloseFriends,
+        scheduleReel: scheduleReel,
+        uploadHighQuality: uploadHighQuality,
+        hideLikeCount: hideLikeCount,
+        hideShareCount: hideShareCount,
+        taggedUserIds: taggedUserIds,
+      );
     });
   }
 
@@ -91,35 +108,50 @@ class PostShareFlowBridge {
     await completer.future;
   }
 
-  static Future<void> _runShareUploadChain(
-    String caption,
-    String mediaPath,
-  ) async {
+  static Future<void> _runShareUploadChain({
+    String? caption,
+    String? mediaPath,
+    String? locationName,
+    bool audienceEveryone = true,
+    bool audienceCloseFriends = false,
+    bool scheduleReel = false,
+    bool uploadHighQuality = false,
+    bool hideLikeCount = false,
+    bool hideShareCount = false,
+    List<String>? taggedUserIds,
+  }) async {
     try {
-      final isVideo = _isVideoPath(mediaPath);
-      if (kDebugMode) {
-        debugPrint("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
-        debugPrint("📁 [Bridge] Path: $mediaPath");
-      }
+      final isVideo = mediaPath != null && mediaPath.isNotEmpty ? _isVideoPath(mediaPath) : false;
+      AppLogger.d("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
+        AppLogger.d("📁 [Bridge] Path: $mediaPath");
+      
       
       notifyShareStartProcessing(isVideo);
       await _waitForProcessingOverlayFrame();
       
-      await PostService().createPost(caption: caption, mediaPath: mediaPath);
+      await PostService().createPost(
+        caption: caption,
+        mediaPath: mediaPath,
+        locationName: locationName,
+        audienceEveryone: audienceEveryone,
+        audienceCloseFriends: audienceCloseFriends,
+        scheduleReel: scheduleReel,
+        uploadHighQuality: uploadHighQuality,
+        hideLikeCount: hideLikeCount,
+        hideShareCount: hideShareCount,
+        taggedUserIds: taggedUserIds,
+      );
       
-      if (kDebugMode) {
-        debugPrint("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");
-      }
+      AppLogger.d("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");
+      
       
       await notifyPostCreated(isVideo: isVideo);
       
-      if (kDebugMode) {
-        debugPrint("🔔 [Bridge] Post created notification finished");
-      }
+      AppLogger.d("🔔 [Bridge] Post created notification finished");
+      
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("❌ [Bridge] POST ERROR: $e");
-      }
+      AppLogger.d("❌ [Bridge] POST ERROR: $e");
+      
       String? errorMessage;
       if (e is DioException) {
         final resData = e.response?.data;
@@ -140,22 +172,20 @@ class PostShareFlowBridge {
   }
 
   static Future<void> notifyPostCreated({required bool isVideo}) async {
-    if (kDebugMode) {
-      debugPrint("🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo)");
-    }
+    AppLogger.d("🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo)");
+    
 
     if (_videoControllerRef != null) {
-      if (kDebugMode) {
-        debugPrint("🔄 [Bridge] Refreshing feed to show new post...");
-      }
+      AppLogger.d("🔄 [Bridge] Refreshing feed to show new post...");
+      
       final result = await _videoControllerRef!.initVideos(refresh: true);
       if (kDebugMode) {
         if (result == true) {
-          debugPrint("✅ [Bridge] Feed refreshed - new post should be visible");
+          AppLogger.d("✅ [Bridge] Feed refreshed - new post should be visible");
         } else if (result == false) {
-          debugPrint("❌ [Bridge] Feed refresh failed");
+          AppLogger.d("❌ [Bridge] Feed refresh failed");
         } else {
-          debugPrint("🔔 [Bridge] Feed refresh superseded by newer load");
+          AppLogger.d("🔔 [Bridge] Feed refresh superseded by newer load");
         }
       }
       if (result == true) {
@@ -166,12 +196,11 @@ class PostShareFlowBridge {
         _needsRefresh = true;
       }
     } else {
-      if (kDebugMode) {
-        debugPrint("❌ [Bridge] No controller available, setting refresh flag");
-        debugPrint(
+      AppLogger.d("❌ [Bridge] No controller available, setting refresh flag");
+        AppLogger.d(
           "🔄 [Bridge] Will refresh when home tab is accessed",
         );
-      }
+      
       _needsRefresh = true;
     }
 
@@ -185,9 +214,8 @@ class PostShareFlowBridge {
   static bool checkAndClearRefreshNeeded() {
     bool needed = _needsRefresh;
     if (needed) {
-      if (kDebugMode) {
-        debugPrint("🔄 Bridge: Refresh needed, clearing flag");
-      }
+      AppLogger.d("🔄 Bridge: Refresh needed, clearing flag");
+      
       _needsRefresh = false;
     }
     return needed;
@@ -202,8 +230,7 @@ class PostShareFlowBridge {
     _videoControllerRef = null;
     _currentVideoService = null;
     _needsRefresh = false;
-    if (kDebugMode) {
-      debugPrint("🔔 Bridge: All callbacks cleared");
-    }
+    AppLogger.d("🔔 Bridge: All callbacks cleared");
+    
   }
 }

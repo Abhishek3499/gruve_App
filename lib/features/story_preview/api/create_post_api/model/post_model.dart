@@ -1,18 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CreatePostResponse {
   final bool success;
   final String message;
+  final Post? data;
 
-  CreatePostResponse({required this.success, required this.message});
+  CreatePostResponse({required this.success, required this.message, this.data});
 
   factory CreatePostResponse.fromJson(Map<String, dynamic> json) {
-    debugPrint("Create response json: $json");
+    AppLogger.d("Create response json: $json");
 
     return CreatePostResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? "",
+      data: json['data'] != null ? Post.fromJson(Map<String, dynamic>.from(json['data'])) : null,
     );
   }
 }
@@ -33,6 +36,8 @@ class Post {
   String profilePicture;
   bool hasActiveStory;
 
+  final List<TaggedUser> taggedUsers;
+
   Post({
     required this.id,
     required this.caption,
@@ -46,6 +51,7 @@ class Post {
     required this.profilePicture,
     this.mediaType = 'image',
     this.hasActiveStory = false,
+    this.taggedUsers = const [],
   });
 
   bool get isVideo =>
@@ -93,9 +99,8 @@ class Post {
       if (nestedStr == 'video' ||
           nestedStr == 'image' ||
           nestedStr == 'carousel') {
-        if (kDebugMode) {
-          debugPrint('🎥 [Post] nested media.type=$nestedStr');
-        }
+        AppLogger.d('🎥 [Post] nested media.type=$nestedStr');
+        
         if (nestedStr == 'video') return 'video';
       }
     }
@@ -127,9 +132,8 @@ class Post {
     if (postType != null && postType.isNotEmpty) {
       const videoish = {'video', 'reel', 'clip', 'short', 'shorts', 'igtv'};
       if (videoish.contains(postType) || postType.contains('video')) {
-        if (kDebugMode) {
-          debugPrint('🎥 [Post] post type hints video: $postType');
-        }
+        AppLogger.d('🎥 [Post] post type hints video: $postType');
+        
         return 'video';
       }
       if (postType == 'image' ||
@@ -153,10 +157,15 @@ class Post {
       final kind = mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl)
           ? '🎥 video'
           : '🖼 image';
-      debugPrint(
+      AppLogger.d(
         '📡 [Post.fromJson] $kind detected id=${json['id']} mediaType=$mediaType url=${mediaUrl.length > 80 ? '${mediaUrl.substring(0, 80)}…' : mediaUrl}',
       );
     }
+
+    final rawTagged = json['tagged_users'] as List<dynamic>? ?? json['taggedUsers'] as List<dynamic>? ?? [];
+    final taggedList = rawTagged
+        .map((e) => TaggedUser.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
 
     return Post(
       id: json['id']?.toString() ?? "",
@@ -185,6 +194,7 @@ class Post {
           json['user']?['has_active_story'] ??
           json['has_active_story'] ??
           false,
+      taggedUsers: taggedList,
     );
   }
 
@@ -237,5 +247,27 @@ class Post {
 
     final normalizedRelativePath = value.startsWith('/') ? value : '/$value';
     return baseUri.resolve(normalizedRelativePath).toString();
+  }
+}
+
+class TaggedUser {
+  final String id;
+  final String username;
+  final String profilePicture;
+
+  TaggedUser({
+    required this.id,
+    required this.username,
+    required this.profilePicture,
+  });
+
+  factory TaggedUser.fromJson(Map<String, dynamic> json) {
+    return TaggedUser(
+      id: json['id']?.toString() ?? json['userId']?.toString() ?? "",
+      username: json['username']?.toString() ?? "",
+      profilePicture: Post._normalizeUrl(
+        json['profile_picture'] ?? json['profilePicture'] ?? json['avatar'] ?? "",
+      ),
+    );
   }
 }

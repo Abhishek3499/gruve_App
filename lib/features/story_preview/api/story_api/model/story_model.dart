@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/features/story_preview/models/story_media_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CreateStoryRequest {
   final String caption;
@@ -7,13 +7,13 @@ class CreateStoryRequest {
 
   CreateStoryRequest({required this.caption, required this.file});
   Map<String, dynamic> toJson() {
-    debugPrint("📤 Sending Create Story Request:");
-    debugPrint("👉 Caption: $caption");
-    debugPrint("👉 File: $file");
+    AppLogger.d("📤 Sending Create Story Request:");
+    AppLogger.d("👉 Caption: $caption");
+    AppLogger.d("👉 File: $file");
 
     final data = {"caption": caption, "file": file};
 
-    debugPrint("👉 Final JSON: $data");
+    AppLogger.d("👉 Final JSON: $data");
 
     return data;
   }
@@ -49,18 +49,18 @@ class StoryItem {
   });
 
   factory StoryItem.fromJson(Map<String, dynamic> json) {
-    debugPrint("📦 [StoryItem] Raw Data: $json");
-    debugPrint("🆔 [StoryItem] ID: ${json['id']}");
-    debugPrint("📺 [StoryItem] Media URL: ${json['media_url']}");
-    debugPrint("📎 [StoryItem] MIME Type: ${json['media_mime_type']}");
-    debugPrint("🎬 [StoryItem] Media Kind: ${json['media_kind']}");
-    debugPrint("📝 [StoryItem] Caption: ${json['caption']}");
-    debugPrint("📅 [StoryItem] Created At: ${json['created_at']}");
-    debugPrint("⏰ [StoryItem] Expires At: ${json['expires_at']}");
-    debugPrint("👤 [StoryItem] User ID: ${json['user_id']}");
-    debugPrint("👤 [StoryItem] Username: ${json['username']}");
-    debugPrint("🖼️ [StoryItem] Avatar URL: ${json['avatar_url']}");
-    debugPrint("⭐ [StoryItem] Is Highlighted: ${json['is_highlighted']}");
+    AppLogger.d("📦 [StoryItem] Raw Data: $json");
+    AppLogger.d("🆔 [StoryItem] ID: ${json['id']}");
+    AppLogger.d("📺 [StoryItem] Media URL: ${json['media_url']}");
+    AppLogger.d("📎 [StoryItem] MIME Type: ${json['media_mime_type']}");
+    AppLogger.d("🎬 [StoryItem] Media Kind: ${json['media_kind']}");
+    AppLogger.d("📝 [StoryItem] Caption: ${json['caption']}");
+    AppLogger.d("📅 [StoryItem] Created At: ${json['created_at']}");
+    AppLogger.d("⏰ [StoryItem] Expires At: ${json['expires_at']}");
+    AppLogger.d("👤 [StoryItem] User ID: ${json['user_id']}");
+    AppLogger.d("👤 [StoryItem] Username: ${json['username']}");
+    AppLogger.d("🖼️ [StoryItem] Avatar URL: ${json['avatar_url']}");
+    AppLogger.d("⭐ [StoryItem] Is Highlighted: ${json['is_highlighted']}");
 
     return StoryItem(
       id: json['id']?.toString() ?? '',
@@ -102,11 +102,11 @@ class StoriesResponse {
   });
 
   factory StoriesResponse.fromJson(Map<String, dynamic> json) {
-    debugPrint("📥 [StoriesResponse] Raw Response: $json");
-    debugPrint("🔢 [StoriesResponse] Code: ${json['code']}");
-    debugPrint("✅ [StoriesResponse] Success: ${json['success']}");
-    debugPrint("💬 [StoriesResponse] Message: ${json['message']}");
-    debugPrint("📦 [StoriesResponse] Data: ${json['data']}");
+    AppLogger.d("📥 [StoriesResponse] Raw Response: $json");
+    AppLogger.d("🔢 [StoriesResponse] Code: ${json['code']}");
+    AppLogger.d("✅ [StoriesResponse] Success: ${json['success']}");
+    AppLogger.d("💬 [StoriesResponse] Message: ${json['message']}");
+    AppLogger.d("📦 [StoriesResponse] Data: ${json['data']}");
 
     return StoriesResponse(
       code: json['code'] ?? 200,
@@ -134,18 +134,18 @@ class StoriesData {
   });
 
   factory StoriesData.fromJson(Map<String, dynamic> json) {
-    debugPrint("📊 [StoriesData] Raw Data: $json");
-    debugPrint("🔢 [StoriesData] Count: ${json['count']}");
-    debugPrint("📄 [StoriesData] Page: ${json['page']}");
-    debugPrint("📏 [StoriesData] Limit: ${json['limit']}");
-    debugPrint("➡️ [StoriesData] Has Next: ${json['has_next']}");
+    AppLogger.d("📊 [StoriesData] Raw Data: $json");
+    AppLogger.d("🔢 [StoriesData] Count: ${json['count']}");
+    AppLogger.d("📄 [StoriesData] Page: ${json['page']}");
+    AppLogger.d("📏 [StoriesData] Limit: ${json['limit']}");
+    AppLogger.d("➡️ [StoriesData] Has Next: ${json['has_next']}");
 
     final storiesList = json['stories'] as List?;
-    debugPrint("📚 [StoriesData] Stories count in list: ${storiesList?.length ?? 0}");
+    AppLogger.d("📚 [StoriesData] Stories count in list: ${storiesList?.length ?? 0}");
 
     final stories = storiesList?.map((item) => StoryItem.fromJson(item)).toList() ?? [];
 
-    debugPrint("✅ [StoriesData] Parsed ${stories.length} stories");
+    AppLogger.d("✅ [StoriesData] Parsed ${stories.length} stories");
 
     return StoriesData(
       count: json['count'] ?? 0,

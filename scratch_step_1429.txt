@@ -1,0 +1,47 @@
+=== STEP 1429 ===
+<USER_REQUEST>
+"confirmed, next
+
+
+
+### FIX 5 — auth/logout sends no token
+
+FILE: lib/core/auth/auth_endpoint_paths.dart
+
+PROBLEM:
+auth/logout/ is in skip-auth list so Bearer token never sent.
+Server cannot invalidate session properly.
+
+FIX:
+- Remove auth/logout/ from shouldSkipAuth() list
+- Let AppDio interceptor attach token normally
+- In logout error handling: if logout 401s, still clear local 
+  tokens and state (logout must always succeed locally)
+
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T16:48:54+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile_menu_drawer\screens\saved_screen.dart (LANGUAGE_DART)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\widgets\profile_grid.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\screens\post\tag_users_screen.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\message\data\datasource\user_remote_datasource.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\api\create_post_api\model\post_draft_model.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\screens\post\more_option_screen.dart (LANGUAGE_DART)
+</ADDITIONAL_METADATA>
+
+=== STEP 1448 ===
+I will create the implementation plan for **FIX 5 — auth/logout sends no token**. This plan details how we remove the logout endpoint from the skipped-authorization list, configure the logout service to allow interceptors to append the token, and ensure the local logout succeeds.
+
+=== STEP 1450 ===
+I have created the implementation plan for **FIX 5 — auth/logout sends no token**. Please review the plan in [implementation_plan.md](file:///C:/Users/Acer/.gemini/antigravity-ide/brain/e3f884ae-1908-48d9-8716-e6936c45fca3/implementation_plan.md) and let me know if you approve it!
+
+=== STEP 1452 ===
+I will update the `task.md` file to track our progress during the implementation of FIX 5.
+
+=== STEP 1470 ===
+I will update `walkthrough.md` to document the changes and validation results for FIX 5.
+

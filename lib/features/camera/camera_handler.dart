@@ -7,6 +7,7 @@ import 'package:gruve_app/features/story_preview/screens/post/post_preview_scree
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_sheet.dart';
 import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CameraHandler {
   static Future<dynamic> openCamera(BuildContext context) async {
@@ -29,7 +30,10 @@ class CameraHandler {
           final storyResult = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => StoryPreviewScreen(mediaPath: imagePath),
+              builder: (context) => StoryPreviewScreen(
+                mediaPath: imagePath,
+                initialStickers: capture?.stickers ?? [],
+              ),
             ),
           );
           return storyResult;
@@ -69,7 +73,7 @@ class CameraHandler {
       }
       return null;
     } catch (e) {
-      debugPrint('Error opening camera: $e');
+      AppLogger.d('Error opening camera: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),

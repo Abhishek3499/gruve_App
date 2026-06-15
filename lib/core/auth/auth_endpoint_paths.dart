@@ -15,7 +15,6 @@ class AuthEndpointPaths {
     'auth/password/reset/confirm',
     'auth/reset-password',
     'auth/refresh',
-    'auth/logout',
     'auth/resend-otp',
   };
 

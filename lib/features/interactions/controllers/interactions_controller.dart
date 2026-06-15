@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Interactions screen controller
 class InteractionsController extends ChangeNotifier {
@@ -10,7 +11,7 @@ class InteractionsController extends ChangeNotifier {
 
   void selectTab(int index) {
     if (index >= 0 && index < _tabs.length && index != _selectedTab) {
-      debugPrint("[InteractionsController] Tab changed to: ${_tabs[index]}");
+      AppLogger.d("[InteractionsController] Tab changed to: ${_tabs[index]}");
       _selectedTab = index;
       notifyListeners();
     }

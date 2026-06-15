@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 
 import '../models/message_model.dart';
 import '../services/message_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageController extends ChangeNotifier {
   final MessageService _messageService;
+  final CancelToken _cancelToken = CancelToken();
   String conversationId;
   final String receiverUserId;
   final ValueChanged<String>? onConversationIdChanged;
@@ -46,21 +49,21 @@ class MessageController extends ChangeNotifier {
 
     // Enhanced duplicate prevention with multiple checks
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint(
+      AppLogger.d(
         '🔒 [MessageController] Operation locked: $operationKey for $conversationId',
       );
       return;
     }
 
     if (_activeFetch != null) {
-      debugPrint(
+      AppLogger.d(
         '⏳ [MessageController] Active fetch in progress for $conversationId',
       );
       return _activeFetch!;
     }
 
     if (_isInitialLoading) {
-      debugPrint(
+      AppLogger.d(
         '🔄 [MessageController] Already loading initial messages for $conversationId',
       );
       return;
@@ -73,7 +76,7 @@ class MessageController extends ChangeNotifier {
     _currentPage = 1;
     _hasMoreData = true;
 
-    debugPrint(
+    AppLogger.d(
       '🚀 [MessageController] Starting initial fetch for $conversationId',
     );
 
@@ -81,14 +84,14 @@ class MessageController extends ChangeNotifier {
         .then((_) {
           _lockedOperations.remove(operationKey);
           _requestTimestamps.remove(operationKey);
-          debugPrint(
+          AppLogger.d(
             '✅ [MessageController] Initial fetch completed for $conversationId',
           );
         })
         .catchError((e) {
           _lockedOperations.remove(operationKey);
           _requestTimestamps.remove(operationKey);
-          debugPrint(
+          AppLogger.d(
             '❌ [MessageController] Initial fetch failed for $conversationId: $e',
           );
         });
@@ -101,14 +104,14 @@ class MessageController extends ChangeNotifier {
 
     // Enhanced duplicate prevention
     if (_lockedOperations.contains(operationKey)) {
-      debugPrint(
+      AppLogger.d(
         '🔒 [MessageController] Operation locked: $operationKey for $conversationId',
       );
       return;
     }
 
     if (_activeFetch != null || _isLoadingMore || !_hasMoreData) {
-      debugPrint(
+      AppLogger.d(
         '🔄 [MessageController] Load more skipped. active=${_activeFetch != null}, loadingMore=$_isLoadingMore, hasMore=$_hasMoreData',
       );
       return;
@@ -118,7 +121,7 @@ class MessageController extends ChangeNotifier {
     _lockedOperations.add(operationKey);
     _requestTimestamps[operationKey] = DateTime.now();
 
-    debugPrint(
+    AppLogger.d(
       '🚀 [MessageController] Starting load more for $conversationId (page ${_currentPage + 1})',
     );
 
@@ -126,14 +129,14 @@ class MessageController extends ChangeNotifier {
         .then((_) {
           _lockedOperations.remove(operationKey);
           _requestTimestamps.remove(operationKey);
-          debugPrint(
+          AppLogger.d(
             '✅ [MessageController] Load more completed for $conversationId',
           );
         })
         .catchError((e) {
           _lockedOperations.remove(operationKey);
           _requestTimestamps.remove(operationKey);
-          debugPrint(
+          AppLogger.d(
             '❌ [MessageController] Load more failed for $conversationId: $e',
           );
         });
@@ -145,14 +148,14 @@ class MessageController extends ChangeNotifier {
 
   void appendLocalMessage(MessageModel message) {
     if (_messages.any((m) => m.id == message.id)) {
-      debugPrint('⚠️ Duplicate message skipped: ${message.id}');
+      AppLogger.d('⚠️ Duplicate message skipped: ${message.id}');
       return;
     }
 
     _messages.add(message);
     _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    debugPrint(
+    AppLogger.d(
       '📝 MESSAGE ADDED => '
       'id=${message.id} '
       'text=${message.text}',
@@ -175,18 +178,18 @@ class MessageController extends ChangeNotifier {
       
       // Check for duplicate before adding
       if (_messages.any((m) => m.id == message.id)) {
-        debugPrint('🔒 [MessageController] Duplicate realtime message skipped: ${message.id}');
+        AppLogger.d('🔒 [MessageController] Duplicate realtime message skipped: ${message.id}');
         return;
       }
       
       _upsertMessage(message);
       _notify();
 
-      debugPrint(
+      AppLogger.d(
         '📡 [MessageController] Realtime message added: ${message.id} for $conversationId',
       );
     } catch (e) {
-      debugPrint('❌ [MessageController] Failed to add realtime message: $e');
+      AppLogger.d('❌ [MessageController] Failed to add realtime message: $e');
     }
   }
 
@@ -194,7 +197,7 @@ class MessageController extends ChangeNotifier {
     _messages.removeWhere((message) => ids.contains(message.id));
     _notify();
 
-    debugPrint(
+    AppLogger.d(
       '🗑️ [MessageController] Removed ${ids.length} messages for $conversationId',
     );
   }
@@ -205,58 +208,63 @@ class MessageController extends ChangeNotifier {
   /// Returns true if successful, false otherwise
   Future<bool> deleteMessage(String messageId) async {
     if (messageId.isEmpty) {
-      debugPrint('⚠️ [MessageController] ❌ Empty message ID provided');
+      AppLogger.d('⚠️ [MessageController] ❌ Empty message ID provided');
       return false;
     }
 
-    debugPrint('🗑️ [MessageController] 🚀 Starting delete for message: $messageId');
-    debugPrint('💬 [MessageController] 🆔 Conversation: $conversationId');
+    AppLogger.d('🗑️ [MessageController] 🚀 Starting delete for message: $messageId');
+    AppLogger.d('💬 [MessageController] 🆔 Conversation: $conversationId');
 
     // Store original message for rollback
     final messageIndex = _messages.indexWhere((m) => m.id == messageId);
     if (messageIndex == -1) {
-      debugPrint('⚠️ [MessageController] ❌ Message not found in local state');
+      AppLogger.d('⚠️ [MessageController] ❌ Message not found in local state');
       return false;
     }
 
     final originalMessage = _messages[messageIndex];
-    debugPrint('💾 [MessageController] 📝 Stored original message for rollback');
+    AppLogger.d('💾 [MessageController] 📝 Stored original message for rollback');
 
     // Optimistic UI update - remove immediately
-    debugPrint('⚡ [MessageController] 🗑️ Optimistic delete - removing from UI');
+    AppLogger.d('⚡ [MessageController] 🗑️ Optimistic delete - removing from UI');
     _messages.removeAt(messageIndex);
     _notify();
-    debugPrint('✅ [MessageController] 👀 UI updated - message removed');
+    AppLogger.d('✅ [MessageController] 👀 UI updated - message removed');
 
     try {
-      debugPrint('📡 [MessageController] 🌐 Calling API to delete message...');
+      AppLogger.d('📡 [MessageController] 🌐 Calling API to delete message...');
       final success = await _messageService.deleteMessage(
         conversationId: conversationId,
         messageId: messageId,
+        cancelToken: _cancelToken,
       );
 
       if (success) {
-        debugPrint('✅ [MessageController] 🎉 Message deleted successfully from backend');
-        debugPrint('📊 [MessageController] 📉 Total messages: ${_messages.length}');
+        AppLogger.d('✅ [MessageController] 🎉 Message deleted successfully from backend');
+        AppLogger.d('📊 [MessageController] 📉 Total messages: ${_messages.length}');
         return true;
       } else {
-        debugPrint('❌ [MessageController] ⚠️ Backend delete failed - rolling back');
+        AppLogger.d('❌ [MessageController] ⚠️ Backend delete failed - rolling back');
         // Rollback - restore message
         _messages.insert(messageIndex, originalMessage);
         _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _notify();
-        debugPrint('🔄 [MessageController] ✅ Rollback complete - message restored');
+        AppLogger.d('🔄 [MessageController] ✅ Rollback complete - message restored');
         return false;
       }
     } catch (e) {
-      debugPrint('💥 [MessageController] ❌ Error deleting message: $e');
-      debugPrint('🔄 [MessageController] 🔙 Rolling back optimistic update...');
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [MessageController] deleteMessage cancelled');
+        return false;
+      }
+      AppLogger.d('💥 [MessageController] ❌ Error deleting message: $e');
+      AppLogger.d('🔄 [MessageController] 🔙 Rolling back optimistic update...');
 
       // Rollback - restore message
       _messages.insert(messageIndex, originalMessage);
       _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _notify();
-      debugPrint('✅ [MessageController] 🔄 Rollback complete - message restored');
+      AppLogger.d('✅ [MessageController] 🔄 Rollback complete - message restored');
 
       rethrow;
     }
@@ -269,22 +277,22 @@ class MessageController extends ChangeNotifier {
     _messages[index] = message;
     _notify();
 
-    debugPrint('🔄 [MessageController] Message replaced: ${message.id}');
+    AppLogger.d('🔄 [MessageController] Message replaced: ${message.id}');
   }
 
   /// Send message via REST API with comprehensive logging
   /// Returns the sent message on success, null on failure
   Future<MessageModel?> sendMessage(String content) async {
-    debugPrint(
+    AppLogger.d(
       '[MessageController] 🚀 REST send START for conversation: $conversationId',
     );
 
     try {
-      debugPrint('[MessageController] 🔑 Fetching current user ID...');
+      AppLogger.d('[MessageController] 🔑 Fetching current user ID...');
       final currentUserId = await TokenStorage.getCurrentUserId();
-      debugPrint('[MessageController] 👤 Current user ID: $currentUserId');
+      AppLogger.d('[MessageController] 👤 Current user ID: $currentUserId');
 
-      debugPrint(
+      AppLogger.d(
         '[MessageController] 🌐 Calling MessageService.sendMessage...',
       );
       final sentMessage = await _messageService.sendMessage(
@@ -292,26 +300,31 @@ class MessageController extends ChangeNotifier {
         content: content,
         currentUserId: currentUserId,
         receiverUserId: receiverUserId,
+        cancelToken: _cancelToken,
       );
 
       if (sentMessage != null) {
-        debugPrint(
+        AppLogger.d(
           '[MessageController] ✅ REST send SUCCESS: message ID=${sentMessage.id}',
         );
-        debugPrint(
+        AppLogger.d(
           '[MessageController] 💾 Upserting message to local state...',
         );
         _upsertMessage(sentMessage);
         _notify();
-        debugPrint('[MessageController] ✅ Message persisted locally');
+        AppLogger.d('[MessageController] ✅ Message persisted locally');
       } else {
-        debugPrint('[MessageController] ⚠️ REST send returned NULL');
+        AppLogger.d('[MessageController] ⚠️ REST send returned NULL');
       }
 
       return sentMessage;
     } catch (error) {
+      if (error is DioException && CancelToken.isCancel(error)) {
+        AppLogger.d('🚫 [MessageController] sendMessage cancelled');
+        return null;
+      }
       if (_shouldRecoverConversation(error)) {
-        debugPrint(
+        AppLogger.d(
           '[MessageController] Recovering conversation after participant error during send...',
         );
         final recovered = await _recoverConversationId();
@@ -320,7 +333,7 @@ class MessageController extends ChangeNotifier {
         }
       }
 
-      debugPrint('[MessageController] ❌ REST send FAILED: $error');
+      AppLogger.d('[MessageController] ❌ REST send FAILED: $error');
       _setError(error.toString());
       rethrow;
     }
@@ -345,7 +358,7 @@ class MessageController extends ChangeNotifier {
     _setError(null);
 
     try {
-      debugPrint(
+      AppLogger.d(
         '📡 [MessageController] Fetch messages conversation=$conversationId page=$page replace=$replace',
       );
 
@@ -355,6 +368,7 @@ class MessageController extends ChangeNotifier {
         currentUserId: currentUserId,
         receiverUserId: receiverUserId,
         page: page,
+        cancelToken: _cancelToken,
       );
 
       if (_disposed) return;
@@ -376,13 +390,17 @@ class MessageController extends ChangeNotifier {
       _hasMoreData = fetchedMessages.length >= _pageSize;
       _currentPage = page;
 
-      debugPrint(
+      AppLogger.d(
         '🎉 [MessageController] Loaded ${fetchedMessages.length} messages. total=${_messages.length} for $conversationId',
       );
     } catch (error) {
       if (_disposed) return;
+      if (error is DioException && CancelToken.isCancel(error)) {
+        AppLogger.d('🚫 [MessageController] fetchMessages cancelled');
+        return;
+      }
       if (replace && _shouldRecoverConversation(error)) {
-        debugPrint(
+        AppLogger.d(
           '[MessageController] Recovering conversation after participant error during fetch...',
         );
         final recovered = await _recoverConversationId();
@@ -392,7 +410,7 @@ class MessageController extends ChangeNotifier {
         }
       }
 
-      debugPrint('❌ [MessageController] Fetch messages failed: $error');
+      AppLogger.d('❌ [MessageController] Fetch messages failed: $error');
       _setError(error.toString());
     } finally {
       _activeFetch = null;
@@ -402,6 +420,11 @@ class MessageController extends ChangeNotifier {
   }
 
   void _upsertMessage(MessageModel message) {
+    if (_messages.any((m) => m.id == message.id)) {
+      AppLogger.d('🔒 [MessageController] Duplicate message by ID skipped in upsert: ${message.id}');
+      return;
+    }
+
     var index = _messages.indexWhere((item) => item.id == message.id);
 
     // If message is sent by me, try to match and replace local optimistic message
@@ -451,6 +474,7 @@ class MessageController extends ChangeNotifier {
     try {
       final conversation = await _messageService.createOrGetConversation(
         receiverUserId,
+        cancelToken: _cancelToken,
       );
       if (conversation.id.isEmpty || conversation.id == conversationId) {
         return false;
@@ -459,12 +483,12 @@ class MessageController extends ChangeNotifier {
       conversationId = conversation.id;
       onConversationIdChanged?.call(conversation.id);
       _setError(null);
-      debugPrint(
+      AppLogger.d(
         '[MessageController] Recovered conversation ID: $conversationId',
       );
       return true;
     } catch (recoverError) {
-      debugPrint(
+      AppLogger.d(
         '[MessageController] Failed to recover conversation ID: $recoverError',
       );
       return false;
@@ -482,13 +506,14 @@ class MessageController extends ChangeNotifier {
     if (_disposed) return;
 
     _disposed = true;
+    _cancelToken.cancel('Screen disposed');
 
     // Clear all locks and requests
     _lockedOperations.clear();
     _requestTimestamps.clear();
     _activeFetch = null;
 
-    debugPrint(
+    AppLogger.d(
       '🗑️ [MessageController] Disposed for $conversationId (cleared ${_lockedOperations.length} locks)',
     );
     super.dispose();

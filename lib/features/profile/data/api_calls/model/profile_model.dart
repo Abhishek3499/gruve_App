@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileModel {
   final String id;
@@ -68,10 +68,10 @@ class ProfileModel {
       context: 'ProfileModel.fromJson',
     );
     final flat = flattenUserJson(safeJson);
-    debugPrint(
+    AppLogger.d(
       "[ProfileModel] fromJson (flattened keys): ${flat.keys.toList()}",
     );
-    debugPrint("[ProfileModel] Full flattened JSON: $flat");
+    AppLogger.d("[ProfileModel] Full flattened JSON: $flat");
 
     final fullName = SafeParsingHelpers.safeString(flat, const [
       'full_name',
@@ -128,17 +128,17 @@ class ProfileModel {
 
     final hasActiveStory = parsedHasActiveStory;
 
-    debugPrint(
+    AppLogger.d(
       "[ProfileModel] Checking for has_active_story in keys: ${flat.keys.toList()}",
     );
-    debugPrint(
+    AppLogger.d(
       "[ProfileModel] has_active_story value: ${flat['has_active_story']}",
     );
-    debugPrint(
+    AppLogger.d(
       "[ProfileModel] Parsed hasActiveStory flag: $parsedHasActiveStory",
     );
-    debugPrint("[ProfileModel] Final hasActiveStory: $hasActiveStory");
-    debugPrint("[ProfileModel] Parsed storyCount: $storyCount");
+    AppLogger.d("[ProfileModel] Final hasActiveStory: $hasActiveStory");
+    AppLogger.d("[ProfileModel] Parsed storyCount: $storyCount");
 
     final model = ProfileModel(
       id: id,
@@ -150,7 +150,7 @@ class ProfileModel {
       storyCount: storyCount,
     );
 
-    debugPrint(
+    AppLogger.d(
       "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}, isFollowing: ${model.isFollowing}, hasActiveStory: ${model.hasActiveStory}, storyCount: ${model.storyCount}",
     );
 

@@ -12,6 +12,7 @@ import '../../message/controllers/conversation_controller.dart';
 import '../../message/providers/message_provider.dart';
 import '../../message/screen/chat_screen.dart';
 import '../../user_profile/presentation/screens/user_profile_screen.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SearchPage extends StatefulWidget {
   final SearchNavigationType navigationType;
@@ -156,7 +157,7 @@ class _SearchPageState extends State<SearchPage> {
       if (!mounted) return;
 
       if (_navigationType == SearchNavigationType.profile) {
-        debugPrint(
+        AppLogger.d(
           '👤 [SearchPage] Opening profile for user: ${user.username}',
         );
         Navigator.push(
@@ -170,7 +171,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ).then((_) => _loadRecentSearches());
       } else {
-        debugPrint(
+        AppLogger.d(
           '💬 [SearchPage] Opening chat for user: ${user.username} (ID: ${user.id})',
         );
 
@@ -182,7 +183,7 @@ class _SearchPageState extends State<SearchPage> {
         );
 
         if (existingConversation != null) {
-          debugPrint(
+          AppLogger.d(
             '✅ [SearchPage] Existing conversation found: ${existingConversation.id}',
           );
           if (!mounted) return;
@@ -200,7 +201,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ).then((_) => _loadRecentSearches());
         } else {
-          debugPrint(
+          AppLogger.d(
             '🆕 [SearchPage] Creating new conversation with user: ${user.name}',
           );
           if (!mounted) return;
@@ -240,7 +241,7 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ).then((_) => _loadRecentSearches());
           } catch (e) {
-            debugPrint('❌ [SearchPage] Error creating conversation: $e');
+            AppLogger.d('❌ [SearchPage] Error creating conversation: $e');
             if (!mounted) return;
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(

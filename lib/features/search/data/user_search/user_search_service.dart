@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SearchUser {
   final String id;
@@ -46,19 +47,9 @@ class SearchUser {
 }
 
 class UserSearchService {
-  UserSearchService({Dio? dio}) : _dio = dio ?? _createOptimizedDio();
+  UserSearchService({Dio? dio}) : _dio = dio ?? AppDio.getInstance();
 
   final Dio _dio;
-
-  // Create optimized Dio with shorter timeout for user search
-  static Dio _createOptimizedDio() {
-    debugPrint('⚡ [UserSearchService] Creating optimized Dio with reduced timeout');
-    return AppDio.create(
-      connectTimeout: const Duration(seconds: 5),
-      receiveTimeout: const Duration(seconds: 5),
-      sendTimeout: const Duration(seconds: 5),
-    );
-  }
 
   Future<List<SearchUser>> searchUsers(
     String query, {
@@ -72,13 +63,18 @@ class UserSearchService {
         'user/users/search/',
         queryParameters: {'username': trimmedQuery},
         cancelToken: cancelToken,
+        options: Options(
+          connectTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+          sendTimeout: const Duration(seconds: 5),
+        ),
       );
       return _parseUsers(response.data);
     } on DioException catch (e) {
-      debugPrint('❌ [UserSearchService] ${e.type}: ${e.message}');
+      AppLogger.d('❌ [UserSearchService] ${e.type}: ${e.message}');
       return [];
     } catch (e) {
-      debugPrint('❌ [UserSearchService] Unexpected: $e');
+      AppLogger.d('❌ [UserSearchService] Unexpected: $e');
       return [];
     }
   }

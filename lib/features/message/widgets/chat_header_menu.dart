@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/assets.dart';
 import '../../video_options/sheets/simple_report_sheet.dart';
 import 'block/block_user_widget.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ChatHeaderMenu extends StatefulWidget {
   final VoidCallback? onClose;
@@ -61,7 +62,7 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
   }
 
   void _handleMenuAction(String action) {
-    debugPrint(action);
+    AppLogger.d(action);
 
     if (action == "Report user") {
       _showReportSheet();

@@ -10,6 +10,7 @@ import '../widgets/views_account_reached.dart';
 import '../widgets/views_content_tabs.dart';
 import '../widgets/views_progress_bar.dart';
 import '../widgets/views_footer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ViewsScreen extends StatefulWidget {
   const ViewsScreen({super.key});
@@ -24,13 +25,13 @@ class _ViewsScreenState extends State<ViewsScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint("[ViewsScreen] Screen initialized");
+    AppLogger.d("[ViewsScreen] Screen initialized");
     _controller = ViewsController();
   }
 
   @override
   void dispose() {
-    debugPrint("[ViewsScreen] Screen disposed");
+    AppLogger.d("[ViewsScreen] Screen disposed");
     _controller.dispose();
     super.dispose();
   }

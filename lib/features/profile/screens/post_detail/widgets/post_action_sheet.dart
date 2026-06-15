@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PostActionSheet extends StatelessWidget {
   final Post post;
@@ -40,49 +41,22 @@ class PostActionSheet extends StatelessWidget {
                 children: [
                   if (isOwnProfile) ...[
                     _buildActionTile(
-                      icon: Icons.edit_outlined,
-                      label: 'Edit Post',
-                      onTap: () {
-                        Navigator.pop(context);
-                        debugPrint('📝 Edit post: ${post.id}');
-                      },
-                    ),
-                    _buildActionTile(
                       icon: Icons.delete_outline,
                       label: 'Delete Post',
                       color: Colors.red,
                       onTap: () {
-                        Navigator.pop(context);
-                        _showDeleteConfirmation(context, post);
+                        Navigator.pop(context, 'delete');
                       },
                     ),
-                    const Divider(color: Colors.white12, height: 16),
                   ],
-                  _buildActionTile(
-                    icon: Icons.share_outlined,
-                    label: 'Share Post',
-                    onTap: () {
-                      Navigator.pop(context);
-                      debugPrint('📤 Share post: ${post.id}');
-                    },
-                  ),
-                  _buildActionTile(
-                    icon: Icons.link,
-                    label: 'Copy Link',
-                    onTap: () {
-                      Navigator.pop(context);
-                      debugPrint('🔗 Copy link: ${post.id}');
-                    },
-                  ),
                   if (!isOwnProfile) ...[
-                    const Divider(color: Colors.white12, height: 16),
                     _buildActionTile(
                       icon: Icons.flag_outlined,
                       label: 'Report Post',
                       color: Colors.orange,
                       onTap: () {
                         Navigator.pop(context);
-                        debugPrint('🚩 Report post: ${post.id}');
+                        AppLogger.d('🚩 Report post: ${post.id}');
                       },
                     ),
                     _buildActionTile(
@@ -91,7 +65,7 @@ class PostActionSheet extends StatelessWidget {
                       color: Colors.red,
                       onTap: () {
                         Navigator.pop(context);
-                        debugPrint('🚫 Block user: ${post.userId}');
+                        AppLogger.d('🚫 Block user: ${post.userId}');
                       },
                     ),
                   ],
@@ -143,33 +117,4 @@ class PostActionSheet extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, Post post) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text(
-          'Delete Post?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'This action cannot be undone.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              debugPrint('🗑️ Deleted post: ${post.id}');
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
 }

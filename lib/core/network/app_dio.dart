@@ -13,6 +13,7 @@ import 'package:gruve_app/core/monitoring/network_monitor.dart';
 class AppDio {
   static CancelToken? _logoutCancelToken;
   static PendingRequestQueue? _pendingQueue;
+  static Dio? _instance;
 
   static CancelToken get _cancelToken => _logoutCancelToken ??= CancelToken();
 
@@ -33,13 +34,17 @@ class AppDio {
 
     // Clear cache on logout
     CacheManager().clear();
+
+    // Reset singleton instance on logout
+    _instance = null;
   }
 
-  static Dio create({
-    Duration connectTimeout = const Duration(seconds: 20),
-    Duration receiveTimeout = const Duration(seconds: 20),
-    Duration sendTimeout = const Duration(seconds: 20),
-  }) {
+  static Dio getInstance() {
+    _instance ??= _buildDio();
+    return _instance!;
+  }
+
+  static Dio _buildDio() {
     var baseUrl = EnvironmentConfig.baseUrl.trim();
     if (baseUrl.isNotEmpty && !baseUrl.endsWith('/')) {
       baseUrl = '$baseUrl/';
@@ -48,9 +53,9 @@ class AppDio {
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: connectTimeout,
-        receiveTimeout: receiveTimeout,
-        sendTimeout: sendTimeout,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60),
+        sendTimeout: const Duration(seconds: 30),
       ),
     );
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class TokenStorage {
   static const String _accessTokenKey = 'access_token';
@@ -14,7 +14,7 @@ class TokenStorage {
   );
 
   static void _log(String message) {
-    if (kDebugMode) debugPrint('[TokenStorage] $message');
+    AppLogger.d('[TokenStorage] $message');
   }
 
   static Future<void> _writeSecure(String key, String value) {

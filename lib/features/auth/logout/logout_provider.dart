@@ -12,6 +12,7 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class LogoutProvider extends ChangeNotifier {
   final LogoutController _controller = LogoutController();
@@ -25,7 +26,7 @@ class LogoutProvider extends ChangeNotifier {
   bool get shouldNavigate => _shouldNavigate;
 
   Future<void> logout({BuildContext? context}) async {
-    debugPrint('[LogoutProvider] Starting logout process');
+    AppLogger.d('[LogoutProvider] Starting logout process');
     _setLoading(true);
     _errorMessage = null;
 
@@ -40,14 +41,14 @@ class LogoutProvider extends ChangeNotifier {
         );
 
         if (_controller.errorMessage != null) {
-          debugPrint(
+          AppLogger.d(
             '[LogoutProvider] Logout API returned error: ${_controller.errorMessage}',
           );
         } else {
-          debugPrint('[LogoutProvider] Logout API completed');
+          AppLogger.d('[LogoutProvider] Logout API completed');
         }
       } else {
-        debugPrint('[LogoutProvider] No refresh token available for logout API');
+        AppLogger.d('[LogoutProvider] No refresh token available for logout API');
       }
 
       await AuthStateManager().logout();
@@ -65,7 +66,7 @@ class LogoutProvider extends ChangeNotifier {
             _tryGetProvider<ConversationController>(context);
         final userProvider = _tryGetProvider<UserProvider>(context);
 
-        debugPrint('[LogoutProvider] Resetting local providers');
+        AppLogger.d('[LogoutProvider] Resetting local providers');
         profileProvider?.reset();
         storyController?.reset();
         highlightProvider?.reset();
@@ -74,14 +75,14 @@ class LogoutProvider extends ChangeNotifier {
         messageProvider?.reset();
         conversationController?.reset();
         userProvider?.reset();
-        debugPrint('[LogoutProvider] Local providers cleared');
+        AppLogger.d('[LogoutProvider] Local providers cleared');
       }
 
       AppDio.cancelAllRequests('User logout');
       _shouldNavigate = true;
     } catch (e) {
       _errorMessage = e.toString();
-      debugPrint('[LogoutProvider] Logout exception: $e');
+      AppLogger.d('[LogoutProvider] Logout exception: $e');
 
       await AuthStateManager().logout();
       AppDio.cancelAllRequests('User logout fallback');
@@ -110,7 +111,7 @@ class LogoutProvider extends ChangeNotifier {
   void resetNavigationFlag() {
     if (_shouldNavigate) {
       _shouldNavigate = false;
-      debugPrint('[LogoutProvider] Navigation flag reset');
+      AppLogger.d('[LogoutProvider] Navigation flag reset');
       notifyListeners();
     }
   }
@@ -118,7 +119,7 @@ class LogoutProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
-      debugPrint('[LogoutProvider] Loading: $loading');
+      AppLogger.d('[LogoutProvider] Loading: $loading');
       notifyListeners();
     }
   }

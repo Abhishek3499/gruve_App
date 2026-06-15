@@ -6,7 +6,18 @@ import 'package:gruve_app/features/story_preview/widgets/more_widgets/more_heade
 import 'package:gruve_app/features/story_preview/widgets/more_widgets/more_toggle.dart';
 
 class MoreOptionScreen extends StatefulWidget {
-  const MoreOptionScreen({super.key});
+  final bool scheduleReel;
+  final bool uploadHighQuality;
+  final bool hideLikeCount;
+  final bool hideShareCount;
+
+  const MoreOptionScreen({
+    super.key,
+    this.scheduleReel = false,
+    this.uploadHighQuality = false,
+    this.hideLikeCount = false,
+    this.hideShareCount = false,
+  });
 
   @override
   State<MoreOptionScreen> createState() => _MoreOptionScreenState();
@@ -14,35 +25,52 @@ class MoreOptionScreen extends StatefulWidget {
 
 class _MoreOptionScreenState extends State<MoreOptionScreen> {
   // Logic to handle toggle states separately for each section
-  // _MoreOptionScreenState ke andar
   Map<String, List<bool>> sectionStates = {};
 
   @override
   void initState() {
     super.initState();
-
-    // Pehle check karo data hai bhi ya nahi
-    if (MoreConstants.sections.isNotEmpty) {
-      MoreConstants.sections.forEach((key, list) {
-        // List.from use karo taaki original data modify na ho
-        sectionStates[key] = list.map((e) => e.isEnabled).toList();
-      });
-    }
+    sectionStates["Sharing preferences"] = [
+      widget.scheduleReel,
+      widget.uploadHighQuality,
+    ];
+    sectionStates["How others can interact with your reel"] = [
+      widget.hideLikeCount,
+      widget.hideShareCount,
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient:
-              MoreConstants.backgroundGradient, // Use your constant gradient
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              MoreHeader(onBack: () => Navigator.pop(context)),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, {
+          'schedule_reel': sectionStates["Sharing preferences"]![0],
+          'upload_high_quality': sectionStates["Sharing preferences"]![1],
+          'hide_like_count': sectionStates["How others can interact with your reel"]![0],
+          'hide_share_count': sectionStates["How others can interact with your reel"]![1],
+        });
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient:
+                MoreConstants.backgroundGradient, // Use your constant gradient
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                MoreHeader(
+                  onBack: () => Navigator.pop(context, {
+                    'schedule_reel': sectionStates["Sharing preferences"]![0],
+                    'upload_high_quality': sectionStates["Sharing preferences"]![1],
+                    'hide_like_count': sectionStates["How others can interact with your reel"]![0],
+                    'hide_share_count': sectionStates["How others can interact with your reel"]![1],
+                  }),
+                ),
               const SizedBox(height: 10),
 
               // Scrollable area for cards
@@ -102,6 +130,7 @@ class _MoreOptionScreenState extends State<MoreOptionScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

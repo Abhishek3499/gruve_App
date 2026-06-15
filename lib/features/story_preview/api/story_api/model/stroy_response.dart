@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CreateStoryResponse {
   final bool success;
@@ -7,9 +7,9 @@ class CreateStoryResponse {
   CreateStoryResponse({required this.success, required this.message});
 
   factory CreateStoryResponse.fromJson(Map<String, dynamic> json) {
-    debugPrint("📥 [CreateStoryResponse] Raw Response: $json");
-    debugPrint("✅ [CreateStoryResponse] Success: ${json['success']}");
-    debugPrint("💬 [CreateStoryResponse] Message: ${json['message']}");
+    AppLogger.d("📥 [CreateStoryResponse] Raw Response: $json");
+    AppLogger.d("✅ [CreateStoryResponse] Success: ${json['success']}");
+    AppLogger.d("💬 [CreateStoryResponse] Message: ${json['message']}");
 
     return CreateStoryResponse(
       success: json['success'] ?? false,

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Production-level token refresh service with race condition protection
 class TokenRefreshService {
@@ -25,7 +25,7 @@ class TokenRefreshService {
   Future<Map<String, String>?> refreshTokens() async {
     // If refresh is already in progress, wait for it
     if (_refreshCompleter != null) {
-      debugPrint('🔄 [TokenRefresh] Refresh already in progress, waiting...');
+      AppLogger.d('🔄 [TokenRefresh] Refresh already in progress, waiting...');
       return _refreshCompleter!.future;
     }
 
@@ -33,18 +33,18 @@ class TokenRefreshService {
     _refreshCompleter = Completer<Map<String, String>?>();
 
     try {
-      debugPrint('🔄 [TokenRefresh] Starting token refresh...');
+      AppLogger.d('🔄 [TokenRefresh] Starting token refresh...');
 
       final refreshToken = await TokenStorage.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
-        debugPrint('❌ [TokenRefresh] No refresh token available');
+        AppLogger.d('❌ [TokenRefresh] No refresh token available');
         _refreshCompleter!.complete(null);
         return null;
       }
 
       final baseUrl = EnvironmentConfig.baseUrl.trim();
       if (baseUrl.isEmpty) {
-        debugPrint('❌ [TokenRefresh] No base URL configured');
+        AppLogger.d('❌ [TokenRefresh] No base URL configured');
         _refreshCompleter!.complete(null);
         return null;
       }
@@ -59,7 +59,7 @@ class TokenRefreshService {
         ),
       );
 
-      debugPrint('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
+      AppLogger.d('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
 
       final response = await dio.post(
         '/auth/refresh',
@@ -69,7 +69,7 @@ class TokenRefreshService {
         ),
       );
 
-      debugPrint(
+      AppLogger.d(
         '📊 [TokenRefresh] Refresh response status: ${response.statusCode}',
       );
       if (response.statusCode == 200 && response.data != null) {
@@ -97,7 +97,7 @@ class TokenRefreshService {
           );
           await SocketService().reconnectWithLatestTokenIfActive();
 
-          debugPrint('✅ [TokenRefresh] Tokens refreshed successfully');
+          AppLogger.d('✅ [TokenRefresh] Tokens refreshed successfully');
           _refreshCompleter!.complete({
             'accessToken': newAccessToken,
             'refreshToken': newRefreshToken,
@@ -108,19 +108,19 @@ class TokenRefreshService {
             'refreshToken': newRefreshToken,
           };
         } else {
-          debugPrint('❌ [TokenRefresh] Invalid token response format');
+          AppLogger.d('❌ [TokenRefresh] Invalid token response format');
           _refreshCompleter!.complete(null);
           return null;
         }
       } else {
-        debugPrint(
+        AppLogger.d(
           '❌ [TokenRefresh] Refresh failed with status: ${response.statusCode}',
         );
         _refreshCompleter!.complete(null);
         return null;
       }
     } catch (e) {
-      debugPrint('❌ [TokenRefresh] Refresh error: $e');
+      AppLogger.d('❌ [TokenRefresh] Refresh error: $e');
       _refreshCompleter!.complete(null);
       return null;
     } finally {

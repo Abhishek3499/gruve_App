@@ -11,7 +11,7 @@ import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.d
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
-import 'package:gruve_app/features/profile/data/services/user_profile_service.dart';
+import 'package:gruve_app/features/user_profile/data/services/user_profile_service.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/auth/logout/logout_provider.dart';
@@ -28,23 +28,42 @@ import 'package:gruve_app/features/message/data/repository/user_repository_impl.
 import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
 import 'package:gruve_app/core/network/api_client.dart';
 import 'package:gruve_app/features/notification/providers/notification_provider.dart';
+import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Suppress verbose logs in release mode
+  // AppLogger suppresses all output in release/profile builds.
+  // This override silences any remaining Flutter framework debugPrint calls.
   if (!kDebugMode) {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
 
   PaintingBinding.instance.imageCache.maximumSize = 300;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 120 << 20;
-  await EnvironmentConfig.initialize(); // 👈 CRITICAL - Initialize environment config
-  await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
+
+  try {
+    await EnvironmentConfig.initialize(); // 👈 CRITICAL - Initialize environment config
+  } catch (e) {
+    AppLogger.d('🚨 [Main] EnvironmentConfig initialization failed: $e');
+  }
+
+  try {
+    await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
+  } catch (e) {
+    AppLogger.d('🚨 [Main] SharedPreferences initialization failed: $e');
+  }
+
   final authStateManager = AuthStateManager();
-  await authStateManager.initialize();
+  try {
+    await authStateManager.initialize();
+  } catch (e) {
+    AppLogger.d('🚨 [Main] AuthStateManager initialization failed: $e');
+  }
+
   runApp(MyApp(authStateManager: authStateManager));
 }
 
@@ -123,6 +142,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DraftsProvider(),
         ),
       ],
       child: MaterialApp(

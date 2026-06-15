@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ChatInputField extends StatefulWidget {
   final Function(String) onSendMessage;
@@ -167,7 +168,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
         widget.onSendImage(image.path);
       }
     } catch (e) {
-      debugPrint('Error picking image from camera: $e');
+      AppLogger.d('Error picking image from camera: $e');
     }
   }
 
@@ -182,7 +183,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
         widget.onSendImage(image.path);
       }
     } catch (e) {
-      debugPrint('Error picking image from gallery: $e');
+      AppLogger.d('Error picking image from gallery: $e');
     }
   }
 

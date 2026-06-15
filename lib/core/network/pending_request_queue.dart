@@ -1,7 +1,7 @@
       import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Manages pending requests during token refresh to prevent race conditions
 class PendingRequestQueue {
@@ -17,7 +17,7 @@ class PendingRequestQueue {
   ) async {
     // If refresh is in progress, queue the request
     if (_refreshService.isRefreshing) {
-      debugPrint('⏳ [PendingQueue] Refresh in progress, queuing request: ${options.path}');
+      AppLogger.d('⏳ [PendingQueue] Refresh in progress, queuing request: ${options.path}');
       return _queueRequest(requestFunction, options);
     }
 
@@ -44,12 +44,12 @@ class PendingRequestQueue {
       await _refreshService.queueRequestUntilRefresh();
 
       // Execute the queued request
-      debugPrint('▶️ [PendingQueue] Executing queued request: ${options.path}');
+      AppLogger.d('▶️ [PendingQueue] Executing queued request: ${options.path}');
       final response = await requestFunction();
       completer.complete(response);
 
     } catch (e) {
-      debugPrint('❌ [PendingQueue] Queued request failed: ${options.path}, error: $e');
+      AppLogger.d('❌ [PendingQueue] Queued request failed: ${options.path}, error: $e');
       completer.completeError(e);
     } finally {
       // Remove from queue
@@ -61,7 +61,7 @@ class PendingRequestQueue {
 
   /// Cancels all pending requests (useful during logout)
   void cancelAll([String? reason]) {
-    debugPrint('🛑 [PendingQueue] Cancelling all pending requests. Reason: $reason');
+    AppLogger.d('🛑 [PendingQueue] Cancelling all pending requests. Reason: $reason');
     for (final queued in _queue) {
       if (!queued.completer.isCompleted) {
         queued.completer.completeError(

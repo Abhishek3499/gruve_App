@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import '../models/phone_login_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PhoneSiginServices {
-  final Dio _dio = AppDio.create();
+  final Dio _dio = AppDio.getInstance();
   Future<PhoneloginResponse> signIn({required String phoneNumber}) async {
     try {
       const endpoint = "auth/phone-login/";
@@ -38,7 +38,7 @@ class PhoneSiginServices {
         fallback: 'Please enter a valid phone number.',
       );
     } catch (e) {
-      debugPrint("Phone login failed: $e");
+      AppLogger.d("Phone login failed: $e");
       rethrow;
     }
   }

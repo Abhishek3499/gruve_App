@@ -10,6 +10,7 @@ import 'package:gruve_app/features/video_editor/screens/video_editor_screen.dart
 import 'package:gruve_app/features/story_preview/api/post/post_action_buttons.dart';
 
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PostPreviewScreen extends StatefulWidget {
   final String mediaPath;
@@ -155,7 +156,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 ),
                               );
                             } catch (e) {
-                              debugPrint('Error navigating to video editor: $e');
+                              AppLogger.d('Error navigating to video editor: $e');
                             }
                           },
                           child: SizedBox(
@@ -183,7 +184,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                         GestureDetector(
                           onTap: () {
                             try {
-                              debugPrint(
+                              AppLogger.d(
                                 'PostPreviewScreen navigating with mediaPath: ${widget.mediaPath}',
                               );
                               Navigator.push(
@@ -196,7 +197,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 ),
                               );
                             } catch (e) {
-                              debugPrint('Navigation error: $e');
+                              AppLogger.d('Navigation error: $e');
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

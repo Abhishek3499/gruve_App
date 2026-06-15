@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'socket_logger.dart';
 import 'socket_test_utility.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Socket Log Viewer Widget
 /// 
@@ -407,7 +408,7 @@ Socket Log Summary:
       final logs = SocketLogger.getLogs().join('\n\n');
       await Clipboard.setData(ClipboardData(text: logs));
     } catch (e) {
-      debugPrint('Failed to copy logs to clipboard: $e');
+      AppLogger.d('Failed to copy logs to clipboard: $e');
     }
   }
 }

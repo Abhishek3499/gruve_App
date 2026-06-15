@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
@@ -6,13 +5,14 @@ import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
 import 'package:gruve_app/features/profile/presentation/providers/user_profile_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
-import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
+import 'package:gruve_app/core/widgets/shimmer/profile_shimmer.dart';
 import '../data/models/user_profile_model.dart';
 
 import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/stats_row.dart';
 import '../widgets/story_list.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
@@ -33,9 +33,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ProfileProvider? _ownProfileProvider;
 
   void _log(String message) {
-    if (kDebugMode) {
-      debugPrint(message);
-    }
+    AppLogger.d(message);
+    
   }
 
   @override
@@ -89,6 +88,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
+    if (widget.userId == null) {
+      context.read<ProfileProvider>().cancelActiveRequests();
+    } else {
+      context.read<UserProfileProvider>().cancelActiveRequests();
+    }
     super.dispose();
   }
 
@@ -441,70 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileShimmer() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF42174C), Color(0xFF212235)],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          child: Stack(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 130),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7D63D1).withValues(alpha: 0.12),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(100),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-                child: const SizedBox(height: 720),
-              ),
-              AppShimmer(
-                child: Stack(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 130),
-                      width: double.infinity,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 110),
-                          _buildStatsShimmer(),
-                          const SizedBox(height: 25),
-                          _buildStoriesShimmer(),
-                          const SizedBox(height: 20),
-                          _buildFilterTabsShimmer(),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: _buildShimmerGrid(itemCount: 9),
-                          ),
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      top: 30,
-                      left: 0,
-                      right: 0,
-                      child: _buildHeaderShimmer(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return const ProfileShimmer();
   }
 
   Widget _buildOtherUserGrid(UserProfile userProfile) {
@@ -576,139 +517,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHeaderShimmer() {
-    return Column(
-      children: [
-        Row(
-          children: const [
-            SizedBox(width: 20),
-            Spacer(),
-            ShimmerBox(height: 30, width: 30, borderRadius: 8),
-            SizedBox(width: 20),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              ShimmerCircle(radius: 50),
-              SizedBox(width: 25),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ShimmerBox(height: 22, width: 150, borderRadius: 8),
-                    SizedBox(height: 8),
-                    ShimmerBox(height: 18, width: 100, borderRadius: 8),
-                    SizedBox(height: 25),
-                    ShimmerBox(height: 40, width: 160, borderRadius: 30),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsShimmer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildStatShimmer(width: 82),
-          _buildDividerShimmer(),
-          _buildStatShimmer(width: 44),
-          _buildDividerShimmer(),
-          _buildStatShimmer(width: 52),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatShimmer({required double width}) {
-    return Column(
-      children: [
-        const ShimmerBox(height: 22, width: 42, borderRadius: 8),
-        const SizedBox(height: 6),
-        ShimmerBox(height: 14, width: width, borderRadius: 8),
-      ],
-    );
-  }
-
-  Widget _buildDividerShimmer() {
-    return Container(height: 40, width: 1.2, color: Colors.white);
-  }
-
-  Widget _buildStoriesShimmer() {
-    return SizedBox(
-      height: 102,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(left: 30, right: 12),
-        itemCount: 5,
-        separatorBuilder: (_, _) => const SizedBox(width: 18),
-        itemBuilder: (context, index) {
-          return const SizedBox(
-            width: 72,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ShimmerCircle(radius: 32),
-                SizedBox(height: 6),
-                ShimmerBox(height: 12, width: 58, borderRadius: 8),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFilterTabsShimmer() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: const [
-        ShimmerBox(height: 42, width: 82, borderRadius: 30),
-        ShimmerBox(height: 42, width: 118, borderRadius: 30),
-        ShimmerBox(height: 42, width: 94, borderRadius: 30),
-      ],
-    );
-  }
-
-  Widget _buildShimmerGrid({
-    required int itemCount,
-    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
-      horizontal: 13,
-      vertical: 20,
-    ),
-  }) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: padding,
-      itemCount: itemCount,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.75,
-      ),
-      itemBuilder: (_, _) {
-        return const ShimmerBox(
-          height: double.infinity,
-          width: double.infinity,
-          borderRadius: 18,
         );
       },
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Production-safe logger
 /// Disables debug prints in release mode
@@ -12,7 +13,7 @@ class ProductionLogger {
   void debug(String message, {String? tag}) {
     if (EnvironmentConfig.enableLogging && kDebugMode) {
       final prefix = tag != null ? '[$tag] ' : '';
-      debugPrint('🔍 $prefix$message');
+      AppLogger.d('🔍 $prefix$message');
     }
   }
 
@@ -20,7 +21,7 @@ class ProductionLogger {
   void info(String message, {String? tag}) {
     if (EnvironmentConfig.enableLogging) {
       final prefix = tag != null ? '[$tag] ' : '';
-      debugPrint('ℹ️ $prefix$message');
+      AppLogger.d('ℹ️ $prefix$message');
     }
   }
 
@@ -28,7 +29,7 @@ class ProductionLogger {
   void warning(String message, {String? tag}) {
     if (EnvironmentConfig.enableLogging) {
       final prefix = tag != null ? '[$tag] ' : '';
-      debugPrint('⚠️ $prefix$message');
+      AppLogger.d('⚠️ $prefix$message');
     }
   }
 
@@ -36,14 +37,14 @@ class ProductionLogger {
   void error(String message, {String? tag, Object? error, StackTrace? stackTrace}) {
     if (EnvironmentConfig.enableLogging) {
       final prefix = tag != null ? '[$tag] ' : '';
-      debugPrint('❌ $prefix$message');
+      AppLogger.d('❌ $prefix$message');
       
       if (error != null) {
-        debugPrint('❌ $prefix Error: $error');
+        AppLogger.d('❌ $prefix Error: $error');
       }
       
       if (stackTrace != null) {
-        debugPrint('❌ $prefix Stack: $stackTrace');
+        AppLogger.d('❌ $prefix Stack: $stackTrace');
       }
     }
     
@@ -60,7 +61,7 @@ class ProductionLogger {
       final metadataStr = metadata != null 
           ? ' | ${metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
-      debugPrint('⏱️ [PERF] $operation: ${duration.inMilliseconds}ms$metadataStr');
+      AppLogger.d('⏱️ [PERF] $operation: ${duration.inMilliseconds}ms$metadataStr');
     }
   }
 
@@ -76,7 +77,7 @@ class ProductionLogger {
           : '';
       
       final statusIcon = statusCode >= 200 && statusCode < 300 ? '✅' : '❌';
-      debugPrint('🌐 [NET] $statusIcon $method $endpoint ($statusCode) | ${duration.inMilliseconds}ms$sizeStr$metadataStr');
+      AppLogger.d('🌐 [NET] $statusIcon $method $endpoint ($statusCode) | ${duration.inMilliseconds}ms$sizeStr$metadataStr');
     }
   }
 
@@ -86,7 +87,7 @@ class ProductionLogger {
       final propsStr = properties != null 
           ? ' | ${properties.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
-      debugPrint('👤 [USER] $action$propsStr');
+      AppLogger.d('👤 [USER] $action$propsStr');
     }
     
     // In production, send to analytics
@@ -103,7 +104,7 @@ class ProductionLogger {
   void socket(String event, {Map<String, dynamic>? data}) {
     if (EnvironmentConfig.enableLogging) {
       final dataStr = data != null ? ' | $data' : '';
-      debugPrint('🔌 [SOCKET] $event$dataStr');
+      AppLogger.d('🔌 [SOCKET] $event$dataStr');
     }
   }
 
@@ -112,7 +113,7 @@ class ProductionLogger {
     if (EnvironmentConfig.enableLogging) {
       final typeStr = type != null ? ' [$type]' : '';
       final durationStr = duration != null ? ' | ${duration.inMilliseconds}ms' : '';
-      debugPrint('💾 [CACHE] $operation$typeStr $key$durationStr');
+      AppLogger.d('💾 [CACHE] $operation$typeStr $key$durationStr');
     }
   }
 
@@ -123,7 +124,7 @@ class ProductionLogger {
       final metadataStr = metadata != null 
           ? ' | ${metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
-      debugPrint('🔐 [AUTH] $event$userStr$metadataStr');
+      AppLogger.d('🔐 [AUTH] $event$userStr$metadataStr');
     }
   }
 

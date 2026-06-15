@@ -1,15 +1,29 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/repository/user_repository.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../data/repository/user_repository_impl.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;
   UserProvider(this.repository) {
-    debugPrint('🔥 UserProvider CONSTRUCTOR CALLED');
+    AppLogger.d('🔥 UserProvider CONSTRUCTOR CALLED');
   }
 
   List<UserEntity> _users = [];
+  CancelToken? _cancelToken;
+
+  CancelToken _getCancelToken() {
+    _cancelToken ??= CancelToken();
+    return _cancelToken!;
+  }
+
+  void cancelActiveRequests() {
+    _cancelToken?.cancel('Screen disposed');
+    _cancelToken = null;
+  }
+
   bool _isLoading = false;
   bool _isFetchingMore = false;
   bool _hasNext = true;
@@ -31,7 +45,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> fetchUsers({bool loadMore = false}) async {
     if (_fetchInFlight != null && !loadMore) {
-      debugPrint('⏳ [UserProvider] Joining in-flight user fetch');
+      AppLogger.d('⏳ [UserProvider] Joining in-flight user fetch');
       return _fetchInFlight!;
     }
 
@@ -52,7 +66,7 @@ class UserProvider extends ChangeNotifier {
         _lastFetchTime != null &&
         DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration &&
         _users.isNotEmpty) {
-      debugPrint(
+      AppLogger.d(
         '✅ [UserProvider] Using cached users (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
       );
       return;
@@ -60,18 +74,18 @@ class UserProvider extends ChangeNotifier {
 
     // Prevent duplicate calls
     if (loadMore && (_isFetchingMore || !_hasNext)) {
-      debugPrint(
+      AppLogger.d(
         '⏸️ [UserProvider] Skipping fetchMore - isFetchingMore: $_isFetchingMore, hasNext: $_hasNext',
       );
       return;
     }
 
     if (!loadMore && _isLoading) {
-      debugPrint('⏸️ [UserProvider] Skipping initial fetch - already loading');
+      AppLogger.d('⏸️ [UserProvider] Skipping initial fetch - already loading');
       return;
     }
 
-    debugPrint(
+    AppLogger.d(
       '🚀 [UserProvider] Fetching page: $_currentPage (loadMore: $loadMore)',
     );
 
@@ -88,17 +102,20 @@ class UserProvider extends ChangeNotifier {
 
     try {
       final repo = repository as UserRepositoryImpl;
-      final response = await repo.fetchUsersPaginated(page: _currentPage);
+      final response = await repo.fetchUsersPaginated(
+        page: _currentPage,
+        cancelToken: _getCancelToken(),
+      );
 
-      debugPrint(
+      AppLogger.d(
         '📩 [UserProvider] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}',
       );
 
       if (response.users.isEmpty) {
-        debugPrint('⚠️ [UserProvider] API returned EMPTY user list');
+        AppLogger.d('⚠️ [UserProvider] API returned EMPTY user list');
       } else {
         final ids = response.users.map((u) => u.userId).take(5).toList();
-        debugPrint('👤 [UserProvider] userIDs (first 5): $ids');
+        AppLogger.d('👤 [UserProvider] userIDs (first 5): $ids');
       }
 
       // Update users list
@@ -108,14 +125,14 @@ class UserProvider extends ChangeNotifier {
           ..._users,
           ...response.users.map((m) => m.toEntity()),
         ]);
-        debugPrint(
+        AppLogger.d(
           '➕ [UserProvider] Appended ${_users.length - beforeCount} users — total: ${_users.length}',
         );
       } else {
         _users = _cleanUsers(response.users.map((m) => m.toEntity()));
         _lastFetchTime = DateTime.now();
         _hasInitialized = true;
-        debugPrint(
+        AppLogger.d(
           '🔄 [UserProvider] Replaced list with ${_users.length} users',
         );
       }
@@ -126,12 +143,16 @@ class UserProvider extends ChangeNotifier {
         _currentPage = response.page + 1;
       }
 
-      debugPrint(
+      AppLogger.d(
         '✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage',
       );
     } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [UserProvider] Request cancelled');
+        return;
+      }
       _errorMessage = e.toString();
-      debugPrint('❌ [UserProvider] Error: $e');
+      AppLogger.d('❌ [UserProvider] Error: $e');
     } finally {
       // Clear loading states
       if (loadMore) {
@@ -140,7 +161,7 @@ class UserProvider extends ChangeNotifier {
         _isLoading = false;
       }
 
-      debugPrint(
+      AppLogger.d(
         '🏁 [UserProvider] Loading states cleared - isLoading: $_isLoading, isFetchingMore: $_isFetchingMore',
       );
       notifyListeners();
@@ -163,7 +184,7 @@ class UserProvider extends ChangeNotifier {
 
   // Method to reset pagination state (for pull-to-refresh)
   Future<void> refreshUsers() async {
-    debugPrint('🔄 [UserProvider] Refreshing users...');
+    AppLogger.d('🔄 [UserProvider] Refreshing users...');
     _lastFetchTime = null; // Clear cache
     await fetchUsers(loadMore: false);
   }
@@ -179,13 +200,14 @@ class UserProvider extends ChangeNotifier {
     _hasInitialized = false;
     _lastFetchTime = null;
     _fetchInFlight = null;
-    debugPrint('🔄 [UserProvider] Provider state reset');
+    AppLogger.d('🔄 [UserProvider] Provider state reset');
     notifyListeners();
   }
 
   @override
   void dispose() {
-    debugPrint('🗑️ [UserProvider] Disposed');
+    cancelActiveRequests();
+    AppLogger.d('🗑️ [UserProvider] Disposed');
     super.dispose();
   }
 }

@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Generic cache data wrapper for type-safe serialization
 class CacheData {
@@ -82,11 +82,11 @@ class RequestDeduplicator {
   ) async {
     // Check if request is already in flight
     if (_inFlightRequests.containsKey(key)) {
-      debugPrint('🔄 [RequestDeduplicator] Reusing in-flight request: $key');
+      AppLogger.d('🔄 [RequestDeduplicator] Reusing in-flight request: $key');
       return await _inFlightRequests[key] as T;
     }
 
-    debugPrint('🚀 [RequestDeduplicator] Starting new request: $key');
+    AppLogger.d('🚀 [RequestDeduplicator] Starting new request: $key');
     _requestTimestamps[key] = DateTime.now();
     _requestKeys.add(key);
 
@@ -96,10 +96,10 @@ class RequestDeduplicator {
       
       final result = await requestFuture;
       
-      debugPrint('✅ [RequestDeduplicator] Request completed: $key (${DateTime.now().difference(_requestTimestamps[key]!).inMilliseconds}ms)');
+      AppLogger.d('✅ [RequestDeduplicator] Request completed: $key (${DateTime.now().difference(_requestTimestamps[key]!).inMilliseconds}ms)');
       return result;
     } catch (e) {
-      debugPrint('❌ [RequestDeduplicator] Request failed: $key - $e');
+      AppLogger.d('❌ [RequestDeduplicator] Request failed: $key - $e');
       rethrow;
     } finally {
       _inFlightRequests.remove(key);
@@ -120,7 +120,7 @@ class RequestDeduplicator {
     _inFlightRequests.clear();
     _requestTimestamps.clear();
     _requestKeys.clear();
-    debugPrint('🧹 [RequestDeduplicator] Cleared all requests');
+    AppLogger.d('🧹 [RequestDeduplicator] Cleared all requests');
   }
 }
 
@@ -148,7 +148,7 @@ class CacheInterceptor extends Interceptor {
     final cacheKey = _generateCacheKey(options);
     final config = CacheConfigs.getConfigForEndpoint(options.path);
 
-    debugPrint('🎯 [CacheInterceptor] 🔍 Checking cache for ${options.path} (key: $cacheKey)');
+    AppLogger.d('🎯 [CacheInterceptor] 🔍 Checking cache for ${options.path} (key: $cacheKey)');
     
     // Try to get cached data with stale-while-revalidate
     final cacheResult = await _cacheManager.getWithStaleRevalidate<CacheData>(
@@ -160,7 +160,7 @@ class CacheInterceptor extends Interceptor {
     );
 
     if (cacheResult.hasData && !cacheResult.isStale) {
-      debugPrint('🎯 [CacheInterceptor] ✅ Cache hit: ${options.path} (type: ${cacheResult.data!.dataType})');
+      AppLogger.d('🎯 [CacheInterceptor] ✅ Cache hit: ${options.path} (type: ${cacheResult.data!.dataType})');
       
       // Return cached response with original data type
       final cachedResponse = Response(
@@ -174,7 +174,7 @@ class CacheInterceptor extends Interceptor {
     }
 
     if (cacheResult.hasData && cacheResult.isStale) {
-      debugPrint('🔄 [CacheInterceptor] ⏰ Stale data returned: ${options.path} (type: ${cacheResult.data!.dataType})');
+      AppLogger.d('🔄 [CacheInterceptor] ⏰ Stale data returned: ${options.path} (type: ${cacheResult.data!.dataType})');
       
       // Return stale data while refreshing in background
       final staleResponse = Response(
@@ -207,13 +207,13 @@ class CacheInterceptor extends Interceptor {
         (response.statusCode ?? 0) >= 200 && 
         (response.statusCode ?? 0) < 300) {
       
-      debugPrint('💾 [CacheInterceptor] 📝 Caching response: ${response.requestOptions.path}');
+      AppLogger.d('💾 [CacheInterceptor] 📝 Caching response: ${response.requestOptions.path}');
       final cacheKey = _generateCacheKey(response.requestOptions);
       final config = CacheConfigs.getConfigForEndpoint(response.requestOptions.path);
 
       // Create cache data wrapper based on response type
       final cacheData = _createCacheData(response.data);
-      debugPrint('💾 [CacheInterceptor] 📦 Cache data type: ${cacheData.dataType} for ${response.requestOptions.path}');
+      AppLogger.d('💾 [CacheInterceptor] 📦 Cache data type: ${cacheData.dataType} for ${response.requestOptions.path}');
 
       await _cacheManager.put(
         cacheKey,
@@ -222,7 +222,7 @@ class CacheInterceptor extends Interceptor {
         toJson: (data) => data?.toJson(),
       );
 
-      debugPrint('💾 [CacheInterceptor] ✅ Cached response: ${response.requestOptions.path} (${cacheData.dataType})');
+      AppLogger.d('💾 [CacheInterceptor] ✅ Cached response: ${response.requestOptions.path} (${cacheData.dataType})');
     }
 
     handler.next(response);
@@ -242,7 +242,7 @@ class CacheInterceptor extends Interceptor {
 
     // Try to return stale data on network errors
     if (_shouldReturnStaleOnError(err)) {
-      debugPrint('🔄 [CacheInterceptor] 🔍 Attempting to return stale data on error: ${err.requestOptions.path}');
+      AppLogger.d('🔄 [CacheInterceptor] 🔍 Attempting to return stale data on error: ${err.requestOptions.path}');
       final cacheKey = _generateCacheKey(err.requestOptions);
       final config = CacheConfigs.getConfigForEndpoint(err.requestOptions.path);
 
@@ -253,7 +253,7 @@ class CacheInterceptor extends Interceptor {
       );
 
       if (cached != null) {
-        debugPrint('🔄 [CacheInterceptor] ✅ Returned stale data on error: ${err.requestOptions.path} (type: ${cached.dataType})');
+        AppLogger.d('🔄 [CacheInterceptor] ✅ Returned stale data on error: ${err.requestOptions.path} (type: ${cached.dataType})');
         
         final staleResponse = Response(
           data: _extractOriginalData(cached),
@@ -264,7 +264,7 @@ class CacheInterceptor extends Interceptor {
         handler.resolve(staleResponse);
         return;
       } else {
-        debugPrint('🚫 [CacheInterceptor] ❌ No stale data available for: ${err.requestOptions.path}');
+        AppLogger.d('🚫 [CacheInterceptor] ❌ No stale data available for: ${err.requestOptions.path}');
       }
     }
 
@@ -278,19 +278,23 @@ class CacheInterceptor extends Interceptor {
     return await _deduplicator.deduplicate<CacheData>(
       requestKey,
       () async {
-        debugPrint('🚀 [CacheInterceptor] 🔍 Performing fresh request: ${options.path}');
-        final dio = AppDio.create();
+        AppLogger.d('🚀 [CacheInterceptor] 🔍 Performing fresh request: ${options.path}');
+        final dio = AppDio.getInstance();
         try {
-          final response = await dio.fetch(options);
+          final requestOptions = options.copyWith();
+          requestOptions.extra = Map<String, dynamic>.from(options.extra);
+          requestOptions.extra['skipCache'] = true;
+
+          final response = await dio.fetch(requestOptions);
           
           // Log response data for debugging
           SafeParsingHelpers.logResponseInfo(response.data, '🌐 CacheInterceptor._performRequest');
           
           final cacheData = _createCacheData(response.data);
-          debugPrint('✅ [CacheInterceptor] 🎉 Fresh request successful: ${options.path} (${cacheData.dataType})');
+          AppLogger.d('✅ [CacheInterceptor] 🎉 Fresh request successful: ${options.path} (${cacheData.dataType})');
           return cacheData;
         } catch (e) {
-          debugPrint('💥 [CacheInterceptor] ❌ _performRequest failed for ${options.path}: $e');
+          AppLogger.d('💥 [CacheInterceptor] ❌ _performRequest failed for ${options.path}: $e');
           rethrow;
         }
       },
@@ -351,48 +355,48 @@ class CacheInterceptor extends Interceptor {
   /// Creates appropriate CacheData wrapper based on response type
   CacheData _createCacheData(dynamic data) {
     if (data == null) {
-      debugPrint('📦 [CacheInterceptor] Creating empty cache data');
+      AppLogger.d('📦 [CacheInterceptor] Creating empty cache data');
       return CacheData.fromEmpty();
     }
     
     if (data is Map<String, dynamic>) {
       // Check if it's a nested response (pagination wrapper)
       if (data.containsKey('results') || data.containsKey('data') || data.containsKey('messages')) {
-        debugPrint('📦 [CacheInterceptor] Creating nested cache data');
+        AppLogger.d('📦 [CacheInterceptor] Creating nested cache data');
         return CacheData.fromNested(data);
       } else {
-        debugPrint('📦 [CacheInterceptor] Creating map cache data');
+        AppLogger.d('📦 [CacheInterceptor] Creating map cache data');
         return CacheData.fromMap(data);
       }
     }
     
     if (data is List) {
-      debugPrint('📦 [CacheInterceptor] Creating list cache data (${data.length} items)');
+      AppLogger.d('📦 [CacheInterceptor] Creating list cache data (${data.length} items)');
       return CacheData.fromList(data);
     }
     
     // Try to convert other types to map
     final safeMap = SafeParsingHelpers.safeMapParse(data, context: '🔄 _createCacheData');
     if (safeMap.isNotEmpty) {
-      debugPrint('📦 [CacheInterceptor] Creating converted map cache data');
+      AppLogger.d('📦 [CacheInterceptor] Creating converted map cache data');
       return CacheData.fromMap(safeMap);
     }
     
     // Try to convert to list
     final safeList = SafeParsingHelpers.safeListParse(data, context: '🔄 _createCacheData');
     if (safeList.isNotEmpty) {
-      debugPrint('📦 [CacheInterceptor] Creating converted list cache data');
+      AppLogger.d('📦 [CacheInterceptor] Creating converted list cache data');
       return CacheData.fromList(safeList);
     }
     
-    debugPrint('📦 [CacheInterceptor] Creating fallback empty cache data for type: ${data.runtimeType}');
+    AppLogger.d('📦 [CacheInterceptor] Creating fallback empty cache data for type: ${data.runtimeType}');
     return CacheData.fromEmpty();
   }
 
   /// Safely parse CacheData from JSON
   CacheData? _safeCacheDataParse(dynamic data, {String? context}) {
     if (data == null) {
-      debugPrint('⚠️ [CacheInterceptor] ${context ?? 'Unknown'}: data is null');
+      AppLogger.d('⚠️ [CacheInterceptor] ${context ?? 'Unknown'}: data is null');
       return null;
     }
     
@@ -404,12 +408,12 @@ class CacheInterceptor extends Interceptor {
       try {
         return CacheData.fromJson(data);
       } catch (e) {
-        debugPrint('💥 [CacheInterceptor] ${context ?? 'Unknown'}: failed to parse CacheData: $e');
+        AppLogger.d('💥 [CacheInterceptor] ${context ?? 'Unknown'}: failed to parse CacheData: $e');
         return null;
       }
     }
     
-    debugPrint('⚠️ [CacheInterceptor] ${context ?? 'Unknown'}: data is ${data.runtimeType}, expected CacheData');
+    AppLogger.d('⚠️ [CacheInterceptor] ${context ?? 'Unknown'}: data is ${data.runtimeType}, expected CacheData');
     return null;
   }
 
@@ -481,7 +485,7 @@ class CacheInvalidationHelper {
       await _cacheManager.invalidatePattern('/profile');
     }
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for new post: $postId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for new post: $postId');
   }
 
   Future<void> _invalidateOnLike(String? postId) async {
@@ -489,7 +493,7 @@ class CacheInvalidationHelper {
     await _cacheManager.invalidatePattern('/feed');
     await _cacheManager.invalidatePattern('/posts/$postId');
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for like: $postId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for like: $postId');
   }
 
   Future<void> _invalidateOnFollow(String? userId) async {
@@ -498,7 +502,7 @@ class CacheInvalidationHelper {
     await _cacheManager.invalidatePattern('/user/$userId');
     await _cacheManager.invalidatePattern('/feed');
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for follow: $userId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for follow: $userId');
   }
 
   Future<void> _invalidateOnComment(String? postId) async {
@@ -506,7 +510,7 @@ class CacheInvalidationHelper {
     await _cacheManager.invalidatePattern('/posts/$postId');
     await _cacheManager.invalidatePattern('/feed');
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for comment: $postId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for comment: $postId');
   }
 
   Future<void> _invalidateOnMessage(String? conversationId) async {
@@ -516,7 +520,7 @@ class CacheInvalidationHelper {
       await _cacheManager.invalidatePattern('/conversations/$conversationId');
     }
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for message: $conversationId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for message: $conversationId');
   }
 
   Future<void> _invalidateOnProfileUpdate(String? userId) async {
@@ -524,7 +528,7 @@ class CacheInvalidationHelper {
     await _cacheManager.invalidatePattern('/profile');
     await _cacheManager.invalidatePattern('/user/$userId');
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for profile update: $userId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for profile update: $userId');
   }
 
   Future<void> _invalidateOnStoryCreate(String? userId) async {
@@ -532,7 +536,7 @@ class CacheInvalidationHelper {
     await _cacheManager.invalidatePattern('/stories');
     await _cacheManager.invalidatePattern('/profile');
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for story create: $userId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for story create: $userId');
   }
 
   Future<void> _invalidateOnHighlightUpdate(String? highlightId) async {
@@ -542,7 +546,7 @@ class CacheInvalidationHelper {
       await _cacheManager.invalidatePattern('/highlights/$highlightId');
     }
     
-    debugPrint('🗑️ [CacheInvalidation] Invalidated caches for highlight update: $highlightId');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for highlight update: $highlightId');
   }
 }
 

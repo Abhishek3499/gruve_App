@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ImageFilterProcessor {
   static Future<File> applyColorMatrixToImage(File file, List<double> matrix) async {
@@ -55,7 +56,7 @@ class ImageFilterProcessor {
       
       return filteredFile;
     } catch (e) {
-      debugPrint('Error applying color matrix: $e');
+      AppLogger.d('Error applying color matrix: $e');
       // Return original file if processing fails
       return file;
     }
@@ -126,7 +127,7 @@ class ImageFilterProcessor {
       
       return resizedFile;
     } catch (e) {
-      debugPrint('Error resizing image: $e');
+      AppLogger.d('Error resizing image: $e');
       // Return original file if resizing fails
       return file;
     }
@@ -134,50 +135,50 @@ class ImageFilterProcessor {
 
   static Future<File> compressImageForUpload(File file, {int maxFileSizeKB = 500}) async {
     try {
-      debugPrint('🗜️ Starting image compression...');
+      AppLogger.d('🗜️ Starting image compression...');
       
       final int originalSizeKB = await file.length() ~/ 1024;
-      debugPrint('📏 Original file size: ${originalSizeKB}KB');
+      AppLogger.d('📏 Original file size: ${originalSizeKB}KB');
       
       // If file is already small enough, return it
       if (originalSizeKB <= maxFileSizeKB) {
-        debugPrint('✅ File size is acceptable, no compression needed');
+        AppLogger.d('✅ File size is acceptable, no compression needed');
         return file;
       }
       
       // First try resizing to smaller dimensions
       File compressedFile = await resizeImageIfNeeded(file, maxWidth: 1080, maxHeight: 1080);
       int compressedSizeKB = await compressedFile.length() ~/ 1024;
-      debugPrint('📏 After resize: ${compressedSizeKB}KB');
+      AppLogger.d('📏 After resize: ${compressedSizeKB}KB');
       
       // If still too large, try even smaller dimensions
       if (compressedSizeKB > maxFileSizeKB) {
         compressedFile = await resizeImageIfNeeded(file, maxWidth: 800, maxHeight: 800);
         compressedSizeKB = await compressedFile.length() ~/ 1024;
-        debugPrint('📏 After further resize: ${compressedSizeKB}KB');
+        AppLogger.d('📏 After further resize: ${compressedSizeKB}KB');
       }
       
       // If still too large, try very small dimensions
       if (compressedSizeKB > maxFileSizeKB) {
         compressedFile = await resizeImageIfNeeded(file, maxWidth: 600, maxHeight: 600);
         compressedSizeKB = await compressedFile.length() ~/ 1024;
-        debugPrint('📏 After aggressive resize: ${compressedSizeKB}KB');
+        AppLogger.d('📏 After aggressive resize: ${compressedSizeKB}KB');
       }
       
-      debugPrint('✅ Compression complete. Final size: ${compressedSizeKB}KB');
+      AppLogger.d('✅ Compression complete. Final size: ${compressedSizeKB}KB');
       
       // Clean up original file if it's different from compressed file
       if (compressedFile.path != file.path) {
         try {
           await file.delete();
         } catch (e) {
-          debugPrint('⚠️ Could not delete original file: $e');
+          AppLogger.d('⚠️ Could not delete original file: $e');
         }
       }
       
       return compressedFile;
     } catch (e) {
-      debugPrint('❌ Error compressing image: $e');
+      AppLogger.d('❌ Error compressing image: $e');
       // Return original file if compression fails
       return file;
     }

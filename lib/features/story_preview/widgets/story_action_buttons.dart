@@ -4,11 +4,17 @@ import 'package:gruve_app/core/assets.dart';
 class StoryActionButtons extends StatelessWidget {
   final bool isMuted;
   final VoidCallback onMuteToggle;
+  final VoidCallback? onTextTap;
+  final VoidCallback? onSpeedTap;
+  final double currentSpeed;
 
   StoryActionButtons({
     super.key,
     required this.isMuted,
     required this.onMuteToggle,
+    this.onTextTap,
+    this.onSpeedTap,
+    this.currentSpeed = 1.0,
   });
 
   final GlobalKey _moreKey = GlobalKey();
@@ -33,6 +39,7 @@ class StoryActionButtons extends StatelessWidget {
           Image.asset(AppAssets.text, color: Colors.white),
           "Aa",
           size: 22,
+          onTap: onTextTap,
         ),
         const SizedBox(width: 15),
 
@@ -49,6 +56,16 @@ class StoryActionButtons extends StatelessWidget {
           size: 22,
         ),
         const SizedBox(width: 15),
+
+        if (onSpeedTap != null) ...[
+          _buildActionButton(
+            const Icon(Icons.speed, color: Colors.white, size: 24),
+            "Speed",
+            size: 24,
+            onTap: onSpeedTap,
+          ),
+          const SizedBox(width: 15),
+        ],
 
         // ✅ MORE BUTTON
         _buildActionButton(

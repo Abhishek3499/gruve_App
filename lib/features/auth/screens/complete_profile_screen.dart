@@ -10,6 +10,7 @@ import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/services/image_picker_service.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});
@@ -147,8 +148,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final username = _usernameController.text.trim();
     final file = selectedImage?.path;
 
-    debugPrint("USERNAME: '$username'");
-    debugPrint("IMAGE PATH: '$file'");
+    AppLogger.d("USERNAME: '$username'");
+    AppLogger.d("IMAGE PATH: '$file'");
 
     authUi.setLoading(AuthLoadingKey.completeProfile, true);
     try {

@@ -1,8 +1,11 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class HighlightViewerScreen extends StatefulWidget {
   final String highlightId;
@@ -28,7 +31,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       vsync: this,
       duration: const Duration(seconds: 5),
     )..addStatusListener(_onProgressStatusChanged);
-    debugPrint('[Viewer] Opened with highlight ID: ${widget.highlightId}');
+    AppLogger.d('[Viewer] Opened with highlight ID: ${widget.highlightId}');
     _fetchHighlight();
   }
 
@@ -37,6 +40,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     _progressController
       ..removeStatusListener(_onProgressStatusChanged)
       ..dispose();
+    context.read<HighlightController>().cancelActiveRequests();
     super.dispose();
   }
 
@@ -54,14 +58,14 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
   }
 
   Future<void> _fetchHighlight() async {
-    debugPrint('[Viewer] Fetch start');
+    AppLogger.d('[Viewer] Fetch start');
     setState(() {
       isLoading = true;
       errorMessage = null;
     });
 
     try {
-      debugPrint(
+      AppLogger.d(
         '[API] Fetching highlight stories for ID: ${widget.highlightId}',
       );
 
@@ -75,7 +79,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
         setState(() {
           isLoading = false;
           highlight = fetchedHighlight;
-          debugPrint(
+          AppLogger.d(
             '[Viewer] API success - Stories count: ${highlight!.stories.length}',
           );
         });
@@ -84,15 +88,308 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
         setState(() {
           isLoading = false;
           errorMessage = 'Highlight stories not found';
-          debugPrint('[Viewer] API failed: Highlight stories not found');
+          AppLogger.d('[Viewer] API failed: Highlight stories not found');
         });
       }
     } catch (e) {
       setState(() {
         isLoading = false;
         errorMessage = 'Failed to load highlight stories: $e';
-        debugPrint('[Viewer] API failed: $e');
+        AppLogger.d('[Viewer] API failed: $e');
       });
+    }
+  }
+
+  void _showMoreOptions() {
+    _progressController.stop();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              decoration: BoxDecoration(
+                color: const ui.Color.fromARGB(220, 33, 19, 44),
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4.5,
+                    margin: const EdgeInsets.only(bottom: 22),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showDeleteConfirmation();
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.redAccent.withValues(alpha: 0.28),
+                            width: 1,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                            SizedBox(width: 12),
+                            Text(
+                              'Delete Highlight',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      if (mounted && highlight != null) {
+        _progressController.forward();
+      }
+    });
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: (dialogContext) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 28),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF321344), Color(0xFF161626)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0xFFD42BC2).withValues(alpha: 0.45),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD42BC2).withValues(alpha: 0.18),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.redAccent.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.35),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.redAccent,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Delete Highlight',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.none,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Are you sure you want to delete "${highlight?.title}"? This action cannot be undone.',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    decoration: TextDecoration.none,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 26),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Keep it',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                          _performDelete();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _performDelete() async {
+    if (highlight == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (context) {
+        return const Center(
+          child: _HighlightLoader(),
+        );
+      },
+    );
+
+    final highlightController = context.read<HighlightController>();
+    final success = await highlightController.deleteHighlight(widget.highlightId);
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    if (success) {
+      if (mounted) {
+        context.read<ProfileProvider>().removeHighlightLocally(widget.highlightId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('"${highlight?.title}" deleted successfully!'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF8B25C6),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Failed to delete highlight. Please try again.'),
+              ],
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -102,12 +399,12 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     if (currentIndex < highlight!.stories.length - 1) {
       setState(() {
         currentIndex++;
-        debugPrint('[Viewer] Current index: $currentIndex');
+        AppLogger.d('[Viewer] Current index: $currentIndex');
       });
       _restartProgress();
     } else {
       // Last story, close the viewer
-      debugPrint('[Viewer] Last story reached, closing');
+      AppLogger.d('[Viewer] Last story reached, closing');
       Navigator.of(context).pop();
     }
   }
@@ -116,7 +413,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     if (currentIndex > 0) {
       setState(() {
         currentIndex--;
-        debugPrint('[Viewer] Current index: $currentIndex');
+        AppLogger.d('[Viewer] Current index: $currentIndex');
       });
       _restartProgress();
     }
@@ -274,7 +571,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
               children: [
                 IconButton(
                   onPressed: () {
-                    debugPrint('[Viewer] Back button pressed');
+                    AppLogger.d('[Viewer] Back button pressed');
                     Navigator.of(context).pop();
                   },
                   icon: const Icon(
@@ -283,7 +580,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                     size: 24,
                   ),
                 ),
-                if (highlight != null)
+                if (highlight != null) ...[
                   Expanded(
                     child: Text(
                       highlight!.title,
@@ -295,10 +592,19 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  )
-                else
+                  ),
+                  IconButton(
+                    onPressed: _showMoreOptions,
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ] else ...[
                   const Spacer(),
-                const SizedBox(width: 48),
+                  const SizedBox(width: 48),
+                ],
               ],
             ),
           ],

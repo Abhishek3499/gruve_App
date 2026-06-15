@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Unified post model for feed functionality
 /// Consolidates post-related data from various parts of the app
@@ -47,9 +47,8 @@ class PostModel {
     var mediaType = _parseMediaType(json['media_type'] ?? json['mediaType']);
     if (mediaType == MediaType.image && _urlLooksLikeVideo(mediaUrl)) {
       mediaType = MediaType.video;
-      if (kDebugMode) {
-        debugPrint('🎥 video detected — inferred from URL in PostModel');
-      }
+      AppLogger.d('🎥 video detected — inferred from URL in PostModel');
+      
     }
 
     return PostModel(

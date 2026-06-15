@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,7 @@ import '../controllers/video_feed_controller.dart';
 import 'optimized_video_overlay.dart';
 import 'video_top_bar.dart';
 import '../../../core/widgets/shimmer/feed_shimmer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VideoFeed extends StatefulWidget {
   final int selectedIndex;
@@ -53,7 +53,10 @@ class _VideoFeedState extends State<VideoFeed> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onControllerReady?.call(_controller);
       if (mounted) {
-        context.read<SavePostProvider>().fetchSavedPosts();
+        final savePostProvider = context.read<SavePostProvider>();
+        if (savePostProvider.savedPosts.isEmpty || savePostProvider.isSavedPostsStale) {
+          savePostProvider.fetchSavedPosts();
+        }
       }
     });
   }
@@ -97,9 +100,8 @@ class _VideoFeedState extends State<VideoFeed> {
   Future<void> _refreshFeed() async {
     // Prevent multiple simultaneous refreshes
     if (_controller.isRefreshing) {
-      if (kDebugMode) {
-        debugPrint('⏳ [VideoFeed] Refresh already in progress, skipping');
-      }
+      AppLogger.d('⏳ [VideoFeed] Refresh already in progress, skipping');
+      
       return;
     }
 
@@ -177,9 +179,8 @@ class _VideoFeedState extends State<VideoFeed> {
   }) {
     if (isVideo) {
       if (hasVideoLoadFailed) {
-        if (kDebugMode) {
-          debugPrint('❌ video filtered/skipped — player failed: $url');
-        }
+        AppLogger.d('❌ video filtered/skipped — player failed: $url');
+        
         return _brokenMediaIcon();
       }
 
@@ -214,9 +215,8 @@ class _VideoFeedState extends State<VideoFeed> {
     }
 
     if (!isValidNetworkUrl) {
-      if (kDebugMode) {
-        debugPrint('❌ image filtered/skipped — bad network URL url=$url');
-      }
+      AppLogger.d('❌ image filtered/skipped — bad network URL url=$url');
+      
       return _brokenMediaIcon();
     }
 

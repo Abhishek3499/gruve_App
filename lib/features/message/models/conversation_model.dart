@@ -1,6 +1,6 @@
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:flutter/foundation.dart';
 import '../../../core/parsing/safe_parsing_helpers.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Model representing the other user in a conversation
 class OtherUser {
@@ -15,10 +15,10 @@ class OtherUser {
   });
 
   factory OtherUser.fromJson(Map<String, dynamic> json) {
-    debugPrint('👤 [OtherUser] 🔍 Starting user parsing');
+    AppLogger.d('👤 [OtherUser] 🔍 Starting user parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '👤 OtherUser.fromJson');
     final flat = _flattenUserJson(safeJson);
-    debugPrint('👤 [OtherUser] 🗺️ Flattened keys: ${flat.keys.toList()}');
+    AppLogger.d('👤 [OtherUser] 🗺️ Flattened keys: ${flat.keys.toList()}');
     
     return OtherUser(
       id: SafeParsingHelpers.safeString(flat, const ['id', 'user_id', '_id', 'pk'], fallback: ''),
@@ -119,9 +119,9 @@ class LastMessage {
   });
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
-    debugPrint('📨 [LastMessage] 🔍 Starting message parsing');
+    AppLogger.d('📨 [LastMessage] 🔍 Starting message parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📨 LastMessage.fromJson');
-    debugPrint('📨 [LastMessage] 🗺️ Message keys: ${safeJson.keys.toList()}');
+    AppLogger.d('📨 [LastMessage] 🗺️ Message keys: ${safeJson.keys.toList()}');
     
     return LastMessage(
       content: SafeParsingHelpers.safeString(safeJson, const ['content', 'text', 'message'], fallback: ''),
@@ -215,9 +215,9 @@ class ConversationModel {
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
-    debugPrint('💬 [ConversationModel] 🔍 Starting conversation parsing');
+    AppLogger.d('💬 [ConversationModel] 🔍 Starting conversation parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '💬 ConversationModel.fromJson');
-    debugPrint('💬 [ConversationModel] 🗺️ Conversation keys: ${safeJson.keys.toList()}');
+    AppLogger.d('💬 [ConversationModel] 🗺️ Conversation keys: ${safeJson.keys.toList()}');
     
     // Safely extract nested objects
     final otherUserData = SafeParsingHelpers.safeMapParse(
@@ -235,8 +235,8 @@ class ConversationModel {
       context: '💬 ConversationModel.lastMessage'
     );
     
-    debugPrint('💬 [ConversationModel] 👤 Other user keys: ${otherUserData.keys.toList()}');
-    debugPrint('💬 [ConversationModel] 📨 Last message keys: ${lastMessageData.keys.toList()}');
+    AppLogger.d('💬 [ConversationModel] 👤 Other user keys: ${otherUserData.keys.toList()}');
+    AppLogger.d('💬 [ConversationModel] 📨 Last message keys: ${lastMessageData.keys.toList()}');
     
     return ConversationModel(
       id: SafeParsingHelpers.safeString(safeJson, const ['id', '_id', 'conversation_id'], fallback: ''),

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
@@ -6,6 +5,7 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Utility class for story-related operations
 class StoryUtils {
@@ -19,10 +19,9 @@ class StoryUtils {
     required String avatar,
     bool isOwnProfile = false,
   }) async {
-    if (kDebugMode) {
-      debugPrint("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
-      debugPrint("🧭 userId: ${userId ?? 'me'} | displayName: $displayName");
-    }
+    AppLogger.d("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
+      AppLogger.d("🧭 userId: ${userId ?? 'me'} | displayName: $displayName");
+    
 
     // Show loading dialog immediately
     showDialog(
@@ -118,23 +117,20 @@ class StoryUtils {
           if (context.mounted) {
             Navigator.pop(context); // Close loading dialog
           }
-          if (kDebugMode) {
-            debugPrint("⚠️ No stories found");
-          }
+          AppLogger.d("⚠️ No stories found");
+          
         }
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context); // Close loading dialog
       }
-      if (kDebugMode) {
-        debugPrint("❌ Error navigating to story: $e");
-      }
+      AppLogger.d("❌ Error navigating to story: $e");
+      
     }
 
-    if (kDebugMode) {
-      debugPrint("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
-    }
+    AppLogger.d("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
+    
   }
 
   static void _navigateToStoryScreen(
@@ -149,12 +145,11 @@ class StoryUtils {
     List<StoryItem>? storyItems,
     bool isOwnProfile = false,
   }) {
-    if (kDebugMode) {
-      debugPrint("🧭 [StoryUtils] _navigateToStoryScreen called");
-      debugPrint(
+    AppLogger.d("🧭 [StoryUtils] _navigateToStoryScreen called");
+      AppLogger.d(
         "🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile",
       );
-    }
+    
 
     Navigator.push(
       context,
@@ -193,16 +188,15 @@ class StoryUtils {
         );
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("⚠️ Background refresh failed: $e");
-      }
+      AppLogger.d("⚠️ Background refresh failed: $e");
+      
     }
   }
 
   /// Check if file is a video based on extension
   static bool isVideoFile(String filePath) {
-    debugPrint("\n🎬 ===== CHECK VIDEO FILE CALLED =====");
-    debugPrint("📁 File Path: $filePath");
+    AppLogger.d("\n🎬 ===== CHECK VIDEO FILE CALLED =====");
+    AppLogger.d("📁 File Path: $filePath");
 
     final extension = filePath.toLowerCase();
     bool isVideo =
@@ -210,28 +204,28 @@ class StoryUtils {
         extension.endsWith('.mov') ||
         extension.endsWith('.avi');
 
-    debugPrint("🔍 Extension: $extension");
-    debugPrint("🎬 Is Video: $isVideo");
-    debugPrint("🏁 ===== CHECK VIDEO FILE END =====\n");
+    AppLogger.d("🔍 Extension: $extension");
+    AppLogger.d("🎬 Is Video: $isVideo");
+    AppLogger.d("🏁 ===== CHECK VIDEO FILE END =====\n");
 
     return isVideo;
   }
 
   /// Get story time display text
   static String getStoryTimeDisplay(DateTime? createdAt) {
-    debugPrint("\n⏰ ===== GET STORY TIME DISPLAY CALLED =====");
-    debugPrint("📅 Created At: $createdAt");
+    AppLogger.d("\n⏰ ===== GET STORY TIME DISPLAY CALLED =====");
+    AppLogger.d("📅 Created At: $createdAt");
 
     if (createdAt == null) {
-      debugPrint("⚠️ No created time provided, returning 'Now'");
-      debugPrint("🏁 ===== GET STORY TIME DISPLAY END =====\n");
+      AppLogger.d("⚠️ No created time provided, returning 'Now'");
+      AppLogger.d("🏁 ===== GET STORY TIME DISPLAY END =====\n");
       return 'Now';
     }
 
     final now = DateTime.now();
     final difference = now.difference(createdAt);
 
-    debugPrint("🕐 Time Difference: ${difference.inMinutes} minutes");
+    AppLogger.d("🕐 Time Difference: ${difference.inMinutes} minutes");
 
     String timeText;
     if (difference.inMinutes < 1) {
@@ -244,8 +238,8 @@ class StoryUtils {
       timeText = '${difference.inDays}d ago';
     }
 
-    debugPrint("🕐 Time Display: $timeText");
-    debugPrint("🏁 ===== GET STORY TIME DISPLAY END =====\n");
+    AppLogger.d("🕐 Time Display: $timeText");
+    AppLogger.d("🏁 ===== GET STORY TIME DISPLAY END =====\n");
 
     return timeText;
   }

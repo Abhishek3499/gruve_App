@@ -2,6 +2,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/production_logger.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Comprehensive debug logging system
 /// Provides structured logging with different levels and categories
@@ -30,9 +31,8 @@ class DebugLogger {
 
     final message = parts.join(' ');
     
-    if (kDebugMode) {
-      debugPrint(message);
-    }
+    AppLogger.d(message);
+    
     
     // Also log to production logger
     logger.debug(message, tag: 'Cache');
@@ -121,9 +121,8 @@ class DebugLogger {
     }
 
     // Direct logger call to avoid recursion
-    if (kDebugMode) {
-      debugPrint('⏱️ [PERF] $operation: ${duration.inMilliseconds}ms');
-    }
+    AppLogger.d('⏱️ [PERF] $operation: ${duration.inMilliseconds}ms');
+    
     
     logger.performance(operation, duration, metadata: metadata);
   }
@@ -143,9 +142,8 @@ class DebugLogger {
     }
 
     // Direct logger call to avoid recursion
-    if (kDebugMode) {
-      debugPrint(parts.join(' '));
-    }
+    AppLogger.d(parts.join(' '));
+    
     
     logger.debug(parts.join(' '), tag: 'UI');
   }
@@ -398,7 +396,7 @@ class ComponentLogger {
           parts.add('$key:$value');
         });
       }
-      debugPrint(parts.join(' '));
+      AppLogger.d(parts.join(' '));
     }
   }
   
@@ -410,7 +408,7 @@ class ComponentLogger {
           parts.add('$key:$value');
         });
       }
-      debugPrint(parts.join(' '));
+      AppLogger.d(parts.join(' '));
     }
   }
   
@@ -422,7 +420,7 @@ class ComponentLogger {
           parts.add('$key:$value');
         });
       }
-      debugPrint(parts.join(' '));
+      AppLogger.d(parts.join(' '));
     }
   }
   
@@ -430,7 +428,7 @@ class ComponentLogger {
     if (kDebugMode) {
       final parts = <String>['[$componentName]', message];
       if (error != null) parts.add('ERROR:$error');
-      debugPrint(parts.join(' '));
+      AppLogger.d(parts.join(' '));
     }
   }
 
@@ -442,7 +440,7 @@ class ComponentLogger {
           parts.add('$key:$value');
         });
       }
-      debugPrint(parts.join(' '));
+      AppLogger.d(parts.join(' '));
     }
   }
 
@@ -454,7 +452,7 @@ class ComponentLogger {
           parts.add('$key:$value');
         });
       }
-      debugPrint(parts.join(' '));
+      AppLogger.d(parts.join(' '));
     }
   }
 }

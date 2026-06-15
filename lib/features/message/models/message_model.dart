@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import '../../../core/parsing/safe_parsing_helpers.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageModel {
   final String id;
@@ -33,12 +33,12 @@ class MessageModel {
     String? currentUserId,
     String? receiverUserId,
   }) {
-    debugPrint('[MessageModel] Starting message parsing');
+    AppLogger.d('[MessageModel] Starting message parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
       context: 'MessageModel.fromJson',
     );
-    debugPrint('[MessageModel] Message keys: ${safeJson.keys.toList()}');
+    AppLogger.d('[MessageModel] Message keys: ${safeJson.keys.toList()}');
 
     final senderObj = safeJson['sender'] is Map
         ? Map<String, dynamic>.from(safeJson['sender'] as Map)
@@ -217,7 +217,7 @@ class MessageModel {
       try {
         return DateTime.parse(value).toLocal();
       } catch (error) {
-        debugPrint('[MessageModel] Failed to parse timestamp "$value": $error');
+        AppLogger.d('[MessageModel] Failed to parse timestamp "$value": $error');
       }
     }
     return DateTime.now();

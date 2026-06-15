@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Centralized logging utility for camera feature
 /// Provides structured debug logging with consistent formatting
@@ -92,19 +92,15 @@ class CameraLogger {
 
   /// Internal logging method
   static void _log(String level, String message) {
-    if (kDebugMode) {
-      final timestamp = DateTime.now().toIso8601String().substring(11, 19);
-      debugPrint('[$_tag] [$timestamp] [$level] $message');
-    }
+    final timestamp = DateTime.now().toIso8601String().substring(11, 19);
+    AppLogger.d('[$_tag] [$timestamp] [$level] $message');
   }
 
   /// Log error with stack trace for debugging
   static void logError(String message, [StackTrace? stackTrace]) {
-    if (kDebugMode) {
-      _log('ERROR', message);
-      if (stackTrace != null) {
-        debugPrint('[$_tag] StackTrace: $stackTrace');
-      }
+    _log('ERROR', message);
+    if (stackTrace != null) {
+      AppLogger.d('[$_tag] StackTrace: $stackTrace');
     }
   }
 
@@ -115,8 +111,6 @@ class CameraLogger {
 
   /// Log verbose debugging information
   static void logVerbose(String message) {
-    if (kDebugMode) {
-      _log('VERBOSE', message);
-    }
+    _log('VERBOSE', message);
   }
 }

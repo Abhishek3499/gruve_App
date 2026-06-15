@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileCountRefreshBridge {
   ProfileCountRefreshBridge._();
@@ -9,7 +9,7 @@ class ProfileCountRefreshBridge {
   static Future<void> notifyCountsChanged({
     String reason = 'unknown',
   }) async {
-    debugPrint('🔔 Profile count refresh requested. reason=$reason');
+    AppLogger.d('🔔 Profile count refresh requested. reason=$reason');
 
     final callback = onRefreshRequested;
     if (callback != null) {

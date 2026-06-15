@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart' show TokenStorage;
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
@@ -7,13 +6,11 @@ import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/complete_profile_request.dart';
 import '../models/complete_profile_response.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CompleteProfileService {
   CompleteProfileService()
-    : dio = AppDio.create(
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 30),
-      );
+    : dio = AppDio.getInstance();
 
   final Dio dio;
 
@@ -37,7 +34,7 @@ class CompleteProfileService {
     try {
       final token = await TokenStorage.getAccessToken();
 
-      debugPrint(
+      AppLogger.d(
         "Complete profile token: ${token == null || token.isEmpty ? "missing" : "present"}",
       );
 
@@ -104,7 +101,7 @@ class CompleteProfileService {
       }
       throw Exception(AuthApiException.extractMessage(e));
     } catch (e) {
-      debugPrint("Complete profile failed: $e");
+      AppLogger.d("Complete profile failed: $e");
       rethrow;
     }
   }

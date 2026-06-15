@@ -3,9 +3,19 @@ import 'package:camera/camera.dart';
 import 'package:gruve_app/core/assets.dart';
 import '../controller/camera_controller_service.dart';
 import '../utils/camera_logger.dart';
+import 'emoji_picker_sheet.dart';
 
 class SideToolbar extends StatelessWidget {
-  SideToolbar({super.key});
+  final Function(String)? onEmojiSelected;
+  final VoidCallback? onMusicTap;
+  final VoidCallback? onTimerTap;
+
+  SideToolbar({
+    super.key,
+    this.onEmojiSelected,
+    this.onMusicTap,
+    this.onTimerTap,
+  });
 
   final CameraControllerService _cameraService = CameraControllerService();
 
@@ -77,13 +87,16 @@ class SideToolbar extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         CameraLogger.logUserAction('Music button pressed');
-        _showComingSoon('Music');
+        if (onMusicTap != null) {
+          onMusicTap!();
+        } else {
+          _showComingSoon('Music');
+        }
       },
-      child: Image.asset(
-        AppAssets.music,
+      child: const Icon(
+        Icons.music_note,
         color: Colors.white,
-        height: 26,
-        width: 26,
+        size: 28,
       ),
     );
   }
@@ -93,7 +106,11 @@ class SideToolbar extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         CameraLogger.logUserAction('Timer button pressed');
-        _showComingSoon('Timer');
+        if (onTimerTap != null) {
+          onTimerTap!();
+        } else {
+          _showComingSoon('Timer');
+        }
       },
       child: const Icon(Icons.timer, color: Colors.white, size: 28),
     );
@@ -116,12 +133,24 @@ class SideToolbar extends StatelessWidget {
   }
 
   Widget _buildemojiButton() {
-    return GestureDetector(
-      onTap: () {
-        CameraLogger.logUserAction('Effects button pressed');
-        _showComingSoon('Effects');
-      },
-      child: Image.asset(AppAssets.emoji, width: 28, height: 28),
+    return Builder(
+      builder: (context) {
+        return GestureDetector(
+          onTap: () async {
+            CameraLogger.logUserAction('Emoji button pressed');
+            final emoji = await showModalBottomSheet<String>(
+              context: context,
+              backgroundColor: Colors.transparent,
+              isScrollControlled: true,
+              builder: (context) => const EmojiPickerSheet(),
+            );
+            if (emoji != null && onEmojiSelected != null) {
+              onEmojiSelected!(emoji);
+            }
+          },
+          child: Image.asset(AppAssets.emoji, width: 28, height: 28),
+        );
+      }
     );
   }
 

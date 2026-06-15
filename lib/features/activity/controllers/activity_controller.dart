@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/activity_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 enum FilterType { weekly, monthly, yearly }
 
@@ -46,7 +47,7 @@ class ActivityController extends ChangeNotifier {
   ActivityModel get activityModel => _activityModel;
 
   void updatePeriod(String period) {
-    debugPrint("[ActivityController] Period updated to: $period");
+    AppLogger.d("[ActivityController] Period updated to: $period");
     _activityModel = _activityModel.copyWith(selectedPeriod: period);
     notifyListeners();
   }

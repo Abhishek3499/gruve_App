@@ -6,6 +6,7 @@ import 'package:gruve_app/features/profile/controller/profile_count_refresh_brid
 
 import '../models/subscribe_model.dart';
 import '../services/subscribe_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SubscribeController extends ChangeNotifier {
   static final SubscribeController _instance = SubscribeController._internal();
@@ -18,7 +19,7 @@ class SubscribeController extends ChangeNotifier {
   final Set<String> _syncingUsers = <String>{};
 
   void _log(String message) {
-    debugPrint('🎛️ [SubscribeController] $message');
+    AppLogger.d('🎛️ [SubscribeController] $message');
   }
 
   bool isUserSubscribed(String userId) {

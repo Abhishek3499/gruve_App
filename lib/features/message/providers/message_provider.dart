@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import 'package:gruve_app/services/socket_service.dart';
 
 import '../models/conversation_model.dart';
 import '../services/message_service.dart';
 import 'dart:developer' as developer;
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Provider for managing conversation state
 ///
@@ -22,28 +24,28 @@ class MessageProvider extends ChangeNotifier {
   StreamSubscription? _socketSubscription;
 
   MessageProvider(this._messageService) {
-    debugPrint('🏗️ [MessageProvider] Provider initialized');
+    AppLogger.d('🏗️ [MessageProvider] Provider initialized');
     _initializeSocketListener();
   }
 
   void _initializeSocketListener() {
     if (_socketSubscription != null) {
-      debugPrint('🎧 [MessageProvider] Socket listener already active');
+      AppLogger.d('🎧 [MessageProvider] Socket listener already active');
       return;
     }
 
-    debugPrint('🎧 [MessageProvider] Socket listener initialized');
+    AppLogger.d('🎧 [MessageProvider] Socket listener initialized');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
-      debugPrint('🔥 FULL SOCKET DATA => $data');
+      AppLogger.d('🔥 FULL SOCKET DATA => $data');
 
-      debugPrint('🔥 SOCKET MESSAGE RECEIVED: $data');
+      AppLogger.d('🔥 SOCKET MESSAGE RECEIVED: $data');
 
       try {
         final conversationId = _extractConversationId(data);
         final eventKey = _realtimeEventKey(data, conversationId);
         if (!_seenRealtimeEventKeys.add(eventKey)) {
-          debugPrint('🔒 [MessageProvider] Duplicate realtime event skipped');
+          AppLogger.d('🔒 [MessageProvider] Duplicate realtime event skipped');
           return;
         }
         if (_seenRealtimeEventKeys.length > 200) {
@@ -65,16 +67,16 @@ class MessageProvider extends ChangeNotifier {
           // Add updated conversation at top
           _conversations.insert(0, updatedConversation);
 
-          debugPrint('✅ Realtime conversation updated');
+          AppLogger.d('✅ Realtime conversation updated');
         } else {
-          debugPrint('⚠️ Conversation not found locally');
+          AppLogger.d('⚠️ Conversation not found locally');
         }
 
         notifyListeners();
 
-        debugPrint('🔄 UI UPDATED REALTIME');
+        AppLogger.d('🔄 UI UPDATED REALTIME');
       } catch (e) {
-        debugPrint('💥 SOCKET LISTENER ERROR: $e');
+        AppLogger.d('💥 SOCKET LISTENER ERROR: $e');
       }
     });
   }
@@ -111,6 +113,18 @@ class MessageProvider extends ChangeNotifier {
   bool _isRefreshing = false;
   String? _error;
   DateTime? _lastFetchTime;
+  CancelToken? _cancelToken;
+
+  CancelToken _getCancelToken() {
+    _cancelToken ??= CancelToken();
+    return _cancelToken!;
+  }
+
+  void cancelActiveRequests() {
+    _cancelToken?.cancel('Screen disposed');
+    _cancelToken = null;
+  }
+
   final Map<String, Future<void>> _inFlightFetches = {};
   final Set<String> _seenRealtimeEventKeys = <String>{};
 
@@ -147,10 +161,10 @@ class MessageProvider extends ChangeNotifier {
   /// Get conversation by user ID (other user)
   ConversationModel? getConversationByUserId(String userId) {
     final normalizedUserId = userId.trim();
-    debugPrint(
+    AppLogger.d(
       '🔍 [MessageProvider] 🔎 Searching conversation by userId: $normalizedUserId',
     );
-    debugPrint(
+    AppLogger.d(
       '📊 [MessageProvider] 💬 Total conversations to search: ${_conversations.length}',
     );
 
@@ -158,20 +172,20 @@ class MessageProvider extends ChangeNotifier {
       final conversation = _conversations.firstWhere(
         (conversation) => conversation.otherUser.id.trim() == normalizedUserId,
       );
-      debugPrint('✅ [MessageProvider] 🎉 Conversation found!');
-      debugPrint('💬 [MessageProvider] 🆔 Conversation ID: ${conversation.id}');
-      debugPrint(
+      AppLogger.d('✅ [MessageProvider] 🎉 Conversation found!');
+      AppLogger.d('💬 [MessageProvider] 🆔 Conversation ID: ${conversation.id}');
+      AppLogger.d(
         '👤 [MessageProvider] 👥 Other user: ${conversation.otherUser.name}',
       );
-      debugPrint(
+      AppLogger.d(
         '📨 [MessageProvider] 💭 Last message: ${conversation.lastMessage.content}',
       );
       return conversation;
     } catch (e) {
-      debugPrint(
+      AppLogger.d(
         '❌ [MessageProvider] 🚫 No conversation found with userId: $userId',
       );
-      debugPrint(
+      AppLogger.d(
         '📊 [MessageProvider] 📉 Searched through ${_conversations.length} conversations',
       );
       return null;
@@ -199,7 +213,7 @@ class MessageProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
-      debugPrint('⏳ [MessageProvider] Loading state changed: $loading');
+      AppLogger.d('⏳ [MessageProvider] Loading state changed: $loading');
       notifyListeners();
     }
   }
@@ -208,7 +222,7 @@ class MessageProvider extends ChangeNotifier {
   void _setLoadingMore(bool loadingMore) {
     if (_isLoadingMore != loadingMore) {
       _isLoadingMore = loadingMore;
-      debugPrint(
+      AppLogger.d(
         '⬇️ [MessageProvider] Loading more state changed: $loadingMore',
       );
       notifyListeners();
@@ -219,7 +233,7 @@ class MessageProvider extends ChangeNotifier {
   void _setRefreshing(bool refreshing) {
     if (_isRefreshing != refreshing) {
       _isRefreshing = refreshing;
-      debugPrint('🔄 [MessageProvider] Refresh state changed: $refreshing');
+      AppLogger.d('🔄 [MessageProvider] Refresh state changed: $refreshing');
       notifyListeners();
     }
   }
@@ -228,7 +242,7 @@ class MessageProvider extends ChangeNotifier {
   void _setError(String? error) {
     if (_error != error) {
       _error = error;
-      debugPrint('❌ [MessageProvider] Error state changed: $error');
+      AppLogger.d('❌ [MessageProvider] Error state changed: $error');
       notifyListeners();
     }
   }
@@ -248,7 +262,7 @@ class MessageProvider extends ChangeNotifier {
         DateTime.now().difference(_lastFetchTime!) <
             const Duration(minutes: 2) &&
         _conversations.isNotEmpty) {
-      debugPrint(
+      AppLogger.d(
         '✅ [MessageProvider] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
       );
       return;
@@ -257,7 +271,7 @@ class MessageProvider extends ChangeNotifier {
     final fetchKey = '${refresh ? 'refresh' : 'page'}:$requestedPage';
     final inFlight = _inFlightFetches[fetchKey];
     if (inFlight != null) {
-      debugPrint('⏳ [MessageProvider] Joining in-flight fetch $fetchKey');
+      AppLogger.d('⏳ [MessageProvider] Joining in-flight fetch $fetchKey');
       return inFlight;
     }
 
@@ -293,7 +307,7 @@ class MessageProvider extends ChangeNotifier {
     clearError();
 
     try {
-      debugPrint(
+      AppLogger.d(
         '📡 [MessageProvider] Fetching conversations - Page: $_currentPage, Refresh: $refresh',
       );
 
@@ -302,26 +316,27 @@ class MessageProvider extends ChangeNotifier {
         forceRefresh: refresh,
         page: requestedPage,
         pageSize: _pageSize,
+        cancelToken: _getCancelToken(),
       );
       final apiTime = DateTime.now().difference(apiStart);
 
-      debugPrint(
+      AppLogger.d(
         '📩 [MessageProvider] API response received in ${apiTime.inMilliseconds}ms',
       );
-      debugPrint(
+      AppLogger.d(
         '📊 [MessageProvider] API returned ${conversations.length} conversations',
       );
 
       if (conversations.isEmpty) {
-        debugPrint('⚠️ [MessageProvider] API returned EMPTY conversation list');
+        AppLogger.d('⚠️ [MessageProvider] API returned EMPTY conversation list');
       } else {
         final ids = conversations.map((c) => c.id).take(5).toList();
         final unreadList = conversations
             .take(5)
             .map((c) => '${c.id.substring(0, 6)}:unread=${c.unreadCount}')
             .toList();
-        debugPrint('💬 [MessageProvider] conversationIDs (first 5): $ids');
-        debugPrint('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
+        AppLogger.d('💬 [MessageProvider] conversationIDs (first 5): $ids');
+        AppLogger.d('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
       }
 
       if (refresh || !isPagination) {
@@ -334,7 +349,7 @@ class MessageProvider extends ChangeNotifier {
           ...conversations,
         ]);
         final addedCount = _conversations.length - beforeCount;
-        debugPrint(
+        AppLogger.d(
           '📊 [MessageProvider] Added $addedCount new conversations (${conversations.length - addedCount} duplicates/invalid skipped)',
         );
         if (isPagination && addedCount <= 0) {
@@ -360,11 +375,15 @@ class MessageProvider extends ChangeNotifier {
         name: 'MessageProvider',
       );
 
-      debugPrint(
+      AppLogger.d(
         '✅ [MessageProvider] Fetch complete — total: ${_conversations.length} | totalUnread: $totalUnreadCount | hasMore: $_hasMoreData',
       );
     } catch (e) {
-      debugPrint('💥 [MessageProvider] Error fetching conversations: $e');
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [MessageProvider] fetchConversations cancelled');
+        return;
+      }
+      AppLogger.d('💥 [MessageProvider] Error fetching conversations: $e');
       _setError(e.toString());
     } finally {
       // Clear loading states properly
@@ -376,7 +395,7 @@ class MessageProvider extends ChangeNotifier {
         _setLoading(false);
       }
 
-      debugPrint(
+      AppLogger.d(
         '🏁 [MessageProvider] Loading states cleared - isLoading: $_isLoading, isRefreshing: $_isRefreshing, isLoadingMore: $_isLoadingMore',
       );
     }
@@ -384,20 +403,20 @@ class MessageProvider extends ChangeNotifier {
 
   /// Pull-to-refresh functionality
   Future<void> refreshConversations() async {
-    debugPrint('🔄 [MessageProvider] Refresh conversations requested');
+    AppLogger.d('🔄 [MessageProvider] Refresh conversations requested');
     await fetchConversations(refresh: true);
   }
 
   /// Load more conversations (pagination)
   Future<void> loadMoreConversations() async {
     if (_isLoading || _isLoadingMore || _isRefreshing || !_hasMoreData) {
-      debugPrint(
+      AppLogger.d(
         '⏸️ [MessageProvider] Skipping load more - Loading: $_isLoading, LoadingMore: $_isLoadingMore, Refreshing: $_isRefreshing, HasMore: $_hasMoreData',
       );
       return;
     }
 
-    debugPrint('⬇️ [MessageProvider] Loading more conversations...');
+    AppLogger.d('⬇️ [MessageProvider] Loading more conversations...');
     await fetchConversations(refresh: false, page: _currentPage);
   }
 
@@ -407,7 +426,7 @@ class MessageProvider extends ChangeNotifier {
   /// Returns true if successful
   Future<bool> markConversationAsRead(String conversationId) async {
     try {
-      debugPrint(
+      AppLogger.d(
         '👁️ [MessageProvider] Marking conversation as read: $conversationId',
       );
 
@@ -424,7 +443,7 @@ class MessageProvider extends ChangeNotifier {
           );
           _conversations[index] = updatedConversation;
           notifyListeners();
-          debugPrint(
+          AppLogger.d(
             '✅ [MessageProvider] Successfully marked conversation as read locally',
           );
         }
@@ -432,7 +451,7 @@ class MessageProvider extends ChangeNotifier {
 
       return success;
     } catch (e) {
-      debugPrint('💥 [MessageProvider] Error marking conversation as read: $e');
+      AppLogger.d('💥 [MessageProvider] Error marking conversation as read: $e');
       return false;
     }
   }
@@ -443,7 +462,7 @@ class MessageProvider extends ChangeNotifier {
   /// Returns true if successful
   Future<bool> deleteConversation(String conversationId) async {
     try {
-      debugPrint(
+      AppLogger.d(
         '🗑️ [MessageProvider] Deleting conversation: $conversationId',
       );
 
@@ -453,14 +472,14 @@ class MessageProvider extends ChangeNotifier {
         // Remove from local state
         _conversations.removeWhere((c) => c.id == conversationId);
         notifyListeners();
-        debugPrint(
+        AppLogger.d(
           '✅ [MessageProvider] Successfully deleted conversation locally',
         );
       }
 
       return success;
     } catch (e) {
-      debugPrint('💥 [MessageProvider] Error deleting conversation: $e');
+      AppLogger.d('💥 [MessageProvider] Error deleting conversation: $e');
       return false;
     }
   }
@@ -475,13 +494,13 @@ class MessageProvider extends ChangeNotifier {
       if (index != -1) {
         // Update existing conversation
         _conversations[index] = conversation;
-        debugPrint(
+        AppLogger.d(
           '🔄 [MessageProvider] Updated existing conversation: ${conversation.id}',
         );
       } else {
         // Add new conversation at the beginning
         _conversations.insert(0, conversation);
-        debugPrint(
+        AppLogger.d(
           '➕ [MessageProvider] Added new conversation: ${conversation.id}',
         );
       }
@@ -493,7 +512,7 @@ class MessageProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('💥 [MessageProvider] Error updating conversation: $e');
+      AppLogger.d('💥 [MessageProvider] Error updating conversation: $e');
     }
   }
 
@@ -502,7 +521,7 @@ class MessageProvider extends ChangeNotifier {
   /// [conversation] - The new conversation to add
   void addConversation(ConversationModel conversation) {
     if (!_isRenderableConversation(conversation)) {
-      debugPrint(
+      AppLogger.d(
         '🚫 [MessageProvider] Invalid conversation skipped: ${conversation.id}',
       );
       return;
@@ -510,14 +529,14 @@ class MessageProvider extends ChangeNotifier {
 
     final key = _conversationKey(conversation);
     if (_conversations.any((item) => _conversationKey(item) == key)) {
-      debugPrint(
+      AppLogger.d(
         '🔒 [MessageProvider] Duplicate conversation skipped: ${conversation.id}',
       );
       return;
     }
     _conversations.insert(0, conversation);
     notifyListeners();
-    debugPrint(
+    AppLogger.d(
       '➕ [MessageProvider] Added new conversation: ${conversation.id}',
     );
   }
@@ -528,7 +547,7 @@ class MessageProvider extends ChangeNotifier {
   void removeConversation(String conversationId) {
     _conversations.removeWhere((c) => c.id == conversationId);
     notifyListeners();
-    debugPrint('➖ [MessageProvider] Removed conversation: $conversationId');
+    AppLogger.d('➖ [MessageProvider] Removed conversation: $conversationId');
   }
 
   List<ConversationModel> _cleanConversations(
@@ -582,14 +601,15 @@ class MessageProvider extends ChangeNotifier {
     _inFlightFetches.clear();
     _seenRealtimeEventKeys.clear();
     notifyListeners();
-    debugPrint('🔄 [MessageProvider] Provider state reset');
+    AppLogger.d('🔄 [MessageProvider] Provider state reset');
   }
 
   @override
   void dispose() {
+    cancelActiveRequests();
     _socketSubscription?.cancel();
     _socketSubscription = null;
-    debugPrint('🗑️ [MessageProvider] Disposed and socket listener cancelled');
+    AppLogger.d('🗑️ [MessageProvider] Disposed and socket listener cancelled');
     super.dispose();
   }
 }

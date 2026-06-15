@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Environment configuration management.
 class EnvironmentConfig {
@@ -24,9 +24,7 @@ class EnvironmentConfig {
     _environment = _parseEnvironment(environment);
     _loadConfiguration();
 
-    if (kDebugMode) {
-      debugPrint('[Environment] Initialized: ${_environment.name}');
-    }
+    AppLogger.d('[Environment] Initialized: ${_environment.name}');
   }
 
   static Environment _parseEnvironment(String env) {
@@ -169,17 +167,17 @@ class EnvironmentConfig {
   static void logEnvironmentInfo() {
     if (!_enableLogging) return;
 
-    debugPrint('[Environment] Configuration:');
-    debugPrint('  Environment: ${_environment.name}');
-    debugPrint('  Base URL configured: ${_baseUrl.isNotEmpty}');
-    debugPrint('  WebSocket URL configured: ${_wsUrl.isNotEmpty}');
-    debugPrint('  Logging: $_enableLogging');
-    debugPrint('  Debug Tools: $_enableDebugTools');
-    debugPrint('  Crash Reporting: $_enableCrashReporting');
-    debugPrint('  API Timeout: ${_apiTimeout}s');
-    debugPrint('  WebSocket Timeout: ${_wsTimeout}s');
-    debugPrint('  App Name: $appName');
-    debugPrint('  App Version: $appVersion');
+    AppLogger.d('[Environment] Configuration:');
+    AppLogger.d('  Environment: ${_environment.name}');
+    AppLogger.d('  Base URL configured: ${_baseUrl.isNotEmpty}');
+    AppLogger.d('  WebSocket URL configured: ${_wsUrl.isNotEmpty}');
+    AppLogger.d('  Logging: $_enableLogging');
+    AppLogger.d('  Debug Tools: $_enableDebugTools');
+    AppLogger.d('  Crash Reporting: $_enableCrashReporting');
+    AppLogger.d('  API Timeout: ${_apiTimeout}s');
+    AppLogger.d('  WebSocket Timeout: ${_wsTimeout}s');
+    AppLogger.d('  App Name: $appName');
+    AppLogger.d('  App Version: $appVersion');
   }
 }
 

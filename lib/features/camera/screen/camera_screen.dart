@@ -1,7 +1,8 @@
 import 'dart:async';
-
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import '../controller/camera_controller_service.dart';
 import '../widgets/camera_preview_widget.dart';
 import '../widgets/top_bar.dart';
@@ -9,6 +10,9 @@ import '../widgets/side_toolbar.dart';
 import '../widgets/mode_selector.dart';
 import '../widgets/horizontal_filter_selector.dart';
 import '../utils/camera_logger.dart';
+import '../services/mode_service.dart';
+import '../models/sticker_data.dart';
+import '../widgets/sticker_overlay.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -19,11 +23,18 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   final CameraControllerService _cameraService = CameraControllerService();
+  String? _selectedStickerId;
+  String? _selectedMusicName;
+  String? _selectedMusicPath;
 
   @override
   void initState() {
     super.initState();
     CameraLogger.log('CameraScreen initialized');
+
+    ModeService().clearStickers();
+    ModeService().setShootDuration(0);
+    ModeService().addListener(_onStickersChanged);
 
     // Set portrait orientation
     SystemChrome.setPreferredOrientations([
@@ -34,12 +45,229 @@ class _CameraScreenState extends State<CameraScreen> {
     unawaited(_initializeCamera());
   }
 
+  void _onStickersChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Future<void> _initializeCamera() async {
     try {
       await _cameraService.initializeCamera();
     } catch (e) {
       CameraLogger.log('Failed to initialize camera: $e');
     }
+  }
+
+  Future<void> _pickMusic() async {
+    try {
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _selectedMusicName = result.files.single.name;
+          _selectedMusicPath = result.files.single.path;
+        });
+
+        CameraLogger.logVerbose('Selected music file path: $_selectedMusicPath');
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Selected Music: $_selectedMusicName 🎵'),
+            backgroundColor: const Color(0xFFC358D7),
+          ),
+        );
+      }
+    } catch (e) {
+      CameraLogger.log('Error picking music file: $e');
+    }
+  }
+
+  void _showTimerSelection() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              color: const Color(0xEB161616),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Set Shoot Timer',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose video duration (includes 3s countdown)',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildTimerOption('Off', 0),
+                      _buildTimerOption('5 Seconds', 5),
+                      _buildTimerOption('10 Seconds', 10),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTimerOption(String label, int seconds) {
+    final isSelected = ModeService().shootDuration == seconds;
+    return GestureDetector(
+      onTap: () {
+        ModeService().setShootDuration(seconds);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(seconds == 0 ? 'Timer turned off' : 'Timer set for $label shooting'),
+            backgroundColor: const Color(0xFFC358D7),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFC358D7) : Colors.white12,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.white24 : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedMusicBadge() {
+    if (_selectedMusicName == null) return const SizedBox.shrink();
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 104),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.65),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFC358D7).withValues(alpha: 0.4), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.music_note, color: Color(0xFFC358D7), size: 16),
+            const SizedBox(width: 6),
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 200),
+                child: Text(
+                  _selectedMusicName!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedMusicName = null;
+                  _selectedMusicPath = null;
+                });
+              },
+              child: const Icon(Icons.close, color: Colors.white70, size: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountdownOverlay() {
+    if (!ModeService().isCountdownRunning) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.7),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
+                child: Text(
+                  '${ModeService().countdownValue}',
+                  key: ValueKey(ModeService().countdownValue),
+                  style: const TextStyle(
+                    color: Color(0xFFC358D7),
+                    fontSize: 140,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () {
+                  ModeService().cancelCountdown();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                ),
+                child: const Text(
+                  'Cancel Timer',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -49,11 +277,69 @@ class _CameraScreenState extends State<CameraScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const CameraPreviewWidget(),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedStickerId = null;
+              });
+            },
+            child: const CameraPreviewWidget(),
+          ),
+
+          ...ModeService().stickers.map((sticker) {
+            return StickerOverlay(
+              key: ValueKey(sticker.id),
+              sticker: sticker,
+              isSelected: _selectedStickerId == sticker.id,
+              onTap: () {
+                setState(() {
+                  _selectedStickerId = sticker.id;
+                });
+              },
+              onDelete: () {
+                ModeService().removeSticker(sticker.id);
+                if (_selectedStickerId == sticker.id) {
+                  setState(() {
+                    _selectedStickerId = null;
+                  });
+                }
+              },
+              onUpdate: (position, scale, rotation) {
+                ModeService().updateSticker(
+                  sticker.id,
+                  position,
+                  scale,
+                  rotation,
+                );
+              },
+            );
+          }),
 
           Positioned(top: 50, left: 16, right: 16, child: TopBar()),
 
-          Positioned(left: 02, top: 200, child: SideToolbar()),
+          _buildSelectedMusicBadge(),
+
+          Positioned(
+            left: 02,
+            top: 200,
+            child: SideToolbar(
+              onMusicTap: _pickMusic,
+              onTimerTap: _showTimerSelection,
+              onEmojiSelected: (emoji) {
+                final newSticker = StickerData(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  text: emoji,
+                  position: const Offset(150, 250),
+                );
+                ModeService().addSticker(newSticker);
+                setState(() {
+                  _selectedStickerId = newSticker.id;
+                });
+              },
+            ),
+          ),
+
+          _buildCountdownOverlay(),
 
           Positioned(
             bottom: 228,
@@ -83,6 +369,7 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void dispose() {
     CameraLogger.log('CameraScreen disposing');
+    ModeService().removeListener(_onStickersChanged);
     _cameraService.dispose();
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();

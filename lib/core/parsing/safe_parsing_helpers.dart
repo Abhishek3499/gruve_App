@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Safe parsing helpers for type-safe API response handling
 class SafeParsingHelpers {
@@ -6,27 +6,27 @@ class SafeParsingHelpers {
   /// Returns empty map if parsing fails
   static Map<String, dynamic> safeMapParse(dynamic data, {String? context}) {
     if (data == null) {
-      debugPrint('[SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty map');
+      AppLogger.d('[SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty map');
       return {};
     }
     
     if (data is Map<String, dynamic>) {
-      debugPrint('✅ [SafeParsing] ${context ?? 'Unknown'}: data is already Map<String, dynamic>');
+      AppLogger.d('✅ [SafeParsing] ${context ?? 'Unknown'}: data is already Map<String, dynamic>');
       return data;
     }
     
     if (data is Map) {
       try {
         final result = Map<String, dynamic>.from(data);
-        debugPrint('🔄 [SafeParsing] ${context ?? 'Unknown'}: converted Map<dynamic, dynamic> to Map<String, dynamic>');
+        AppLogger.d('🔄 [SafeParsing] ${context ?? 'Unknown'}: converted Map<dynamic, dynamic> to Map<String, dynamic>');
         return result;
       } catch (e) {
-        debugPrint('💥 [SafeParsing] ${context ?? 'Unknown'}: failed to convert map: $e');
+        AppLogger.d('💥 [SafeParsing] ${context ?? 'Unknown'}: failed to convert map: $e');
         return {};
       }
     }
     
-    debugPrint('⚠️ [SafeParsing] ${context ?? 'Unknown'}: data is ${data.runtimeType}, expected Map, returning empty map');
+    AppLogger.d('⚠️ [SafeParsing] ${context ?? 'Unknown'}: data is ${data.runtimeType}, expected Map, returning empty map');
     return {};
   }
 
@@ -34,16 +34,16 @@ class SafeParsingHelpers {
   /// Returns empty list if parsing fails
   static List<dynamic> safeListParse(dynamic data, {String? context}) {
     if (data == null) {
-      debugPrint('[SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty list');
+      AppLogger.d('[SafeParsing] ${context ?? 'Unknown'}: data is null, returning empty list');
       return [];
     }
     
     if (data is List) {
-      debugPrint('📋 [SafeParsing] ${context ?? 'Unknown'}: data is already List with ${data.length} items');
+      AppLogger.d('📋 [SafeParsing] ${context ?? 'Unknown'}: data is already List with ${data.length} items');
       return data;
     }
     
-    debugPrint('⚠️ [SafeParsing] ${context ?? 'Unknown'}: data is ${data.runtimeType}, expected List, returning empty list');
+    AppLogger.d('⚠️ [SafeParsing] ${context ?? 'Unknown'}: data is ${data.runtimeType}, expected List, returning empty list');
     return [];
   }
 
@@ -51,10 +51,10 @@ class SafeParsingHelpers {
   static Map<String, dynamic> safeMapFromList(dynamic data, int index, {String? context}) {
     final list = safeListParse(data, context: context);
     if (index >= 0 && index < list.length) {
-      debugPrint('📍 [SafeParsing] ${context ?? 'Unknown'}: extracting item at index $index from list of ${list.length}');
+      AppLogger.d('📍 [SafeParsing] ${context ?? 'Unknown'}: extracting item at index $index from list of ${list.length}');
       return safeMapParse(list[index], context: '${context ?? 'Unknown'}[$index]');
     }
-    debugPrint('❌ [SafeParsing] ${context ?? 'Unknown'}: index $index out of bounds for list of length ${list.length}');
+    AppLogger.d('❌ [SafeParsing] ${context ?? 'Unknown'}: index $index out of bounds for list of length ${list.length}');
     return {};
   }
 
@@ -104,38 +104,38 @@ class SafeParsingHelpers {
 
   /// Log detailed information about response data for debugging
   static void logResponseInfo(dynamic data, String context) {
-    debugPrint('📊 [ResponseDebug] 🚀 $context - RuntimeType: ${data.runtimeType}');
+    AppLogger.d('📊 [ResponseDebug] 🚀 $context - RuntimeType: ${data.runtimeType}');
     
     if (data == null) {
-      debugPrint('📊 [ResponseDebug] 🚫 $context - Data: null');
+      AppLogger.d('📊 [ResponseDebug] 🚫 $context - Data: null');
       return;
     }
     
     if (data is Map) {
-      debugPrint('📊 [ResponseDebug] 🗺️ $context - Map keys: ${data.keys.toList()}');
-      debugPrint('📊 [ResponseDebug] 📏 $context - Map length: ${data.length}');
+      AppLogger.d('📊 [ResponseDebug] 🗺️ $context - Map keys: ${data.keys.toList()}');
+      AppLogger.d('📊 [ResponseDebug] 📏 $context - Map length: ${data.length}');
       
       // Log first few key-value pairs for inspection
       final entries = data.entries.take(3).toList();
       for (final entry in entries) {
-        debugPrint('📊 [ResponseDebug] 🔑 $context - Sample: ${entry.key}: ${entry.value} (${entry.value.runtimeType})');
+        AppLogger.d('📊 [ResponseDebug] 🔑 $context - Sample: ${entry.key}: ${entry.value} (${entry.value.runtimeType})');
       }
     } else if (data is List) {
-      debugPrint('📊 [ResponseDebug] 📋 $context - List length: ${data.length}');
+      AppLogger.d('📊 [ResponseDebug] 📋 $context - List length: ${data.length}');
       if (data.isNotEmpty) {
-        debugPrint('📊 [ResponseDebug] 📦 $context - First item type: ${data.first.runtimeType}');
+        AppLogger.d('📊 [ResponseDebug] 📦 $context - First item type: ${data.first.runtimeType}');
         if (data.first is Map) {
-          debugPrint('📊 [ResponseDebug] 🗺️ $context - First item keys: ${(data.first as Map).keys.toList()}');
+          AppLogger.d('📊 [ResponseDebug] 🗺️ $context - First item keys: ${(data.first as Map).keys.toList()}');
         }
       }
     } else {
-      debugPrint('📊 [ResponseDebug] 💎 $context - Value: $data');
+      AppLogger.d('📊 [ResponseDebug] 💎 $context - Value: $data');
     }
   }
 
   /// Validate and clean map keys to ensure they are strings
   static Map<String, dynamic> validateAndCleanMap(dynamic data, {String? context}) {
-    debugPrint('🧹 [SafeParsing] 🧽 ${context ?? 'Unknown'}: starting map validation and cleaning');
+    AppLogger.d('🧹 [SafeParsing] 🧽 ${context ?? 'Unknown'}: starting map validation and cleaning');
     final map = safeMapParse(data, context: context);
     final cleaned = <String, dynamic>{};
     
@@ -144,7 +144,7 @@ class SafeParsingHelpers {
       cleaned[key] = entry.value;
     }
     
-    debugPrint('✨ [SafeParsing] 🌟 ${context ?? 'Unknown'}: cleaned map has ${cleaned.length} string keys');
+    AppLogger.d('✨ [SafeParsing] 🌟 ${context ?? 'Unknown'}: cleaned map has ${cleaned.length} string keys');
     return cleaned;
   }
 }

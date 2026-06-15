@@ -15,6 +15,7 @@ import 'package:gruve_app/features/subscription/subscription_screen.dart';
 
 import '../../Account/screens/account_screen.dart';
 import '../../insight/screens/professional_dashboard_screen.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileMenuDrawer extends StatelessWidget {
   final String? profileImage;
@@ -286,7 +287,7 @@ class ProfileMenuDrawer extends StatelessWidget {
                         builder: (context, logoutProvider, child) {
                           return GestureDetector(
                             onTap: logoutProvider.isLoading ? null : () {
-                              debugPrint("🔥 LOGOUT CLICKED");
+                              AppLogger.d("🔥 LOGOUT CLICKED");
 
                               Navigator.pop(context); // 👈 close drawer first
                               logoutProvider.clearError(); // Clear previous errors

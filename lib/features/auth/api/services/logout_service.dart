@@ -1,18 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import '../models/logout_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class LogoutService {
-  final Dio dio = AppDio.create(
-    connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 8),
-    sendTimeout: const Duration(seconds: 5),
-  );
+  final Dio dio = AppDio.getInstance();
 
   Future<LogoutResponse> logout({
     String? accessToken,
@@ -52,7 +47,7 @@ class LogoutService {
       final response = await dio.post(
         endpoint,
         data: requestData,
-        options: AuthEndpointPaths.skipAuthOptions(headers: headers),
+        options: Options(headers: headers),
       );
 
       AuthApiLogger.response('Logout', response);
@@ -75,7 +70,7 @@ class LogoutService {
       }
       throw AuthApiException.extractMessage(e, fallback: 'Logout failed');
     } catch (e) {
-      debugPrint("Logout failed: $e");
+      AppLogger.d("Logout failed: $e");
       rethrow;
     }
   }

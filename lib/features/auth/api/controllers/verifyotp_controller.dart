@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
@@ -6,6 +5,7 @@ import 'package:gruve_app/features/auth/token_storage.dart' show TokenStorage;
 
 import '../models/verify_otp_response.dart';
 import '../services/verify_otp_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VerifyotpController {
   final VerifyOtpService _service = VerifyOtpService();
@@ -26,7 +26,7 @@ class VerifyotpController {
     isLoading = true;
     errorMessage = null;
 
-    debugPrint(
+    AppLogger.d(
       'VerifyOtpController flow forgot=$isForgot login=$isLogin type=$type',
     );
 
@@ -58,7 +58,7 @@ class VerifyotpController {
         final resetToken = data.resetToken;
         if (resetToken != null && resetToken.isNotEmpty) {
           await TokenStorage.saveResetToken(resetToken);
-          debugPrint('VerifyOtpController reset token saved');
+          AppLogger.d('VerifyOtpController reset token saved');
         }
         return;
       }
@@ -74,7 +74,7 @@ class VerifyotpController {
         ProfileIdentityService.instance.primeLoggedInUserId(data.userId);
       }
 
-      debugPrint('VerifyOtpController tokens saved');
+      AppLogger.d('VerifyOtpController tokens saved');
     } catch (e) {
       errorMessage = AuthApiException.userFacingMessage(
         e,

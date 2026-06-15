@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PostItem {
   final String id;
@@ -69,8 +69,8 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    debugPrint('🔄 [UserProfile] Parsing profile from JSON...');
-    debugPrint('[UserProfile] Top level keys: ${json.keys.toList()}');
+    AppLogger.d('🔄 [UserProfile] Parsing profile from JSON...');
+    AppLogger.d('[UserProfile] Top level keys: ${json.keys.toList()}');
 
     try {
       // ✅ Service already extracted 'data' layer — so start from 'user' directly
@@ -90,10 +90,10 @@ class UserProfile {
           .map((e) => PostItem.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      debugPrint('✅ [UserProfile] userId: ${user['id']}');
-      debugPrint('✅ [UserProfile] username: ${user['username']}');
-      debugPrint('✅ [UserProfile] subscribers: ${stats['subscribers_count']}');
-      debugPrint('✅ [UserProfile] allPosts: ${allResults.length}');
+      AppLogger.d('✅ [UserProfile] userId: ${user['id']}');
+      AppLogger.d('✅ [UserProfile] username: ${user['username']}');
+      AppLogger.d('✅ [UserProfile] subscribers: ${stats['subscribers_count']}');
+      AppLogger.d('✅ [UserProfile] allPosts: ${allResults.length}');
 
       return UserProfile(
         userId:         user['id']?.toString() ?? '',
@@ -119,7 +119,7 @@ class UserProfile {
         likedPosts:     likedResults,
       );
     } catch (e) {
-      debugPrint('❌ [UserProfile] Error parsing profile: $e');
+      AppLogger.d('❌ [UserProfile] Error parsing profile: $e');
       rethrow;
     }
   }

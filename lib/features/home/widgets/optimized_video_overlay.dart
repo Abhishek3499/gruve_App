@@ -92,6 +92,7 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
             hasActiveStory: post.hasActiveStory,
             subscribeController: _subscribeController,
             onOwnProfileTap: widget.onOwnProfileTap,
+            taggedUsers: post.taggedUsers,
           ),
         ),
         Positioned(

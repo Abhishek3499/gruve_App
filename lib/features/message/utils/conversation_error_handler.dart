@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Centralized error handling for conversation operations
 /// 
@@ -18,19 +19,19 @@ class ConversationErrorHandler {
     String? source,
   }) {
     final sourceInfo = source != null ? '[$source] ' : '';
-    debugPrint('💥 [ConversationErrorHandler]${sourceInfo}Handling error: $error');
+    AppLogger.d('💥 [ConversationErrorHandler]${sourceInfo}Handling error: $error');
     
     String userMessage = 'Failed to open chat';
     
     if (error is ArgumentError) {
       userMessage = 'Invalid user information';
-      debugPrint('🚫 [ConversationErrorHandler]${sourceInfo}ArgumentError: ${error.message}');
+      AppLogger.d('🚫 [ConversationErrorHandler]${sourceInfo}ArgumentError: ${error.message}');
     } else if (error.toString().contains('Connection timeout')) {
       userMessage = 'Connection timeout. Please check your internet connection.';
-      debugPrint('⏰ [ConversationErrorHandler]${sourceInfo}Connection timeout');
+      AppLogger.d('⏰ [ConversationErrorHandler]${sourceInfo}Connection timeout');
     } else if (error.toString().contains('No internet connection')) {
       userMessage = 'No internet connection. Please check your network.';
-      debugPrint('📶 [ConversationErrorHandler]${sourceInfo}No internet');
+      AppLogger.d('📶 [ConversationErrorHandler]${sourceInfo}No internet');
     } else if (error.toString().contains('API Error')) {
       // Extract API error details
       final errorStr = error.toString();
@@ -45,16 +46,16 @@ class ConversationErrorHandler {
       } else {
         userMessage = 'Server error occurred. Please try again.';
       }
-      debugPrint('🚫 [ConversationErrorHandler]${sourceInfo}API Error: $errorStr');
+      AppLogger.d('🚫 [ConversationErrorHandler]${sourceInfo}API Error: $errorStr');
     } else if (error.toString().contains('Context is not mounted')) {
       userMessage = 'App state changed. Please try again.';
-      debugPrint('⚠️ [ConversationErrorHandler]${sourceInfo}Context not mounted');
+      AppLogger.d('⚠️ [ConversationErrorHandler]${sourceInfo}Context not mounted');
     } else if (error.toString().contains('already in progress')) {
       userMessage = 'Request already in progress. Please wait.';
-      debugPrint('⏳ [ConversationErrorHandler]${sourceInfo}Duplicate request');
+      AppLogger.d('⏳ [ConversationErrorHandler]${sourceInfo}Duplicate request');
     } else {
       userMessage = 'Unexpected error occurred. Please try again.';
-      debugPrint('❓ [ConversationErrorHandler]${sourceInfo}Unknown error: $error');
+      AppLogger.d('❓ [ConversationErrorHandler]${sourceInfo}Unknown error: $error');
     }
     
     // Show user feedback if context is available
@@ -86,7 +87,7 @@ class ConversationErrorHandler {
         ),
       );
     } catch (e) {
-      debugPrint('💥 [ConversationErrorHandler] Failed to show snackbar: $e');
+      AppLogger.d('💥 [ConversationErrorHandler] Failed to show snackbar: $e');
     }
   }
   
@@ -109,7 +110,7 @@ class ConversationErrorHandler {
         ),
       );
     } catch (e) {
-      debugPrint('💥 [ConversationErrorHandler] Failed to show success snackbar: $e');
+      AppLogger.d('💥 [ConversationErrorHandler] Failed to show success snackbar: $e');
     }
   }
   
@@ -126,7 +127,7 @@ class ConversationErrorHandler {
     String? source,
   }) {
     final sourceInfo = source != null ? '[$source] ' : '';
-    debugPrint('🔄 [ConversationErrorHandler]$sourceInfo$operation: $receiverName ($receiverId)');
+    AppLogger.d('🔄 [ConversationErrorHandler]$sourceInfo$operation: $receiverName ($receiverId)');
   }
   
   /// Log conversation operation result
@@ -145,6 +146,6 @@ class ConversationErrorHandler {
     final status = success ? '✅ SUCCESS' : '❌ FAILED';
     final convInfo = conversationId != null ? ' (conv: $conversationId)' : '';
     
-    debugPrint('📊 [ConversationErrorHandler]$sourceInfo$operation: $status$convInfo');
+    AppLogger.d('📊 [ConversationErrorHandler]$sourceInfo$operation: $status$convInfo');
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class AlsoShareSheet extends StatefulWidget {
   const AlsoShareSheet({super.key});
@@ -175,7 +176,7 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
-        debugPrint('Sharing with ${_selectedUserIds.length} users');
+        AppLogger.d('Sharing with ${_selectedUserIds.length} users');
       },
       child: Container(
         width: double.infinity,

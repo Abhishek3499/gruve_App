@@ -6,12 +6,17 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
+import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:gruve_app/features/profile/screens/post_detail/widgets/post_action_sheet.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfilePostDetailScreen extends StatefulWidget {
   final Post post;
   final List<Post> allPosts;
   final int initialIndex;
   final bool isOwnProfile;
+  final ProfileController? profileController;
 
   const ProfilePostDetailScreen({
     super.key,
@@ -19,6 +24,7 @@ class ProfilePostDetailScreen extends StatefulWidget {
     required this.allPosts,
     required this.initialIndex,
     this.isOwnProfile = false,
+    this.profileController,
   });
 
   @override
@@ -62,7 +68,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             }
           })
           .catchError((e) {
-            debugPrint('Video init error: $e');
+            AppLogger.d('Video init error: $e');
           });
     }
   }
@@ -87,7 +93,133 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     setState(() {
       _isLiked[postId] = !(_isLiked[postId] ?? false);
     });
-    debugPrint('Toggled like for post: $postId');
+    AppLogger.d('Toggled like for post: $postId');
+  }
+
+  void _showOptionsSheet(BuildContext context) async {
+    final post = widget.allPosts[_currentIndex];
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => PostActionSheet(
+        post: post,
+        isOwnProfile: widget.isOwnProfile,
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (result == 'delete') {
+      _confirmAndDeletePost(post);
+    }
+  }
+
+  void _confirmAndDeletePost(Post post) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E092D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text(
+              'Delete Post',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to permanently delete this post? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _deletePost(post);
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deletePost(Post post) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.loaderDark,
+        ),
+      ),
+    );
+
+    final success = await PostService().deletePost(post.id);
+
+    if (!mounted) return;
+    
+    // Dismiss the loader spinner
+    Navigator.pop(context);
+
+    if (success) {
+      widget.profileController?.removePostLocal(post.id);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.greenAccent),
+              SizedBox(width: 10),
+              Text('Post deleted successfully'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF1E092D),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.redAccent),
+              SizedBox(width: 10),
+              Text('Failed to delete post'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF1E092D),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   @override
@@ -132,6 +264,27 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                     color: Colors.white,
                     width: 20,
                     height: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: () => _showOptionsSheet(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.more_horiz,
+                    color: Colors.white,
+                    size: 20,
                   ),
                 ),
               ),

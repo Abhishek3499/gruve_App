@@ -7,6 +7,7 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/core/widgets/also_share_sheet.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class AppColors {
   static const sheetBackground = Color.fromARGB(238, 66, 19, 73);
@@ -123,7 +124,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       _cachedProfile = profile;
       return profile;
     } catch (e) {
-      debugPrint('[StoryShareSheet] Own profile load skipped: $e');
+      AppLogger.d('[StoryShareSheet] Own profile load skipped: $e');
       return null;
     } finally {
       _profileRequest = null;
@@ -153,8 +154,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       return;
     }
 
-    debugPrint('\n[StoryShareSheet] Share tapped');
-    debugPrint('[StoryShareSheet] MediaPath: ${widget.mediaPath}');
+    AppLogger.d('\n[StoryShareSheet] Share tapped');
+    AppLogger.d('[StoryShareSheet] MediaPath: ${widget.mediaPath}');
 
     setState(() {
       _isLoading = true;
@@ -171,8 +172,8 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
         mediaPath: widget.mediaPath!,
       );
 
-      debugPrint('[StoryShareSheet] Response: ${storyController.message}');
-      debugPrint('[StoryShareSheet] Success: ${storyController.isSuccess}');
+      AppLogger.d('[StoryShareSheet] Response: ${storyController.message}');
+      AppLogger.d('[StoryShareSheet] Success: ${storyController.isSuccess}');
 
       if (!mounted) return;
 
@@ -192,7 +193,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
         });
       }
     } catch (e) {
-      debugPrint('[StoryShareSheet] Error: $e');
+      AppLogger.d('[StoryShareSheet] Error: $e');
 
       if (!mounted) return;
 

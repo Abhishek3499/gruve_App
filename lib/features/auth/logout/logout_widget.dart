@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/auth/logout/logout_provider.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class LogoutWidget extends StatelessWidget {
   const LogoutWidget({super.key});
@@ -53,7 +54,7 @@ class LogoutWidget extends StatelessWidget {
                       builder: (context, logoutProvider, child) {
                         return GestureDetector(
                           onTap: logoutProvider.isLoading ? null : () {
-                            debugPrint("🔥 YES CLICKED");
+                            AppLogger.d("🔥 YES CLICKED");
                             logoutProvider.clearError(); // Clear any previous logout error
 
                             // Start logout ASAP; it will continue in background after navigation.
@@ -61,7 +62,7 @@ class LogoutWidget extends StatelessWidget {
                                 rootNavigatorKey.currentContext ?? context;
                             logoutProvider.logout(context: providerContext);
 
-                            debugPrint("🚀 [LogoutWidget] Navigating to SignIn immediately...");
+                            AppLogger.d("🚀 [LogoutWidget] Navigating to SignIn immediately...");
                             Navigator.of(context).pop(); // Close dialog immediately
 
                             rootNavigatorKey.currentState?.pushAndRemoveUntil(
@@ -70,7 +71,7 @@ class LogoutWidget extends StatelessWidget {
                               ),
                               (route) => false,
                             );
-                            debugPrint("🚀 [LogoutWidget] Instant navigation completed.");
+                            AppLogger.d("🚀 [LogoutWidget] Instant navigation completed.");
                           },
                           child: Container(
                             width: double.infinity,

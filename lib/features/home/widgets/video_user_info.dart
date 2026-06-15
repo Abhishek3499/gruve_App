@@ -9,6 +9,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/subscribe_controller.dart';
 import 'subscribe_button.dart';
 
+import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
+import 'package:gruve_app/core/widgets/optimized/optimized_image.dart';
+
 class VideoUserInfo extends StatefulWidget {
   final String username;
   final String caption;
@@ -20,6 +23,7 @@ class VideoUserInfo extends StatefulWidget {
   final bool hasActiveStory;
   final SubscribeController subscribeController;
   final VoidCallback onOwnProfileTap;
+  final List<TaggedUser> taggedUsers;
 
   const VideoUserInfo({
     super.key,
@@ -29,10 +33,11 @@ class VideoUserInfo extends StatefulWidget {
     required this.userId,
     this.userCount = 2,
     this.profilePicture,
-    this.initialIsSubscribed = false,
-    this.hasActiveStory = false,
+    required this.initialIsSubscribed,
+    required this.hasActiveStory,
     required this.subscribeController,
     required this.onOwnProfileTap,
+    this.taggedUsers = const [],
   });
 
   @override
@@ -125,32 +130,199 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
     return '${widget.username.substring(0, 15)}...';
   }
 
-  Widget _buildUsersPill() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(26),
-            color: Colors.white.withValues(alpha: 0.10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+  Future<void> _openTaggedUserProfile(BuildContext context, TaggedUser user) async {
+    Navigator.pop(context);
+
+    final resolution = await ProfileIdentityService.instance.resolveProfileIdentity(user.id);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (resolution.isOwnProfile) {
+      widget.onOwnProfileTap();
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(
+          profileUserId: user.id,
+          userName: user.username,
+          profileImageUrl: user.profilePicture,
+          initialHasActiveStory: false,
+        ),
+      ),
+    );
+  }
+
+  void _showTaggedUsersSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return _buildTaggedUsersSheetContent(context);
+      },
+    );
+  }
+
+  Widget _buildTaggedUsersSheetContent(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.45,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF2C1032), Color(0xFF140519)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 16),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white38,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.person, color: Colors.white, size: 18),
-              const SizedBox(width: 5),
-              Text(
-                '${widget.userCount} users',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "In this post",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-              ),
-            ],
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(color: Colors.white12, height: 1),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              itemCount: widget.taggedUsers.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final user = widget.taggedUsers[index];
+                return InkWell(
+                  onTap: () => _openTaggedUserProfile(context, user),
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        OptimizedAvatar(
+                          imageUrl: user.profilePicture,
+                          radius: 22,
+                          name: user.username,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.username,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "@${user.username}",
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white.withValues(alpha: 0.3),
+                          size: 14,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsersPill() {
+    if (widget.taggedUsers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return GestureDetector(
+      onTap: () => _showTaggedUsersSheet(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(26),
+              color: Colors.white.withValues(alpha: 0.10),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.person, color: Colors.white, size: 18),
+                const SizedBox(width: 5),
+                Text(
+                  '${widget.taggedUsers.length} tagged',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

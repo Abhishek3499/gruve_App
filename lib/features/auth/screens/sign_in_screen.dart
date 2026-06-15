@@ -19,6 +19,7 @@ import 'package:gruve_app/features/auth/screens/signup_screen.dart';
 import 'package:gruve_app/core/widgets/primary_button.dart';
 import 'package:gruve_app/core/widgets/outline_button.dart';
 import 'package:gruve_app/core/widgets/video_background.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -39,10 +40,10 @@ class _SignInScreenState extends State<SignInScreen> {
       GoogleSignIn.instance.initialize(
         serverClientId: EnvironmentConfig.googleWebClientId,
       ).catchError((e) {
-        debugPrint('Failed to warm up Google Sign In: $e');
+        AppLogger.d('Failed to warm up Google Sign In: $e');
       });
     } catch (e) {
-      debugPrint('Failed to warm up Google Sign In: $e');
+      AppLogger.d('Failed to warm up Google Sign In: $e');
     }
   }
 
@@ -109,15 +110,15 @@ class _SignInScreenState extends State<SignInScreen> {
       // Refresh application state in the background to keep login fast.
       Future<void>.delayed(Duration.zero, () async {
         try {
-          debugPrint('🔄 [Google Login] 🔄 Refreshing providers in background...');
+          AppLogger.d('🔄 [Google Login] 🔄 Refreshing providers in background...');
           await profileProvider.refreshProfile();
-          debugPrint('👤 [Google Login] 👤 Profile data refreshed');
+          AppLogger.d('👤 [Google Login] 👤 Profile data refreshed');
           storyController.reset();
-          debugPrint('📖 [Google Login] 📖 Story data reset');
-          debugPrint('✅ [Google Login] ✅ Background refresh completed');
+          AppLogger.d('📖 [Google Login] 📖 Story data reset');
+          AppLogger.d('✅ [Google Login] ✅ Background refresh completed');
         } catch (e, stackTrace) {
-          debugPrint('❌ [Google Login] ❌ Background refresh failed: $e');
-          debugPrint('$stackTrace');
+          AppLogger.d('❌ [Google Login] ❌ Background refresh failed: $e');
+          AppLogger.d('$stackTrace');
         }
       });
     }

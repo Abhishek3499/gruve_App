@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EditProfileRequest {
   final String fullname;
@@ -12,36 +12,36 @@ class EditProfileRequest {
     this.bio,
     this.profilePicture,
   }) {
-    debugPrint("🏗️ [EditProfileRequest] Creating request object...");
-    debugPrint(
+    AppLogger.d("🏗️ [EditProfileRequest] Creating request object...");
+    AppLogger.d(
       "📝 [EditProfileRequest] Data: fullname='$fullname', username='$username', bio='$bio', profile_picture='$profilePicture'",
     );
   }
 
   Map<String, dynamic> toJson() {
-    debugPrint("🔄 [EditProfileRequest] Converting to JSON...");
+    AppLogger.d("🔄 [EditProfileRequest] Converting to JSON...");
 
     final data = <String, dynamic>{'fullname': fullname, 'username': username};
 
     if (bio?.isNotEmpty == true) {
       data['bio'] = bio;
-      debugPrint("📝 [EditProfileRequest] Added bio: '$bio'");
+      AppLogger.d("📝 [EditProfileRequest] Added bio: '$bio'");
     } else {
-      debugPrint("📝 [EditProfileRequest] Bio omitted (null or empty)");
+      AppLogger.d("📝 [EditProfileRequest] Bio omitted (null or empty)");
     }
 
     if (profilePicture?.isNotEmpty == true) {
       data['profile_picture'] = profilePicture;
-      debugPrint(
+      AppLogger.d(
         "🖼️ [EditProfileRequest] Added profile_picture: '$profilePicture'",
       );
     } else {
-      debugPrint(
+      AppLogger.d(
         "🖼️ [EditProfileRequest] ProfilePicture omitted (null or empty)",
       );
     }
 
-    debugPrint("✅ [EditProfileRequest] JSON conversion completed: $data");
+    AppLogger.d("✅ [EditProfileRequest] JSON conversion completed: $data");
     return data;
   }
 

@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
 import '../api/block_api_service.dart';
+import 'package:flutter/foundation.dart';
 import '../../profile_menu_drawer/models/blocked/blocked_user_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class BlockProvider extends ChangeNotifier {
   final BlockApiService _apiService = BlockApiService();
@@ -22,7 +23,7 @@ class BlockProvider extends ChangeNotifier {
   bool get isLoadingList => _isLoadingList;
 
   void _log(String message) {
-    debugPrint('🔒 [BlockProvider] $message');
+    AppLogger.d('🔒 [BlockProvider] $message');
   }
 
   /// Fetch blocked users list. Concurrent callers without [forceRefresh] share one in-flight request.
@@ -162,7 +163,7 @@ class BlockProvider extends ChangeNotifier {
 
   /// Reset all block data on logout
   void reset() {
-    debugPrint('🔄 [BlockProvider] Resetting block data...');
+    AppLogger.d('🔄 [BlockProvider] Resetting block data...');
     _blockStates.clear();
     _loadingStates.clear();
     _blockedUsers.clear();
@@ -170,7 +171,7 @@ class BlockProvider extends ChangeNotifier {
     _blockedUsersFetchFuture = null;
     _lastBlockedUsersFetchAt = null;
     notifyListeners();
-    debugPrint('✅ [BlockProvider] Block data reset complete');
+    AppLogger.d('✅ [BlockProvider] Block data reset complete');
   }
 
   /// Clear all states (legacy method)

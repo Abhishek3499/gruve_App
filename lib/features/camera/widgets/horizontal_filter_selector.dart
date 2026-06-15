@@ -116,7 +116,14 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   }
 
   Future<void> _captureFilteredImage() async {
-    if (_isRecordingVideo || _cameraService.isRecordingVideo) return;
+    if (_isRecordingVideo || _cameraService.isRecordingVideo || ModeService().isCountdownRunning) return;
+
+    if (ModeService().shootDuration > 0) {
+      ModeService().startCountdown(() {
+        _startTimedRecording();
+      });
+      return;
+    }
 
     CameraLogger.logUserAction('Capturing filtered image');
 
@@ -128,7 +135,11 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
         if (mode == CameraMode.story || mode == CameraMode.groove) {
           Navigator.of(
             context,
-          ).pop(CameraCaptureResult(mediaPath: rawImage.path, mode: mode));
+          ).pop(CameraCaptureResult(
+            mediaPath: rawImage.path,
+            mode: mode,
+            stickers: List.from(ModeService().stickers),
+          ));
         }
       }
     } catch (e) {
@@ -142,6 +153,50 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
         );
       }
     }
+  }
+
+  Future<void> _startTimedRecording() async {
+    if (_isRecordingVideo || _cameraService.isCapturing) return;
+
+    CameraLogger.logUserAction('Video recording started via shoot timer');
+    HapticFeedback.mediumImpact();
+
+    setState(() {
+      _recordingSeconds = 0;
+      _isRecordingVideo = true;
+    });
+
+    _lastDragY = 0.0;
+    _targetZoom = _cameraService.displayZoom;
+    _currentZoom = _cameraService.displayZoom;
+
+    await _cameraService.startVideoRecording();
+
+    if (!_cameraService.isRecordingVideo) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not start recording'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _recordingSeconds++);
+
+      if (_recordingSeconds >= ModeService().shootDuration) {
+        timer.cancel();
+        _stopVideoRecording();
+      }
+    });
   }
 
   Future<void> _startVideoRecording(LongPressStartDetails details) async {
@@ -241,7 +296,11 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       if (mode == CameraMode.story || mode == CameraMode.groove) {
         Navigator.of(
           context,
-        ).pop(CameraCaptureResult(mediaPath: video.path, mode: mode));
+        ).pop(CameraCaptureResult(
+          mediaPath: video.path,
+          mode: mode,
+          stickers: List.from(ModeService().stickers),
+        ));
       }
     } catch (e) {
       CameraLogger.log('Failed to stop video recording: $e');

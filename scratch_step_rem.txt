@@ -1,0 +1,194 @@
+=== STEP 1960 ===
+<USER_REQUEST>
+
+### FIX 12 — Comment POST tries 7 different payloads
+
+FILE: lib/features/comments/api/comment_service.dart (lines 98-122)
+
+PROBLEM:
+One comment = up to 7 sequential POST attempts with different payloads.
+User waits for multiple failures before success.
+Server gets spammed with malformed requests.
+
+FIX:
+- Test all 7 payload formats against the backend right now
+- Identify which single format works reliably
+- Remove all other attempts
+- Keep only one POST with correct payload
+- Add single retry with 1s delay if first attempt fails (max 1 retry)
+
+---
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T17:36:38+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+Cursor is on line: 12
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\cache\cache_manager.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\cache\cache_interceptor.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\message\data\datasource\user_remote_datasource.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\widgets\profile_grid.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\complete_profile_service.dart (LANGUAGE_DART)
+</ADDITIONAL_METADATA>
+
+=== STEP 2174 ===
+<USER_REQUEST>
+
+### FIX 13 — Profile always makes 2 parallel calls on open
+
+FILE: lib/features/profile/providers/profile_provider.dart (lines 89-93)
+
+PROBLEM:
+Every profile open fires user/profile_data/ and highlights/mine/ 
+simultaneously even when data is fresh in cache.
+
+FIX:
+- Check cache/TTL before firing each call independently
+- If profile data is fresh (< 5 min old), skip profile fetch
+- If highlights are fresh (< 5 min old), skip highlights fetch
+- Add _lastProfileFetch and _lastHighlightsFetch timestamps
+  to ProfileProvider
+
+---
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T17:48:01+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\api\create_post_api\post_service.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\api\create_post_api\model\post_draft_model.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\message\widgets\chat_bubble.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\screens\post\tag_users_screen.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\network\app_dio.dart (LANGUAGE_DART)
+</ADDITIONAL_METADATA>
+
+=== STEP 2228 ===
+<USER_REQUEST>
+FIX 14 — WebSocket + REST both active for messages
+
+FILE: lib/services/socket_service.dart
+FILE: lib/features/message/services/message_service.dart
+
+PROBLEM:
+Messages sent via WebSocket AND REST fallback sometimes both fire.
+Same message can be processed twice — duplicate messages in UI.
+
+FIX:
+- Define clear priority: WebSocket is primary, REST is fallback ONLY
+- Before firing REST fallback, check if socket is connected:
+  if (!socketService.isConnected) { use REST } else { use socket only }
+- Add message dedup by ID in MessageController before adding to list:
+  if (!messages.any((m) => m.id == newMessage.id)) messages.add(newMessage)
+
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T17:50:51+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\widgets\profile_grid.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\signup_service.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\auth\auth_endpoint_paths.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile_menu_drawer\screens\saved_screen.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\main.dart (LANGUAGE_DART)
+</ADDITIONAL_METADATA>
+
+=== STEP 2274 ===
+<USER_REQUEST>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## PHASE 4 — CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### FIX 15 — Remove unused http package
+
+FILE: pubspec.yaml
+
+FIX:
+- Remove http package from dependencies
+- Run flutter pub get
+- Verify no import of package:http anywhere in lib/
+
+---
+
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T17:54:03+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\auth\auth_endpoint_paths.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\cache\cache_manager.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\widgets\profile_grid.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\main.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\screens\real_draft_screen.dart (LANGUAGE_DART)
+</ADDITIONAL_METADATA>
+
+=== STEP 2296 ===
+<USER_REQUEST>
+FIX 16 — Consolidate shimmer/skeleton widgets
+
+PROBLEM:
+Multiple shimmer implementations across features.
+Each loads separately in memory.
+
+FIX:
+- Create single lib/core/widgets/shimmer/ folder
+- Move all shimmer widgets there with generic names
+- Replace all feature-specific shimmer imports with core ones
+
+---
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T17:55:26+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\api\create_post_api\model\post_draft_model.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\screens\post\more_option_screen.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\message\domain\repository\user_repository.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\core\network\api_client.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\extract_fix3.py (LANGUAGE_PYTHON)
+</ADDITIONAL_METADATA>
+
+=== STEP 2425 ===
+<USER_REQUEST>
+
+### FIX 17 — Remove all unnecessary debugPrint in production
+
+PROBLEM:
+Excessive logs slow down app in debug AND release if not guarded.
+Log volume is 60-70% higher than needed.
+
+FIX:
+- Wrap all debugPrint with kDebugMode check:
+  if (kDebugMode) debugPrint('...');
+- Or replace with a single logger utility:
+  AppLogger.d('message') — which internally checks kDebugMode
+- Create lib/core/utils/app_logger.dart as single logging utility
+- Replace all raw debugPrint calls across 474 files with AppLogger
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-06-15T18:10:08+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\widgets\profile_grid.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\story_preview\screens\post\tag_users_screen.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\profile\screens\real_draft_screen.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\edit_profile_service.dart (LANGUAGE_DART)
+- c:\Users\Acer\Desktop\projects\gruve_app\lib\features\auth\api\services\signup_service.dart (LANGUAGE_DART)
+</ADDITIONAL_METADATA>
+

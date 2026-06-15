@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
@@ -6,7 +5,7 @@ import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
-import 'package:gruve_app/core/widgets/story_list_skeleton.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class StoryList extends StatelessWidget {
   final ProfileProvider provider;
@@ -14,25 +13,12 @@ class StoryList extends StatelessWidget {
   const StoryList({super.key, required this.provider});
 
   void _log(String message) {
-    if (kDebugMode) {
-      debugPrint(message);
-    }
+    AppLogger.d(message);
+    
   }
 
   @override
   Widget build(BuildContext context) {
-    // Show skeleton loader while loading
-    if (provider.isLoading && provider.highlights.isEmpty) {
-      return Row(
-        children: [
-          const SizedBox(width: 30),
-          // Show actual Add Story button during loading
-          _buildAddStory(context),
-          // Show skeleton for other users' stories
-          Expanded(child: const StoryListSkeleton(otherUsersCount: 6)),
-        ],
-      );
-    }
 
     // Show error state
     if (provider.errorMessage != null) {

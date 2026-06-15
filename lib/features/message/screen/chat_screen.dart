@@ -20,6 +20,7 @@ import '../widgets/message_popup_menu.dart';
 import '../widgets/pinned_message_banner.dart';
 import '../widgets/reply_preview_bar.dart';
 import '../../../core/widgets/shimmer/chat_shimmer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ChatScreen extends StatefulWidget {
   // New explicit parameters for direct user data passing
@@ -166,7 +167,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Socket connection is now managed automatically without heartbeat context
 
-    debugPrint(
+    AppLogger.d(
       '[ChatScreen] init user=$_userName conversation=$_conversationId',
     );
 
@@ -176,7 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
       receiverUserId: _userId,
       onConversationIdChanged: (conversationId) {
         _resolvedConversationId = conversationId;
-        debugPrint(
+        AppLogger.d(
           '[ChatScreen] Active conversation recovered: $conversationId',
         );
       },
@@ -193,17 +194,17 @@ class _ChatScreenState extends State<ChatScreen> {
           (user) => user.userId == _userId,
         );
         blockProvider.setBlockState(_userId, isBlocked);
-        debugPrint(
+        AppLogger.d(
           '🔒 [ChatScreen] Block state synced from backend = $isBlocked',
         );
       } catch (e) {
-        debugPrint('⚠️ [ChatScreen] Failed to sync block state: $e');
+        AppLogger.d('⚠️ [ChatScreen] Failed to sync block state: $e');
       }
     });
     // Requirement: the messages API is called only after ChatScreen opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      debugPrint('[ChatScreen] Fetch messages requested for $_conversationId');
+      AppLogger.d('[ChatScreen] Fetch messages requested for $_conversationId');
       _hasCompletedInitialScroll = false;
       _messageController.fetchInitialMessages();
     });
@@ -282,19 +283,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _initializeSocketListener() {
     if (_socketSubscription != null) {
-      debugPrint('🎧 SOCKET LISTENER ALREADY ACTIVE');
+      AppLogger.d('🎧 SOCKET LISTENER ALREADY ACTIVE');
       return;
     }
 
-    debugPrint('🎧 SOCKET LISTENER STARTED');
+    AppLogger.d('🎧 SOCKET LISTENER STARTED');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
-      debugPrint('🔥 SOCKET DATA => $data');
+      AppLogger.d('🔥 SOCKET DATA => $data');
 
       try {
         final messageData = _extractRealtimeMessagePayload(data);
         if (messageData == null) {
-          debugPrint('[ChatScreen] Socket payload skipped: no message content');
+          AppLogger.d('[ChatScreen] Socket payload skipped: no message content');
           return;
         }
 
@@ -307,7 +308,7 @@ class _ChatScreenState extends State<ChatScreen> {
           final isRelevant = senderIdStr == _userId || receiverIdStr == _userId;
 
           if (isRelevant) {
-            debugPrint('[ChatScreen] Adopting new conversation ID from socket: $incomingConversationId');
+            AppLogger.d('[ChatScreen] Adopting new conversation ID from socket: $incomingConversationId');
             _resolvedConversationId = incomingConversationId;
             _messageController.conversationId = incomingConversationId;
             _messageController.onConversationIdChanged?.call(incomingConversationId);
@@ -321,11 +322,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
         _messageController.addRealtimeMessage(messageData);
 
-        debugPrint('✅ REALTIME MESSAGE ADDED');
+        AppLogger.d('✅ REALTIME MESSAGE ADDED');
 
         _scrollToBottom();
       } catch (e) {
-        debugPrint('💥 SOCKET ERROR => $e');
+        AppLogger.d('💥 SOCKET ERROR => $e');
       }
     });
   }
@@ -440,7 +441,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
-    debugPrint(
+    AppLogger.d(
       '[ChatScreen] 📤 SEND FLOW START: conversation=$_conversationId',
     );
     final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
@@ -460,24 +461,24 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     // Step 1: Optimistic local append
-    debugPrint('[ChatScreen] 📝 Step 1: Local message appended id=$localId');
+    AppLogger.d('[ChatScreen] 📝 Step 1: Local message appended id=$localId');
     _messageController.appendLocalMessage(newMessage);
     _scrollToBottom();
 
     // Step 2: Attempt backend persistence with timeout protection
     try {
-      debugPrint('[ChatScreen] 🌐 Step 2: Starting backend send...');
+      AppLogger.d('[ChatScreen] 🌐 Step 2: Starting backend send...');
 
       await _sendToBackend(trimmedText).timeout(
         const Duration(seconds: 15),
         onTimeout: () => throw TimeoutException('Send timeout after 15s'),
       );
 
-      debugPrint('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
+      AppLogger.d('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
       // The socket listener handles adding and replacing the optimistic message
       _scrollToBottom();
     } catch (e) {
-      debugPrint('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
+      AppLogger.d('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
       _messageController.removeMessages({localId});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -491,50 +492,57 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         setState(() => _isSending = false);
       }
-      debugPrint('[ChatScreen] 🏁 SEND FLOW COMPLETE');
+      AppLogger.d('[ChatScreen] 🏁 SEND FLOW COMPLETE');
     }
   }
 
   Future<void> _sendToBackend(String content) async {
-    debugPrint('[ChatScreen] 🔄 Backend send: Trying WebSocket first...');
+    AppLogger.d('[ChatScreen] 🔄 Backend send: WebSocket is primary, REST is fallback ONLY');
 
-    // Step 2a: Try WebSocket send with timeout
-    final wsSuccess = await _tryWebSocketSend(content).timeout(
-      const Duration(seconds: 12),
-      onTimeout: () {
-        debugPrint('[ChatScreen] WebSocket send timed out after 12s');
-        return false;
-      },
-    );
+    final socketService = SocketService();
+    if (socketService.isConnected) {
+      AppLogger.d('[ChatScreen] Socket is connected. Using WebSocket only.');
+      final wsSuccess = await _tryWebSocketSend(content).timeout(
+        const Duration(seconds: 12),
+        onTimeout: () {
+          AppLogger.d('[ChatScreen] WebSocket send timed out after 12s');
+          return false;
+        },
+      );
 
-    if (wsSuccess) {
-      debugPrint('[ChatScreen] ✅ WebSocket send SUCCESS');
-      return;
+      if (wsSuccess) {
+        AppLogger.d('[ChatScreen] ✅ WebSocket send SUCCESS');
+        return;
+      }
+      throw Exception('Failed to send message via WebSocket');
+    } else {
+      AppLogger.d('[ChatScreen] Socket is NOT connected. Using REST fallback.');
+      final restMessage = await _messageController.sendMessage(content);
+      if (restMessage != null) {
+        AppLogger.d('[ChatScreen] ✅ REST fallback send SUCCESS');
+        return;
+      }
+      throw Exception('Failed to send message via REST fallback');
     }
-
-    // Current backend sends chat messages over WebSocket. The REST collection
-    // endpoint allows GET, but POST returns 405 Method Not Allowed.
-    debugPrint('[ChatScreen] WebSocket unavailable; REST send skipped');
-    throw Exception('Message connection unavailable. Please try again.');
   }
 
   Future<bool> _tryWebSocketSend(String content) async {
     try {
-      debugPrint('[ChatScreen] 📡 WebSocket send attempt start');
+      AppLogger.d('[ChatScreen] 📡 WebSocket send attempt start');
       final socketService = SocketService();
 
       if (!socketService.isConnected) {
-        debugPrint('[ChatScreen] ⚠️ WebSocket NOT CONNECTED');
+        AppLogger.d('[ChatScreen] ⚠️ WebSocket NOT CONNECTED');
         final accessToken = await TokenStorage.getAccessToken();
         if (accessToken == null || accessToken.isEmpty) {
-          debugPrint('[ChatScreen] No token available for WebSocket reconnect');
+          AppLogger.d('[ChatScreen] No token available for WebSocket reconnect');
           return false;
         }
 
         await socketService.connect(accessToken);
         final connected = await _waitForSocketConnection(socketService);
         if (!connected) {
-          debugPrint('[ChatScreen] WebSocket reconnect did not complete');
+          AppLogger.d('[ChatScreen] WebSocket reconnect did not complete');
           return false;
         }
       }
@@ -544,10 +552,10 @@ class _ChatScreenState extends State<ChatScreen> {
         message: content,
       );
 
-      debugPrint('[ChatScreen] 📡 WebSocket send result: $sent');
+      AppLogger.d('[ChatScreen] 📡 WebSocket send result: $sent');
       return sent;
     } catch (e) {
-      debugPrint('[ChatScreen] ❌ WebSocket send exception: $e');
+      AppLogger.d('[ChatScreen] ❌ WebSocket send exception: $e');
       return false;
     }
   }
@@ -565,14 +573,14 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendImage(String imagePath) {
-    debugPrint('[ChatScreen] 🖼️ Image send not yet implemented: $imagePath');
+    AppLogger.d('[ChatScreen] 🖼️ Image send not yet implemented: $imagePath');
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Image sending coming soon!')));
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
-    debugPrint('[ChatScreen] 🎯 Message action=$action id=${message.id}');
+    AppLogger.d('[ChatScreen] 🎯 Message action=$action id=${message.id}');
     _dismissPopup();
 
     switch (action) {
@@ -602,12 +610,12 @@ class _ChatScreenState extends State<ChatScreen> {
       case MessageAction.delete:
         // Check if it's user's own message
         if (message.isSent) {
-          debugPrint(
+          AppLogger.d(
             '[ChatScreen] 🗑️ 👤 Own message - showing delete confirmation',
           );
           _showDeleteConfirmation(message);
         } else {
-          debugPrint('[ChatScreen] ⚠️ 🚫 Not own message - cannot delete');
+          AppLogger.d('[ChatScreen] ⚠️ 🚫 Not own message - cannot delete');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('You can only delete your own messages'),
@@ -638,7 +646,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Show delete confirmation dialog
   Future<void> _showDeleteConfirmation(MessageModel message) async {
-    debugPrint(
+    AppLogger.d(
       '🗑️ [ChatScreen] 💬 Showing delete confirmation for message: ${message.id}',
     );
 
@@ -662,7 +670,7 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              debugPrint('🗑️ [ChatScreen] ❌ Delete cancelled by user');
+              AppLogger.d('🗑️ [ChatScreen] ❌ Delete cancelled by user');
               Navigator.pop(context, false);
             },
             child: const Text(
@@ -672,7 +680,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           TextButton(
             onPressed: () {
-              debugPrint('🗑️ [ChatScreen] ✅ Delete confirmed by user');
+              AppLogger.d('🗑️ [ChatScreen] ✅ Delete confirmed by user');
               Navigator.pop(context, true);
             },
             style: TextButton.styleFrom(
@@ -696,10 +704,10 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     if (confirmed == true && mounted) {
-      debugPrint('🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete');
+      AppLogger.d('🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete');
       await _deleteSingleMessage(message);
     } else {
-      debugPrint(
+      AppLogger.d(
         '🗑️ [ChatScreen] ⚠️ Delete not confirmed or context unmounted',
       );
     }
@@ -707,26 +715,26 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Delete a single message
   Future<void> _deleteSingleMessage(MessageModel message) async {
-    debugPrint(
+    AppLogger.d(
       '🗑️ [ChatScreen] 🚀 Starting delete process for message: ${message.id}',
     );
-    debugPrint(
+    AppLogger.d(
       '💬 [ChatScreen] 📝 Message text: ${message.text.substring(0, message.text.length.clamp(0, 50))}${message.text.length > 50 ? "..." : ""}',
     );
 
     try {
-      debugPrint(
+      AppLogger.d(
         '📡 [ChatScreen] 🌐 Calling MessageController.deleteMessage...',
       );
       final success = await _messageController.deleteMessage(message.id);
 
       if (!mounted) {
-        debugPrint('⚠️ [ChatScreen] ❌ Context unmounted after delete');
+        AppLogger.d('⚠️ [ChatScreen] ❌ Context unmounted after delete');
         return;
       }
 
       if (success) {
-        debugPrint('✅ [ChatScreen] 🎉 Message deleted successfully');
+        AppLogger.d('✅ [ChatScreen] 🎉 Message deleted successfully');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Message deleted'),
@@ -735,7 +743,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       } else {
-        debugPrint('❌ [ChatScreen] ⚠️ Delete failed - showing error');
+        AppLogger.d('❌ [ChatScreen] ⚠️ Delete failed - showing error');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to delete message'),
@@ -745,7 +753,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } catch (e) {
-      debugPrint('💥 [ChatScreen] ❌ Error deleting message: $e');
+      AppLogger.d('💥 [ChatScreen] ❌ Error deleting message: $e');
 
       if (!mounted) return;
 
@@ -787,7 +795,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.removeListener(_onMessageScroll);
     _messageController.dispose();
     _scrollController.dispose();
-    debugPrint('[ChatScreen] dispose conversation=$_conversationId');
+    AppLogger.d('[ChatScreen] dispose conversation=$_conversationId');
     super.dispose();
   }
 

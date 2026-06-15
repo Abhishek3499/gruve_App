@@ -7,6 +7,7 @@ import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/intro/intro_screen.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -54,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
       await _controller.setVolume(0.0);
       await _controller.play();
     } catch (e) {
-      debugPrint('[Splash] Video initialization skipped: $e');
+      AppLogger.d('[Splash] Video initialization skipped: $e');
     }
   }
 
@@ -81,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (authState.isAuthenticated &&
         accessToken != null &&
         accessToken.isNotEmpty) {
-      debugPrint('[Splash] Authenticated session found');
+      AppLogger.d('[Splash] Authenticated session found');
 
       final websocketStart = DateTime.now();
       SocketService().connect(accessToken);
@@ -95,7 +96,7 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    debugPrint('[Splash] No authenticated session, navigating to Intro screen');
+    AppLogger.d('[Splash] No authenticated session, navigating to Intro screen');
     _navigateTo(const IntroScreen());
   }
 

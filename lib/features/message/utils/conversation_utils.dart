@@ -3,6 +3,7 @@ import '../controllers/conversation_controller.dart';
 import '../services/message_service.dart';
 import '../models/conversation_model.dart';
 import 'conversation_error_handler.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Utility class for handling conversation creation across the app
 /// 
@@ -48,12 +49,12 @@ class ConversationUtils {
     String? source,
   }) async {
     if (!context.mounted) {
-      debugPrint('⚠️ [ConversationUtils] Context not mounted, cannot navigate');
+      AppLogger.d('⚠️ [ConversationUtils] Context not mounted, cannot navigate');
       return;
     }
 
     if (receiverId.isEmpty) {
-      debugPrint('⚠️ [ConversationUtils] Receiver ID is empty, cannot create conversation');
+      AppLogger.d('⚠️ [ConversationUtils] Receiver ID is empty, cannot create conversation');
       ConversationErrorHandler.handleConversationError(
         error: ArgumentError('Receiver ID cannot be empty'),
         context: context,

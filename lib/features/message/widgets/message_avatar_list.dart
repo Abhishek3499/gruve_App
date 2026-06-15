@@ -5,7 +5,8 @@ import 'package:provider/provider.dart';
 import '../widgets/message_avatar.dart';
 import '../presentation/provider/user_provider.dart';
 import '../utils/user_display_helper.dart';
-import 'package:gruve_app/core/widgets/message_avatar_skeleton.dart';
+import 'package:gruve_app/core/widgets/shimmer/message_avatar_shimmer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageAvatarList extends StatefulWidget {
   const MessageAvatarList({super.key});
@@ -25,12 +26,12 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
-    debugPrint('🚀 [MessageAvatarList] Initialized');
+    AppLogger.d('🚀 [MessageAvatarList] Initialized');
   }
 
   @override
   void dispose() {
-    debugPrint('🗑️ [MessageAvatarList] Disposed');
+    AppLogger.d('🗑️ [MessageAvatarList] Disposed');
 
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -49,7 +50,7 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
     const delta = 100.0;
 
     if (maxScroll - currentScroll <= delta) {
-      debugPrint('📜 [MessageAvatarList] Near end reached → load more users');
+      AppLogger.d('📜 [MessageAvatarList] Near end reached → load more users');
 
       if (!provider.isFetchingMore && provider.hasNext) {
         _loadMoreUsers();
@@ -61,7 +62,7 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
     final provider = context.read<UserProvider>();
 
     if (provider.isFetchingMore || !provider.hasNext) {
-      debugPrint(
+      AppLogger.d(
         '⏸️ [MessageAvatarList] LoadMore skipped | '
         'isFetchingMore: ${provider.isFetchingMore} | '
         'hasNext: ${provider.hasNext}',
@@ -70,13 +71,13 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
     }
 
     try {
-      debugPrint('🚀 [MessageAvatarList] Loading more users...');
+      AppLogger.d('🚀 [MessageAvatarList] Loading more users...');
 
       await provider.fetchUsers(loadMore: true);
 
-      debugPrint('✅ [MessageAvatarList] Load more completed');
+      AppLogger.d('✅ [MessageAvatarList] Load more completed');
     } catch (e) {
-      debugPrint('💥 [MessageAvatarList] Load more failed: $e');
+      AppLogger.d('💥 [MessageAvatarList] Load more failed: $e');
     }
   }
 
@@ -87,7 +88,7 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
       builder: (context, onlineUsers, _) {
         return Consumer<UserProvider>(
           builder: (context, p, child) {
-            debugPrint(
+            AppLogger.d(
               '🔄 [MessageAvatarList] REBUILD | '
               'users: ${p.users.length} | '
               'loading: ${p.isLoading} | '
@@ -96,14 +97,14 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
 
             // Initial Loading or Refreshing
             if ((p.isLoading || !p.hasInitialized) && p.users.isEmpty) {
-              debugPrint('⏳ [MessageAvatarList] Showing skeleton loader');
+              AppLogger.d('⏳ [MessageAvatarList] Showing skeleton loader');
 
-              return const MessageAvatarSkeleton(avatarCount: 6);
+              return const MessageAvatarShimmer(avatarCount: 6);
             }
 
             // Empty State
             if (p.users.isEmpty && !p.isLoading) {
-              debugPrint('📭 [MessageAvatarList] No users found');
+              AppLogger.d('📭 [MessageAvatarList] No users found');
 
               return const SizedBox(
                 height: 90,
@@ -138,11 +139,11 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
                 itemBuilder: (context, index) {
                   // Pagination Loader
                   if (index == p.users.length && p.isFetchingMore) {
-                    debugPrint(
+                    AppLogger.d(
                       '⏳ [MessageAvatarList] Showing pagination loader',
                     );
 
-                    return const MessageAvatarPaginationSkeleton();
+                    return const MessageAvatarPaginationShimmer();
                   }
 
                   final user = p.users[index];

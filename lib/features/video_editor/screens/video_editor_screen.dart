@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VideoEditorScreen extends StatefulWidget {
   final String mediaPath;
@@ -56,7 +57,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         });
         _videoController!.play();
       } catch (e) {
-        debugPrint('Error initializing video editor: $e');
+        AppLogger.d('Error initializing video editor: $e');
       }
     } else {
       setState(() {
@@ -435,7 +436,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                     ),
                                     label: 'Tap tp add music',
                                     onTap: () {
-                                      debugPrint('Timeline: Add Music tapped');
+                                      AppLogger.d('Timeline: Add Music tapped');
                                     },
                                   ),
                                 ],
@@ -455,7 +456,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                     ),
                                     label: 'Tap tp add text',
                                     onTap: () {
-                                      debugPrint('Timeline: Add Text tapped');
+                                      AppLogger.d('Timeline: Add Text tapped');
                                     },
                                   ),
                                 ],

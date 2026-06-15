@@ -5,6 +5,7 @@ import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/blocked_f
 import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/blocked_header.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/blocked_tile.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/unblock_widget.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class BlockedScreen extends StatefulWidget {
   const BlockedScreen({super.key});
@@ -63,12 +64,12 @@ class _BlockedScreenState extends State<BlockedScreen> {
                         name: user.name,
                         username: user.username,
                         onUnblock: () async {
-                          debugPrint('🟢 Unblock button tapped');
+                          AppLogger.d('🟢 Unblock button tapped');
                           // Save references BEFORE async operations
                           final blockProvider = context.read<BlockProvider>();
                           final scaffoldMessenger = ScaffoldMessenger.of(context);
                           
-                          debugPrint('🟢 Opening dialog...');
+                          AppLogger.d('🟢 Opening dialog...');
                           final result = await showDialog<bool>(
                             context: context,
                             barrierColor: Colors.black.withValues(alpha: 0.7),
@@ -77,17 +78,17 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 name: user.name,
                                 username: user.username,
                                 onConfirm: () {
-                                  debugPrint('🟢 Yes button clicked, popping with true');
+                                  AppLogger.d('🟢 Yes button clicked, popping with true');
                                   Navigator.of(dialogContext).pop(true);
                                 },
                               );
                             },
                           );
 
-                          debugPrint('🟢 Dialog result: $result');
+                          AppLogger.d('🟢 Dialog result: $result');
                           
                           if (result == true) {
-                            debugPrint('🟢 Result is true, showing loading snackbar...');
+                            AppLogger.d('🟢 Result is true, showing loading snackbar...');
                             
                             // 🚀 INSTANT LOADING SNACKBAR
                             scaffoldMessenger.showSnackBar(
@@ -126,7 +127,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
                               ),
                             );
                             
-                            debugPrint('🟢 Calling API...');
+                            AppLogger.d('🟢 Calling API...');
                             try {
                               await blockProvider.toggleBlockUser(
                                 user.userId,
@@ -135,7 +136,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
 
                               if (!mounted) return;
 
-                              debugPrint('🟢 API success, showing success snackbar...');
+                              AppLogger.d('🟢 API success, showing success snackbar...');
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
@@ -164,10 +165,10 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                   elevation: 8,
                                 ),
                               );
-                              debugPrint('🟢 Success snackbar shown!');
+                              AppLogger.d('🟢 Success snackbar shown!');
                             } catch (e) {
-                              debugPrint('🔴 Error: $e');
-                              debugPrint('Error unblocking user: $e');
+                              AppLogger.d('🔴 Error: $e');
+                              AppLogger.d('Error unblocking user: $e');
 
                               if (!mounted) return;
 
@@ -201,7 +202,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
                               );
                             }
                           } else {
-                            debugPrint('🟡 Dialog cancelled or result is: $result');
+                            AppLogger.d('🟡 Dialog cancelled or result is: $result');
                           }
                         },
                       );

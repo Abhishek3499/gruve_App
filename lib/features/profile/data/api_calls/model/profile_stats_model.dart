@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileStatsModel {
   final int subscribersCount;
@@ -17,8 +17,8 @@ class ProfileStatsModel {
         videosCount = 0;
 
   factory ProfileStatsModel.fromJson(Map<String, dynamic> json) {
-    debugPrint("🔍 [ProfileStatsModel] parsing stats from: $json");
-    debugPrint("🔍 [ProfileStatsModel] JSON KEYS: ${json.keys.toList()}");
+    AppLogger.d("🔍 [ProfileStatsModel] parsing stats from: $json");
+    AppLogger.d("🔍 [ProfileStatsModel] JSON KEYS: ${json.keys.toList()}");
 
     final subscribersCount = _findCount(
       json,
@@ -100,7 +100,7 @@ class ProfileStatsModel {
       'videos',
     );
 
-    debugPrint(
+    AppLogger.d(
       "🔍 [ProfileStatsModel] FINAL RESULT -> subscribers: $subscribersCount, likes: $likesCount, videos: $videosCount",
     );
 
@@ -112,7 +112,7 @@ class ProfileStatsModel {
   }
 
   static int _findCount(dynamic source, List<String> keys, String fieldName) {
-    debugPrint("🔍 [ProfileStatsModel] Searching for $fieldName count in ${keys.length} possible keys");
+    AppLogger.d("🔍 [ProfileStatsModel] Searching for $fieldName count in ${keys.length} possible keys");
     final normalizedKeys = keys.map(_normalizeKey).toSet();
     final visited = <Object>{};
 
@@ -128,19 +128,19 @@ class ProfileStatsModel {
 
         final map = Map<String, dynamic>.from(value);
         final currentPath = path.isEmpty ? 'root' : path;
-        debugPrint("🔍 [ProfileStatsModel] Searching in map at $currentPath with keys: ${map.keys.toList()}");
+        AppLogger.d("🔍 [ProfileStatsModel] Searching in map at $currentPath with keys: ${map.keys.toList()}");
 
         for (final entry in map.entries) {
           final normalizedKey = _normalizeKey(entry.key);
           if (normalizedKeys.contains(normalizedKey)) {
             final parsed = _toCount(entry.value);
             if (parsed != null) {
-              debugPrint(
+              AppLogger.d(
                 "✅ [ProfileStatsModel] $fieldName MATCHED key `${entry.key}` at $currentPath with value `${entry.value}` -> $parsed",
               );
               return parsed;
             } else {
-              debugPrint("⚠️ [ProfileStatsModel] $fieldName found key `${entry.key}` but couldn't parse value: ${entry.value}");
+              AppLogger.d("⚠️ [ProfileStatsModel] $fieldName found key `${entry.key}` but couldn't parse value: ${entry.value}");
             }
           }
         }
@@ -157,7 +157,7 @@ class ProfileStatsModel {
       }
 
       if (value is List) {
-        debugPrint("🔍 [ProfileStatsModel] Searching in list at $path with ${value.length} items");
+        AppLogger.d("🔍 [ProfileStatsModel] Searching in list at $path with ${value.length} items");
         for (int i = 0; i < value.length; i++) {
           final item = value[i];
           final nestedPath = '$path[$i]';
@@ -172,7 +172,7 @@ class ProfileStatsModel {
     }
 
     final result = search(source) ?? 0;
-    debugPrint("🔍 [ProfileStatsModel] $fieldName final result: $result");
+    AppLogger.d("🔍 [ProfileStatsModel] $fieldName final result: $result");
     return result;
   }
 

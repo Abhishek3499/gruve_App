@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:gruve_app/features/notification/api/models/notification_model.dart';
 import 'package:gruve_app/features/notification/api/services/notification_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
 
   List<AppNotification> _notifications = [];
+  CancelToken? _cancelToken;
+
+  CancelToken _getCancelToken() {
+    _cancelToken ??= CancelToken();
+    return _cancelToken!;
+  }
+
+  void cancelActiveRequests() {
+    _cancelToken?.cancel('Screen disposed');
+    _cancelToken = null;
+  }
+
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _unreadCount = 0;
@@ -35,10 +49,14 @@ class NotificationProvider extends ChangeNotifier {
   /// Get the current unread notifications count from backend.
   Future<void> fetchUnreadCount() async {
     try {
-      _unreadCount = await _service.getUnreadCount();
+      _unreadCount = await _service.getUnreadCount(cancelToken: _getCancelToken());
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error fetching unread count: $e');
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('[NotificationProvider] fetchUnreadCount cancelled');
+        return;
+      }
+      AppLogger.d('❌ Error fetching unread count: $e');
     }
   }
 
@@ -54,6 +72,7 @@ class NotificationProvider extends ChangeNotifier {
       final response = await _service.fetchNotifications(
         page: 1,
         unreadOnly: _unreadOnly,
+        cancelToken: _getCancelToken(),
       );
 
       if (response.success && response.data != null) {
@@ -65,6 +84,10 @@ class NotificationProvider extends ChangeNotifier {
         _errorMessage = response.message;
       }
     } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('[NotificationProvider] fetchInitialNotifications cancelled');
+        return;
+      }
       _errorMessage = e.toString().replaceAll('Exception: ', '');
     } finally {
       _isLoading = false;
@@ -84,6 +107,7 @@ class NotificationProvider extends ChangeNotifier {
       final response = await _service.fetchNotifications(
         page: nextPage,
         unreadOnly: _unreadOnly,
+        cancelToken: _getCancelToken(),
       );
 
       if (response.success && response.data != null) {
@@ -93,7 +117,11 @@ class NotificationProvider extends ChangeNotifier {
         _hasNextPage = response.data!.hasNext;
       }
     } catch (e) {
-      debugPrint('❌ Error loading next page: $e');
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('[NotificationProvider] fetchNextPage cancelled');
+        return;
+      }
+      AppLogger.d('❌ Error loading next page: $e');
     } finally {
       _isLoadingMore = false;
       notifyListeners();
@@ -112,12 +140,17 @@ class NotificationProvider extends ChangeNotifier {
     }
     notifyListeners();
 
-    final success = await _service.markAsRead(notificationIds: [notificationId]);
+    final success = await _service.markAsRead(
+      notificationIds: [notificationId],
+      cancelToken: _getCancelToken(),
+    );
     if (!success) {
       // Revert if the server call failed
       _notifications[index] = originalNotification;
       _unreadCount++;
       notifyListeners();
+    } else {
+      await fetchUnreadCount();
     }
   }
 
@@ -136,12 +169,17 @@ class NotificationProvider extends ChangeNotifier {
     _unreadCount = 0;
     notifyListeners();
 
-    final success = await _service.markAsRead(markAll: true);
+    final success = await _service.markAsRead(
+      markAll: true,
+      cancelToken: _getCancelToken(),
+    );
     if (!success) {
       // Revert on failure
       _notifications = originalNotifications;
       _unreadCount = originalUnreadCount;
       notifyListeners();
+    } else {
+      await fetchUnreadCount();
     }
   }
 
@@ -214,5 +252,10 @@ class NotificationProvider extends ChangeNotifier {
       final months = (difference.inDays / 30).floor();
       return '${months}mo';
     }
+  }
+  @override
+  void dispose() {
+    cancelActiveRequests();
+    super.dispose();
   }
 }

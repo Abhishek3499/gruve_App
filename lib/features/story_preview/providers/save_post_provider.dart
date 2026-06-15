@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../api/create_post_api/post_service.dart';
 import '../api/create_post_api/model/post_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SavePostProvider extends ChangeNotifier {
   final PostService _postService = PostService();
@@ -14,22 +15,28 @@ class SavePostProvider extends ChangeNotifier {
   bool _isLoadingSavedPosts = false;
   String? _savedPostsError;
   Future<void>? _savedPostsFetchInFlight;
-  DateTime? _lastSavedPostsFetchAt;
+  DateTime? _lastSavedFetch;
   static const _savedPostsCacheTtl = Duration(minutes: 3);
 
   bool isSaved(String postId) => _savedPosts[postId] ?? false;
   bool isLoading(String postId) => _loadingPosts.contains(postId);
   
+  List<Post> get savedPosts => _savedPostsList;
   List<Post> get savedPostsList => _savedPostsList;
   bool get isLoadingSavedPosts => _isLoadingSavedPosts;
   String? get savedPostsError => _savedPostsError;
+
+  bool get isSavedPostsStale {
+    if (_lastSavedFetch == null) return true;
+    return DateTime.now().difference(_lastSavedFetch!) >= _savedPostsCacheTtl;
+  }
 
   void initializeSavedState(String postId, bool isSaved) {
     _savedPosts[postId] = isSaved;
   }
 
   Future<void> toggleSavePost(String postId) async {
-    debugPrint('🔄 [SavePostProvider] TOGGLE START postId=$postId');
+    AppLogger.d('🔄 [SavePostProvider] TOGGLE START postId=$postId');
 
     final previousState = _savedPosts[postId] ?? false;
     final targetState = !previousState;
@@ -57,37 +64,34 @@ class SavePostProvider extends ChangeNotifier {
           final result = await _postService.toggleSavePost(postId);
           final serverState = result['is_saved'] as bool;
           
-          debugPrint('✅ [SavePostProvider] SERVER STATE: $serverState');
+          AppLogger.d('✅ [SavePostProvider] SERVER STATE: $serverState');
           _savedPosts[postId] = serverState;
           
           if (!serverState) {
             _savedPostsList.removeWhere((post) => post.id == postId);
-            debugPrint('🗑️ [SavePostProvider] Removed from saved list postId=$postId');
+            AppLogger.d('🗑️ [SavePostProvider] Removed from saved list postId=$postId');
           }
         } catch (e) {
-          debugPrint('❌ [SavePostProvider] ERROR: $e');
+          AppLogger.d('❌ [SavePostProvider] ERROR: $e');
           _savedPosts[postId] = stableState;
         } finally {
           _loadingPosts.remove(postId);
           notifyListeners();
         }
       } else {
-        debugPrint('ℹ️ [SavePostProvider] Taps cancelled out. No API request sent.');
+        AppLogger.d('ℹ️ [SavePostProvider] Taps cancelled out. No API request sent.');
       }
     });
   }
 
   Future<void> fetchSavedPosts({bool forceRefresh = false}) async {
-    if (!forceRefresh &&
-        _lastSavedPostsFetchAt != null &&
-        DateTime.now().difference(_lastSavedPostsFetchAt!) <
-            _savedPostsCacheTtl) {
-      debugPrint('✅ [SavePostProvider] Using cached saved posts');
+    if (!forceRefresh && !isSavedPostsStale) {
+      AppLogger.d('✅ [SavePostProvider] Using cached saved posts');
       return;
     }
 
     if (_savedPostsFetchInFlight != null) {
-      debugPrint('⏳ [SavePostProvider] Joining in-flight saved posts fetch');
+      AppLogger.d('⏳ [SavePostProvider] Joining in-flight saved posts fetch');
       return _savedPostsFetchInFlight!;
     }
 
@@ -101,7 +105,7 @@ class SavePostProvider extends ChangeNotifier {
   }
 
   Future<void> _runFetchSavedPosts() async {
-    debugPrint('🔄 [SavePostProvider] FETCH SAVED POSTS START');
+    AppLogger.d('🔄 [SavePostProvider] FETCH SAVED POSTS START');
     
     _isLoadingSavedPosts = true;
     _savedPostsError = null;
@@ -111,16 +115,16 @@ class SavePostProvider extends ChangeNotifier {
       final posts = await _postService.fetchSavedPosts();
       
       _savedPostsList = posts;
-      _lastSavedPostsFetchAt = DateTime.now();
+      _lastSavedFetch = DateTime.now();
       
       // Update saved state map
       for (final post in posts) {
         _savedPosts[post.id] = true;
       }
       
-      debugPrint('✅ [SavePostProvider] DATA LOADED: ${posts.length} posts');
+      AppLogger.d('✅ [SavePostProvider] DATA LOADED: ${posts.length} posts');
     } catch (e) {
-      debugPrint('❌ [SavePostProvider] FETCH ERROR: $e');
+      AppLogger.d('❌ [SavePostProvider] FETCH ERROR: $e');
       _savedPostsError = 'Failed to load saved posts';
     } finally {
       _isLoadingSavedPosts = false;
@@ -130,7 +134,7 @@ class SavePostProvider extends ChangeNotifier {
 
   /// Reset all save post data on logout
   void reset() {
-    debugPrint('🔄 [SavePostProvider] Resetting save post data...');
+    AppLogger.d('🔄 [SavePostProvider] Resetting save post data...');
     _stableSavedPosts.clear();
     for (final timer in _debounceTimers.values) {
       timer.cancel();
@@ -142,9 +146,9 @@ class SavePostProvider extends ChangeNotifier {
     _savedPostsError = null;
     _isLoadingSavedPosts = false;
     _savedPostsFetchInFlight = null;
-    _lastSavedPostsFetchAt = null;
+    _lastSavedFetch = null;
     notifyListeners();
-    debugPrint('✅ [SavePostProvider] Save post data reset complete');
+    AppLogger.d('✅ [SavePostProvider] Save post data reset complete');
   }
 
   void clearSavedState() {
@@ -158,7 +162,7 @@ class SavePostProvider extends ChangeNotifier {
     _savedPostsList.clear();
     _savedPostsError = null;
     _savedPostsFetchInFlight = null;
-    _lastSavedPostsFetchAt = null;
+    _lastSavedFetch = null;
     notifyListeners();
   }
 }

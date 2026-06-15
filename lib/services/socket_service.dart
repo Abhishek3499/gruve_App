@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 import 'package:gruve_app/core/socket/socket_reconnect_manager.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Enhanced SocketService using production-grade reconnect manager
 /// Maintains backward compatibility while adding robust features
@@ -70,8 +71,8 @@ class SocketService {
 
   void _onConnected() {
     final connectionTime = _reconnectManager.lastConnectedAt;
-    debugPrint("✅ [SocketService] ✅ SOCKET CONNECTED SUCCESSFULLY");
-    debugPrint("🎉 [SocketService] 🎉 WebSocket connection established");
+    AppLogger.d("✅ [SocketService] ✅ SOCKET CONNECTED SUCCESSFULLY");
+    AppLogger.d("🎉 [SocketService] 🎉 WebSocket connection established");
     if (connectionTime != null) {
       developer.log(
         '🔌 [PERF] Socket connected at: ${connectionTime.toIso8601String()}',
@@ -82,26 +83,26 @@ class SocketService {
 
   void _onDisconnected() {
     _setOnlineUsers(<String>{});
-    debugPrint("[SocketService] SOCKET CONNECTION CLOSED");
-    debugPrint(
+    AppLogger.d("[SocketService] SOCKET CONNECTION CLOSED");
+    AppLogger.d(
       "[SocketService] Connection ended, will reconnect automatically",
     );
   }
 
   void _onReconnecting(int attempt) {
-    debugPrint("[SocketService] RECONNECTING ATTEMPT $attempt");
-    debugPrint("⏳ [SocketService] ⏳ Attempting to restore connection...");
+    AppLogger.d("[SocketService] RECONNECTING ATTEMPT $attempt");
+    AppLogger.d("⏳ [SocketService] ⏳ Attempting to restore connection...");
   }
 
   void _onFailed() {
     _setOnlineUsers(<String>{});
-    debugPrint("❌ [SocketService] ❌ CONNECTION FAILED");
-    debugPrint("[SocketService] Max reconnect attempts reached");
+    AppLogger.d("❌ [SocketService] ❌ CONNECTION FAILED");
+    AppLogger.d("[SocketService] Max reconnect attempts reached");
   }
 
   void _onError(String error) {
-    debugPrint("💥 [SocketService] 💥 SOCKET ERROR => $error");
-    debugPrint("❌ [SocketService] ❌ Connection error occurred");
+    AppLogger.d("💥 [SocketService] 💥 SOCKET ERROR => $error");
+    AppLogger.d("❌ [SocketService] ❌ Connection error occurred");
   }
 
   // ADD HERE 👇👇👇
@@ -109,7 +110,7 @@ class SocketService {
   void _handleSocketMessage(Map<String, dynamic> data) {
     final type = data['type']?.toString();
 
-    debugPrint("📩 [SocketService] Message Type => $type");
+    AppLogger.d("📩 [SocketService] Message Type => $type");
 
     switch (type) {
       case 'connected':
@@ -136,7 +137,7 @@ class SocketService {
 
         _setOnlineUsers(updatedUsers);
 
-        debugPrint("🟢 ONLINE USERS => ${onlineUsers.value}");
+        AppLogger.d("🟢 ONLINE USERS => ${onlineUsers.value}");
 
         break;
       case 'user_online':
@@ -152,7 +153,7 @@ class SocketService {
 
           _setOnlineUsers(updatedUsers);
 
-          debugPrint("🟢 USER ONLINE => $userId");
+          AppLogger.d("🟢 USER ONLINE => $userId");
         }
 
         break;
@@ -170,7 +171,7 @@ class SocketService {
 
           _setOnlineUsers(updatedUsers);
 
-          debugPrint("🔴 USER OFFLINE => $userId");
+          AppLogger.d("🔴 USER OFFLINE => $userId");
         }
 
         break;
@@ -190,7 +191,7 @@ class SocketService {
             updatedUsers.remove(userId);
           }
           _setOnlineUsers(updatedUsers);
-          debugPrint(
+          AppLogger.d(
             "USER PRESENCE => $userId online=${onlineUsers.value.contains(userId)}",
           );
         }
@@ -223,7 +224,7 @@ class SocketService {
 
       if (changed) {
         _setOnlineUsers(updatedUsers);
-        debugPrint("PRESENCE LIST UPDATE => ${onlineUsers.value}");
+        AppLogger.d("PRESENCE LIST UPDATE => ${onlineUsers.value}");
       }
       return;
     }
@@ -245,7 +246,7 @@ class SocketService {
 
     if (wasOnline != isOnline) {
       _setOnlineUsers(updatedUsers);
-      debugPrint("GENERIC PRESENCE => $userId online=$isOnline");
+      AppLogger.d("GENERIC PRESENCE => $userId online=$isOnline");
     }
   }
 
@@ -383,15 +384,15 @@ class SocketService {
 
   /// Connect to WebSocket (maintains backward compatibility)
   Future<void> connect(String token) async {
-    debugPrint("[SOCKET SERVICE] connect() requested");
-    debugPrint("🔌 [SocketService] 🔌 CONNECTING SOCKET...");
+    AppLogger.d("[SOCKET SERVICE] connect() requested");
+    AppLogger.d("🔌 [SocketService] 🔌 CONNECTING SOCKET...");
     final previewLength = token.length < 10 ? token.length : 10;
-    debugPrint(
+    AppLogger.d(
       "🎫 [SocketService] 🎫 Token preview: ${token.substring(0, previewLength)}...",
     );
 
     await _reconnectManager.connect(token);
-    debugPrint(
+    AppLogger.d(
       "[SOCKET SERVICE] connect() completed state=${_reconnectManager.state.name}",
     );
   }
@@ -404,25 +405,25 @@ class SocketService {
     String? senderId,
     Map<String, dynamic>? additionalData,
   }) {
-    debugPrint(
+    AppLogger.d(
       "[SOCKET SERVICE] sendMessage() state=${_reconnectManager.state.name} connected=${_reconnectManager.isConnected}",
     );
     if (message.trim().isEmpty) {
-      debugPrint("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
+      AppLogger.d("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
       return false;
     }
 
     if (!_reconnectManager.isConnected) {
-      debugPrint(
+      AppLogger.d(
         "⚠️ [SocketService] ⚠️ WEBSOCKET NOT CONNECTED - Message not sent",
       );
       return false;
     }
 
-    debugPrint(
+    AppLogger.d(
       "📝 [SocketService] 📝 Sending to conversation: $conversationId",
     );
-    debugPrint(
+    AppLogger.d(
       "💬 [SocketService] 💬 Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}",
     );
 
@@ -436,39 +437,39 @@ class SocketService {
       ...?additionalData,
     };
 
-    debugPrint("[SOCKET SERVICE] outgoing payload => $messageData");
+    AppLogger.d("[SOCKET SERVICE] outgoing payload => $messageData");
 
     try {
-      debugPrint("🚀 [SocketService] 🚀 Attempting to send via WebSocket...");
+      AppLogger.d("🚀 [SocketService] 🚀 Attempting to send via WebSocket...");
       final sent = _reconnectManager.sendMessage(messageData);
-      debugPrint("[SOCKET SERVICE] low-level send result => $sent");
+      AppLogger.d("[SOCKET SERVICE] low-level send result => $sent");
 
       if (sent) {
-        debugPrint("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");
+        AppLogger.d("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");
       } else {
-        debugPrint("❌ [SocketService] ❌ MESSAGE NOT QUEUED");
+        AppLogger.d("❌ [SocketService] ❌ MESSAGE NOT QUEUED");
       }
 
       return sent;
     } catch (e) {
-      debugPrint("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");
+      AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");
       return false;
     }
   }
 
   /// Disconnect from WebSocket
   Future<void> disconnect() async {
-    debugPrint("🔌 [SocketService] 🔌 DISCONNECTING SOCKET...");
-    debugPrint("👋 [SocketService] 👋 Closing connection");
+    AppLogger.d("🔌 [SocketService] 🔌 DISCONNECTING SOCKET...");
+    AppLogger.d("👋 [SocketService] 👋 Closing connection");
 
     await _reconnectManager.disconnect();
 
-    debugPrint("✅ [SocketService] ✅ SOCKET DISCONNECTED SUCCESSFULLY");
+    AppLogger.d("✅ [SocketService] ✅ SOCKET DISCONNECTED SUCCESSFULLY");
   }
 
   /// Reset connection (useful for token changes)
   Future<void> reset() async {
-    debugPrint("🔄 [SocketService] 🔄 RESETTING CONNECTION");
+    AppLogger.d("🔄 [SocketService] 🔄 RESETTING CONNECTION");
     await _reconnectManager.reset();
   }
 
@@ -477,7 +478,7 @@ class SocketService {
       return;
     }
 
-    debugPrint('[SocketService] Refreshing socket auth with latest token');
+    AppLogger.d('[SocketService] Refreshing socket auth with latest token');
     await _reconnectManager.reset();
   }
 
@@ -502,13 +503,13 @@ class SocketService {
   // =========================
 
   Future<void> dispose() async {
-    debugPrint("🗑️ [SocketService] 🗑️ DISPOSING SOCKET SERVICE");
+    AppLogger.d("🗑️ [SocketService] 🗑️ DISPOSING SOCKET SERVICE");
 
     await _eventSubscription?.cancel();
     _eventSubscription = null;
 
     await _reconnectManager.dispose();
 
-    debugPrint("✅ [SocketService] ✅ SOCKET SERVICE DISPOSED");
+    AppLogger.d("✅ [SocketService] ✅ SOCKET SERVICE DISPOSED");
   }
 }

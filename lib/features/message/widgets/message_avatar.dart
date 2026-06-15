@@ -4,6 +4,7 @@ import '../controllers/conversation_controller.dart';
 import '../providers/message_provider.dart';
 import '../screen/chat_screen.dart';
 import '../../../core/widgets/optimized/optimized_image.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageAvatar extends StatelessWidget {
   final String name;
@@ -59,29 +60,29 @@ class MessageAvatar extends StatelessWidget {
   }
 
   Future<void> _handleTap(BuildContext context) async {
-    debugPrint('👆 [MessageAvatar] 🎯 Avatar clicked - userId: $userId, name: $name');
-    debugPrint('🖼️ [MessageAvatar] 📸 Profile image: ${imageUrl.isNotEmpty ? imageUrl : "none"}');
-    debugPrint('🟢 [MessageAvatar] 📡 Online status: $isOnline');
+    AppLogger.d('👆 [MessageAvatar] 🎯 Avatar clicked - userId: $userId, name: $name');
+    AppLogger.d('🖼️ [MessageAvatar] 📸 Profile image: ${imageUrl.isNotEmpty ? imageUrl : "none"}');
+    AppLogger.d('🟢 [MessageAvatar] 📡 Online status: $isOnline');
 
     final messageProvider = context.read<MessageProvider>();
     final conversationController = context.read<ConversationController>();
 
-    debugPrint('🔍 [MessageAvatar] 🔎 Checking for existing conversation with user: $userId');
-    debugPrint('📊 [MessageAvatar] 💬 Total conversations in provider: ${messageProvider.conversationCount}');
+    AppLogger.d('🔍 [MessageAvatar] 🔎 Checking for existing conversation with user: $userId');
+    AppLogger.d('📊 [MessageAvatar] 💬 Total conversations in provider: ${messageProvider.conversationCount}');
     
     // Check if conversation exists
     final existingConversation = messageProvider.getConversationByUserId(userId);
 
     if (existingConversation != null) {
-      debugPrint('✅ [MessageAvatar] 🎉 Existing conversation found!');
-      debugPrint('💬 [MessageAvatar] 🆔 Conversation ID: ${existingConversation.id}');
-      debugPrint('👤 [MessageAvatar] 👥 Other user: ${existingConversation.otherUser.name}');
-      debugPrint('📨 [MessageAvatar] 💭 Last message: ${existingConversation.lastMessage.content}');
-      debugPrint('🔔 [MessageAvatar] 📬 Unread count: ${existingConversation.unreadCount}');
-      debugPrint('🧭 [MessageAvatar] 🚀 Navigating to existing chat screen...');
+      AppLogger.d('✅ [MessageAvatar] 🎉 Existing conversation found!');
+      AppLogger.d('💬 [MessageAvatar] 🆔 Conversation ID: ${existingConversation.id}');
+      AppLogger.d('👤 [MessageAvatar] 👥 Other user: ${existingConversation.otherUser.name}');
+      AppLogger.d('📨 [MessageAvatar] 💭 Last message: ${existingConversation.lastMessage.content}');
+      AppLogger.d('🔔 [MessageAvatar] 📬 Unread count: ${existingConversation.unreadCount}');
+      AppLogger.d('🧭 [MessageAvatar] 🚀 Navigating to existing chat screen...');
       
       if (!context.mounted) {
-        debugPrint('⚠️ [MessageAvatar] ❌ Context unmounted, aborting navigation');
+        AppLogger.d('⚠️ [MessageAvatar] ❌ Context unmounted, aborting navigation');
         return;
       }
       
@@ -97,14 +98,14 @@ class MessageAvatar extends StatelessWidget {
           ),
         ),
       );
-      debugPrint('✅ [MessageAvatar] 🎊 Navigation to existing chat completed');
+      AppLogger.d('✅ [MessageAvatar] 🎊 Navigation to existing chat completed');
     } else {
-      debugPrint('🔍 [MessageAvatar] ❌ No existing conversation found');
-      debugPrint('🚀 [MessageAvatar] 🆕 Creating new conversation with user: $name ($userId)');
-      debugPrint('📡 [MessageAvatar] 🌐 Calling API to create conversation...');
+      AppLogger.d('🔍 [MessageAvatar] ❌ No existing conversation found');
+      AppLogger.d('🚀 [MessageAvatar] 🆕 Creating new conversation with user: $name ($userId)');
+      AppLogger.d('📡 [MessageAvatar] 🌐 Calling API to create conversation...');
       
       if (!context.mounted) {
-        debugPrint('⚠️ [MessageAvatar] ❌ Context unmounted, aborting');
+        AppLogger.d('⚠️ [MessageAvatar] ❌ Context unmounted, aborting');
         return;
       }
       
@@ -118,28 +119,28 @@ class MessageAvatar extends StatelessWidget {
       );
       
       try {
-        debugPrint('📡 [MessageAvatar] 📶 Creating conversation via API...');
+        AppLogger.d('📡 [MessageAvatar] 📶 Creating conversation via API...');
         final conversation = await conversationController.createOrGetConversation(userId);
         
-        debugPrint('✅ [MessageAvatar] 🎉 Conversation created successfully!');
-        debugPrint('💬 [MessageAvatar] 🆔 Conversation ID: ${conversation.id}');
+        AppLogger.d('✅ [MessageAvatar] 🎉 Conversation created successfully!');
+        AppLogger.d('💬 [MessageAvatar] 🆔 Conversation ID: ${conversation.id}');
         
         // Add to provider
         final existingInProvider = messageProvider.getConversationById(conversation.id);
         if (existingInProvider == null) {
-          debugPrint('➕ [MessageAvatar] 💾 Adding conversation to MessageProvider');
+          AppLogger.d('➕ [MessageAvatar] 💾 Adding conversation to MessageProvider');
           messageProvider.addConversation(conversation);
         }
         
         if (!context.mounted) {
-          debugPrint('⚠️ [MessageAvatar] ❌ Context unmounted after API call');
+          AppLogger.d('⚠️ [MessageAvatar] ❌ Context unmounted after API call');
           return;
         }
         
         // Close loading dialog
         Navigator.pop(context);
         
-        debugPrint('🧭 [MessageAvatar] 🚀 Navigating to chat screen...');
+        AppLogger.d('🧭 [MessageAvatar] 🚀 Navigating to chat screen...');
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -152,10 +153,10 @@ class MessageAvatar extends StatelessWidget {
             ),
           ),
         );
-        debugPrint('✅ [MessageAvatar] 🎊 Navigation completed successfully');
+        AppLogger.d('✅ [MessageAvatar] 🎊 Navigation completed successfully');
       } catch (e) {
-        debugPrint('❌ [MessageAvatar] 💥 Error creating conversation: $e');
-        debugPrint('🔥 [MessageAvatar] 📋 Error details: ${e.toString()}');
+        AppLogger.d('❌ [MessageAvatar] 💥 Error creating conversation: $e');
+        AppLogger.d('🔥 [MessageAvatar] 📋 Error details: ${e.toString()}');
         
         if (!context.mounted) return;
         

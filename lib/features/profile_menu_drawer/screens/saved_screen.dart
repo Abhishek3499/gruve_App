@@ -4,15 +4,27 @@ import 'package:gruve_app/features/story_preview/providers/save_post_provider.da
 import 'package:gruve_app/features/profile_menu_drawer/widgets/saved/saved_header.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/post_detail_screen.dart';
 
-class SavedScreen extends StatelessWidget {
+class SavedScreen extends StatefulWidget {
   const SavedScreen({super.key});
 
   @override
+  State<SavedScreen> createState() => _SavedScreenState();
+}
+
+class _SavedScreenState extends State<SavedScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<SavePostProvider>().fetchSavedPosts();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SavePostProvider()..fetchSavedPosts(),
-      child: const _SavedScreenContent(),
-    );
+    return const _SavedScreenContent();
   }
 }
 

@@ -99,11 +99,19 @@ class _CaptureButtonState extends State<CaptureButton>
       // Route intent must match ModeSelector: story → StoryPreview, groove → PostPreview (via CameraHandler).
       if (mode == CameraMode.story) {
         Navigator.of(context).pop(
-          CameraCaptureResult(mediaPath: image.path, mode: CameraMode.story),
+          CameraCaptureResult(
+            mediaPath: image.path,
+            mode: CameraMode.story,
+            stickers: List.from(ModeService().stickers),
+          ),
         );
       } else if (mode == CameraMode.groove) {
         Navigator.of(context).pop(
-          CameraCaptureResult(mediaPath: image.path, mode: CameraMode.groove),
+          CameraCaptureResult(
+            mediaPath: image.path,
+            mode: CameraMode.groove,
+            stickers: List.from(ModeService().stickers),
+          ),
         );
       }
     }
@@ -180,11 +188,19 @@ class _CaptureButtonState extends State<CaptureButton>
       final mode = ModeService().selectedMode;
       if (mode == CameraMode.story) {
         Navigator.of(context).pop(
-          CameraCaptureResult(mediaPath: video.path, mode: CameraMode.story),
+          CameraCaptureResult(
+            mediaPath: video.path,
+            mode: CameraMode.story,
+            stickers: List.from(ModeService().stickers),
+          ),
         );
       } else if (mode == CameraMode.groove) {
         Navigator.of(context).pop(
-          CameraCaptureResult(mediaPath: video.path, mode: CameraMode.groove),
+          CameraCaptureResult(
+            mediaPath: video.path,
+            mode: CameraMode.groove,
+            stickers: List.from(ModeService().stickers),
+          ),
         );
       }
     }

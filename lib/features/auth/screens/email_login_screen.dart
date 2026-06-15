@@ -23,6 +23,7 @@ import 'package:gruve_app/core/widgets/video_background.dart';
 import 'package:gruve_app/core/widgets/inputs/neon_text_field.dart';
 
 import 'package:gruve_app/core/widgets/inputs/neon_password_field.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({super.key});
@@ -182,9 +183,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     }
 
     if (_controller.response?.success == true) {
-      debugPrint("🎉 [Login] 🎉 LOGIN SUCCESS -> GO TO HOME");
+      AppLogger.d("🎉 [Login] 🎉 LOGIN SUCCESS -> GO TO HOME");
       SocketService().connect(_controller.response!.data!.accessToken);
-      debugPrint("🔌 [Login] 🔌 WebSocket connection initiated");
+      AppLogger.d("🔌 [Login] 🔌 WebSocket connection initiated");
 
       if (!mounted) return false;
 
@@ -200,19 +201,19 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       // Refresh application state in the background to keep login fast.
       Future<void>.delayed(Duration.zero, () async {
         try {
-          debugPrint('🔄 [Login] 🔄 Refreshing providers in background...');
+          AppLogger.d('🔄 [Login] 🔄 Refreshing providers in background...');
           await profileProvider.refreshProfile();
-          debugPrint('👤 [Login] 👤 Profile data refreshed');
+          AppLogger.d('👤 [Login] 👤 Profile data refreshed');
           storyController.reset();
-          debugPrint('📖 [Login] 📖 Story data reset');
-          debugPrint('✅ [Login] ✅ Background refresh completed');
+          AppLogger.d('📖 [Login] 📖 Story data reset');
+          AppLogger.d('✅ [Login] ✅ Background refresh completed');
         } catch (e, stackTrace) {
-          debugPrint('❌ [Login] ❌ Background refresh failed: $e');
-          debugPrint('$stackTrace');
+          AppLogger.d('❌ [Login] ❌ Background refresh failed: $e');
+          AppLogger.d('$stackTrace');
         }
       });
 
-      debugPrint("🏠 [Login] 🏠 Navigating to HomeScreen");
+      AppLogger.d("🏠 [Login] 🏠 Navigating to HomeScreen");
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/subscribe_controller.dart';
 import '../models/subscribe_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SubscribeButton extends StatefulWidget {
   final String userId;
@@ -23,7 +24,7 @@ class SubscribeButton extends StatefulWidget {
 
 class _SubscribeButtonState extends State<SubscribeButton> {
   void _log(String message) {
-    debugPrint('🎬 [HomeSubscribeButton] $message');
+    AppLogger.d('🎬 [HomeSubscribeButton] $message');
   }
 
   @override

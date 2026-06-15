@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// VideoPreloader — TikTok-style intelligent video preloading
@@ -109,14 +109,12 @@ class VideoPreloader {
       _controllers[index] = controller;
       _failed.remove(index);
       
-      if (kDebugMode) {
-        debugPrint('✅ Preloaded video $index');
-      }
+      AppLogger.d('✅ Preloaded video $index');
+      
     } catch (e) {
       _failed.add(index);
-      if (kDebugMode) {
-        debugPrint('❌ Failed to preload video $index: $e');
-      }
+      AppLogger.d('❌ Failed to preload video $index: $e');
+      
     } finally {
       _preloading.remove(index);
       onUpdate();
@@ -137,9 +135,8 @@ class VideoPreloader {
       if (controller != null) {
         await controller.pause();
         await controller.dispose();
-        if (kDebugMode) {
-          debugPrint('🗑️ Disposed video $index');
-        }
+        AppLogger.d('🗑️ Disposed video $index');
+        
       }
     }
 
@@ -162,8 +159,7 @@ class VideoPreloader {
     _preloading.clear();
     _failed.clear();
 
-    if (kDebugMode) {
-      debugPrint('🧹 VideoPreloader disposed');
-    }
+    AppLogger.d('🧹 VideoPreloader disposed');
+    
   }
 }

@@ -10,6 +10,7 @@ import '../widgets/interactions_account_reached.dart';
 import '../widgets/interactions_content_tabs.dart';
 import '../widgets/interactions_progress_bar.dart';
 import '../widgets/interactions_footer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Interactions screen with modular architecture
 class InteractionsScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint("[InteractionsScreen] Screen initialized");
+    AppLogger.d("[InteractionsScreen] Screen initialized");
     _controller = InteractionsController();
   }
 

@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 
 import '../models/comment_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class _CommentCacheEntry {
   const _CommentCacheEntry(this.comments, this.createdAt);
@@ -17,30 +17,10 @@ class _CommentCacheEntry {
 
 class CommentService {
   CommentService() {
-    _dio = AppDio.create(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 60),
-      sendTimeout: const Duration(seconds: 30),
-    );
-
-    var baseUrl = EnvironmentConfig.baseUrl.trim();
-    if (baseUrl.isNotEmpty && !baseUrl.endsWith('/')) {
-      baseUrl = '$baseUrl/';
-    }
-
-    _writeDio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 12),
-        receiveTimeout: const Duration(seconds: 12),
-        sendTimeout: const Duration(seconds: 12),
-        headers: const {'Content-Type': 'application/json'},
-      ),
-    );
+    _dio = AppDio.getInstance();
   }
 
   late final Dio _dio;
-  late final Dio _writeDio;
   static final Map<String, _CommentCacheEntry> _cache = {};
   static final Map<String, Future<List<Comment>>> _inFlight = {};
 
@@ -93,33 +73,37 @@ class CommentService {
 
   Future<Comment?> addComment(String postId, String body) async {
     final token = await TokenStorage.getAccessToken();
-    final opts = Options(headers: {'Authorization': 'Bearer $token'});
+    if (token == null || token.isEmpty) {
+      throw Exception('User is not authenticated (token is null or empty)');
+    }
+    final opts = Options();
+    final payload = {'post_id': postId, 'body': body};
 
-    final payloads = <Map<String, dynamic>>[
-      {'post_id': postId, 'body': body},
-      {'post': postId, 'body': body},
-      {'post_id': postId, 'comment': body},
-      {'post': postId, 'comment': body},
-      {'post_id': postId, 'text': body},
-      {'post': postId, 'text': body},
-    ];
-
-    for (var i = 0; i < payloads.length; i++) {
-      final primary = await _tryAddComment(
+    try {
+      return await _tryAddComment(
         endpoint: 'posts/comments/',
-        payload: payloads[i],
+        payload: payload,
         options: opts,
         body: body,
       );
-      if (primary != null) return primary;
-    }
+    } catch (e) {
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        if (statusCode == 401 || statusCode == 403) {
+          rethrow;
+        }
+      }
 
-    return _tryAddComment(
-      endpoint: 'posts/get-post/',
-      payload: {'post_id': postId, 'comment': body},
-      options: opts,
-      body: body,
-    );
+      AppLogger.d('[CommentService] First comment attempt failed: $e. Retrying in 1s...');
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      return await _tryAddComment(
+        endpoint: 'posts/comments/',
+        payload: payload,
+        options: opts,
+        body: body,
+      );
+    }
   }
 
   Future<Comment?> _tryAddComment({
@@ -128,38 +112,39 @@ class CommentService {
     required Options options,
     required String body,
   }) async {
-    try {
-      final requestOptions = options.copyWith(
-        sendTimeout: const Duration(seconds: 8),
-        receiveTimeout: const Duration(seconds: 8),
-        extra: {...?options.extra, 'skipCache': true, 'bypassCache': true},
-      );
-      final res = await _writeDio.post(
-        endpoint,
-        data: payload,
-        options: requestOptions,
-      );
+    final requestOptions = options.copyWith(
+      sendTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+      extra: {...?options.extra, 'skipCache': true, 'bypassCache': true},
+    );
+    final res = await _dio.post(
+      endpoint,
+      data: payload,
+      options: requestOptions,
+    );
 
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final commentJson = _extractCommentJson(res.data);
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      final commentJson = _extractCommentJson(res.data);
 
-        if (commentJson != null && commentJson.containsKey('id')) {
-          return Comment.fromJson(commentJson);
-        }
-
-        return Comment(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          body: body,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          user: CommentUser(id: '', username: 'You', isSubscribed: false),
-        );
+      if (commentJson != null && commentJson.containsKey('id')) {
+        return Comment.fromJson(commentJson);
       }
 
-      return null;
-    } catch (_) {
-      return null;
+      return Comment(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        body: body,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        user: CommentUser(id: '', username: 'You', isSubscribed: false),
+      );
     }
+
+    throw DioException(
+      requestOptions: res.requestOptions,
+      response: res,
+      type: DioExceptionType.badResponse,
+      message: 'Failed to add comment: server returned status ${res.statusCode}',
+    );
   }
 
   Map<String, dynamic>? _extractCommentJson(dynamic data) {

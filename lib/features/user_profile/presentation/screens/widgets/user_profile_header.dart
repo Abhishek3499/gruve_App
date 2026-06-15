@@ -7,6 +7,7 @@ import 'package:gruve_app/features/profile/widgets/story_avatar_indicator.dart';
 import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/subscribe_button.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProfileHeader extends StatelessWidget {
   final String displayName;
@@ -39,10 +40,10 @@ class UserProfileHeader extends StatelessWidget {
   void _openStoryView(BuildContext context) {
     // Use unified StoryUtils navigation with userId
     // isOwnProfile: false because this is other user's profile
-    debugPrint(
+    AppLogger.d(
       '[UserProfileHeader] Opening other user story - isOwnProfile: false',
     );
-    debugPrint('[UserProfileHeader] profileUserId: $profileUserId');
+    AppLogger.d('[UserProfileHeader] profileUserId: $profileUserId');
     StoryUtils.navigateToStoryView(
       context,
       userId: profileUserId,
@@ -126,7 +127,7 @@ class UserProfileHeader extends StatelessWidget {
                         ],
                         GiftButton(
                           onTap: () {
-                            debugPrint("Gift Button Tapped!");
+                            AppLogger.d("Gift Button Tapped!");
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,

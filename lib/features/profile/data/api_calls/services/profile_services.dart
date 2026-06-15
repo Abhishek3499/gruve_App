@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileService {
   ProfileService()
-    : _dio = AppDio.create();
+    : _dio = AppDio.getInstance();
 
   final Dio _dio;
 
@@ -27,9 +27,10 @@ class ProfileService {
     int? trendingLimit,
     int? likedPage,
     int? likedLimit,
+    CancelToken? cancelToken,
   }) async {
-    debugPrint(" Profile Count API Called");
-    debugPrint(" Endpoint: user/profile_data/");
+    AppLogger.d(" Profile Count API Called");
+    AppLogger.d(" Endpoint: user/profile_data/");
 
     final token = await TokenStorage.getAccessToken();
 
@@ -42,36 +43,37 @@ class ProfileService {
     if (likedPage != null) queryParams['liked_page'] = likedPage;
     if (likedLimit != null) queryParams['liked_limit'] = likedLimit;
 
-    debugPrint("[ProfileService] GET user/profile_data/");
-    debugPrint("[ProfileService] Query params: $queryParams");
-    debugPrint("[ProfileService] 🔄 [DEDUP TEST] Request will be deduplicated if duplicate");
+    AppLogger.d("[ProfileService] GET user/profile_data/");
+    AppLogger.d("[ProfileService] Query params: $queryParams");
+    AppLogger.d("[ProfileService] 🔄 [DEDUP TEST] Request will be deduplicated if duplicate");
     const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        debugPrint(
+        AppLogger.d(
           "[ProfileService] Attempt $attempt/$maxAttempts - Making API call...",
         );
 
         final response = await _dio.get(
           "user/profile_data/",
           queryParameters: queryParams.isNotEmpty ? queryParams : null,
+          cancelToken: cancelToken,
           options: Options(headers: {"Authorization": "Bearer $token"}),
         );
 
-        debugPrint(" Status Code: ${response.data}");
+        AppLogger.d(" Status Code: ${response.data}");
 
-        debugPrint(" Status Code: ${response.statusCode}");
-        debugPrint(" Response received successfully");
+        AppLogger.d(" Status Code: ${response.statusCode}");
+        AppLogger.d(" Response received successfully");
 
         // Enhanced response logging
-        debugPrint("🔍  RAW RESPONSE TYPE: ${response.data.runtimeType}");
+        AppLogger.d("🔍  RAW RESPONSE TYPE: ${response.data.runtimeType}");
         if (response.data != null) {
           if (response.data is Map) {
             final responseMap = Map<String, dynamic>.from(response.data as Map);
-            debugPrint(
+            AppLogger.d(
               "🔍 [ProfileService] RESPONSE KEYS: ${responseMap.keys.toList()}",
             );
-            debugPrint("🔍 [ProfileService] FULL RESPONSE: $responseMap");
+            AppLogger.d("🔍 [ProfileService] FULL RESPONSE: $responseMap");
 
             // Log specific count-related fields
             final countFields = responseMap.keys
@@ -85,59 +87,63 @@ class ProfileService {
                       key.toLowerCase().contains('post'),
                 )
                 .toList();
-            debugPrint(
+            AppLogger.d(
               "🔍 [ProfileService] COUNT-RELATED FIELDS: $countFields",
             );
 
             for (final field in countFields) {
-              debugPrint("🔍 [ProfileService] $field: ${responseMap[field]}");
+              AppLogger.d("🔍 [ProfileService] $field: ${responseMap[field]}");
             }
 
             return responseMap;
           } else {
-            debugPrint("🔍 [ProfileService] RESPONSE DATA: ${response.data}");
+            AppLogger.d("🔍 [ProfileService] RESPONSE DATA: ${response.data}");
           }
         } else {
-          debugPrint("🔍 [ProfileService] RESPONSE DATA IS NULL");
+          AppLogger.d("🔍 [ProfileService] RESPONSE DATA IS NULL");
         }
 
         if (response.data is Map<String, dynamic>) {
-          debugPrint(" Response parsed as Map<String, dynamic>");
+          AppLogger.d(" Response parsed as Map<String, dynamic>");
           return Map<String, dynamic>.from(response.data);
         }
 
         if (response.data is Map) {
-          debugPrint(" Response parsed as Map");
+          AppLogger.d(" Response parsed as Map");
           return Map<String, dynamic>.from(response.data as Map);
         }
 
-        debugPrint(" Response is not a Map, returning empty");
+        AppLogger.d(" Response is not a Map, returning empty");
         return <String, dynamic>{};
       } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) {
+          AppLogger.d("[ProfileService] getUser cancelled");
+          return <String, dynamic>{};
+        }
         final transient = _isTransientDioFailure(e);
         final code = e.response?.statusCode;
 
-        debugPrint("[ProfileService] DioException caught:");
-        debugPrint("  - Type: ${e.type}");
-        debugPrint("  - Status Code: $code");
-        debugPrint("  - Message: ${e.message}");
-        debugPrint("  - Is Transient: $transient");
-        debugPrint("  - Attempt: $attempt/$maxAttempts");
+        AppLogger.d("[ProfileService] DioException caught:");
+        AppLogger.d("  - Type: ${e.type}");
+        AppLogger.d("  - Status Code: $code");
+        AppLogger.d("  - Message: ${e.message}");
+        AppLogger.d("  - Is Transient: $transient");
+        AppLogger.d("  - Attempt: $attempt/$maxAttempts");
 
         // Enhanced debugging for connection errors
         if (e.type == DioExceptionType.connectionError) {
-            debugPrint("[ProfileService] CONNECTION ERROR DETAILS:");
-            debugPrint(
+            AppLogger.d("[ProfileService] CONNECTION ERROR DETAILS:");
+            AppLogger.d(
               "  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}",
             );
-          debugPrint("  - Network available: Checking...");
+          AppLogger.d("  - Network available: Checking...");
 
           // Check if it's a host lookup issue
           if (e.message?.contains('Failed host lookup') == true) {
-            debugPrint(
+            AppLogger.d(
               "[ProfileService] HOST LOOKUP FAILED - Server may be down or URL incorrect",
             );
-            debugPrint(
+            AppLogger.d(
               "[ProfileService] Please check: 1) Server is running 2) URL is correct 3) Internet connection",
             );
           }
@@ -145,20 +151,20 @@ class ProfileService {
 
         if (transient && attempt < maxAttempts) {
           final waitMs = 500 * attempt;
-          debugPrint(
+          AppLogger.d(
             " [ProfileService] Transient failure - retry in ${waitMs}ms",
           );
           await Future<void>.delayed(Duration(milliseconds: waitMs));
           continue;
         }
 
-        debugPrint(" [ProfileService] Giving up after $attempt attempts");
-        debugPrint(" [ProfileService] Final error: $e");
+        AppLogger.d(" [ProfileService] Giving up after $attempt attempts");
+        AppLogger.d(" [ProfileService] Final error: $e");
         rethrow;
       } catch (e, st) {
-        debugPrint("[ProfileService] UNEXPECTED ERROR:");
-        debugPrint("  - Error: $e");
-        debugPrint("  - Stack trace: $st");
+        AppLogger.d("[ProfileService] UNEXPECTED ERROR:");
+        AppLogger.d("  - Error: $e");
+        AppLogger.d("  - Stack trace: $st");
         rethrow;
       }
     }

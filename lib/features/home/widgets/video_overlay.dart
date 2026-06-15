@@ -12,6 +12,7 @@ import '../../gifts/widgets/gift_panel.dart';
 import '../../video_options/widgets/video_options_sheet.dart';
 import '../../comments/widgets/comment_sheet.dart';
 import '../../share/screens/share_bottom_sheet.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VideoOverlay extends StatefulWidget {
   final String selectedTab;
@@ -53,7 +54,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
   }
 
   void _initializeUsers() {
-    debugPrint("🔧 INITIALIZING USERS FOR SUBSCRIBE CONTROLLER");
+    AppLogger.d("🔧 INITIALIZING USERS FOR SUBSCRIBE CONTROLLER");
 
     // Initialize with posts data when available
     if (widget.controller.posts.isNotEmpty) {
@@ -67,7 +68,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
           )
           .toList();
 
-      debugPrint("📊 INITIALIZING WITH ${usersData.length} USERS FROM POSTS");
+      AppLogger.d("📊 INITIALIZING WITH ${usersData.length} USERS FROM POSTS");
       _subscribeController.initializeUsers(usersData);
     } else {
       // Fallback dummy data
@@ -76,7 +77,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
         {'userId': 'user2', 'username': 'alex_d'},
         {'userId': 'user3', 'username': 'sarah_k'},
       ];
-      debugPrint("⚠️ INITIALIZING WITH DUMMY DATA (NO POSTS AVAILABLE)");
+      AppLogger.d("⚠️ INITIALIZING WITH DUMMY DATA (NO POSTS AVAILABLE)");
       _subscribeController.initializeUsers(dummyUsers);
     }
   }
@@ -110,6 +111,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                 hasActiveStory: post.hasActiveStory,
                 subscribeController: _subscribeController,
                 onOwnProfileTap: widget.onOwnProfileTap,
+                taggedUsers: post.taggedUsers,
               );
             },
           ),
@@ -183,7 +185,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                           post.commentsCount++; // 🔥 MAIN FIX
                         });
 
-                        debugPrint("💬 COUNT: ${post.commentsCount}");
+                        AppLogger.d("💬 COUNT: ${post.commentsCount}");
                       },
                     ),
                   );

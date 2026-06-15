@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Network monitoring utility
 /// Tracks API calls, response times, and errors
@@ -59,11 +60,11 @@ class NetworkMonitor {
   void printStats() {
     if (!kDebugMode) return;
     
-    debugPrint('\n📊 ========== NETWORK STATS ==========');
-    debugPrint('📡 Total API Calls: $_totalApiCalls');
-    debugPrint('✅ Successful: $_successfulCalls');
-    debugPrint('❌ Failed: $_failedCalls');
-    debugPrint('=====================================\n');
+    AppLogger.d('\n📊 ========== NETWORK STATS ==========');
+    AppLogger.d('📡 Total API Calls: $_totalApiCalls');
+    AppLogger.d('✅ Successful: $_successfulCalls');
+    AppLogger.d('❌ Failed: $_failedCalls');
+    AppLogger.d('=====================================\n');
   }
   
   void reset() {

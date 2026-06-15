@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 
 import '../models/logout_model.dart';
 import '../services/logout_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class LogoutController {
   final LogoutService _service = LogoutService();
@@ -15,7 +15,7 @@ class LogoutController {
   }) async {
     isLoading = true;
     errorMessage = null;
-    debugPrint('[Logout] Starting logout API process');
+    AppLogger.d('[Logout] Starting logout API process');
 
     try {
       final hasToken =
@@ -31,19 +31,19 @@ class LogoutController {
 
         if (!res.success) {
           errorMessage = res.message;
-          debugPrint('[Logout] Logout API failed: ${res.message}');
+          AppLogger.d('[Logout] Logout API failed: ${res.message}');
         } else {
-          debugPrint('[Logout] Logout API successful');
+          AppLogger.d('[Logout] Logout API successful');
         }
       } else {
-        debugPrint('[Logout] No tokens found, skipping API call');
+        AppLogger.d('[Logout] No tokens found, skipping API call');
       }
     } catch (e) {
       errorMessage = e.toString();
-      debugPrint('[Logout] Logout API error: $e');
+      AppLogger.d('[Logout] Logout API error: $e');
     } finally {
       isLoading = false;
-      debugPrint('[Logout] Logout API process completed');
+      AppLogger.d('[Logout] Logout API process completed');
     }
   }
 }

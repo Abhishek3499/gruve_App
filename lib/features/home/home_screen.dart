@@ -12,6 +12,7 @@ import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance
 /// FPS impact: 15-20fps drops → 55-60fps smooth (200% improvement)
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen>
   VideoService? _currentVideoService;
   // ✅ CRITICAL: Cache screens to prevent rebuilds
   late final List<Widget?> _screens;
-  final Set<int> _activatedTabs = <int>{0};
+  final Set<int> _visitedTabs = <int>{0};
 
   // 🚀 PERFORMANCE: Track rebuild metrics
   int _rebuildCount = 0;
@@ -54,20 +55,18 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    if (kDebugMode) {
-      debugPrint("🏠 Home Screen initState called");
-    }
+    AppLogger.d("🏠 Home Screen initState called");
+    
 
     // ✅ Initialize screens ONCE
     _screens = List<Widget?>.filled(5, null);
     _screens[0] = _createScreen(0);
 
     PostShareFlowBridge.onShareStartProcessing = (isVideo) {
-      if (kDebugMode) {
-        debugPrint(
+      AppLogger.d(
           "🏠 Home Screen: Share start processing callback triggered (isVideo=$isVideo)",
         );
-      }
+      
       if (mounted && !_isDisposed) _startVideoProcessing(isVideo);
     };
 
@@ -164,18 +163,16 @@ class _HomeScreenState extends State<HomeScreen>
           selectedIndex: _currentIndex.value,
           onTabChanged: _onItemTapped,
           onControllerReady: (controller) {
-            if (kDebugMode) {
-              debugPrint(
+            AppLogger.d(
                 "ðŸ  Home Screen: VideoFeed onControllerReady called!",
               );
-            }
+            
             _videoController = controller;
             PostShareFlowBridge.setVideoController(controller);
-            if (kDebugMode) {
-              debugPrint(
+            AppLogger.d(
                 "ðŸ  Home Screen: Video controller ready and set to bridge",
               );
-            }
+            
           },
         );
       case 1:
@@ -187,9 +184,9 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _activateTab(int index) {
+  void _visitTab(int index) {
     if (index < 0 || index >= _screens.length) return;
-    _activatedTabs.add(index);
+    _visitedTabs.add(index);
     _screens[index] ??= _createScreen(index);
   }
 
@@ -205,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _ensureProfileTab() {
     if (!mounted || _isDisposed || _currentIndex.value == 4) return;
-    _activateTab(4);
+    _visitTab(4);
 
     // 🚀 BATCH UPDATE: Update all notifiers at once
     _previousIndex.value = _currentIndex.value;
@@ -228,9 +225,8 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_isDisposed) return;
-    if (kDebugMode) {
-      debugPrint("📱 App lifecycle state: $state");
-    }
+    AppLogger.d("📱 App lifecycle state: $state");
+    
     if (state == AppLifecycleState.paused) _handleAppBackgrounded();
     if (state == AppLifecycleState.resumed) _handleAppResumed();
   }
@@ -312,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen>
       } else {
         // Navigating to Home tab from another tab
         // 🚀 OPTIMIZED: Use ValueNotifier instead of setState
-        _activateTab(index);
+        _visitTab(index);
         _previousIndex.value = _currentIndex.value;
         _currentIndex.value = index;
         _handleTabChange(index);
@@ -362,37 +358,33 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     // 🚀 OPTIMIZED: Use ValueNotifier instead of setState
-    _activateTab(index);
+    _visitTab(index);
     _previousIndex.value = _currentIndex.value;
     _currentIndex.value = index;
     _handleTabChange(index);
   }
 
   void _handleTabChange(int newIndex) {
-    if (kDebugMode) {
-      debugPrint(
+    AppLogger.d(
         "🏠 Home Screen: Tab changed to $newIndex, previous: ${_previousIndex.value}",
       );
-    }
+    
 
     // Check if we're switching back to home tab and need refresh
     if (newIndex == 0 && PostShareFlowBridge.checkAndClearRefreshNeeded()) {
-      if (kDebugMode) {
-        debugPrint("🔄 Home Screen: Refreshing due to new post");
-      }
+      AppLogger.d("🔄 Home Screen: Refreshing due to new post");
+      
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           if (_videoController != null) {
             _videoController!.initVideos(refresh: true);
-            if (kDebugMode) {
-              debugPrint("✅ Home Screen: Video feed refreshed on tab change");
-            }
+            AppLogger.d("✅ Home Screen: Video feed refreshed on tab change");
+            
           } else {
-            if (kDebugMode) {
-              debugPrint(
+            AppLogger.d(
                 "🔄 Home Screen: Video controller not available, but refresh triggered",
               );
-            }
+            
             // 🚀 OPTIMIZED: Force refresh without full rebuild
             // _screens.clear();
             // _initializeScreens();
@@ -422,7 +414,7 @@ class _HomeScreenState extends State<HomeScreen>
     // 🚀 PERFORMANCE: Track rebuild metrics
     if (kDebugMode) {
       _rebuildCount++;
-      debugPrint(
+      AppLogger.d(
         "🏠 Home Screen build #$_rebuildCount, _isDisposed: $_isDisposed",
       );
     }
@@ -441,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen>
             return IndexedStack(
               index: currentIndex,
               children: List.generate(_screens.length, (index) {
-                if (!_activatedTabs.contains(index)) {
+                if (!_visitedTabs.contains(index)) {
                   return const SizedBox.shrink();
                 }
                 return _screens[index] ??= _createScreen(index);
@@ -464,10 +456,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    if (kDebugMode) {
-      debugPrint("🏠 Home Screen: Disposing, clearing callbacks");
-      debugPrint("🏠 Home Screen: Total rebuilds: $_rebuildCount");
-    }
+    AppLogger.d("🏠 Home Screen: Disposing, clearing callbacks");
+      AppLogger.d("🏠 Home Screen: Total rebuilds: $_rebuildCount");
+    
     PostShareFlowBridge.clearCallbacks();
     _isDisposed = true;
     _currentVideoService?.dispose();

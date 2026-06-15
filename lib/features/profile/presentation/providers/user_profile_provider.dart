@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import '../../data/services/user_profile_service.dart';
+import 'package:dio/dio.dart';
+import 'package:gruve_app/features/user_profile/data/services/user_profile_service.dart';
 import '../../data/models/user_profile_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 enum UserProfileState {
   idle,
@@ -21,6 +23,18 @@ class UserProfileProvider extends ChangeNotifier {
   UserProfile? _profile;
   String? _errorMessage;
   String? _currentUserId;
+  CancelToken? _cancelToken;
+
+  CancelToken _getCancelToken() {
+    _cancelToken ??= CancelToken();
+    return _cancelToken!;
+  }
+
+  void cancelActiveRequests() {
+    _cancelToken?.cancel('Profile screen disposed');
+    _cancelToken = null;
+  }
+
   final Map<String, Future<void>> _inFlightFetches = {};
 
   // Getters
@@ -32,9 +46,8 @@ class UserProfileProvider extends ChangeNotifier {
   bool get hasData => _state == UserProfileState.loaded && _profile != null;
 
   void _log(String message) {
-    if (kDebugMode) {
-      debugPrint(message);
-    }
+    AppLogger.d(message);
+    
   }
 
   Future<void> fetchProfile(String userId, {bool silent = false}) async {
@@ -72,7 +85,7 @@ class UserProfileProvider extends ChangeNotifier {
     try {
       _log('🌐 [UserProfileProvider] Calling service for userId: $userId');
       final userProfile = await _service
-          .getUserProfile(userId)
+          .getUserProfileModel(userId, cancelToken: _getCancelToken())
           .timeout(const Duration(seconds: 20));
       if (_currentUserId != userId) {
         _log('⏭️ [UserProfileProvider] Stale profile response ignored: $userId');
@@ -85,6 +98,10 @@ class UserProfileProvider extends ChangeNotifier {
       
       _log('✅ [UserProfileProvider] Profile loaded successfully: ${userProfile.username}');
     } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        AppLogger.d('[UserProfileProvider] fetchProfile cancelled');
+        return;
+      }
       _log('❌ [UserProfileProvider] Error loading profile: $e');
       _state = UserProfileState.error;
       _errorMessage = e.toString();
@@ -108,6 +125,7 @@ class UserProfileProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    cancelActiveRequests();
     _log('🗑️ [UserProfileProvider] Disposing provider...');
     super.dispose();
   }

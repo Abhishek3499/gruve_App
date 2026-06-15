@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CameraService {
   static final ImagePicker _picker = ImagePicker();
@@ -20,7 +20,7 @@ class CameraService {
       }
       return null;
     } catch (e) {
-      debugPrint('Error opening camera: $e');
+      AppLogger.d('Error opening camera: $e');
       return null;
     }
   }

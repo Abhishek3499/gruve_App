@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ImagePickerService {
   static final ImagePicker _imagePicker = ImagePicker();
@@ -29,7 +30,7 @@ class ImagePickerService {
       // Request camera permission
       final hasPermission = await _requestCameraPermission();
       if (!hasPermission) {
-        debugPrint('Camera permission denied');
+        AppLogger.d('Camera permission denied');
         return null;
       }
 
@@ -40,10 +41,10 @@ class ImagePickerService {
         maxHeight: 600,
       );
 
-      debugPrint('Camera image picked: ${image?.path}');
+      AppLogger.d('Camera image picked: ${image?.path}');
       return image;
     } catch (e) {
-      debugPrint('Error picking image from camera: $e');
+      AppLogger.d('Error picking image from camera: $e');
       return null;
     }
   }
@@ -58,10 +59,10 @@ class ImagePickerService {
         maxHeight: 800,
       );
 
-      debugPrint('Gallery media picked: ${media?.path}');
+      AppLogger.d('Gallery media picked: ${media?.path}');
       return media;
     } catch (e) {
-      debugPrint('Error picking media from gallery: $e');
+      AppLogger.d('Error picking media from gallery: $e');
       return null;
     }
   }
@@ -77,10 +78,10 @@ class ImagePickerService {
         maxHeight: 800,
       );
 
-      debugPrint('Gallery image picked: ${image?.path}');
+      AppLogger.d('Gallery image picked: ${image?.path}');
       return image;
     } catch (e) {
-      debugPrint('Error picking image from gallery: $e');
+      AppLogger.d('Error picking image from gallery: $e');
       return null;
     }
   }
@@ -127,7 +128,7 @@ class ImagePickerService {
                         if (image != null) {
                           onImageSelected(image);
                         } else {
-                          debugPrint(
+                          AppLogger.d(
                             'Camera image selection cancelled or failed',
                           );
                         }
@@ -145,7 +146,7 @@ class ImagePickerService {
                         if (image != null) {
                           onImageSelected(image);
                         } else {
-                          debugPrint(
+                          AppLogger.d(
                             'Gallery image selection cancelled or failed',
                           );
                         }

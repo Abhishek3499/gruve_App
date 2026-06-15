@@ -94,11 +94,20 @@ class _NeonPasswordFieldState extends State<NeonPasswordField> {
                     });
                     return null; // ✅ andar mat dikhao
                   },
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              decoration: TextDecoration.none,
+            ),
             decoration: InputDecoration(
               isDense: true,
               hintText: widget.hintText,
-              hintStyle: const TextStyle(color: Colors.white),
+              hintStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.none,
+              ),
               border: InputBorder.none,
               errorStyle: const TextStyle(fontSize: 0, height: 0), // ✅ hide
               contentPadding: const EdgeInsets.symmetric(

@@ -1,89 +1,111 @@
 import 'package:flutter/foundation.dart';
 
-/// Centralized logging utility for the app
-/// Automatically disables logs in release mode
+/// Single centralized logging utility for the app.
+/// All logging goes through here — no raw [debugPrint] in feature code.
+/// Logs are suppressed automatically in release/profile builds.
 class AppLogger {
+  AppLogger._();
+
   static bool _enableLogs = kDebugMode;
-  
-  /// Enable or disable logging
+
+  /// Enable or disable logging (still no-op outside debug mode).
   static void setEnabled(bool enabled) {
     _enableLogs = enabled && kDebugMode;
   }
-  
-  /// Log a debug message
-  static void log(String message, {String? tag}) {
+
+  static bool get isEnabled => _enableLogs;
+
+  /// Debug log — primary method for general messages.
+  static void d(String message, {String? tag}) {
     if (!_enableLogs) return;
-    
-    final prefix = tag != null ? '[$tag] ' : '';
-    debugPrint('$prefix$message');
+    _emit(tag != null ? '[$tag] $message' : message);
   }
-  
-  /// Log an info message
-  static void info(String message, {String? tag}) {
+
+  /// Alias for [d].
+  static void log(String message, {String? tag}) => d(message, tag: tag);
+
+  /// Info log.
+  static void i(String message, {String? tag}) {
     if (!_enableLogs) return;
-    
     final prefix = tag != null ? '[$tag] ' : '';
-    debugPrint('ℹ️ $prefix$message');
+    _emit('ℹ️ $prefix$message');
   }
-  
-  /// Log a warning message
-  static void warning(String message, {String? tag}) {
+
+  /// Info alias.
+  static void info(String message, {String? tag}) => i(message, tag: tag);
+
+  /// Warning log.
+  static void w(String message, {String? tag}) {
     if (!_enableLogs) return;
-    
     final prefix = tag != null ? '[$tag] ' : '';
-    debugPrint('⚠️ $prefix$message');
+    _emit('⚠️ $prefix$message');
   }
-  
-  /// Log an error message (always shown, even in release)
-  static void error(String message, {String? tag, Object? error, StackTrace? stackTrace}) {
+
+  /// Warning alias.
+  static void warning(String message, {String? tag}) => w(message, tag: tag);
+
+  /// Error log (debug-only; use crash reporting separately for production).
+  static void e(
+    String message, {
+    String? tag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    if (!_enableLogs) return;
     final prefix = tag != null ? '[$tag] ' : '';
-    debugPrint('❌ $prefix$message');
-    
+    _emit('❌ $prefix$message');
     if (error != null) {
-      debugPrint('Error: $error');
+      _emit('Error: $error');
     }
-    
-    if (stackTrace != null && kDebugMode) {
-      debugPrint('StackTrace: $stackTrace');
+    if (stackTrace != null) {
+      _emit('StackTrace: $stackTrace');
     }
   }
-  
-  /// Log a success message
+
+  /// Error alias.
+  static void error(
+    String message, {
+    String? tag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) =>
+      e(message, tag: tag, error: error, stackTrace: stackTrace);
+
+  /// Success log.
   static void success(String message, {String? tag}) {
     if (!_enableLogs) return;
-    
     final prefix = tag != null ? '[$tag] ' : '';
-    debugPrint('✅ $prefix$message');
+    _emit('✅ $prefix$message');
   }
-  
-  /// Log an API call
+
+  /// API request log.
   static void api(String method, String endpoint, {Map<String, dynamic>? params}) {
     if (!_enableLogs) return;
-    
-    debugPrint('📡 API: $method $endpoint');
+    _emit('📡 API: $method $endpoint');
     if (params != null && params.isNotEmpty) {
-      debugPrint('   Params: $params');
+      _emit('   Params: $params');
     }
   }
-  
-  /// Log performance metrics
+
+  /// Performance timing log.
   static void performance(String operation, Duration duration) {
     if (!_enableLogs) return;
-    
-    debugPrint('⚡ PERF: $operation took ${duration.inMilliseconds}ms');
+    _emit('⚡ PERF: $operation took ${duration.inMilliseconds}ms');
   }
-  
-  /// Log navigation
+
+  /// Navigation log.
   static void navigation(String from, String to) {
     if (!_enableLogs) return;
-    
-    debugPrint('🧭 NAV: $from → $to');
+    _emit('🧭 NAV: $from → $to');
   }
-  
-  /// Log state changes
+
+  /// State change log.
   static void state(String stateName, dynamic oldValue, dynamic newValue) {
     if (!_enableLogs) return;
-    
-    debugPrint('🔄 STATE: $stateName changed from $oldValue to $newValue');
+    _emit('🔄 STATE: $stateName changed from $oldValue to $newValue');
+  }
+
+  static void _emit(String message) {
+    debugPrint(message);
   }
 }

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../models/message_model.dart';
 import 'message_popup_menu.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';
 
 class ChatBubble extends MessageBubble {
   const ChatBubble({
@@ -81,10 +83,7 @@ class MessageBubble extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (message.hasImage) _buildImageContent(),
-                Text(
-                  message.text,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
+                _buildMessageContent(context),
                 const SizedBox(height: 4),
                 _buildStatusRow(isReceived: true),
               ],
@@ -115,10 +114,7 @@ class MessageBubble extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (message.hasImage) _buildImageContent(),
-                Text(
-                  message.text,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
+                _buildMessageContent(context),
                 const SizedBox(height: 4),
                 _buildStatusRow(isReceived: false),
               ],
@@ -127,6 +123,108 @@ class MessageBubble extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildMessageContent(BuildContext context) {
+    final postTagRegex = RegExp(r'View post:\s*(pst_[a-zA-Z0-9_\-]+)');
+    final match = postTagRegex.firstMatch(message.text);
+    if (match != null) {
+      final postId = match.group(1);
+      if (postId != null) {
+        return Column(
+          crossAxisAlignment: message.isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Text(
+              message.text,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _buildViewPostButton(context, postId),
+          ],
+        );
+      }
+    }
+    return Text(
+      message.text,
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+    );
+  }
+
+  Widget _buildViewPostButton(BuildContext context, String postId) {
+    return InkWell(
+      onTap: () => _handleViewPostTap(context, postId),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1.0,
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.play_circle_fill_outlined,
+              color: Colors.white,
+              size: 18,
+            ),
+            SizedBox(width: 6),
+            Text(
+              "View Post",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleViewPostTap(BuildContext context, String postId) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+
+    try {
+      final postService = PostService();
+      final post = await postService.fetchPostById(postId);
+
+      if (context.mounted) {
+        Navigator.pop(context); // pop loading dialog
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfilePostDetailScreen(
+              post: post,
+              allPosts: [post],
+              initialIndex: 0,
+              isOwnProfile: false,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // pop loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to load post: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildStatusRow({required bool isReceived}) {

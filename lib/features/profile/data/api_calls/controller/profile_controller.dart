@@ -10,6 +10,7 @@ import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 
 import '../model/profile_model.dart';
 import '../model/profile_stats_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 // Simple pagination state for each tab
 class _TabPaginationState {
@@ -64,6 +65,18 @@ class ProfileController {
   final _TabPaginationState _allTabState = _TabPaginationState();
   final _TabPaginationState _trendingTabState = _TabPaginationState();
   final _TabPaginationState _likedTabState = _TabPaginationState();
+
+  CancelToken? _cancelToken;
+
+  CancelToken _getCancelToken() {
+    _cancelToken ??= CancelToken();
+    return _cancelToken!;
+  }
+
+  void cancelActiveRequests() {
+    _cancelToken?.cancel('Profile screen disposed');
+    _cancelToken = null;
+  }
 
   /// Bumped when tab post lists / paging state change so the grid can rebuild
   /// without tying pagination to the full-screen loading flag.
@@ -121,6 +134,33 @@ class ProfileController {
 
   bool get hasLoadedOnce => _hasLoadedOnce;
 
+  void removePostLocal(String postId) {
+    if (_disposed) return;
+    
+    // Remove from all tab states
+    _allTabState.posts.removeWhere((p) => p.id == postId);
+    _trendingTabState.posts.removeWhere((p) => p.id == postId);
+    _likedTabState.posts.removeWhere((p) => p.id == postId);
+    
+    // Update the aligned postsNotifier for tab 0
+    postsNotifier.value = List<Post>.from(_allTabState.posts);
+    
+    // Re-trigger grid UI rebuild
+    gridRevision.value++;
+    
+    // Decrement posts count in profile stats if greater than 0
+    final currentStats = statsNotifier.value;
+    if (currentStats.videosCount > 0) {
+      statsNotifier.value = ProfileStatsModel(
+        subscribersCount: currentStats.subscribersCount,
+        likesCount: currentStats.likesCount,
+        videosCount: currentStats.videosCount - 1,
+      );
+    }
+    
+    AppLogger.d('🗑️ [ProfileController] Locally removed post $postId from all tabs');
+  }
+
   /// Throttled near-end scroll: avoids duplicate requests while flinging.
   void requestLoadMoreThrottled(int tabIndex) {
     if (_disposed) return;
@@ -131,16 +171,16 @@ class ProfileController {
     if (_lastLoadMoreRequestAt != null &&
         now.difference(_lastLoadMoreRequestAt!) <
             const Duration(milliseconds: 550)) {
-      debugPrint('⏳ [ProfileController] loadMore throttled tab=$tabIndex');
+      AppLogger.d('⏳ [ProfileController] loadMore throttled tab=$tabIndex');
       return;
     }
     _lastLoadMoreRequestAt = now;
     if (_profileFetchBackoffUntil != null &&
         now.isBefore(_profileFetchBackoffUntil!)) {
-      debugPrint('⏳ [ProfileController] loadMore skipped (backoff after 5xx)');
+      AppLogger.d('⏳ [ProfileController] loadMore skipped (backoff after 5xx)');
       return;
     }
-    debugPrint(
+    AppLogger.d(
       '📍 [ProfileController] loadMore tab=$tabIndex at ${now.millisecondsSinceEpoch}',
     );
     unawaited(loadMorePosts(tabIndex));
@@ -150,7 +190,7 @@ class ProfileController {
     bool showLoading = true,
     String reason = 'initial_load',
   }) {
-    debugPrint(
+    AppLogger.d(
       '🚀 [ProfileController] fetchUser called - showLoading: $showLoading, reason: $reason',
     );
     return _refreshProfileData(showLoading: showLoading, reason: reason);
@@ -158,7 +198,7 @@ class ProfileController {
 
   Future<void> refreshCounts({String reason = 'manual_refresh'}) {
     if (reason == 'profile_tab_opened' && _hasLoadedOnce) {
-      debugPrint(
+      AppLogger.d(
         '[ProfileController] Skipping profile_tab_opened refresh; profile already loaded.',
       );
       return Future.value();
@@ -170,134 +210,134 @@ class ProfileController {
     required bool showLoading,
     required String reason,
   }) async {
-    debugPrint(
+    AppLogger.d(
       '🔄 [ProfileController] _refreshProfileData started - showLoading: $showLoading, reason: $reason',
     );
-    debugPrint(
+    AppLogger.d(
       '📊 [ProfileController] Current state - isRefreshing: $_isRefreshing, hasLoadedOnce: $_hasLoadedOnce, disposed: $_disposed',
     );
 
     if (_isRefreshing) {
       _pendingRefreshReason = reason;
-      debugPrint(
+      AppLogger.d(
         '⏳ [ProfileController] Refresh already running, queued another refresh. reason=$reason',
       );
       return;
     }
 
     _isRefreshing = true;
-    debugPrint('✅ [ProfileController] Set isRefreshing to true');
+    AppLogger.d('✅ [ProfileController] Set isRefreshing to true');
 
     if (showLoading && !_hasLoadedOnce && !_disposed) {
       isLoading.value = true;
-      debugPrint(
+      AppLogger.d(
         '🔄 [ProfileController] Set loading to true (showLoading: $showLoading, hasLoadedOnce: $_hasLoadedOnce)',
       );
     }
 
     try {
-      debugPrint(
+      AppLogger.d(
         '🔄 [ProfileController] Profile refresh started. reason=$reason',
       );
-      debugPrint(
+      AppLogger.d(
         '🌐 [ProfileController] Calling repository.fetchProfileData()',
       );
 
-      final userData = await _repository.fetchProfileData();
-      debugPrint(
+      final userData = await _repository.fetchProfileData(cancelToken: _getCancelToken());
+      AppLogger.d(
         '✅ [ProfileController] Repository returned data: ${userData.runtimeType}',
       );
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Response data keys: ${userData.keys.toList()}',
       );
 
       if (_disposed) {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed, aborting refresh',
         );
         return;
       }
 
       final userPayload = _extractUserPayload(userData);
-      debugPrint(
+      AppLogger.d(
         '📦 [ProfileController] extracted user payload keys: ${userPayload.keys.toList()}',
       );
 
       ProfileModel profile;
       try {
         profile = ProfileModel.fromJson(userData);
-        debugPrint(
+        AppLogger.d(
           '📦 [ProfileController] Parsed profile - username: ${profile.username}, fullName: ${profile.fullName}, id: ${profile.id}, isFollowing: ${profile.isFollowing}',
         );
-        debugPrint(
+        AppLogger.d(
           '📊 [ProfileController] ProfileModel fields - profileImage: ${profile.profileImage.isNotEmpty ? "present" : "empty"}',
         );
 
         // Additional validation
         if (profile.id.isEmpty) {
-          debugPrint(
+          AppLogger.d(
             '❌ [ProfileController] VALIDATION ERROR: Profile ID is empty after parsing',
           );
         }
         if (profile.username.isEmpty) {
-          debugPrint(
+          AppLogger.d(
             '❌ [ProfileController] VALIDATION ERROR: Profile username is empty after parsing',
           );
         }
         if (profile.fullName.isEmpty) {
-          debugPrint(
+          AppLogger.d(
             '❌ [ProfileController] VALIDATION ERROR: Profile fullName is empty after parsing',
           );
         }
       } catch (e) {
-        debugPrint('❌ [ProfileController] ProfileModel parsing failed: $e');
-        debugPrint(
+        AppLogger.d('❌ [ProfileController] ProfileModel parsing failed: $e');
+        AppLogger.d(
           '❌ [ProfileController] Parsing error type: ${e.runtimeType}',
         );
         rethrow;
       }
 
-      debugPrint('📦 [ProfileController] creating ProfileStatsModel...');
+      AppLogger.d('📦 [ProfileController] creating ProfileStatsModel...');
       final statsPayload = _nestedMap(userPayload['stats']) ?? userPayload;
-      debugPrint('📊 [ProfileController] Stats payload: $statsPayload');
+      AppLogger.d('📊 [ProfileController] Stats payload: $statsPayload');
 
       ProfileStatsModel stats;
       try {
         stats = ProfileStatsModel.fromJson(
           statsPayload.isNotEmpty ? statsPayload : userData,
         );
-        debugPrint(
+        AppLogger.d(
           '📊 [ProfileController] Parsed stats - subscribers: ${stats.subscribersCount}, likes: ${stats.likesCount}, videos: ${stats.videosCount}',
         );
 
         // Additional validation
         if (stats.subscribersCount < 0) {
-          debugPrint(
+          AppLogger.d(
             '❌ [ProfileController] VALIDATION ERROR: Negative subscribers count: ${stats.subscribersCount}',
           );
         }
         if (stats.likesCount < 0) {
-          debugPrint(
+          AppLogger.d(
             '❌ [ProfileController] VALIDATION ERROR: Negative likes count: ${stats.likesCount}',
           );
         }
         if (stats.videosCount < 0) {
-          debugPrint(
+          AppLogger.d(
             '❌ [ProfileController] VALIDATION ERROR: Negative videos count: ${stats.videosCount}',
           );
         }
       } catch (e) {
-        debugPrint(
+        AppLogger.d(
           '❌ [ProfileController] ProfileStatsModel parsing failed: $e',
         );
-        debugPrint(
+        AppLogger.d(
           '❌ [ProfileController] Stats parsing error type: ${e.runtimeType}',
         );
         rethrow;
       }
 
       if (_disposed) {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed before updating state',
         );
         return;
@@ -305,8 +345,8 @@ class ProfileController {
 
       user = profile;
       statsNotifier.value = stats;
-      debugPrint('✅ [ProfileController] Updated user and statsNotifier');
-      debugPrint('🔄 [ProfileController] Notifying listeners of stats change');
+      AppLogger.d('✅ [ProfileController] Updated user and statsNotifier');
+      AppLogger.d('🔄 [ProfileController] Notifying listeners of stats change');
 
       // Stories are now handled by unified Story API system, not Profile API
       // Removed story parsing from ProfileController to eliminate dual-system
@@ -317,12 +357,12 @@ class ProfileController {
       _profileFetchBackoffUntil = null;
       _hasLoadedOnce = true;
 
-      debugPrint('🔄 [ProfileController] Starting post hydration');
+      AppLogger.d('🔄 [ProfileController] Starting post hydration');
       _markTabLoadingIfEmpty(0);
       unawaited(_hydratePostsAfterProfileLoad(userData, profile));
 
       if (_disposed) {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed during post hydration',
         );
         return;
@@ -330,18 +370,22 @@ class ProfileController {
 
       _profileFetchBackoffUntil = null;
       _hasLoadedOnce = true;
-      debugPrint(
+      AppLogger.d(
         '✅ [ProfileController] Profile refresh completed successfully',
       );
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Final state - hasLoadedOnce: $_hasLoadedOnce, backoffUntil: $_profileFetchBackoffUntil',
       );
     } catch (error) {
-      debugPrint('❌ [ProfileController] Profile refresh failed: $error');
-      debugPrint('🔍 [ProfileController] Error type: ${error.runtimeType}');
+      if (error is DioException && CancelToken.isCancel(error)) {
+        AppLogger.d('[ProfileController] Profile refresh cancelled');
+        return;
+      }
+      AppLogger.d('❌ [ProfileController] Profile refresh failed: $error');
+      AppLogger.d('🔍 [ProfileController] Error type: ${error.runtimeType}');
 
       if (error is Exception) {
-        debugPrint(
+        AppLogger.d(
           '🔍 [ProfileController] Exception details: ${error.toString()}',
         );
       }
@@ -349,13 +393,13 @@ class ProfileController {
       // Keep user data if refresh fails
     } finally {
       _isRefreshing = false;
-      debugPrint('🔄 [ProfileController] Set isRefreshing to false');
+      AppLogger.d('🔄 [ProfileController] Set isRefreshing to false');
 
       if (!_disposed) {
         isLoading.value = false;
-        debugPrint('🔄 [ProfileController] Set loading to false');
+        AppLogger.d('🔄 [ProfileController] Set loading to false');
       } else {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed, not updating loading state',
         );
       }
@@ -364,7 +408,7 @@ class ProfileController {
     final queued = _pendingRefreshReason;
     if (queued != null && !_disposed) {
       _pendingRefreshReason = null;
-      debugPrint('🔄 Processing queued refresh: $queued');
+      AppLogger.d('🔄 Processing queued refresh: $queued');
       await _refreshProfileData(showLoading: false, reason: queued);
     }
   }
@@ -387,13 +431,13 @@ class ProfileController {
         return (matchesUserId || matchesUsername) && post.media.isNotEmpty;
       }).toList();
 
-      debugPrint(
+      AppLogger.d(
         '✅ [ProfileController] _fetchOwnPosts -> ${ownPosts.length} posts (feed total: ${allPosts.length})',
       );
 
       return ownPosts;
     } catch (error) {
-      debugPrint('❌ Error fetching own profile posts: $error');
+      AppLogger.d('❌ Error fetching own profile posts: $error');
       return const [];
     }
   }
@@ -413,14 +457,14 @@ class ProfileController {
     bool hasNext,
   ) {
     if (_disposed) {
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] Controller disposed, skipping tab seeding',
       );
       return;
     }
 
-    debugPrint('🌱 [ProfileController] Seeding tab $tabIndex');
-    debugPrint(
+    AppLogger.d('🌱 [ProfileController] Seeding tab $tabIndex');
+    AppLogger.d(
       '📊 [ProfileController] Tab $tabIndex - posts: ${posts.length}, hasNext: $hasNext',
     );
 
@@ -438,7 +482,7 @@ class ProfileController {
       ),
     );
 
-    debugPrint(
+    AppLogger.d(
       '✅ [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext, nextPage=$nextPage',
     );
   }
@@ -448,23 +492,23 @@ class ProfileController {
     ProfileModel profile,
   ) async {
     if (_disposed) {
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] Controller disposed, skipping post hydration',
       );
       return;
     }
 
-    debugPrint('🔄 [ProfileController] Starting post hydration');
-    debugPrint('📊 [ProfileController] Raw data keys: ${raw.keys.toList()}');
+    AppLogger.d('🔄 [ProfileController] Starting post hydration');
+    AppLogger.d('📊 [ProfileController] Raw data keys: ${raw.keys.toList()}');
 
     final postsData = raw['data']?['posts'] ?? raw['posts'];
-    debugPrint('📊 [ProfileController] Posts data found: ${postsData != null}');
+    AppLogger.d('📊 [ProfileController] Posts data found: ${postsData != null}');
     if (postsData != null) {
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Posts data type: ${postsData.runtimeType}',
       );
       if (postsData is Map) {
-        debugPrint(
+        AppLogger.d(
           '📊 [ProfileController] Posts data keys: ${(postsData).keys.toList()}',
         );
       }
@@ -474,11 +518,11 @@ class ProfileController {
 
     if (postsData != null && postsData is Map) {
       try {
-        debugPrint('🔄 [ProfileController] Parsing API posts structure');
+        AppLogger.d('🔄 [ProfileController] Parsing API posts structure');
 
         // ✅ ALL
         final allList = postsData['all']?['results'] ?? [];
-        debugPrint(
+        AppLogger.d(
           '📊 [ProfileController] ALL tab posts: ${allList.length} items',
         );
         _seedTabFromProfilePayload(
@@ -489,7 +533,7 @@ class ProfileController {
 
         // ✅ TRENDING
         final trendingList = postsData['trending']?['results'] ?? [];
-        debugPrint(
+        AppLogger.d(
           '📊 [ProfileController] TRENDING tab posts: ${trendingList.length} items',
         );
         _seedTabFromProfilePayload(
@@ -501,7 +545,7 @@ class ProfileController {
         // ✅ LIKED
         final likedPosts = postsData['liked'] ?? postsData['likes'];
         final likedList = likedPosts?['results'] ?? [];
-        debugPrint(
+        AppLogger.d(
           '📊 [ProfileController] LIKED tab posts: ${likedList.length} items',
         );
         _seedTabFromProfilePayload(
@@ -511,34 +555,34 @@ class ProfileController {
         );
 
         apiParsed = true;
-        debugPrint('✅ [ProfileController] API posts parsed correctly');
+        AppLogger.d('✅ [ProfileController] API posts parsed correctly');
       } catch (e) {
-        debugPrint('❌ API parsing failed: $e');
+        AppLogger.d('❌ API parsing failed: $e');
       }
     }
 
     // ❗ fallback only if API failed
     if (!apiParsed) {
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] API parsing failed, using fallback (own posts)',
       );
       final own = await _fetchOwnPosts(profile);
 
       if (_disposed) {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed during fallback, aborting',
         );
         return;
       }
 
       _seedTabFromProfilePayload(0, own, false);
-      debugPrint('✅ [ProfileController] Fallback posts seeded');
+      AppLogger.d('✅ [ProfileController] Fallback posts seeded');
     }
 
     final shouldLazyLoadSecondaryTabs = !_disposed;
     if (shouldLazyLoadSecondaryTabs) {
       postsNotifier.value = List<Post>.from(_getTabState(0).posts);
-      debugPrint(
+      AppLogger.d(
         '[ProfileController] Deferred secondary tab loading until the user opens those tabs.',
       );
       return;
@@ -547,20 +591,20 @@ class ProfileController {
     // ensure other tabs load if empty
     for (final i in [1, 2]) {
       if (_disposed) {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed during tab loading',
         );
         return;
       }
 
       if (_getTabState(i).posts.isEmpty) {
-        debugPrint('🔄 [ProfileController] Loading empty tab $i');
+        AppLogger.d('🔄 [ProfileController] Loading empty tab $i');
         await loadPostsForTab(i, isRefresh: true);
       }
     }
 
     if (_disposed) {
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] Controller disposed before final update',
       );
       return;
@@ -568,7 +612,7 @@ class ProfileController {
 
     postsNotifier.value = List<Post>.from(_getTabState(0).posts);
 
-    debugPrint(
+    AppLogger.d(
       '📊 [ProfileController] FINAL POST COUNTS - All=${_allTabState.posts.length}, '
       'Trending=${_trendingTabState.posts.length}, '
       'Liked=${_likedTabState.posts.length}',
@@ -600,25 +644,25 @@ class ProfileController {
 
   /// Load posts for specific tab with pagination
   Future<void> loadPostsForTab(int tabIndex, {bool isRefresh = false}) async {
-    debugPrint(
+    AppLogger.d(
       '🔄 [ProfileController] loadPostsForTab called - tabIndex: $tabIndex, isRefresh: $isRefresh',
     );
 
     if (_disposed) {
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] Controller disposed, skipping tab load',
       );
       return;
     }
 
     final currentState = _getTabState(tabIndex);
-    debugPrint(
+    AppLogger.d(
       '📊 [ProfileController] Tab $tabIndex current state - posts: ${currentState.posts.length}, isLoading: ${currentState.isLoading}, hasNext: ${currentState.hasNext}, page: ${currentState.page}',
     );
 
     // Prevent duplicate calls
     if (currentState.isLoading && !isRefresh) {
-      debugPrint(
+      AppLogger.d(
         '⏳ [ProfileController] Tab $tabIndex already loading, skipping request',
       );
       return;
@@ -626,7 +670,7 @@ class ProfileController {
 
     // Reset state for refresh
     if (isRefresh) {
-      debugPrint(
+      AppLogger.d(
         '🔄 [ProfileController] Refreshing tab $tabIndex, resetting state',
       );
       final resetState = currentState.reset();
@@ -637,10 +681,10 @@ class ProfileController {
       tabIndex,
     ).copyWith(isLoading: true, clearError: true);
     _updateTabState(tabIndex, updatedState);
-    debugPrint('🔄 [ProfileController] Set tab $tabIndex loading to true');
+    AppLogger.d('🔄 [ProfileController] Set tab $tabIndex loading to true');
 
     try {
-      debugPrint(
+      AppLogger.d(
         '🔄 [ProfileController] tab=$tabIndex page=${updatedState.page} '
         'limit=${updatedState.limit} mode=${isRefresh ? "replace" : "append"}',
       );
@@ -649,12 +693,12 @@ class ProfileController {
 
       // Build query parameters based on tab
       final queryParams = _buildQueryParams(tabIndex, updatedState);
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Query params for tab $tabIndex: $queryParams',
       );
 
       // Call API with pagination
-      debugPrint(
+      AppLogger.d(
         '🌐 [ProfileController] Calling repository.fetchProfileData with pagination',
       );
       final response = await _repository.fetchProfileData(
@@ -664,27 +708,28 @@ class ProfileController {
         trendingLimit: queryParams['trendingLimit'],
         likedPage: queryParams['likedPage'],
         likedLimit: queryParams['likedLimit'],
+        cancelToken: _getCancelToken(),
       );
 
       if (_disposed) {
-        debugPrint(
+        AppLogger.d(
           '⚠️ [ProfileController] Controller disposed during API call, aborting',
         );
         return;
       }
 
       sw.stop();
-      debugPrint(
+      AppLogger.d(
         '⏱️ [ProfileController] API call completed in ${sw.elapsedMilliseconds}ms',
       );
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Response keys: ${response.keys.toList()}',
       );
 
       // Parse response
       final posts = _parsePostsFromResponse(response, tabIndex);
       final hasNext = _parseHasNextFromResponse(response, tabIndex);
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Parsed tab $tabIndex - posts: ${posts.length}, hasNext: $hasNext',
       );
 
@@ -695,7 +740,7 @@ class ProfileController {
       final newPosts = isRefresh ? uniquePosts : [...existing, ...uniquePosts];
       final canLoadMore = hasNext && posts.isNotEmpty && uniquePosts.isNotEmpty;
 
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Tab $tabIndex - existing: ${existing.length}, new: ${posts.length}, total: ${newPosts.length}',
       );
 
@@ -703,7 +748,7 @@ class ProfileController {
           ? (canLoadMore ? 2 : 1)
           : updatedState.page + 1;
 
-      debugPrint(
+      AppLogger.d(
         '📊 [ProfileController] Tab $tabIndex - nextPage: $nextPage, isRefresh: $isRefresh',
       );
 
@@ -715,15 +760,15 @@ class ProfileController {
       );
 
       _updateTabState(tabIndex, finalState);
-      debugPrint('✅ [ProfileController] Updated tab $tabIndex state');
+      AppLogger.d('✅ [ProfileController] Updated tab $tabIndex state');
 
       // Keep [postsNotifier] aligned with the "All" tab only (tab 0).
       if (tabIndex == 0) {
         postsNotifier.value = List<Post>.from(newPosts);
-        debugPrint('🔄 [ProfileController] Updated postsNotifier for tab 0');
+        AppLogger.d('🔄 [ProfileController] Updated postsNotifier for tab 0');
       }
 
-      debugPrint(
+      AppLogger.d(
         '✅ [ProfileController] tab=$tabIndex +${posts.length} items '
         'total=${newPosts.length} hasNext=$hasNext nextPage=$nextPage '
         '(${sw.elapsedMilliseconds}ms)',
@@ -732,6 +777,10 @@ class ProfileController {
       _profileFetchBackoffUntil = null;
     } catch (e) {
       if (e is DioException) {
+        if (CancelToken.isCancel(e)) {
+          AppLogger.d('[ProfileController] loadPostsForTab cancelled');
+          return;
+        }
         final code = e.response?.statusCode;
         final transient =
             (code != null && {408, 502, 503, 504}.contains(code)) ||
@@ -743,7 +792,7 @@ class ProfileController {
           _profileFetchBackoffUntil = DateTime.now().add(
             const Duration(seconds: 12),
           );
-          debugPrint(
+          AppLogger.d(
             '⚠️ [ProfileController] tab=$tabIndex profile_data '
             'transient failure (HTTP $code / ${e.type}). '
             'Keeping existing posts; pull-to-refresh to retry.',
@@ -758,7 +807,7 @@ class ProfileController {
         }
       }
 
-      debugPrint('❌ Error loading posts for tab $tabIndex: $e');
+      AppLogger.d('❌ Error loading posts for tab $tabIndex: $e');
 
       String errorMessage = e.toString();
 
@@ -807,7 +856,7 @@ class ProfileController {
     final currentState = _getTabState(tabIndex);
 
     if (!currentState.canLoadMore) {
-      debugPrint(
+      AppLogger.d(
         '🚫 Cannot load more posts for tab $tabIndex: hasNext=${currentState.hasNext}, isLoading=${currentState.isLoading}',
       );
       return;
@@ -869,7 +918,7 @@ class ProfileController {
       }
       return [];
     } catch (e) {
-      debugPrint('❌ Error parsing posts for tab $tabIndex: $e');
+      AppLogger.d('❌ Error parsing posts for tab $tabIndex: $e');
       return [];
     }
   }
@@ -893,9 +942,10 @@ class ProfileController {
 
       if (seenIds.add(post.id)) {
         unique.add(post);
-      } else if (kDebugMode) {
-        debugPrint('[ProfileController] Duplicate post skipped id=${post.id}');
+      } else {
+        AppLogger.d('[ProfileController] Duplicate post skipped id=${post.id}');
       }
+      
     }
 
     return unique;
@@ -987,7 +1037,7 @@ class ProfileController {
               : null) ??
           false;
     } catch (e) {
-      debugPrint('❌ Error parsing has_next for tab $tabIndex: $e');
+      AppLogger.d('❌ Error parsing has_next for tab $tabIndex: $e');
       return false;
     }
   }
@@ -1083,6 +1133,7 @@ class ProfileController {
   }
 
   void dispose() {
+    cancelActiveRequests();
     _disposed = true;
     isLoading.dispose();
     userNotifier.dispose();
@@ -1150,13 +1201,13 @@ class ProfileController {
       'hasSeen': false,
     };
 
-    debugPrint('📸 [ProfileController] Adding story: $story');
+    AppLogger.d('📸 [ProfileController] Adding story: $story');
 
     final currentStories = List<Map<String, dynamic>>.from(storyList.value);
     currentStories.add(story);
     storyList.value = currentStories;
 
-    debugPrint(
+    AppLogger.d(
       '✅ [ProfileController] Story added. Total stories: ${storyList.value.length}',
     );
   }
@@ -1171,7 +1222,7 @@ class ProfileController {
     if (index != -1) {
       currentStories[index]['hasSeen'] = true;
       storyList.value = currentStories;
-      debugPrint('👀 [ProfileController] Story marked as seen: $storyId');
+      AppLogger.d('👀 [ProfileController] Story marked as seen: $storyId');
     }
   }
 
@@ -1186,7 +1237,7 @@ class ProfileController {
     );
 
     if (story.isEmpty) {
-      debugPrint('❌ [ProfileController] Story not found: $storyId');
+      AppLogger.d('❌ [ProfileController] Story not found: $storyId');
       return;
     }
 
@@ -1202,7 +1253,7 @@ class ProfileController {
       ],
     );
 
-    debugPrint(
+    AppLogger.d(
       '🌟 [ProfileController] Creating highlight: ${highlightModel.title}',
     );
 
@@ -1210,7 +1261,7 @@ class ProfileController {
     currentHighlights.add(highlightModel);
     highlightList.value = currentHighlights;
 
-    debugPrint(
+    AppLogger.d(
       '✅ [ProfileController] Highlight created. Total highlights: ${highlightList.value.length}',
     );
   }
@@ -1229,7 +1280,7 @@ class ProfileController {
     );
 
     if (story.isEmpty) {
-      debugPrint('❌ [ProfileController] Story not found: $storyId');
+      AppLogger.d('❌ [ProfileController] Story not found: $storyId');
       return;
     }
 
@@ -1254,7 +1305,7 @@ class ProfileController {
       );
 
       highlightList.value = currentHighlights;
-      debugPrint(
+      AppLogger.d(
         '✅ [ProfileController] Story added to highlight: $highlightId',
       );
     }
@@ -1270,7 +1321,7 @@ class ProfileController {
       final highlightedStoryIds =
           _highlightStateManager?.highlightedStoryIds ?? <String>{};
 
-      debugPrint(
+      AppLogger.d(
         '🔍 [ProfileController] Creating stories from ${highlightedStoryIds.length} highlighted story IDs',
       );
 
@@ -1290,12 +1341,12 @@ class ProfileController {
           )
           .toList();
 
-      debugPrint(
+      AppLogger.d(
         '✅ [ProfileController] Created ${stories.length} dummy stories from HighlightStateManager',
       );
       return stories;
     } catch (e) {
-      debugPrint('❌ [ProfileController] Error creating stories: $e');
+      AppLogger.d('❌ [ProfileController] Error creating stories: $e');
       return [];
     }
   }
@@ -1304,7 +1355,7 @@ class ProfileController {
   List<Map<String, dynamic>> get highlightedStoriesOnly {
     if (_disposed) return [];
 
-    debugPrint(
+    AppLogger.d(
       '🔍 [ProfileController] Getting highlighted stories from StoryController...',
     );
 
@@ -1312,7 +1363,7 @@ class ProfileController {
     final allStories = storiesFromStoryController;
 
     if (allStories.isEmpty) {
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] No stories from StoryController, trying local storyList...',
       );
       return _getHighlightedStoriesFromLocalList();
@@ -1321,7 +1372,7 @@ class ProfileController {
     final highlightedStoryIds =
         _highlightStateManager?.highlightedStoryIds ?? <String>{};
 
-    debugPrint(
+    AppLogger.d(
       '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
     );
 
@@ -1329,26 +1380,26 @@ class ProfileController {
       final storyId = story['id']?.toString() ?? '';
       final isHighlighted =
           _highlightStateManager?.isStoryHighlighted(storyId) ?? false;
-      debugPrint(
+      AppLogger.d(
         '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
       );
       return isHighlighted;
     }).toList();
 
-    debugPrint(
+    AppLogger.d(
       '🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories',
     );
 
     // If no highlighted stories, try alternative approach
     if (highlightedStories.isEmpty && allStories.isNotEmpty) {
-      debugPrint(
+      AppLogger.d(
         '🔄 [ProfileController] No highlighted stories found, trying alternative approach...',
       );
       final storiesFromHighlights = this.storiesFromHighlights;
       if (storiesFromHighlights.isNotEmpty) {
         return storiesFromHighlights;
       }
-      debugPrint(
+      AppLogger.d(
         '⚠️ [ProfileController] No stories in highlights either, showing all stories as fallback',
       );
       return allStories;
@@ -1359,7 +1410,7 @@ class ProfileController {
 
   /// Fallback method to get highlighted stories from local storyList
   List<Map<String, dynamic>> _getHighlightedStoriesFromLocalList() {
-    debugPrint(
+    AppLogger.d(
       '🔍 [ProfileController] Total stories in local storyList: ${storyList.value.length}',
     );
 
@@ -1367,7 +1418,7 @@ class ProfileController {
     final highlightedStoryIds =
         _highlightStateManager?.highlightedStoryIds ?? <String>{};
 
-    debugPrint(
+    AppLogger.d(
       '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
     );
 
@@ -1375,13 +1426,13 @@ class ProfileController {
       final storyId = story['id']?.toString() ?? '';
       final isHighlighted =
           _highlightStateManager?.isStoryHighlighted(storyId) ?? false;
-      debugPrint(
+      AppLogger.d(
         '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
       );
       return isHighlighted;
     }).toList();
 
-    debugPrint(
+    AppLogger.d(
       '🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories',
     );
     return highlightedStories;
@@ -1391,15 +1442,15 @@ class ProfileController {
   List<Map<String, dynamic>> get storiesFromHighlights {
     if (_disposed) return [];
 
-    debugPrint('🔍 [ProfileController] Getting stories from highlights...');
-    debugPrint(
+    AppLogger.d('🔍 [ProfileController] Getting stories from highlights...');
+    AppLogger.d(
       '🔍 [ProfileController] Total highlights: ${highlightList.value.length}',
     );
 
     final allStories = <Map<String, dynamic>>[];
 
     for (final highlight in highlightList.value) {
-      debugPrint(
+      AppLogger.d(
         '🔍 [ProfileController] Processing highlight: ${highlight.title}',
       );
       if (highlight.stories.isNotEmpty) {
@@ -1418,14 +1469,14 @@ class ProfileController {
           };
         }).toList();
 
-        debugPrint(
+        AppLogger.d(
           '🔍 [ProfileController] Stories in this highlight: ${processedStories.length}',
         );
         allStories.addAll(processedStories);
       }
     }
 
-    debugPrint(
+    AppLogger.d(
       '🌟 [ProfileController] Got ${allStories.length} stories from ${highlightList.value.length} highlights',
     );
     return allStories;
@@ -1434,11 +1485,11 @@ class ProfileController {
   /// Parse highlights from API response (data['data']['highlights'])
   void _parseHighlightsFromResponse(Map<String, dynamic> userData) {
     try {
-      debugPrint('[ProfileController] Parsing highlights from API response');
+      AppLogger.d('[ProfileController] Parsing highlights from API response');
 
       final data = userData['data'];
       if (data is! Map<String, dynamic>) {
-        debugPrint(
+        AppLogger.d(
           '[ProfileController] No data object in response, skipping highlights',
         );
         highlightList.value = [];
@@ -1447,13 +1498,13 @@ class ProfileController {
 
       final highlightsData = data['highlights'];
       if (highlightsData == null) {
-        debugPrint('[ProfileController] No highlights key in data, skipping');
+        AppLogger.d('[ProfileController] No highlights key in data, skipping');
         highlightList.value = [];
         return;
       }
 
       if (highlightsData is! List) {
-        debugPrint(
+        AppLogger.d(
           '[ProfileController] Highlights is not a list: ${highlightsData.runtimeType}',
         );
         highlightList.value = [];
@@ -1468,24 +1519,24 @@ class ProfileController {
 
       highlightList.value = parsedHighlights;
 
-      debugPrint(
+      AppLogger.d(
         '[ProfileController] Parsed ${parsedHighlights.length} highlights from API',
       );
       for (final highlight in parsedHighlights) {
-        debugPrint(
+        AppLogger.d(
           '[ProfileController] Highlight: ${highlight.title} (${highlight.id}) - ${highlight.storiesCount} stories',
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('[ProfileController] Error parsing highlights: $e');
-      debugPrint('$stackTrace');
+      AppLogger.d('[ProfileController] Error parsing highlights: $e');
+      AppLogger.d('$stackTrace');
       highlightList.value = [];
     }
   }
 
   /// Reset all profile controller data on logout
   void reset() {
-    debugPrint('🔄 [ProfileController] Resetting controller data...');
+    AppLogger.d('🔄 [ProfileController] Resetting controller data...');
 
     user = null;
     statsNotifier.value = const ProfileStatsModel.empty();
@@ -1506,6 +1557,6 @@ class ProfileController {
     postsNotifier.value = [];
     gridRevision.value = 0;
 
-    debugPrint('✅ [ProfileController] Controller data reset complete');
+    AppLogger.d('✅ [ProfileController] Controller data reset complete');
   }
 }

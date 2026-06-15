@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Story data model for better organization
 class StoryData {
@@ -79,7 +80,7 @@ class StoryStateController extends ChangeNotifier {
 
   /// Set current story being viewed
   void setCurrentStory(StoryItem? story) {
-    debugPrint(
+    AppLogger.d(
       '[StoryState] currentStory set: '
       'id=${story?.id ?? 'NULL'}, media=${story?.mediaUrl ?? 'NULL'}',
     );

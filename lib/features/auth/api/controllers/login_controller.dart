@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 
 import '../models/login_model.dart';
 import '../services/login_services.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EmailSignInController {
   final EmailSignInService _service = EmailSignInService();
@@ -28,8 +28,8 @@ class EmailSignInController {
 
       response = res;
 
-      debugPrint("✅ SUCCESS: ${res.success}");
-      debugPrint("📩 MESSAGE: ${res.message}");
+      AppLogger.d("✅ SUCCESS: ${res.success}");
+      AppLogger.d("📩 MESSAGE: ${res.message}");
 
       // ✅ TOKEN SAVE SAFE
       if (res.success && res.data != null) {
@@ -47,13 +47,13 @@ class EmailSignInController {
           ProfileIdentityService.instance.primeLoggedInUserId(res.data!.userId);
         }
 
-        debugPrint("✅ TOKENS SAVED SUCCESSFULLY");
+        AppLogger.d("✅ TOKENS SAVED SUCCESSFULLY");
       } else {
         errorMessage = _loginErrorMessage(res.message);
       }
     } catch (e) {
       errorMessage = _loginErrorMessage(e);
-      debugPrint("❌ CONTROLLER ERROR: $e");
+      AppLogger.d("❌ CONTROLLER ERROR: $e");
     } finally {
       isLoading = false;
     }

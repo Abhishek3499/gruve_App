@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileIdentityResolution {
   final String? loggedInUserId;
@@ -71,9 +71,9 @@ class ProfileIdentityService {
       profileUserId: normalizedProfileUserId,
     );
 
-    debugPrint('👤 LoggedInUserId: ${resolution.loggedInUserId ?? "null"}');
-    debugPrint('📄 ProfileUserId: ${resolution.profileUserId ?? "null"}');
-    debugPrint('🔍 IsOwnProfile: ${resolution.isOwnProfile}');
+    AppLogger.d('👤 LoggedInUserId: ${resolution.loggedInUserId ?? "null"}');
+    AppLogger.d('📄 ProfileUserId: ${resolution.profileUserId ?? "null"}');
+    AppLogger.d('🔍 IsOwnProfile: ${resolution.isOwnProfile}');
 
     return resolution;
   }
@@ -110,7 +110,7 @@ class ProfileIdentityService {
 
       return _readUserIdFromClaims(decoded);
     } catch (error) {
-      debugPrint('❌ Failed to decode access token user id: $error');
+      AppLogger.d('❌ Failed to decode access token user id: $error');
       return null;
     }
   }

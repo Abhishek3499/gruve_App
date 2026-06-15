@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Production-level Dio interceptor for automatic token refresh and retry
 class RefreshTokenInterceptor extends Interceptor {
@@ -42,12 +42,12 @@ class RefreshTokenInterceptor extends Interceptor {
 
     // Check if this request was already retried
     if (err.requestOptions.extra['retry'] == true) {
-      debugPrint('❌ [RefreshInterceptor] Request already retried, failing');
+      AppLogger.d('❌ [RefreshInterceptor] Request already retried, failing');
       handler.next(err);
       return;
     }
 
-    debugPrint(
+    AppLogger.d(
       '🔄 [RefreshInterceptor] 401 detected, attempting token refresh',
     );
 
@@ -56,7 +56,7 @@ class RefreshTokenInterceptor extends Interceptor {
       final newTokens = await _refreshService.refreshTokens();
 
       if (newTokens != null) {
-        debugPrint(
+        AppLogger.d(
           '✅ [RefreshInterceptor] Token refresh successful, retrying request',
         );
 
@@ -72,7 +72,7 @@ class RefreshTokenInterceptor extends Interceptor {
           handler.resolve(response);
           return;
         } catch (retryError) {
-          debugPrint('❌ [RefreshInterceptor] Retry failed: $retryError');
+          AppLogger.d('❌ [RefreshInterceptor] Retry failed: $retryError');
           // If retry fails with another 401, trigger logout
           if (retryError is DioException &&
               retryError.response?.statusCode == 401) {
@@ -86,7 +86,7 @@ class RefreshTokenInterceptor extends Interceptor {
           return;
         }
       } else {
-        debugPrint(
+        AppLogger.d(
           '❌ [RefreshInterceptor] Token refresh failed, triggering logout',
         );
         await _handleAuthFailure();
@@ -94,7 +94,7 @@ class RefreshTokenInterceptor extends Interceptor {
         return;
       }
     } catch (refreshError) {
-      debugPrint('❌ [RefreshInterceptor] Refresh process error: $refreshError');
+      AppLogger.d('❌ [RefreshInterceptor] Refresh process error: $refreshError');
       await _handleAuthFailure();
       handler.next(err);
     }
@@ -142,7 +142,7 @@ class RefreshTokenInterceptor extends Interceptor {
 
   /// Handles authentication failure by clearing tokens and navigating to login
   Future<void> _handleAuthFailure() async {
-    debugPrint(
+    AppLogger.d(
       '🚨 [RefreshInterceptor] Handling auth failure - clearing tokens and logging out',
     );
 
@@ -150,7 +150,7 @@ class RefreshTokenInterceptor extends Interceptor {
       // Use the auth state manager to handle logout
       await AuthStateManager().onAuthFailure();
     } catch (e) {
-      debugPrint(
+      AppLogger.d(
         '❌ [RefreshInterceptor] Error during auth failure handling: $e',
       );
     }

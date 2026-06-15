@@ -3,6 +3,7 @@ import 'package:gruve_app/core/assets.dart';
 import '../../search/models/search_navigation_type.dart';
 import '../../search/screens/search_page.dart';
 import 'message_avatar_list.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageHeader extends StatelessWidget {
   const MessageHeader({super.key});
@@ -57,7 +58,7 @@ class MessageHeader extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
                     onTap: () {
-                      debugPrint('🔍 [MessageHeader] Opening search from message header');
+                      AppLogger.d('🔍 [MessageHeader] Opening search from message header');
                       Navigator.push(
                         context,
                         MaterialPageRoute(

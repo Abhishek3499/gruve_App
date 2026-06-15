@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 
 import '../models/google_sign_in_model.dart';
 import '../services/google_sign_in_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class GoogleAuthController {
   GoogleAuthController({GoogleAuthService? service})
@@ -43,7 +43,7 @@ class GoogleAuthController {
           ProfileIdentityService.instance.primeLoggedInUserId(data.userId);
         }
 
-        debugPrint('Google sign-in tokens saved successfully');
+        AppLogger.d('Google sign-in tokens saved successfully');
         return true;
       }
 
@@ -56,7 +56,7 @@ class GoogleAuthController {
         e,
         fallback: 'Google sign-in failed. Please try again.',
       );
-      debugPrint('Google sign-in controller error: $e');
+      AppLogger.d('Google sign-in controller error: $e');
       return false;
     } finally {
       isLoading = false;

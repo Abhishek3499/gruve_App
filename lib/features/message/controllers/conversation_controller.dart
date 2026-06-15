@@ -5,6 +5,7 @@ import '../services/message_service.dart';
 import '../screen/chat_screen.dart';
 import '../utils/conversation_error_handler.dart';
 import '../providers/message_provider.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Controller for handling conversation creation and navigation
 /// 
@@ -17,7 +18,7 @@ class ConversationController extends ChangeNotifier {
   final MessageService _messageService;
   
   ConversationController(this._messageService) {
-    debugPrint('🏗️ [ConversationController] Controller initialized');
+    AppLogger.d('🏗️ [ConversationController] Controller initialized');
   }
 
   // State variables
@@ -45,7 +46,7 @@ class ConversationController extends ChangeNotifier {
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
-      debugPrint('⏳ [ConversationController] Loading state changed: $loading');
+      AppLogger.d('⏳ [ConversationController] Loading state changed: $loading');
       _notify();
     }
   }
@@ -54,7 +55,7 @@ class ConversationController extends ChangeNotifier {
   void _setError(String? error) {
     if (_error != error) {
       _error = error;
-      debugPrint('❌ [ConversationController] Error state changed: $error');
+      AppLogger.d('❌ [ConversationController] Error state changed: $error');
       _notify();
     }
   }
@@ -71,7 +72,7 @@ class ConversationController extends ChangeNotifier {
 
     final inFlight = _inFlightRequests[receiverId];
     if (inFlight != null) {
-      debugPrint('🔒 [ConversationController] Joining active request for receiver: $receiverId');
+      AppLogger.d('🔒 [ConversationController] Joining active request for receiver: $receiverId');
       return inFlight;
     }
 
@@ -88,46 +89,46 @@ class ConversationController extends ChangeNotifier {
 
     // Prevent duplicate requests for the same receiver
     if (_activeRequests.contains(receiverId)) {
-      debugPrint('🔒 [ConversationController] ⚠️ Request already active for receiver: $receiverId');
-      debugPrint('⏸️ [ConversationController] 🚫 Preventing duplicate API call');
+      AppLogger.d('🔒 [ConversationController] ⚠️ Request already active for receiver: $receiverId');
+      AppLogger.d('⏸️ [ConversationController] 🚫 Preventing duplicate API call');
       throw Exception('Conversation request already in progress');
     }
 
     if (_isLoading) {
-      debugPrint('⏳ [ConversationController] ⚠️ Already creating conversation, waiting...');
+      AppLogger.d('⏳ [ConversationController] ⚠️ Already creating conversation, waiting...');
       throw Exception('Conversation creation already in progress');
     }
 
     _activeRequests.add(receiverId);
-    debugPrint('📦 [ConversationController] 📝 Added receiver to active requests: $receiverId');
-    debugPrint('📊 [ConversationController] 📈 Active requests count: ${_activeRequests.length}');
+    AppLogger.d('📦 [ConversationController] 📝 Added receiver to active requests: $receiverId');
+    AppLogger.d('📊 [ConversationController] 📈 Active requests count: ${_activeRequests.length}');
     
     _setLoading(true);
     clearError();
 
     try {
-      debugPrint('🚀 [ConversationController] 🌐 Starting conversation creation for receiver: $receiverId');
-      debugPrint('📡 [ConversationController] 📶 Calling API: POST /conversations/');
+      AppLogger.d('🚀 [ConversationController] 🌐 Starting conversation creation for receiver: $receiverId');
+      AppLogger.d('📡 [ConversationController] 📶 Calling API: POST /conversations/');
       
       final conversation = await _messageService.createOrGetConversation(receiverId);
       
       if (_disposed) {
-        debugPrint('⚠️ [ConversationController] 🗑️ Controller disposed, returning conversation without update');
+        AppLogger.d('⚠️ [ConversationController] 🗑️ Controller disposed, returning conversation without update');
         return conversation;
       }
       
-      debugPrint('✅ [ConversationController] 🎉 Successfully created/retrieved conversation!');
-      debugPrint('💬 [ConversationController] 🆔 Conversation ID: ${conversation.id}');
-      debugPrint('👤 [ConversationController] 👥 Participant 1: ${conversation.participant1Id}');
-      debugPrint('👤 [ConversationController] 👥 Participant 2: ${conversation.participant2Id}');
-      debugPrint('👤 [ConversationController] 👨 Other user: ${conversation.otherUser.name}');
+      AppLogger.d('✅ [ConversationController] 🎉 Successfully created/retrieved conversation!');
+      AppLogger.d('💬 [ConversationController] 🆔 Conversation ID: ${conversation.id}');
+      AppLogger.d('👤 [ConversationController] 👥 Participant 1: ${conversation.participant1Id}');
+      AppLogger.d('👤 [ConversationController] 👥 Participant 2: ${conversation.participant2Id}');
+      AppLogger.d('👤 [ConversationController] 👨 Other user: ${conversation.otherUser.name}');
       
       return conversation;
     } catch (e) {
       if (_disposed) rethrow;
       
-      debugPrint('❌ [ConversationController] 💥 Error creating/getting conversation');
-      debugPrint('🔥 [ConversationController] 📋 Error details: $e');
+      AppLogger.d('❌ [ConversationController] 💥 Error creating/getting conversation');
+      AppLogger.d('🔥 [ConversationController] 📋 Error details: $e');
       
       // Use centralized error handling
       final userMessage = ConversationErrorHandler.handleConversationError(
@@ -138,8 +139,8 @@ class ConversationController extends ChangeNotifier {
       rethrow;
     } finally {
       _activeRequests.remove(receiverId);
-      debugPrint('🧹 [ConversationController] 🗑️ Removed receiver from active requests: $receiverId');
-      debugPrint('📊 [ConversationController] 📉 Active requests count: ${_activeRequests.length}');
+      AppLogger.d('🧹 [ConversationController] 🗑️ Removed receiver from active requests: $receiverId');
+      AppLogger.d('📊 [ConversationController] 📉 Active requests count: ${_activeRequests.length}');
       _setLoading(false);
     }
   }
@@ -158,47 +159,47 @@ class ConversationController extends ChangeNotifier {
     required BuildContext context,
   }) async {
     if (!context.mounted) {
-      debugPrint('❌ [ConversationController] ⚠️ Context is not mounted');
+      AppLogger.d('❌ [ConversationController] ⚠️ Context is not mounted');
       throw Exception('Context is not mounted');
     }
 
     try {
-      debugPrint('🧭 [ConversationController] 🚀 Starting navigation flow');
-      debugPrint('👤 [ConversationController] 🎯 Target user: $receiverName ($receiverId)');
+      AppLogger.d('🧭 [ConversationController] 🚀 Starting navigation flow');
+      AppLogger.d('👤 [ConversationController] 🎯 Target user: $receiverName ($receiverId)');
       if (receiverProfileImage != null) {
-        debugPrint('🖼️ [ConversationController] 📸 Profile image: $receiverProfileImage');
+        AppLogger.d('🖼️ [ConversationController] 📸 Profile image: $receiverProfileImage');
       } else {
-        debugPrint('🖼️ [ConversationController] ❌ No profile image provided');
+        AppLogger.d('🖼️ [ConversationController] ❌ No profile image provided');
       }
       
-      debugPrint('📡 [ConversationController] 🌐 Creating/getting conversation...');
+      AppLogger.d('📡 [ConversationController] 🌐 Creating/getting conversation...');
       // Create or get conversation
       final conversation = await createOrGetConversation(receiverId);
       
       if (!context.mounted) {
-        debugPrint('⚠️ [ConversationController] ❌ Context unmounted after API call');
+        AppLogger.d('⚠️ [ConversationController] ❌ Context unmounted after API call');
         throw Exception('Context is no longer mounted');
       }
       
-      debugPrint('📊 [ConversationController] 📝 Checking MessageProvider for existing conversation');
+      AppLogger.d('📊 [ConversationController] 📝 Checking MessageProvider for existing conversation');
       // Add conversation to MessageProvider if not already present
       final messageProvider = context.read<MessageProvider>();
       final existingConversation = messageProvider.getConversationById(conversation.id);
       
       if (existingConversation == null) {
-        debugPrint('➕ [ConversationController] 🆕 Adding new conversation to MessageProvider');
-        debugPrint('💬 [ConversationController] 🆔 Conversation ID: ${conversation.id}');
+        AppLogger.d('➕ [ConversationController] 🆕 Adding new conversation to MessageProvider');
+        AppLogger.d('💬 [ConversationController] 🆔 Conversation ID: ${conversation.id}');
         messageProvider.addConversation(conversation);
-        debugPrint('✅ [ConversationController] ✔️ Conversation added to provider');
+        AppLogger.d('✅ [ConversationController] ✔️ Conversation added to provider');
       } else {
-        debugPrint('✅ [ConversationController] 💬 Conversation already exists in provider');
-        debugPrint('🔄 [ConversationController] ⏭️ Skipping duplicate addition');
+        AppLogger.d('✅ [ConversationController] 💬 Conversation already exists in provider');
+        AppLogger.d('🔄 [ConversationController] ⏭️ Skipping duplicate addition');
       }
       
-      debugPrint('📱 [ConversationController] 🚀 Navigating to ChatScreen');
-      debugPrint('🆔 [ConversationController] 💬 Conversation ID: ${conversation.id}');
-      debugPrint('👤 [ConversationController] 👨 User name: $receiverName');
-      debugPrint('🖼️ [ConversationController] 📸 Profile image: ${receiverProfileImage ?? "none"}');
+      AppLogger.d('📱 [ConversationController] 🚀 Navigating to ChatScreen');
+      AppLogger.d('🆔 [ConversationController] 💬 Conversation ID: ${conversation.id}');
+      AppLogger.d('👤 [ConversationController] 👨 User name: $receiverName');
+      AppLogger.d('🖼️ [ConversationController] 📸 Profile image: ${receiverProfileImage ?? "none"}');
       
       // Navigate to ChatScreen with explicit user data
       Navigator.push(
@@ -214,11 +215,11 @@ class ConversationController extends ChangeNotifier {
         ),
       );
       
-      debugPrint('✅ [ConversationController] 🎉 Navigation completed successfully');
+      AppLogger.d('✅ [ConversationController] 🎉 Navigation completed successfully');
       return conversation;
     } catch (e) {
-      debugPrint('❌ [ConversationController] 💥 Navigation failed');
-      debugPrint('🔥 [ConversationController] 📋 Error: $e');
+      AppLogger.d('❌ [ConversationController] 💥 Navigation failed');
+      AppLogger.d('🔥 [ConversationController] 📋 Error: $e');
       
       // Use centralized error handling
       ConversationErrorHandler.handleConversationError(
@@ -241,7 +242,7 @@ class ConversationController extends ChangeNotifier {
     _error = null;
     _activeRequests.clear();
     _inFlightRequests.clear();
-    debugPrint('🔄 [ConversationController] Controller state reset');
+    AppLogger.d('🔄 [ConversationController] Controller state reset');
     _notify();
   }
 
@@ -252,7 +253,7 @@ class ConversationController extends ChangeNotifier {
     _disposed = true;
     _activeRequests.clear();
     _inFlightRequests.clear();
-    debugPrint('🗑️ [ConversationController] Controller disposed (cleared ${_activeRequests.length} active requests)');
+    AppLogger.d('🗑️ [ConversationController] Controller disposed (cleared ${_activeRequests.length} active requests)');
     super.dispose();
   }
 }

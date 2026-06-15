@@ -9,6 +9,7 @@ import 'option_item.dart';
 import '../sheets/simple_report_sheet.dart';
 import '../sheets/simple_block_sheet.dart';
 import '../sheets/simple_not_interested_sheet.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VideoOptionsSheet extends StatefulWidget {
   final String userId;
@@ -330,13 +331,13 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                   ),
                                 );
 
-                                debugPrint(
+                                AppLogger.d(
                                   '🔴 SimpleBlockSheet returned: $result',
                                 );
 
                                 // If user confirmed block action
                                 if (result == true) {
-                                  debugPrint('🔴 User confirmed block');
+                                  AppLogger.d('🔴 User confirmed block');
 
                                   // 🚀 INSTANT SNACKBAR - Show immediately
                                   scaffoldMessenger.showSnackBar(
@@ -388,14 +389,14 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                     await blockProvider.toggleBlockUser(
                                       widget.userId,
                                     );
-                                    debugPrint('🔴 API call completed');
+                                    AppLogger.d('🔴 API call completed');
 
                                     if (!mounted) return;
 
                                     final isBlocked = blockProvider.isBlocked(
                                       widget.userId,
                                     );
-                                    debugPrint('🔴 Block status: $isBlocked');
+                                    AppLogger.d('🔴 Block status: $isBlocked');
 
                                     // Success snackbar
                                     scaffoldMessenger.showSnackBar(
@@ -440,7 +441,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                       ),
                                     );
                                   } catch (e) {
-                                    debugPrint('🔴 Error: $e');
+                                    AppLogger.d('🔴 Error: $e');
                                     scaffoldMessenger.showSnackBar(
                                       SnackBar(
                                         content: Row(
@@ -482,7 +483,7 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                                     );
                                   }
                                 } else {
-                                  debugPrint('🔴 User cancelled');
+                                  AppLogger.d('🔴 User cancelled');
                                 }
                               },
                             ),

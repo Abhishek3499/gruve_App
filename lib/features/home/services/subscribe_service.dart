@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 
 import '../api/subscribe_api_service.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SubscribeService {
   static final SubscribeService _instance = SubscribeService._internal();
@@ -11,7 +11,7 @@ class SubscribeService {
   final Set<String> _subscribedUsers = {};
 
   void _log(String message) {
-    debugPrint('🧰 [SubscribeService] $message');
+    AppLogger.d('🧰 [SubscribeService] $message');
   }
 
   bool isUserSubscribed(String userId) {

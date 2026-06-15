@@ -11,6 +11,7 @@ import '../widgets/swipe_delete_background.dart';
 import '../screen/chat_screen.dart';
 
 import '../../../core/widgets/shimmer/chat_shimmer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageScreen extends StatefulWidget {
   const MessageScreen({super.key});
@@ -26,17 +27,24 @@ class _MessageScreenState extends State<MessageScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('📱 [MessageScreen] Screen initialized');
+    AppLogger.d('📱 [MessageScreen] Screen initialized');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('[MessageScreen] Starting conversation fetch');
+      AppLogger.d('[MessageScreen] Starting conversation fetch');
       unawaited(_fetchInitialData());
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<MessageProvider>().cancelActiveRequests();
+    context.read<UserProvider>().cancelActiveRequests();
+    super.dispose();
   }
 
   Future<void> _fetchInitialData() async {
     _prefetchUsersForAvatarRow();
     await context.read<MessageProvider>().fetchConversations();
-    debugPrint('[MessageScreen] Conversations loaded');
+    AppLogger.d('[MessageScreen] Conversations loaded');
   }
 
   void _prefetchUsersForAvatarRow() {
@@ -50,7 +58,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    debugPrint('🔄 [MessageScreen] Refresh started');
+    AppLogger.d('🔄 [MessageScreen] Refresh started');
 
     // Clear cache timestamps to force fresh data
     final messageProvider = context.read<MessageProvider>();
@@ -59,11 +67,11 @@ class _MessageScreenState extends State<MessageScreen> {
     await messageProvider.refreshConversations();
     unawaited(userProvider.refreshUsers());
 
-    debugPrint('✅ [MessageScreen] Refresh completed');
+    AppLogger.d('✅ [MessageScreen] Refresh completed');
   }
 
   Future<bool> _showDeleteConfirmation(ConversationModel conversation) async {
-    debugPrint(
+    AppLogger.d(
       '🗑️ [MessageScreen] Showing delete confirmation for: ${conversation.otherUserName}',
     );
     final confirmed = await showDialog<bool>(
@@ -101,7 +109,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Future<bool> _deleteConversation(ConversationModel conversation) {
-    debugPrint(
+    AppLogger.d(
       '🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}',
     );
     return context.read<MessageProvider>().deleteConversation(conversation.id);
@@ -157,24 +165,24 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildConversationList(MessageProvider messageProvider) {
-    debugPrint(
+    AppLogger.d(
       '🔍 [buildConversationList] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     );
-    debugPrint(
+    AppLogger.d(
       '🔍 [buildConversationList] isLoading: ${messageProvider.isLoading} | isRefreshing: ${messageProvider.isRefreshing}',
     );
-    debugPrint(
+    AppLogger.d(
       '📊 [buildConversationList] conversationCount: ${messageProvider.conversationCount} | hasMore: ${messageProvider.hasMoreData} | page: ${messageProvider.currentPage}',
     );
-    debugPrint(
+    AppLogger.d(
       '📩 [buildConversationList] totalUnread: ${messageProvider.totalUnreadCount}',
     );
 
     if (messageProvider.hasError) {
-      debugPrint('❌ [buildConversationList] error: ${messageProvider.error}');
+      AppLogger.d('❌ [buildConversationList] error: ${messageProvider.error}');
     }
     if (!messageProvider.hasConversations && !messageProvider.isLoading) {
-      debugPrint('⚠️ [buildConversationList] conversations list is NULL/EMPTY');
+      AppLogger.d('⚠️ [buildConversationList] conversations list is NULL/EMPTY');
     }
     if (messageProvider.hasConversations) {
       final ids = messageProvider.conversations
@@ -185,38 +193,38 @@ class _MessageScreenState extends State<MessageScreen> {
           .take(5)
           .map((c) => '${c.id.substring(0, 6)}:${c.unreadCount}')
           .toList();
-      debugPrint('💬 [buildConversationList] conversationIDs (first 5): $ids');
-      debugPrint(
+      AppLogger.d('💬 [buildConversationList] conversationIDs (first 5): $ids');
+      AppLogger.d(
         '🔔 [buildConversationList] unreadCounts (first 5): $unreadCounts',
       );
     }
 
     // Show loading shimmer on initial load
     if (messageProvider.isLoading && !messageProvider.hasConversations) {
-      debugPrint('🚀 [buildConversationList] → showing shimmer (initial load)');
+      AppLogger.d('🚀 [buildConversationList] → showing shimmer (initial load)');
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show shimmer during refresh
     if (messageProvider.isRefreshing && !messageProvider.hasConversations) {
-      debugPrint('🔄 [buildConversationList] → showing shimmer (refreshing)');
+      AppLogger.d('🔄 [buildConversationList] → showing shimmer (refreshing)');
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show error state
     if (messageProvider.hasError && !messageProvider.hasConversations) {
-      debugPrint('❌ [buildConversationList] → showing error state');
+      AppLogger.d('❌ [buildConversationList] → showing error state');
       return _buildErrorState(messageProvider);
     }
 
     // Show empty state
     if (!messageProvider.hasConversations && !messageProvider.isLoading) {
-      debugPrint('⚠️ [buildConversationList] → showing empty state');
+      AppLogger.d('⚠️ [buildConversationList] → showing empty state');
       return _buildEmptyState();
     }
 
     // Show conversation list
-    debugPrint(
+    AppLogger.d(
       '✅ [buildConversationList] → rendering ${messageProvider.conversationCount} conversations',
     );
     return NotificationListener<ScrollNotification>(
@@ -229,7 +237,7 @@ class _MessageScreenState extends State<MessageScreen> {
             scrollInfo.metrics.pixels >=
                 scrollInfo.metrics.maxScrollExtent - 200) {
           _isLoadingMoreConversations = true;
-          debugPrint('⬇️ [MessageScreen] Loading more conversations');
+          AppLogger.d('⬇️ [MessageScreen] Loading more conversations');
           messageProvider.loadMoreConversations().then((_) {
             if (mounted) {
               _isLoadingMoreConversations = false;
@@ -292,7 +300,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildErrorState(MessageProvider messageProvider) {
-    debugPrint('💥 [MessageScreen] Building error state widget');
+    AppLogger.d('💥 [MessageScreen] Building error state widget');
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -319,7 +327,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildEmptyState() {
-    debugPrint('📭 [MessageScreen] Building empty state widget');
+    AppLogger.d('📭 [MessageScreen] Building empty state widget');
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -341,7 +349,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _navigateToChat(ConversationModel conversation) async {
-    debugPrint(
+    AppLogger.d(
       '💬 [MessageScreen] Navigating to chat with: ${conversation.otherUserName} (${conversation.id})',
     );
     context.read<MessageProvider>().markConversationAsRead(conversation.id);
@@ -360,7 +368,7 @@ class _MessageScreenState extends State<MessageScreen> {
     );
 
     if (shouldRefresh == true && mounted) {
-      debugPrint('🔄 [MessageScreen] Refreshing after block action');
+      AppLogger.d('🔄 [MessageScreen] Refreshing after block action');
       context.read<MessageProvider>().removeConversation(conversation.id);
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;

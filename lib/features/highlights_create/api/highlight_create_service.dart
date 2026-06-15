@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class HighlightCreateResponse {
   final bool success;
@@ -70,11 +70,7 @@ class HighlightCreateService {
   late final Dio _dio;
 
   HighlightCreateService() {
-    _dio = AppDio.create(
-      connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 45),
-      sendTimeout: const Duration(seconds: 20),
-    );
+    _dio = AppDio.getInstance();
   }
 
   Future<HighlightCreateResponse> createOrUpdateHighlight({
@@ -85,17 +81,17 @@ class HighlightCreateService {
     try {
       final uniqueStoryIds = storyIds.toSet();
       if (uniqueStoryIds.length != storyIds.length) {
-        debugPrint('[Highlight] Duplicate story_id detected in request body');
+        AppLogger.d('[Highlight] Duplicate story_id detected in request body');
         return HighlightCreateResponse.failure(
           message: 'Story already added to this highlight',
           statusCode: 400,
         );
       }
 
-      debugPrint('[Highlight] POST highlights/');
+      AppLogger.d('[Highlight] POST highlights/');
 
       final token = await TokenStorage.getAccessToken();
-      debugPrint(
+      AppLogger.d(
         '[Highlight] Authorization Token: '
         '${token?.isNotEmpty == true ? 'Present' : 'Missing'}',
       );
@@ -109,7 +105,7 @@ class HighlightCreateService {
         requestData['highlight_id'] = highlightId;
       }
 
-      debugPrint('[Highlight] Request Body: $requestData');
+      AppLogger.d('[Highlight] Request Body: $requestData');
 
       final response = await _dio.post(
         'highlights/',
@@ -117,15 +113,15 @@ class HighlightCreateService {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      debugPrint('[Highlight] Response status=${response.statusCode}');
-      debugPrint('[Highlight] Response data=${response.data}');
+      AppLogger.d('[Highlight] Response status=${response.statusCode}');
+      AppLogger.d('[Highlight] Response data=${response.data}');
 
       return HighlightCreateResponse.fromJson(response.data);
     } on DioException catch (e) {
-      debugPrint('[Highlight] Error: DioException');
-      debugPrint('[Highlight] Status Code: ${e.response?.statusCode}');
-      debugPrint('[Highlight] Error Data: ${e.response?.data}');
-      debugPrint('[Highlight] Message: ${e.message}');
+      AppLogger.d('[Highlight] Error: DioException');
+      AppLogger.d('[Highlight] Status Code: ${e.response?.statusCode}');
+      AppLogger.d('[Highlight] Error Data: ${e.response?.data}');
+      AppLogger.d('[Highlight] Message: ${e.message}');
 
       final responseData = e.response?.data;
       if (responseData is Map<String, dynamic>) {
@@ -146,8 +142,8 @@ class HighlightCreateService {
         statusCode: e.response?.statusCode,
       );
     } catch (e) {
-      debugPrint('[Highlight] Error: Unknown Exception');
-      debugPrint('[Highlight] Message: $e');
+      AppLogger.d('[Highlight] Error: Unknown Exception');
+      AppLogger.d('[Highlight] Message: $e');
       return HighlightCreateResponse.failure(message: 'Something went wrong');
     }
   }
