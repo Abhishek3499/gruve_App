@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 
 import '../models/subscribe_model.dart';
@@ -162,6 +162,19 @@ class SubscribeController extends ChangeNotifier {
         } catch (e) {
           _log('❌ sync failed for userId=$userId error=$e');
           syncFailed = true;
+
+          // Revert local state back to the correct server state
+          final serverState = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+          _applyLocalState(userId, serverState);
+
+          // Show floating SnackBar for error feedback using global ScaffoldMessenger state
+          scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('Something went wrong'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           break;
         }
       }

@@ -471,7 +471,11 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                 right: 0,
                 child: SafeArea(
                   top: false,
-                  child: StoryViewBottom(isOwnProfile: widget.isOwnProfile),
+                  child: GestureDetector(
+                    onTap: () {}, // Absorb taps to prevent skipping stories or popping screen
+                    behavior: HitTestBehavior.opaque,
+                    child: StoryViewBottom(isOwnProfile: widget.isOwnProfile),
+                  ),
                 ),
               ),
           ],

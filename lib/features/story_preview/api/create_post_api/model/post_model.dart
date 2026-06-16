@@ -248,6 +248,24 @@ class Post {
     final normalizedRelativePath = value.startsWith('/') ? value : '/$value';
     return baseUri.resolve(normalizedRelativePath).toString();
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'caption': caption,
+      'media': media,
+      'userId': userId,
+      'mediaType': mediaType,
+      'likes_count': likesCount,
+      'comments_count': commentsCount,
+      'is_liked': isLiked,
+      'username': username,
+      'is_subscribed': isSubscribed,
+      'profile_picture': profilePicture,
+      'has_active_story': hasActiveStory,
+      'tagged_users': taggedUsers.map((e) => e.toJson()).toList(),
+    };
+  }
 }
 
 class TaggedUser {
@@ -269,5 +287,13 @@ class TaggedUser {
         json['profile_picture'] ?? json['profilePicture'] ?? json['avatar'] ?? "",
       ),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'profile_picture': profilePicture,
+    };
   }
 }

@@ -282,259 +282,379 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     super.dispose();
   }
 
+  Future<bool> _showDiscardDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: const Color(0xFF311B36),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 24),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Discard last clip?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'If you continue, the last clip will be removed from your video.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Divider(
+                color: Colors.white.withValues(alpha: 0.1),
+                height: 1,
+                thickness: 1,
+              ),
+              InkWell(
+                onTap: () => Navigator.pop(context, true),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Discard',
+                    style: TextStyle(
+                      color: Color(0xFFE53935),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Divider(
+                color: Colors.white.withValues(alpha: 0.1),
+                height: 1,
+                thickness: 1,
+              ),
+              InkWell(
+                onTap: () => Navigator.pop(context, false),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<ProfileProvider>(context).user;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            /// MEDIA PREVIEW
-            Expanded(
-              child: Stack(
-                children: [
-                  /// MEDIA
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedStickerId = null;
-                        });
-                      },
-                      child: _isInitialized
-                          ? _buildMediaPreview()
-                          : const Center(
-                              child: CircularProgressIndicator(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldDiscard = await _showDiscardDialog(context);
+        if (shouldDiscard && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Column(
+            children: [
+              /// MEDIA PREVIEW
+              Expanded(
+                child: Stack(
+                  children: [
+                    /// MEDIA
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedStickerId = null;
+                          });
+                        },
+                        child: _isInitialized
+                            ? _buildMediaPreview()
+                            : const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CircularProgressIndicator(
+                                      color: Color(0xFFBB86FC),
+                                    ),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      "Loading Preview...",
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    ..._stickers.map((sticker) {
+                      return StickerOverlay(
+                        key: ValueKey(sticker.id),
+                        sticker: sticker,
+                        isSelected: _selectedStickerId == sticker.id,
+                        onTap: () {
+                          setState(() {
+                            _selectedStickerId = sticker.id;
+                          });
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _stickers.removeWhere((s) => s.id == sticker.id);
+                            if (_selectedStickerId == sticker.id) {
+                              _selectedStickerId = null;
+                            }
+                          });
+                        },
+                        onUpdate: (position, scale, rotation) {
+                          setState(() {
+                            sticker.position = position;
+                            sticker.scale = scale;
+                            sticker.rotation = rotation;
+                          });
+                        },
+                      );
+                    }),
+
+                    /// TOP BAR + ACTION BUTTONS (ONE ROW)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      right: 10,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          StoryTopBar(
+                            onClose: () async {
+                              final shouldDiscard = await _showDiscardDialog(context);
+                              if (shouldDiscard && context.mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
+                          StoryActionButtons(
+                            isMuted: _isMuted,
+                            onMuteToggle: _toggleMute,
+                            currentSpeed: _videoSpeed,
+                            onSpeedTap: _isVideo ? _changeVideoSpeed : null,
+                            onTextTap: () async {
+                              final emoji = await showModalBottomSheet<String>(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (context) => const EmojiPickerSheet(),
+                              );
+                              if (emoji != null) {
+                                setState(() {
+                                  final newSticker = StickerData(
+                                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                    text: emoji,
+                                    position: const Offset(150, 250),
+                                  );
+                                  _stickers.add(newSticker);
+                                  _selectedStickerId = newSticker.id;
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              /// BOTTOM ACTION SECTION
+              Container(
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.8),
+                      ),
+                      child: Row(
+                        children: [
+                          /// YOUR STORY
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _isYourStorySharing ? null : _shareToYourStory,
+                              child: Container(
+                                height: 42,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  color: const Color(0xFF72008D),
+                                ),
+                                child: Row(
+                                  children: [
+                                    _isYourStorySharing
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : _buildUserAvatar(
+                                            user?.profileImage,
+                                            user?.username ?? '',
+                                          ),
+                                    const SizedBox(
+                                      width: 8,
+                                    ),
+                                    Text(
+                                      _isYourStorySharing ? "Sharing..." : "Your Story",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          /// CLOSE FRIEND
+                          Container(
+                            height: 42,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              color: Color(0xFF72008D),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 25,
+                                  height: 25,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                  child: const Icon(
+                                    Icons.star,
+                                    color: Color(0xFF4CAF50),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  "Close Friend",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 15),
+
+                          /// SEND
+                          GestureDetector(
+                            onTap: () {
+                              AppLogger.d("\n🚀 SEND BUTTON CLICKED");
+                              AppLogger.d("📤 Opening Story Share Sheet...");
+                              AppLogger.d("📁 MediaPath: ${widget.mediaPath}");
+
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (bottomSheetContext) {
+                                  return ChangeNotifierProvider.value(
+                                    value: Provider.of<StoryController>(
+                                      context,
+                                      listen: false,
+                                    ),
+                                    child: StoryShareSheet(
+                                      mediaPath: widget.mediaPath,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            child: Container(
+                              width: 35,
+                              height: 35,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: Colors.white,
                               ),
-                            ),
-                    ),
-                  ),
-
-                  ..._stickers.map((sticker) {
-                    return StickerOverlay(
-                      key: ValueKey(sticker.id),
-                      sticker: sticker,
-                      isSelected: _selectedStickerId == sticker.id,
-                      onTap: () {
-                        setState(() {
-                          _selectedStickerId = sticker.id;
-                        });
-                      },
-                      onDelete: () {
-                        setState(() {
-                          _stickers.removeWhere((s) => s.id == sticker.id);
-                          if (_selectedStickerId == sticker.id) {
-                            _selectedStickerId = null;
-                          }
-                        });
-                      },
-                      onUpdate: (position, scale, rotation) {
-                        setState(() {
-                          sticker.position = position;
-                          sticker.scale = scale;
-                          sticker.rotation = rotation;
-                        });
-                      },
-                    );
-                  }),
-
-                  /// TOP BAR + ACTION BUTTONS (ONE ROW)
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    right: 10,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        StoryTopBar(onClose: () => Navigator.pop(context)),
-                        StoryActionButtons(
-                          isMuted: _isMuted,
-                          onMuteToggle: _toggleMute,
-                          currentSpeed: _videoSpeed,
-                          onSpeedTap: _isVideo ? _changeVideoSpeed : null,
-                          onTextTap: () async {
-                            final emoji = await showModalBottomSheet<String>(
-                              context: context,
-                              backgroundColor: Colors.transparent,
-                              isScrollControlled: true,
-                              builder: (context) => const EmojiPickerSheet(),
-                            );
-                            if (emoji != null) {
-                              setState(() {
-                                final newSticker = StickerData(
-                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                  text: emoji,
-                                  position: const Offset(150, 250),
-                                );
-                                _stickers.add(newSticker);
-                                _selectedStickerId = newSticker.id;
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            /// BOTTOM ACTION SECTION
-            Container(
-              height: 80,
-              decoration: const BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
-                ),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.8),
-                    ),
-                    child: Row(
-                      children: [
-                        /// YOUR STORY
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _isYourStorySharing ? null : _shareToYourStory,
-                            child: Container(
-                              height: 42,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                color: const Color(0xFF72008D),
-                              ),
-                              child: Row(
-                                children: [
-                                  _isYourStorySharing
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : _buildUserAvatar(
-                                          user?.profileImage,
-                                          user?.username ?? '',
-                                        ),
-                                  const SizedBox(
-                                    width: 8,
-                                  ),
-                                  Text(
-                                    _isYourStorySharing ? "Sharing..." : "Your Story",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                              child: const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Color(0xFF9544A7),
+                                size: 15,
                               ),
                             ),
                           ),
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        /// CLOSE FRIEND
-                        Container(
-                          height: 42,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
-                            color: Color(0xFF72008D),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 25,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
-                                child: const Icon(
-                                  Icons.star,
-                                  color: Color(0xFF4CAF50),
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                "Close Friend",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 15),
-
-                        /// SEND
-                        GestureDetector(
-                          onTap: () {
-                            AppLogger.d("\n🚀 SEND BUTTON CLICKED");
-                            AppLogger.d("📤 Opening Story Share Sheet...");
-                            AppLogger.d("📁 MediaPath: ${widget.mediaPath}");
-
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (bottomSheetContext) {
-                                return ChangeNotifierProvider.value(
-                                  value: Provider.of<StoryController>(
-                                    context,
-                                    listen: false,
-                                  ),
-                                  child: StoryShareSheet(
-                                    mediaPath: widget.mediaPath,
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                          child: Container(
-                            width: 35,
-                            height: 35,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Color(0xFF9544A7),
-                              size: 15,
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -219,7 +219,10 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    if (_scrollController.position.pixels <= 80) {
+    // With reverse: true, scrolling UP increases pixels towards maxScrollExtent.
+    // Fetch older messages when we are within 200 pixels of the top (maxScrollExtent).
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       _loadOlderMessages();
     }
   }
@@ -228,24 +231,14 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!_scrollController.hasClients) return;
 
     _isLoadingOlderMessages = true;
-    final beforeMaxExtent = _scrollController.position.maxScrollExtent;
-    final beforePixels = _scrollController.position.pixels;
 
     await _messageController.loadMoreMessages();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) {
+    if (mounted) {
+      setState(() {
         _isLoadingOlderMessages = false;
-        return;
-      }
-
-      final extentDelta =
-          _scrollController.position.maxScrollExtent - beforeMaxExtent;
-      if (extentDelta > 0) {
-        _scrollController.jumpTo(beforePixels + extentDelta);
-      }
-      _isLoadingOlderMessages = false;
-    });
+      });
+    }
   }
 
   @override
@@ -274,7 +267,7 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0.0, // With reverse: true, 0.0 is the bottom
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
       );
@@ -784,7 +777,7 @@ class _ChatScreenState extends State<ChatScreen> {
   /// Never sort [MessageController.messages] in place — it is unmodifiable.
   List<MessageModel> _sortedMessagesCopy() {
     final sorted = List<MessageModel>.from(_messages);
-    sorted.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    sorted.sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Descending order (newest first)
     return sorted;
   }
 
@@ -932,12 +925,13 @@ class _ChatScreenState extends State<ChatScreen> {
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 16),
       physics: const BouncingScrollPhysics(),
+      reverse: true, // Optimizes chat loading and places index 0 at the bottom
       itemCount:
           sortedMessages.length + (_messageController.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (_messageController.isLoadingMore && index == 0) {
+        if (_messageController.isLoadingMore && index == sortedMessages.length) {
           return const Padding(
-            padding: EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.only(top: 12, bottom: 12),
             child: Center(
               child: SizedBox(
                 width: 20,
@@ -951,7 +945,7 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }
 
-        final messageIndex = index - (_messageController.isLoadingMore ? 1 : 0);
+        final messageIndex = index;
         final message = sortedMessages[messageIndex];
         return _buildMessageRow(message, messageIndex);
       },
@@ -980,7 +974,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Column(
       children: [
-        if (index > 0) const SizedBox(height: 10),
+        if (index > 0) const SizedBox(height: 10), // When reverse: true, this adds space above the message (between older and newer)
         bubble,
         if (message.isPinned)
           PinnedMessageBanner(pinnedMessage: message, username: _userName),

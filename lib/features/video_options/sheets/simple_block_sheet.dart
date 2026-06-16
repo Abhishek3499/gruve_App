@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/widgets/app_cached_image.dart';
 
 class SimpleBlockSheet extends StatelessWidget {
   final String? userName;
@@ -52,10 +53,10 @@ class SimpleBlockSheet extends StatelessWidget {
                       profileImage != null &&
                           (profileImage!.startsWith('http://') ||
                               profileImage!.startsWith('https://'))
-                      ? Image.network(
-                          profileImage!,
+                      ? AppCachedImage(
+                          imageUrl: profileImage!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Image.asset(
+                          errorWidget: Image.asset(
                             AppAssets.appleIcon,
                             fit: BoxFit.cover,
                           ),

@@ -3,6 +3,7 @@ import 'package:gruve_app/features/profile/data/api_calls/controller/profile_con
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/widgets/app_cached_image.dart';
 
 /// Reusable highlights list for user profile
 /// Similar to StoryList but without "Add Story" button
@@ -72,13 +73,12 @@ class UserHighlightsList extends StatelessWidget {
             _HighlightCircle(
               child: ClipOval(
                 child: cover != null
-                    ? Image.network(
-                        cover,
+                    ? AppCachedImage(
+                        imageUrl: cover,
                         fit: BoxFit.cover,
                         width: 60,
                         height: 60,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _placeholderIcon(),
+                        errorWidget: _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),

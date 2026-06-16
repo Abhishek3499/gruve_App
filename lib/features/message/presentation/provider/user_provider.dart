@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../../domain/repository/user_repository.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../data/repository/user_repository_impl.dart';
+import '../../data/models/user_model.dart';
+import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -61,7 +63,27 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> _runFetchUsers({bool loadMore = false}) async {
-    // Check cache validity for initial load
+    // 🚀 Cache-then-Network: Load from Hive offline storage first if we don't have users in memory
+    if (!loadMore && _users.isEmpty) {
+      final cachedData = HiveService().getCachedData(
+        HiveService.userCacheBoxName,
+        'users_list',
+      );
+      if (cachedData is List) {
+        AppLogger.d('📦 [UserProvider] Cache HIT. Restoring users from Hive Cache first.');
+        try {
+          _users = cachedData
+              .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)).toEntity())
+              .toList();
+          _hasInitialized = true;
+          notifyListeners();
+        } catch (e) {
+          AppLogger.d('🚨 [UserProvider] Error parsing Hive cached users: $e');
+        }
+      }
+    }
+
+    // Check memory cache validity for initial load
     if (!loadMore &&
         _lastFetchTime != null &&
         DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration &&
@@ -110,6 +132,21 @@ class UserProvider extends ChangeNotifier {
       AppLogger.d(
         '📩 [UserProvider] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}',
       );
+
+      // Save initial page list to Hive cache
+      if (!loadMore) {
+        final usersJson = response.users.map((e) => {
+          'user_id': e.userId,
+          'username': e.username,
+          'full_name': e.fullName,
+          'profile_picture': e.profilePicture,
+        }).toList();
+        await HiveService().cacheData(
+          HiveService.userCacheBoxName,
+          'users_list',
+          usersJson,
+        );
+      }
 
       if (response.users.isEmpty) {
         AppLogger.d('⚠️ [UserProvider] API returned EMPTY user list');

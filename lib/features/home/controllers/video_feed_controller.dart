@@ -5,6 +5,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_mode
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: TikTok-style video controller management
@@ -41,8 +42,8 @@ class VideoFeedController {
   final ValueNotifier<int> _feedRevision = ValueNotifier(0);
 
   // 🚀 NEW: Memory optimization constants
-  static const int maxCachedControllers = 3; // Current + next + previous
-  static const int preloadDistance = 1; // Preload next video only
+  static const int maxCachedControllers = 5; // Increased from 3 for smoother scrolling
+  static const int preloadDistance = 2; // Increased from 1 - preload 2 videos ahead
 
   bool _isInitialLoading = false;
   bool _isRefreshing = false;
@@ -246,6 +247,33 @@ class VideoFeedController {
     _loadError = null;
     _notifyFeedChanged();
 
+    // 🚀 Cache-then-Network: Load from Hive offline storage first if we don't have posts in memory
+    if (!refresh && _posts.isEmpty) {
+      final cachedData = HiveService().getCachedData(
+        HiveService.feedCacheBoxName,
+        'feed_posts',
+      );
+      if (cachedData is List) {
+        AppLogger.d('📦 [VideoFeedController] Cache HIT. Loading cached posts first.');
+        try {
+          _posts = cachedData
+              .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+          _mediaUrls = _posts.map((e) => e.media).toList();
+          _currentIndex.value = 0;
+          _isPlaying.value = false;
+          _notifyFeedChanged();
+          
+          // Preload first cached video
+          unawaited(
+            _ensureControllersAroundIndex(0, requestId),
+          );
+        } catch (e) {
+          AppLogger.d('🚨 [VideoFeedController] Error parsing cached posts: $e');
+        }
+      }
+    }
+
     try {
       if (refresh) {
         AppLogger.d('🔄 feed refresh — fetching latest posts');
@@ -314,6 +342,14 @@ class VideoFeedController {
           _posts = uniquePosts;
           _mediaUrls = _posts.map((e) => e.media).toList();
           AppLogger.d('✅ [VideoFeed] Initial load: ${uniquePosts.length} posts');
+
+          // Save newly fetched posts to Hive cache
+          final postsJson = uniquePosts.map((e) => e.toJson()).toList();
+          unawaited(HiveService().cacheData(
+            HiveService.feedCacheBoxName,
+            'feed_posts',
+            postsJson,
+          ));
         }
         _nextCursor = response.nextCursor;
         _hasMore = canLoadMore;
@@ -613,11 +649,11 @@ class VideoFeedController {
         );
 
         await controller.initialize().timeout(
-          const Duration(seconds: 10),
+          const Duration(seconds: 30), // Increased from 10s for slow networks
           onTimeout: () {
             throw TimeoutException(
               'Video initialization timeout',
-              const Duration(seconds: 10),
+              const Duration(seconds: 30),
             );
           },
         );

@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:gruve_app/core/app_navigator.dart';
 import '../api/create_post_api/post_service.dart';
 import '../api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -74,6 +75,15 @@ class SavePostProvider extends ChangeNotifier {
         } catch (e) {
           AppLogger.d('❌ [SavePostProvider] ERROR: $e');
           _savedPosts[postId] = stableState;
+
+          // 🚨 Show SnackBar on failed optimistic update using global ScaffoldMessenger state
+          scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('Something went wrong'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         } finally {
           _loadingPosts.remove(postId);
           notifyListeners();

@@ -585,7 +585,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: Color(0xFFBB86FC),
                                     ),
                                   )
                                 : const Text(

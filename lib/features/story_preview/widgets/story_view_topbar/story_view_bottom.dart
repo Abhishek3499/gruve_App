@@ -8,6 +8,8 @@ import 'package:gruve_app/features/story_preview/api/story_api/controller/story_
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/features/story_preview/screens/more_screen.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/highlight_sheet.dart';
+import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
+import 'package:gruve_app/features/story_preview/screens/story_settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -275,10 +277,32 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
           if (widget.isOwnProfile) const SizedBox(width: 30),
           GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MoreScreen()),
-              );
+              final playbackController = StoryPlaybackController();
+              playbackController.pauseStory(reason: 'More Options Open');
+
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                barrierColor: Colors.black54,
+                builder: (_) => const MoreScreen(),
+              ).then((result) async {
+                if (!context.mounted) return;
+                if (result == 'settings') {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const StorySettingsScreen(),
+                    ),
+                  );
+                  playbackController.resumeStory(reason: 'Settings Screen Closed');
+                } else if (result == 'highlight') {
+                  if (!context.mounted) return;
+                  showInstagramHighlightSheet(context);
+                } else {
+                  playbackController.resumeStory(reason: 'More Options Closed');
+                }
+              });
             },
             child: const Column(
               mainAxisSize: MainAxisSize.min,

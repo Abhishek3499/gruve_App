@@ -17,6 +17,7 @@ import 'package:gruve_app/features/story_preview/providers/save_post_provider.da
 import 'package:gruve_app/features/auth/logout/logout_provider.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gruve_app/core/storage/hive_service.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
@@ -35,6 +36,13 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive local cache storage
+  try {
+    await HiveService().init();
+  } catch (e) {
+    AppLogger.d('🚨 [Main] HiveService initialization failed: $e');
+  }
 
   // AppLogger suppresses all output in release/profile builds.
   // This override silences any remaining Flutter framework debugPrint calls.
@@ -152,6 +160,7 @@ class MyApp extends StatelessWidget {
         title: 'Gruve',
         debugShowCheckedModeBanner: false,
         navigatorKey: rootNavigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
 
         theme: ThemeData(
           scaffoldBackgroundColor: Colors.black,

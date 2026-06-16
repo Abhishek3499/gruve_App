@@ -38,7 +38,7 @@ class PostService {
     String path, {
     required Options options,
     Map<String, dynamic>? queryParameters,
-    int maxAttempts = 3,
+    int maxAttempts = 5, // Increased from 3 for better reliability
   }) async {
     DioException? lastError;
 
@@ -63,7 +63,8 @@ class PostService {
           rethrow;
         }
 
-        await Future<void>.delayed(Duration(milliseconds: 500 * attempt));
+        // Exponential backoff: 1s, 2s, 3s, 4s, 5s (was 500ms, 1s, 1.5s)
+        await Future<void>.delayed(Duration(milliseconds: 1000 * attempt));
       }
     }
 
@@ -412,7 +413,7 @@ class PostService {
 
   Future<PaginatedPostsResponse> getPaginatedPosts({
     CursorModel? cursor,
-    int limit = 10,
+    int limit = 20, // Increased from 10 to reduce API calls
     bool refresh = false,
   }) async {
     final isInitialLoad = cursor == null || !cursor.isValid;
@@ -452,7 +453,7 @@ class PostService {
       AppLogger.d('📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit');
 
       final token = await TokenStorage.getAccessToken();
-      final queryParams = <String, dynamic>{'limit': limit.clamp(1, 10)};
+      final queryParams = <String, dynamic>{'limit': limit.clamp(1, 20)}; // Increased from 10 to 20
 
       if (cursor?.isValid == true) {
         queryParams.addAll(cursor!.toJson());

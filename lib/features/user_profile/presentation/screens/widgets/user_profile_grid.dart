@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';
+import 'package:gruve_app/core/widgets/app_cached_image.dart';
 
 class UserProfileGrid extends StatelessWidget {
   final UserProfileController controller;
@@ -173,19 +174,17 @@ class UserProfileGrid extends StatelessWidget {
                       ),
                     ),
                   )
-                : Image.network(
-                    post.media,
+                : AppCachedImage(
+                    imageUrl: post.media,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey,
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      );
-                    },
+                    errorWidget: Container(
+                      color: Colors.grey,
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
                   ),
           ),
         );

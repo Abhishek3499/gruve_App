@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
@@ -114,6 +115,10 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
             onLike: () {
               final postId = post.id;
               if (postId.isNotEmpty) {
+                // Save previous state for rollback on error
+                final bool wasLiked = post.isLiked;
+                final int previousCount = post.likesCount;
+
                 setState(() {
                   post.isLiked = !post.isLiked;
                   if (post.isLiked) {
@@ -122,10 +127,41 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
                     post.likesCount--;
                   }
                 });
+
                 PostService().likePost(postId).then((success) async {
                   if (success) {
                     await ProfileCountRefreshBridge.notifyCountsChanged(
                       reason: 'post_like_toggled',
+                    );
+                  } else {
+                    // Revert state on failure
+                    if (mounted) {
+                      setState(() {
+                        post.isLiked = wasLiked;
+                        post.likesCount = previousCount;
+                      });
+                      scaffoldMessengerKey.currentState?.showSnackBar(
+                        const SnackBar(
+                          content: Text('Something went wrong'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                }).catchError((error) {
+                  // Revert state on exception
+                  if (mounted) {
+                    setState(() {
+                      post.isLiked = wasLiked;
+                      post.likesCount = previousCount;
+                    });
+                    scaffoldMessengerKey.currentState?.showSnackBar(
+                      const SnackBar(
+                        content: Text('Something went wrong'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
                     );
                   }
                 });

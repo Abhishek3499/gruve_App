@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/widgets/app_cached_image.dart';
 
 class StoryViewerTopBar extends StatelessWidget {
   final String username;
@@ -40,7 +41,9 @@ class StoryViewerTopBar extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundImage: NetworkImage(avatarUrl),
+                  backgroundImage: avatarUrl.trim().isNotEmpty && avatarUrl.startsWith('http')
+                      ? AppCachedImageProvider(avatarUrl)
+                      : const AssetImage('assets/profile.png') as ImageProvider,
                 ),
 
                 const SizedBox(width: 8),

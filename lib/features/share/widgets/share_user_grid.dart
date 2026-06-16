@@ -7,7 +7,14 @@ import 'package:gruve_app/features/search/widgets/search_bar.dart';
 import 'share_user_item.dart';
 
 class ShareUserGrid extends StatefulWidget {
-  const ShareUserGrid({super.key});
+  final Set<SearchUser> selectedUsers;
+  final ValueChanged<SearchUser> onUserToggle;
+
+  const ShareUserGrid({
+    super.key,
+    required this.selectedUsers,
+    required this.onUserToggle,
+  });
 
   @override
   State<ShareUserGrid> createState() => _ShareUserGridState();
@@ -93,14 +100,11 @@ class _ShareUserGridState extends State<ShareUserGrid> {
   }
 
   void _onUserTap(SearchUser user) {
-    // Handle user selection for sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Shared with ${user.username}'),
-        backgroundColor: const Color(0xFF7A1FA2),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    widget.onUserToggle(user);
+  }
+
+  bool _isUserSelected(SearchUser user) {
+    return widget.selectedUsers.any((u) => u.id == user.id);
   }
 
   @override
@@ -180,7 +184,11 @@ class _ShareUserGridState extends State<ShareUserGrid> {
         itemCount: _users.length,
         itemBuilder: (context, index) {
           final user = _users[index];
-          return ShareUserItem(user: user, onTap: () => _onUserTap(user));
+          return ShareUserItem(
+            user: user,
+            isSelected: _isUserSelected(user),
+            onTap: () => _onUserTap(user),
+          );
         },
       );
     }
@@ -254,7 +262,11 @@ class _ShareUserGridState extends State<ShareUserGrid> {
               : '',
         );
 
-        return ShareUserItem(user: searchUser, onTap: () => _onUserTap(searchUser));
+        return ShareUserItem(
+          user: searchUser,
+          isSelected: _isUserSelected(searchUser),
+          onTap: () => _onUserTap(searchUser),
+        );
       },
     );
   }

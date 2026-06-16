@@ -291,13 +291,14 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
 
     final mediaSize = MediaQuery.sizeOf(context);
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-    final cacheWidth = (mediaSize.width * devicePixelRatio)
+    // Reduced memory usage: 0.8x multiplier and lower max resolution
+    final cacheWidth = (mediaSize.width * devicePixelRatio * 0.8)
         .round()
-        .clamp(320, 1440)
+        .clamp(320, 1080) // Reduced from 1440 to 1080
         .toInt();
-    final cacheHeight = (mediaSize.height * devicePixelRatio)
+    final cacheHeight = (mediaSize.height * devicePixelRatio * 0.8)
         .round()
-        .clamp(640, 2560)
+        .clamp(640, 1920) // Reduced from 2560 to 1920
         .toInt();
 
     return RepaintBoundary(

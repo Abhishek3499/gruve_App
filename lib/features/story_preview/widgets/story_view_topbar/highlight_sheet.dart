@@ -11,6 +11,7 @@ import 'package:gruve_app/features/story_preview/controllers/story_playback_cont
 import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story_selector_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/widgets/app_cached_image.dart';
 
 void _log(String message) {
   AppLogger.d(message);
@@ -270,7 +271,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                     strokeWidth: 2.4,
                   ),
                 ),
-              ),
+               ),
             ),
           ),
       ],
@@ -388,8 +389,8 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                     width: 130,
                     color: Colors.grey[300],
                     child: highlight.coverMediaUrl.isNotEmpty
-                        ? Image.network(
-                            highlight.coverMediaUrl,
+                        ? AppCachedImage(
+                            imageUrl: highlight.coverMediaUrl,
                             fit: BoxFit.cover,
                           )
                         : const Icon(Icons.collections),

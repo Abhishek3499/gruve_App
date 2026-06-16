@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
@@ -9,6 +10,7 @@ import 'package:gruve_app/core/network/request_deduplication_manager.dart';
 import 'package:gruve_app/core/cache/cache_interceptor.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/monitoring/network_monitor.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class AppDio {
   static CancelToken? _logoutCancelToken;
@@ -53,9 +55,9 @@ class AppDio {
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 60),
-        sendTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 45), // Increased for slow networks
+        receiveTimeout: const Duration(minutes: 3), // Increased for large videos
+        sendTimeout: const Duration(minutes: 2), // Keep send timeout for large uploads
       ),
     );
 
@@ -96,6 +98,22 @@ class AppDio {
               statusCode: response.statusCode ?? 0,
             );
           }
+
+          // 📊 Log response size in debug mode to track GZIP decompression/payloads
+          if (kDebugMode) {
+            final contentLength = response.headers.value(Headers.contentLengthHeader) ??
+                                  response.headers.value('content-length');
+            int sizeInBytes = 0;
+            if (contentLength != null) {
+              sizeInBytes = int.tryParse(contentLength) ?? 0;
+            } else if (response.data != null) {
+              try {
+                sizeInBytes = response.data.toString().length;
+              } catch (_) {}
+            }
+            AppLogger.d('📊 [Response Size] ${response.requestOptions.method} ${response.requestOptions.path} | Size: ${(sizeInBytes / 1024).toStringAsFixed(2)} KB ($sizeInBytes bytes)');
+          }
+
           handler.next(response);
         },
         onError: (error, handler) {
@@ -116,6 +134,9 @@ class AppDio {
       ),
     );
 
+    // Retry interceptor to handle failed requests up to 2 times
+    dio.interceptors.add(RetryInterceptor(dio: dio));
+
     // Refresh runs after auth attaches the current token.
     dio.interceptors.add(RefreshTokenInterceptor(dio));
 
@@ -127,5 +148,49 @@ class AppDio {
     dio.interceptors.add(RequestDeduplicationInterceptor());
 
     return dio;
+  }
+}
+
+/// 🚀 Dio Interceptor that retries failed requests up to 2 times with a 1s delay
+class RetryInterceptor extends Interceptor {
+  final Dio dio;
+  RetryInterceptor({required this.dio});
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final requestOptions = err.requestOptions;
+    
+    // Prevent infinite retry loops by checking current retry count
+    final attempts = requestOptions.extra['retry_attempts'] as int? ?? 0;
+
+    // Retry only on timeouts or connection/network errors, or specific transient server errors
+    final isTransient = err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.connectionError ||
+        (err.response?.statusCode != null &&
+            {408, 429, 502, 503, 504}.contains(err.response!.statusCode));
+
+    if (isTransient && attempts < 2) {
+      requestOptions.extra['retry_attempts'] = attempts + 1;
+      
+      AppLogger.d('🔄 [RetryInterceptor] Failed with ${err.type} (Status: ${err.response?.statusCode}). Retrying ${requestOptions.method} ${requestOptions.path} (Attempt ${attempts + 1}/2) in 1s...');
+      
+      // Delay 1 second before retry
+      await Future<void>.delayed(const Duration(seconds: 1));
+      
+      try {
+        final response = await dio.fetch(requestOptions);
+        return handler.resolve(response);
+      } catch (e) {
+        if (e is DioException) {
+          // Pass the new DioException down the chain
+          return super.onError(e, handler);
+        }
+        return super.onError(DioException(requestOptions: requestOptions, error: e), handler);
+      }
+    }
+
+    return super.onError(err, handler);
   }
 }
