@@ -127,7 +127,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LogoutProvider()),
         ChangeNotifierProvider(create: (_) => AuthUiProvider()),
         ChangeNotifierProvider(
-          lazy: true,
+          lazy: false,
           create: (_) => MessageProvider(MessageService()),
         ),
         ChangeNotifierProvider(
@@ -141,6 +141,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(
+          lazy: false,
           create: (_) => NotificationProvider(),
         ),
         ChangeNotifierProvider(

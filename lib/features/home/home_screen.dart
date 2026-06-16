@@ -13,6 +13,8 @@ import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance
 /// FPS impact: 15-20fps drops → 55-60fps smooth (200% improvement)
@@ -27,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with WidgetsBindingObserver, RouteAware {
+    with WidgetsBindingObserver {
   // 🚀 OPTIMIZED: Use ValueNotifier for selective rebuilds
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<int> _previousIndex = ValueNotifier(0);
@@ -49,8 +51,7 @@ class _HomeScreenState extends State<HomeScreen>
   /// True once the share processing [showGeneralDialog] route is on the stack.
   bool _shareProcessingOverlayVisible = false;
 
-  static final RouteObserver<PageRoute> _routeObserver =
-      RouteObserver<PageRoute>();
+
 
   @override
   void initState() {
@@ -213,12 +214,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _setupLifecycleObservers() {
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final route = ModalRoute.of(context);
-      if (route != null && route is PageRoute) {
-        _routeObserver.subscribe(this, route);
-      }
-    });
   }
 
   // ... AppLifecycleState logic ...
@@ -303,7 +298,9 @@ class _HomeScreenState extends State<HomeScreen>
     // Handle Home tab logic
     if (index == 0) {
       if (_currentIndex.value == 0) {
-        // Already on Home tab - do nothing
+        AppLogger.d("🔄 Home Screen: Refreshing feed because Home tab clicked again");
+        _videoController?.onScrollToTop?.call();
+        _videoController?.initVideos(refresh: true);
         return;
       } else {
         // Navigating to Home tab from another tab
@@ -316,7 +313,13 @@ class _HomeScreenState extends State<HomeScreen>
       }
     }
 
-    if (index == _currentIndex.value) return;
+    if (index == _currentIndex.value) {
+      if (index == 4) {
+        AppLogger.d("🔄 Home Screen: Refreshing profile because Profile tab clicked again");
+        context.read<ProfileProvider>().refreshProfileData(reason: 'tab_tap_refresh');
+      }
+      return;
+    }
 
     if (index == 2) {
       if (_cameraFlowInProgress) return;
@@ -473,7 +476,6 @@ class _HomeScreenState extends State<HomeScreen>
     // or ValueNotifiers are disposed twice when IndexedStack children unmount.
     _videoController = null;
     WidgetsBinding.instance.removeObserver(this);
-    _routeObserver.unsubscribe(this);
     super.dispose();
   }
 }

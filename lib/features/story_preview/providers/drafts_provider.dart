@@ -124,4 +124,11 @@ class DraftsProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  void reset() {
+    _drafts = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

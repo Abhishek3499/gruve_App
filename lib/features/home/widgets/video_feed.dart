@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:gruve_app/main.dart';
 
 import '../../story_preview/api/create_post_api/model/post_model.dart';
 import '../controllers/video_feed_controller.dart';
@@ -28,12 +29,15 @@ class VideoFeed extends StatefulWidget {
   State<VideoFeed> createState() => _VideoFeedState();
 }
 
-class _VideoFeedState extends State<VideoFeed> {
+class _VideoFeedState extends State<VideoFeed> with RouteAware {
   late VideoFeedController _controller;
   late PageController _pageController;
 
   String selectedContentTab = 'For You';
   int _lastPaginationTriggerItemCount = 0;
+  int _overlayTriggerCounter = 0;
+  bool _overlayIsPlayingIcon = false;
+  bool _isPausedByUser = false;
 
   @override
   void initState() {
@@ -57,18 +61,39 @@ class _VideoFeedState extends State<VideoFeed> {
         if (savePostProvider.savedPosts.isEmpty || savePostProvider.isSavedPostsStale) {
           savePostProvider.fetchSavedPosts();
         }
+        final route = ModalRoute.of(context);
+        if (route is PageRoute) {
+          routeObserver.subscribe(this, route);
+        }
       }
     });
   }
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _controller.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
+  @override
+  void didPushNext() {
+    AppLogger.d('🚦 [VideoFeed] User navigated away - pausing video');
+    _controller.pauseCurrentVideo();
+  }
+
+  @override
+  void didPopNext() {
+    AppLogger.d('🚦 [VideoFeed] User returned - resuming video');
+    _controller.playVideo(_controller.currentIndex.value);
+  }
+
   void _onPageChanged(int page) {
+    setState(() {
+      _isPausedByUser = false;
+      _overlayTriggerCounter = 0;
+    });
     _controller.playVideo(page);
     HapticFeedback.selectionClick();
 
@@ -89,6 +114,13 @@ class _VideoFeedState extends State<VideoFeed> {
 
   void _onVideoTap() {
     _controller.togglePlayPause();
+    final videoController = _controller.controllerForMediaIndex(_controller.currentIndex.value);
+    final isPlaying = videoController?.value.isPlaying ?? false;
+    setState(() {
+      _isPausedByUser = !isPlaying;
+      _overlayIsPlayingIcon = isPlaying;
+      _overlayTriggerCounter++;
+    });
   }
 
   void _onTabChanged(String tab) {
@@ -106,6 +138,8 @@ class _VideoFeedState extends State<VideoFeed> {
     }
 
     _lastPaginationTriggerItemCount = 0;
+    _isPausedByUser = false;
+    _overlayTriggerCounter = 0;
     await _controller.initVideos(refresh: true);
 
     if (!mounted || !_pageController.hasClients) return;
@@ -154,12 +188,47 @@ class _VideoFeedState extends State<VideoFeed> {
               valueListenable: _controller.currentIndex,
               builder: (context, currentIdx, _) {
                 if (currentIdx != index) return const SizedBox.shrink();
-                return OptimizedVideoOverlay(
-                  selectedTab: selectedContentTab,
-                  onTabChanged: _onTabChanged,
-                  controller: _controller,
-                  onOwnProfileTap: () => widget.onTabChanged(4),
-                  currentIndex: currentIdx,
+                return Stack(
+                  children: [
+                    OptimizedVideoOverlay(
+                      selectedTab: selectedContentTab,
+                      onTabChanged: _onTabChanged,
+                      controller: _controller,
+                      onOwnProfileTap: () => widget.onTabChanged(4),
+                      currentIndex: currentIdx,
+                    ),
+                    if (effectiveVideo && _overlayTriggerCounter > 0)
+                      PlayPauseAnimationOverlay(
+                        key: ValueKey(_overlayTriggerCounter),
+                        isPlaying: _overlayIsPlayingIcon,
+                      ),
+                    if (_isPausedByUser && effectiveVideo && videoController != null)
+                      ValueListenableBuilder<VideoPlayerValue>(
+                        valueListenable: videoController,
+                        builder: (context, value, child) {
+                          if (!value.isInitialized || value.isPlaying) {
+                            return const SizedBox.shrink();
+                          }
+                          return IgnorePointer(
+                            child: Center(
+                              child: Container(
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.pause_rounded,
+                                  color: Colors.white,
+                                  size: 45,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
                 );
               },
             ),
@@ -384,6 +453,101 @@ class _VideoFeedState extends State<VideoFeed> {
           ],
         );
       },
+    );
+  }
+}
+
+class PlayPauseAnimationOverlay extends StatefulWidget {
+  final bool isPlaying;
+
+  const PlayPauseAnimationOverlay({super.key, required this.isPlaying});
+
+  @override
+  State<PlayPauseAnimationOverlay> createState() => _PlayPauseAnimationOverlayState();
+}
+
+class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.5, end: 1.2).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.2, end: 1.0).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.8).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_animController);
+
+    _opacityAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 0.9).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.9, end: 0.9),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.9, end: 0.0).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 40,
+      ),
+    ]).animate(_animController);
+
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _animController,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _opacityAnimation.value,
+              child: Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    widget.isPlaying ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    color: Colors.white,
+                    size: 45,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 
 class UserProfileScreen2 extends StatelessWidget {
   final String userId;
@@ -32,7 +33,7 @@ class UserProfileScreen2 extends StatelessWidget {
             children: [
               _buildAppBar(context),
               _buildProfileHeader(),
-              _buildActionButtons(),
+              _buildActionButtons(context),
               const SizedBox(height: 10),
               _buildGalleryGrid(),
             ],
@@ -98,13 +99,28 @@ class UserProfileScreen2 extends StatelessWidget {
   }
 
   /// 🔘 Action Buttons (Profile & Mute)
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 25),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _iconButton(Icons.person_outline, "Profile"),
+          _iconButton(
+            Icons.person_outline,
+            "Profile",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfileScreen(
+                    profileUserId: userId,
+                    userName: userName,
+                    profileImageUrl: profileImageUrl,
+                  ),
+                ),
+              );
+            },
+          ),
           const SizedBox(width: 100),
           _iconButton(Icons.notifications_off_outlined, "Mute"),
         ],
@@ -112,20 +128,24 @@ class UserProfileScreen2 extends StatelessWidget {
     );
   }
 
-  Widget _iconButton(IconData icon, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 26),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+  Widget _iconButton(IconData icon, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 26),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

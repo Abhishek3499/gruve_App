@@ -108,11 +108,25 @@ class _MessageScreenState extends State<MessageScreen> {
     return confirmed ?? false;
   }
 
-  Future<bool> _deleteConversation(ConversationModel conversation) {
+  Future<bool> _deleteConversation(
+    ConversationModel conversation,
+    MessageProvider messageProvider,
+  ) async {
     AppLogger.d(
       '🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}',
     );
-    return context.read<MessageProvider>().deleteConversation(conversation.id);
+    final success = await messageProvider.deleteConversation(conversation.id);
+    
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete conversation'),
+          backgroundColor: Color(0xFFF51829),
+        ),
+      );
+    }
+    
+    return success;
   }
 
   @override
@@ -120,46 +134,60 @@ class _MessageScreenState extends State<MessageScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1C0B21),
       resizeToAvoidBottomInset: true,
-      body: RefreshIndicator(
-        onRefresh: _handleRefresh,
-        color: Colors.white,
-        backgroundColor: const Color(0xFF42174C),
-        child: Consumer<MessageProvider>(
-          builder: (context, messageProvider, child) {
-            return Column(
-              children: [
-                /// 🔥 HEADER + LIST OVERLAP AREA
-                Expanded(
-                  child: Stack(
-                    children: [
-                      /// HEADER
-                      MessageHeader(),
+      body: Consumer<MessageProvider>(
+        builder: (context, messageProvider, child) {
+          return Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: _handleRefresh,
+                color: Colors.white,
+                backgroundColor: const Color(0xFF42174C),
+                child: Column(
+                  children: [
+                    /// 🔥 HEADER + LIST OVERLAP AREA
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          /// HEADER
+                          MessageHeader(),
 
-                      /// MESSAGE LIST
-                      Positioned(
-                        top: 240,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1C0B21),
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(40),
+                          /// MESSAGE LIST
+                          Positioned(
+                            top: 240,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF1C0B21),
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(40),
+                                ),
+                              ),
+                              child: _buildConversationList(messageProvider),
                             ),
                           ),
-                          child: _buildConversationList(messageProvider),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
+
+                    /// 🔥 FOOTER (original wala hi)
+                  ],
+                ),
+              ),
+              // Loading overlay during deletion
+              if (messageProvider.isDeletingConversation)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF72008D),
+                    ),
                   ),
                 ),
-
-                /// 🔥 FOOTER (original wala hi)
-              ],
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -284,7 +312,7 @@ class _MessageScreenState extends State<MessageScreen> {
                 if (direction == DismissDirection.endToStart) {
                   final confirmed = await _showDeleteConfirmation(conversation);
                   if (!confirmed || !mounted) return false;
-                  return _deleteConversation(conversation);
+                  return _deleteConversation(conversation, messageProvider);
                 }
                 return false;
               },

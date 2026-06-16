@@ -52,29 +52,9 @@ class MessageProvider extends ChangeNotifier {
           _seenRealtimeEventKeys.remove(_seenRealtimeEventKeys.first);
         }
 
-        final index = _conversations.indexWhere((c) => c.id == conversationId);
-
-        if (index != -1) {
-          final oldConversation = _conversations[index];
-
-          final updatedConversation = oldConversation.copyWith(
-            updatedAt: DateTime.now(),
-          );
-
-          // Remove old position
-          _conversations.removeAt(index);
-
-          // Add updated conversation at top
-          _conversations.insert(0, updatedConversation);
-
-          AppLogger.d('✅ Realtime conversation updated');
-        } else {
-          AppLogger.d('⚠️ Conversation not found locally');
-        }
-
-        notifyListeners();
-
-        AppLogger.d('🔄 UI UPDATED REALTIME');
+        AppLogger.d('🔄 [MessageProvider] Realtime message received - triggering auto-refresh');
+        // Silently refresh conversations in background to update UI in real-time
+        fetchConversations(refresh: true);
       } catch (e) {
         AppLogger.d('💥 SOCKET LISTENER ERROR: $e');
       }
@@ -111,6 +91,7 @@ class MessageProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _isRefreshing = false;
+  bool _isDeletingConversation = false;
   String? _error;
   DateTime? _lastFetchTime;
   CancelToken? _cancelToken;
@@ -139,6 +120,7 @@ class MessageProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isRefreshing => _isRefreshing;
+  bool get isDeletingConversation => _isDeletingConversation;
   String? get error => _error;
   bool get hasError => _error != null;
   bool get hasMoreData => _hasMoreData;
@@ -461,17 +443,22 @@ class MessageProvider extends ChangeNotifier {
   /// [conversationId] - The ID of the conversation to delete
   /// Returns true if successful
   Future<bool> deleteConversation(String conversationId) async {
+    _isDeletingConversation = true;
+    notifyListeners();
+
     try {
       AppLogger.d(
         '🗑️ [MessageProvider] Deleting conversation: $conversationId',
       );
 
-      final success = await _messageService.deleteConversation(conversationId);
+      final success = await _messageService.deleteConversation(
+        conversationId,
+        cancelToken: _getCancelToken(),
+      );
 
       if (success) {
         // Remove from local state
         _conversations.removeWhere((c) => c.id == conversationId);
-        notifyListeners();
         AppLogger.d(
           '✅ [MessageProvider] Successfully deleted conversation locally',
         );
@@ -480,7 +467,11 @@ class MessageProvider extends ChangeNotifier {
       return success;
     } catch (e) {
       AppLogger.d('💥 [MessageProvider] Error deleting conversation: $e');
+      _setError('Failed to delete conversation');
       return false;
+    } finally {
+      _isDeletingConversation = false;
+      notifyListeners();
     }
   }
 
@@ -595,6 +586,7 @@ class MessageProvider extends ChangeNotifier {
     _isLoading = false;
     _isLoadingMore = false;
     _isRefreshing = false;
+    _isDeletingConversation = false;
     _currentPage = 1;
     _hasMoreData = true;
     _lastFetchTime = null;

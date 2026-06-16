@@ -1,21 +1,28 @@
 import 'package:dio/dio.dart';
-import 'package:gruve_app/core/network/api_exception.dart';
 
-class AuthApiException extends ApiException {
-  const AuthApiException(super.message, {super.statusCode, super.type});
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  final String? type;
 
-  factory AuthApiException.fromDio(
+  const ApiException(
+    this.message, {
+    this.statusCode,
+    this.type,
+  });
+
+  factory ApiException.fromDio(
     DioException error, {
     String fallback = 'Something went wrong. Please try again.',
   }) {
-    return AuthApiException(
-      extractMessage(error, fallback: fallback),
+    return ApiException(
+      _extractMessage(error, fallback: fallback),
       statusCode: error.response?.statusCode,
       type: error.type.name,
     );
   }
 
-  static String extractMessage(
+  static String _extractMessage(
     DioException error, {
     String fallback = 'Something went wrong. Please try again.',
   }) {
@@ -27,19 +34,19 @@ class AuthApiException extends ApiException {
         final value = map[key];
         final text = _coerceMessage(value);
         if (text.isNotEmpty) {
-          return userFacingMessage(text, fallback: fallback);
+          return _userFacingMessage(text, fallback: fallback);
         }
       }
 
       final errors = map['errors'];
       final text = _coerceMessage(errors);
       if (text.isNotEmpty) {
-        return userFacingMessage(text, fallback: fallback);
+        return _userFacingMessage(text, fallback: fallback);
       }
     }
 
     if (data is String && data.trim().isNotEmpty) {
-      return userFacingMessage(data, fallback: fallback);
+      return _userFacingMessage(data, fallback: fallback);
     }
 
     switch (error.type) {
@@ -54,13 +61,13 @@ class AuthApiException extends ApiException {
     }
   }
 
-  static String userFacingMessage(
+  static String _userFacingMessage(
     Object? error, {
     String fallback = 'Something went wrong. Please try again.',
   }) {
     if (error == null) return fallback;
 
-    final raw = error is AuthApiException ? error.message : error.toString();
+    final raw = error is ApiException ? error.message : error.toString();
     var message = raw.trim();
     if (message.isEmpty) return fallback;
 
@@ -70,8 +77,7 @@ class AuthApiException extends ApiException {
     }
 
     final lower = message.toLowerCase();
-    final isTechnical =
-        lower == 'null' ||
+    final isTechnical = lower == 'null' ||
         lower.contains('request failed') ||
         lower.contains('dioexception') ||
         lower.contains('http status') ||
@@ -99,4 +105,6 @@ class AuthApiException extends ApiException {
     return '';
   }
 
+  @override
+  String toString() => message;
 }

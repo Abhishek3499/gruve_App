@@ -54,13 +54,13 @@ class AppColors {
   static const Color loaderLight = Colors.white;
 
   /// Shimmer base color for dark themes
-  static const Color shimmerBase = Color(0xFF6F5A80);
+  static const Color shimmerBase = Color(0xFF2C1D33);
 
   /// Shimmer highlight color for dark themes
-  static const Color shimmerHighlight = Color(0xFFE2D3EA);
+  static const Color shimmerHighlight = Color(0xFF44304D);
 
   /// Profile skeleton placeholders
-  static const Color skeletonPlaceholder = Color(0xFFFFFFFF);
+  static const Color skeletonPlaceholder = Color(0xFF2D1F35);
 
   /// Button loading color
   static const Color buttonLoader = Colors.white;

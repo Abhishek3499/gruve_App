@@ -1,11 +1,37 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:gruve_app/features/notification/api/models/notification_model.dart';
 import 'package:gruve_app/features/notification/api/services/notification_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
+  final SocketService _socketService = SocketService();
+  StreamSubscription? _socketSubscription;
+
+  NotificationProvider() {
+    _initializeSocketListener();
+  }
+
+  void _initializeSocketListener() {
+    _socketSubscription = _socketService.messageStream.listen((data) {
+      try {
+        final type = data['type']?.toString().toLowerCase() ?? '';
+        if (type.contains('notification') ||
+            type.contains('alert') ||
+            type.contains('like') ||
+            type.contains('comment') ||
+            type.contains('follow')) {
+          AppLogger.d('🔔 [NotificationProvider] Socket notification received. Refreshing list...');
+          fetchInitialNotifications(showLoading: false);
+        }
+      } catch (e) {
+        AppLogger.d('❌ [NotificationProvider] Socket error: $e');
+      }
+    });
+  }
 
   List<AppNotification> _notifications = [];
   CancelToken? _cancelToken;
@@ -253,8 +279,23 @@ class NotificationProvider extends ChangeNotifier {
       return '${months}mo';
     }
   }
+
+  void reset() {
+    cancelActiveRequests();
+    _notifications = [];
+    _isLoading = false;
+    _isLoadingMore = false;
+    _unreadCount = 0;
+    _currentPage = 1;
+    _hasNextPage = false;
+    _errorMessage = '';
+    _unreadOnly = false;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
+    _socketSubscription?.cancel();
     cancelActiveRequests();
     super.dispose();
   }

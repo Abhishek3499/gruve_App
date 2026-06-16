@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/network/api_exception.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -160,12 +161,13 @@ class ProfileService {
 
         AppLogger.d(" [ProfileService] Giving up after $attempt attempts");
         AppLogger.d(" [ProfileService] Final error: $e");
-        rethrow;
+        throw ApiException.fromDio(e, fallback: 'Failed to fetch profile data');
       } catch (e, st) {
         AppLogger.d("[ProfileService] UNEXPECTED ERROR:");
         AppLogger.d("  - Error: $e");
         AppLogger.d("  - Stack trace: $st");
-        rethrow;
+        if (e is ApiException) rethrow;
+        throw ApiException('Failed to fetch profile data');
       }
     }
     // Loop always returns from try or rethrows; satisfy return type analysis.

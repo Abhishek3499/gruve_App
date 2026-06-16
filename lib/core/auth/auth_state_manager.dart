@@ -35,7 +35,8 @@ class AuthStateManager extends ChangeNotifier {
       final accessToken = await TokenStorage.getAccessToken();
       final userId = await TokenStorage.getCurrentUserId();
 
-      _isAuthenticated = accessToken != null && accessToken.isNotEmpty;
+      final expired = await TokenStorage.isTokenExpired();
+      _isAuthenticated = accessToken != null && accessToken.isNotEmpty && !expired;
       _currentUserId = userId;
 
       AppLogger.d(

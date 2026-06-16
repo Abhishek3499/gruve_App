@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/network/api_exception.dart';
 import 'package:gruve_app/features/notification/api/models/notification_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -27,7 +28,10 @@ class NotificationService {
       if (response.statusCode == 200) {
         return NotificationListResponse.fromJson(response.data);
       } else {
-        throw Exception(response.data['message'] ?? 'Failed to fetch notifications');
+        throw ApiException(
+          response.data['message'] ?? 'Failed to fetch notifications',
+          statusCode: response.statusCode,
+        );
       }
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
@@ -35,10 +39,11 @@ class NotificationService {
         return NotificationListResponse(code: 0, success: false, message: 'Cancelled', data: null);
       }
       AppLogger.d('❌ DioException fetching notifications: ${e.message}');
-      throw Exception(e.response?.data['message'] ?? 'Failed to fetch notifications');
+      throw ApiException.fromDio(e, fallback: 'Failed to fetch notifications');
     } catch (e) {
       AppLogger.d('❌ Unexpected error fetching notifications: $e');
-      rethrow;
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch notifications');
     }
   }
 

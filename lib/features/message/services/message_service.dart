@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/network/app_dio.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/parsing/safe_parsing_helpers.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
@@ -19,8 +20,7 @@ class MessageService {
   /// Fetches the list of conversations from the API
   ///
   /// Returns a list of [ConversationModel] on success
-  /// Throws [DioException] on API errors
-  /// Throws [Exception] on other errors
+  /// Throws [ApiException] on errors
   Future<List<ConversationModel>> getConversationList({
     bool forceRefresh = false,
     int page = 1,
@@ -46,22 +46,16 @@ class MessageService {
                   'Expires': '0',
                 }
               : null,
-          extra: {
-            'skipCache': true,
-            'bypassCache': true,
-            'noCache': true,
-          },
+          extra: {'skipCache': true, 'bypassCache': true, 'noCache': true},
         ),
       );
 
-      // Log detailed response information for debugging
       SafeParsingHelpers.logResponseInfo(
         response.data,
         '💬 Conversations API Response',
       );
 
       if (response.statusCode == 200) {
-        // Safely parse response data
         final responseData = _extractConversationList(response.data);
 
         final conversations = <ConversationModel>[];
@@ -92,7 +86,6 @@ class MessageService {
             AppLogger.d(
               '📄 [MessageService] 📋 Problematic data: ${responseData[i]}',
             );
-            // Continue processing other conversations instead of failing completely
           }
         }
 
@@ -101,8 +94,9 @@ class MessageService {
         );
         return conversations;
       } else {
-        throw Exception(
-          'Failed to fetch conversations: Status code ${response.statusCode}',
+        throw ApiException(
+          'Failed to fetch conversations',
+          statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
@@ -114,45 +108,15 @@ class MessageService {
       AppLogger.d(
         '[MessageService] Response status: ${e.response?.statusCode}',
       );
-
-      // Handle different types of Dio exceptions
-      switch (e.type) {
-        case DioExceptionType.connectionTimeout:
-        case DioExceptionType.sendTimeout:
-        case DioExceptionType.receiveTimeout:
-          AppLogger.d('⏰ [MessageService] Connection timeout error');
-          throw Exception(
-            'Connection timeout. Please check your internet connection.',
-          );
-        case DioExceptionType.badResponse:
-          final statusCode = e.response?.statusCode;
-          final message = e.response?.data?['message'] ?? 'Unknown error';
-          AppLogger.d(
-            '🚫 [MessageService] Bad response: $statusCode - $message',
-          );
-          throw Exception('API Error ($statusCode): $message');
-        case DioExceptionType.cancel:
-          AppLogger.d('❌ [MessageService] Request was cancelled');
-          throw Exception('Request was cancelled');
-        case DioExceptionType.connectionError:
-          AppLogger.d('📶 [MessageService] No internet connection');
-          throw Exception('No internet connection');
-        case DioExceptionType.unknown:
-        default:
-          AppLogger.d('❓ [MessageService] Unknown network error: ${e.message}');
-          throw Exception('Network error: ${e.message}');
-      }
+      throw ApiException.fromDio(e, fallback: 'Failed to fetch conversations');
     } catch (e) {
       AppLogger.d('💥 [MessageService] Unexpected error: $e');
-      throw Exception('Failed to fetch conversations: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch conversations');
     }
   }
 
   /// Fetch messages for a conversation.
-  ///
-  /// The backend currently returns either a raw list or a paginated payload with
-  /// a `results` array. Keeping the parser flexible makes the controller ready
-  /// for server-side pagination without changing the UI contract later.
   Future<List<MessageModel>> getMessages({
     required String conversationId,
     String? currentUserId,
@@ -180,7 +144,6 @@ class MessageService {
         '[MessageService] 📊 Messages response status=${response.statusCode}',
       );
 
-      // Log detailed response information for debugging
       SafeParsingHelpers.logResponseInfo(
         response.data,
         '💬 Messages API Response',
@@ -221,7 +184,6 @@ class MessageService {
           AppLogger.d(
             '📄 [MessageService] 📋 Problematic data: ${rawMessages[i]}',
           );
-          // Continue processing other messages instead of failing completely
         }
       }
 
@@ -240,10 +202,11 @@ class MessageService {
       AppLogger.d(
         '[MessageService] Messages error response: ${e.response?.data}',
       );
-      throw Exception(_mapDioException(e));
+      throw ApiException.fromDio(e, fallback: 'Failed to fetch messages');
     } catch (e) {
       AppLogger.d('[MessageService] Messages unexpected error: $e');
-      throw Exception('Failed to fetch messages: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch messages');
     }
   }
 
@@ -252,24 +215,19 @@ class MessageService {
 
     SafeParsingHelpers.logResponseInfo(data, '📋 _extractMessageList input');
 
-    // Direct list
     if (data is List) {
       return data;
     }
 
-    // Map response
     if (data is Map<String, dynamic>) {
-      // CASE 1: results
       if (data['results'] is List) {
         return data['results'];
       }
 
-      // CASE 2: messages directly
       if (data['messages'] is List) {
         return data['messages'];
       }
 
-      // CASE 3: nested data.messages
       if (data['data'] is Map<String, dynamic>) {
         final nestedData = data['data'] as Map<String, dynamic>;
 
@@ -330,37 +288,7 @@ class MessageService {
     return data;
   }
 
-  String _mapDioException(DioException e) {
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return 'Connection timeout. Please check your internet connection.';
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final responseData = e.response?.data;
-        final message = responseData is Map<String, dynamic>
-            ? responseData['detail'] ??
-                  responseData['error'] ??
-                  responseData['message'] ??
-                  'Unknown error'
-            : 'Unknown error';
-        return 'API Error ($statusCode): $message';
-      case DioExceptionType.cancel:
-        return 'Request was cancelled';
-      case DioExceptionType.connectionError:
-        return 'No internet connection';
-      case DioExceptionType.unknown:
-      default:
-        return 'Network error: ${e.message}';
-    }
-  }
-
   /// Sends a message over the authenticated REST endpoint.
-  ///
-  /// The chat UI primarily uses WebSocket for realtime delivery, but this
-  /// endpoint gives us an authenticated fallback and surfaces 401/send errors
-  /// instead of failing silently when the socket is unavailable.
   Future<MessageModel?> sendMessage({
     required String conversationId,
     required String content,
@@ -417,8 +345,9 @@ class MessageService {
         );
       }
 
-      throw Exception(
-        'Failed to send message: Status code ${response.statusCode}',
+      throw ApiException(
+        'Failed to send message',
+        statusCode: response.statusCode,
       );
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
@@ -429,20 +358,19 @@ class MessageService {
       AppLogger.d(
         '[MessageService] Send message error response: ${e.response?.data}',
       );
-      throw Exception(_mapDioException(e));
+      throw ApiException.fromDio(e, fallback: 'Failed to send message');
     } catch (e) {
       AppLogger.d('[MessageService] Send message unexpected error: $e');
-      throw Exception('Failed to send message: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to send message');
     }
   }
 
   /// Fetches a single conversation by ID
-  ///
-  /// [conversationId] - The ID of the conversation to fetch
-  /// Returns [ConversationModel] on success
-  /// Throws [DioException] on API errors
-  /// Throws [Exception] on other errors
-  Future<ConversationModel> getConversationById(String conversationId, {CancelToken? cancelToken}) async {
+  Future<ConversationModel> getConversationById(
+    String conversationId, {
+    CancelToken? cancelToken,
+  }) async {
     if (conversationId.isEmpty) {
       throw ArgumentError('Conversation ID cannot be empty');
     }
@@ -458,7 +386,6 @@ class MessageService {
       );
 
       if (response.statusCode == 200) {
-        // Log detailed response information for debugging
         SafeParsingHelpers.logResponseInfo(
           response.data,
           '💬 Conversation by ID Response',
@@ -478,11 +405,12 @@ class MessageService {
           AppLogger.d(
             '❌ [MessageService] 🚫 Conversation data is empty after parsing',
           );
-          throw Exception('Conversation data is empty');
+          throw ApiException('Conversation data is empty');
         }
       } else {
-        throw Exception(
-          'Failed to fetch conversation: Status code ${response.statusCode}',
+        throw ApiException(
+          'Failed to fetch conversation',
+          statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
@@ -494,32 +422,20 @@ class MessageService {
         '💥 [MessageService] DioException fetching conversation: ${e.message}',
       );
 
-      switch (e.type) {
-        case DioExceptionType.badResponse:
-          if (e.response?.statusCode == 404) {
-            AppLogger.d('🚫 [MessageService] Conversation not found (404)');
-            throw Exception('Conversation not found');
-          }
-          final message = e.response?.data?['message'] ?? 'Unknown error';
-          AppLogger.d('🚫 [MessageService] API Error: $message');
-          throw Exception('API Error: $message');
-        default:
-          AppLogger.d('📶 [MessageService] Network error: ${e.message}');
-          throw Exception('Network error: ${e.message}');
+      if (e.response?.statusCode == 404) {
+        throw ApiException('Conversation not found', statusCode: 404);
       }
+      throw ApiException.fromDio(e, fallback: 'Failed to fetch conversation');
     } catch (e) {
       AppLogger.d(
         '💥 [MessageService] Unexpected error fetching conversation: $e',
       );
-      throw Exception('Failed to fetch conversation: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch conversation');
     }
   }
 
   /// Marks messages as read for a specific conversation
-  ///
-  /// [conversationId] - The ID of the conversation
-  /// Returns true if successful, false otherwise
-  /// NOTE: This is a local-only operation since the backend endpoint doesn't exist yet
   Future<bool> markConversationAsRead(String conversationId) async {
     if (conversationId.isEmpty) {
       throw ArgumentError('Conversation ID cannot be empty');
@@ -530,8 +446,6 @@ class MessageService {
         '👁️ [MessageService] Marking conversation as read locally: $conversationId',
       );
 
-      // Implement backend API call when endpoint is available
-      // For now, just return true to simulate successful mark as read
       AppLogger.d(
         '✅ [MessageService] Conversation marked as read locally (backend API not implemented)',
       );
@@ -543,12 +457,10 @@ class MessageService {
   }
 
   /// Creates or gets an existing conversation with a user
-  ///
-  /// [receiverId] - The ID of the user to create/retrieve conversation with
-  /// Returns [ConversationModel] on success
-  /// Throws [DioException] on API errors
-  /// Throws [Exception] on other errors
-  Future<ConversationModel> createOrGetConversation(String receiverId, {CancelToken? cancelToken}) async {
+  Future<ConversationModel> createOrGetConversation(
+    String receiverId, {
+    CancelToken? cancelToken,
+  }) async {
     if (receiverId.isEmpty) {
       throw ArgumentError('Receiver ID cannot be empty');
     }
@@ -569,7 +481,6 @@ class MessageService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Log detailed response information for debugging
         SafeParsingHelpers.logResponseInfo(
           response.data,
           '💬 Create/Get Conversation Response',
@@ -592,11 +503,12 @@ class MessageService {
           AppLogger.d(
             '❌ [MessageService] 🚫 Conversation data is empty after parsing',
           );
-          throw Exception('Conversation data is empty');
+          throw ApiException('Conversation data is empty');
         }
       } else {
-        throw Exception(
-          'Failed to create/get conversation: Status code ${response.statusCode}',
+        throw ApiException(
+          'Failed to create/get conversation',
+          statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
@@ -607,77 +519,80 @@ class MessageService {
       AppLogger.d(
         '💥 [MessageService] DioException creating/getting conversation: ${e.message}',
       );
-
-      switch (e.type) {
-        case DioExceptionType.badResponse:
-          final statusCode = e.response?.statusCode;
-          final responseData = e.response?.data;
-          final message = responseData is Map<String, dynamic>
-              ? responseData['message'] ??
-                    responseData['detail'] ??
-                    responseData['error'] ??
-                    'Unknown error'
-              : 'Unknown error';
-          AppLogger.d('🚫 [MessageService] API Error: $statusCode - $message');
-          throw Exception('API Error ($statusCode): $message');
-        case DioExceptionType.connectionTimeout:
-        case DioExceptionType.sendTimeout:
-        case DioExceptionType.receiveTimeout:
-          AppLogger.d('⏰ [MessageService] Connection timeout error');
-          throw Exception(
-            'Connection timeout. Please check your internet connection.',
-          );
-        case DioExceptionType.cancel:
-          AppLogger.d('❌ [MessageService] Request was cancelled');
-          throw Exception('Request was cancelled');
-        case DioExceptionType.connectionError:
-          AppLogger.d('📶 [MessageService] No internet connection');
-          throw Exception('No internet connection');
-        case DioExceptionType.unknown:
-        default:
-          AppLogger.d('❓ [MessageService] Unknown network error: ${e.message}');
-          throw Exception('Network error: ${e.message}');
-      }
+      throw ApiException.fromDio(
+        e,
+        fallback: 'Failed to create/get conversation',
+      );
     } catch (e) {
       AppLogger.d(
         '💥 [MessageService] Unexpected error creating/getting conversation: $e',
       );
-      throw Exception('Failed to create/get conversation: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to create/get conversation');
     }
   }
 
   /// Deletes a conversation
-  ///
-  /// [conversationId] - The ID of the conversation to delete
-  /// Returns true if successful, false otherwise
-  /// NOTE: This is a local-only operation since the backend endpoint doesn't exist yet
-  Future<bool> deleteConversation(String conversationId) async {
+  Future<bool> deleteConversation(
+    String conversationId, {
+    CancelToken? cancelToken,
+  }) async {
     if (conversationId.isEmpty) {
       throw ArgumentError('Conversation ID cannot be empty');
     }
 
+    final endpoint = '$_conversationsEndpoint$conversationId';
+
     try {
-      AppLogger.d(
-        '🗑️ [MessageService] Deleting conversation locally: $conversationId',
+      AppLogger.d('🗑️ [MessageService] 🚀 DELETE $endpoint');
+
+      final response = await _dio.delete<dynamic>(
+        endpoint,
+        cancelToken: cancelToken,
       );
 
-      // Implement backend API call when endpoint is available
-      // For now, just return true to simulate successful deletion
       AppLogger.d(
-        '✅ [MessageService] Conversation deleted locally (backend API not implemented)',
+        '📊 [MessageService] ✅ Delete response status: ${response.statusCode}',
       );
-      return true;
+
+      if (response.statusCode == 204) {
+        AppLogger.d('✅ [MessageService] 🎉 Conversation deleted successfully');
+        return true;
+      } else {
+        AppLogger.d(
+          '⚠️ [MessageService] ❌ Unexpected status code: ${response.statusCode}',
+        );
+        throw ApiException(
+          'Failed to delete conversation',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [MessageService] deleteConversation cancelled');
+        return false;
+      }
+      AppLogger.d('💥 [MessageService] ❌ DioException: ${e.message}');
+
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 403) {
+        throw ApiException(
+          'You are not a participant of this conversation.',
+          statusCode: 403,
+        );
+      }
+      if (statusCode == 404) {
+        throw ApiException('Conversation not found', statusCode: 404);
+      }
+      throw ApiException.fromDio(e, fallback: 'Failed to delete conversation');
     } catch (e) {
-      AppLogger.d('💥 [MessageService] Error deleting conversation: $e');
-      return false;
+      AppLogger.d('💥 [MessageService] ❌ Unexpected error: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to delete conversation');
     }
   }
 
   /// Deletes a specific message from a conversation
-  ///
-  /// [conversationId] - The ID of the conversation
-  /// [messageId] - The ID of the message to delete
-  /// Returns true if successful, false otherwise
   Future<bool> deleteMessage({
     required String conversationId,
     required String messageId,
@@ -697,13 +612,15 @@ class MessageService {
       AppLogger.d('💬 [MessageService] 🆔 Conversation: $conversationId');
       AppLogger.d('📨 [MessageService] 🆔 Message: $messageId');
 
-      final response = await _dio.delete<dynamic>(endpoint, cancelToken: cancelToken);
+      final response = await _dio.delete<dynamic>(
+        endpoint,
+        cancelToken: cancelToken,
+      );
 
       AppLogger.d(
         '📊 [MessageService] ✅ Delete response status: ${response.statusCode}',
       );
 
-      // Accept both 200 and 204 as success
       if (response.statusCode == 200 || response.statusCode == 204) {
         AppLogger.d('✅ [MessageService] 🎉 Message deleted successfully');
         return true;
@@ -711,8 +628,9 @@ class MessageService {
         AppLogger.d(
           '⚠️ [MessageService] ❌ Unexpected status code: ${response.statusCode}',
         );
-        throw Exception(
-          'Failed to delete message: Status code ${response.statusCode}',
+        throw ApiException(
+          'Failed to delete message',
+          statusCode: response.statusCode,
         );
       }
     } on DioException catch (e) {
@@ -727,49 +645,23 @@ class MessageService {
         '[MessageService] Response status: ${e.response?.statusCode}',
       );
 
-      switch (e.type) {
-        case DioExceptionType.badResponse:
-          final statusCode = e.response?.statusCode;
-          if (statusCode == 404) {
-            AppLogger.d('🚫 [MessageService] ⚠️ Message not found (404)');
-            throw Exception('Message not found');
-          }
-          if (statusCode == 403) {
-            AppLogger.d(
-              '🚫 [MessageService] 🔒 Forbidden - not your message (403)',
-            );
-            throw Exception('You can only delete your own messages');
-          }
-          final message = e.response?.data is Map<String, dynamic>
-              ? e.response?.data['message'] ??
-                    e.response?.data['detail'] ??
-                    'Unknown error'
-              : 'Unknown error';
-          AppLogger.d('🚫 [MessageService] ❌ API Error: $statusCode - $message');
-          throw Exception('API Error ($statusCode): $message');
-        case DioExceptionType.connectionTimeout:
-        case DioExceptionType.sendTimeout:
-        case DioExceptionType.receiveTimeout:
-          AppLogger.d('⏰ [MessageService] ⏱️ Connection timeout error');
-          throw Exception(
-            'Connection timeout. Please check your internet connection.',
-          );
-        case DioExceptionType.cancel:
-          AppLogger.d('❌ [MessageService] 🚫 Request was cancelled');
-          throw Exception('Request was cancelled');
-        case DioExceptionType.connectionError:
-          AppLogger.d('📶 [MessageService] 📡 No internet connection');
-          throw Exception('No internet connection');
-        case DioExceptionType.unknown:
-        default:
-          AppLogger.d(
-            '❓ [MessageService] ❌ Unknown network error: ${e.message}',
-          );
-          throw Exception('Network error: ${e.message}');
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 404) {
+        throw ApiException('Message not found', statusCode: 404);
       }
+      if (statusCode == 403) {
+        throw ApiException(
+          'You can only delete your own messages',
+          statusCode: 403,
+        );
+      }
+      throw ApiException.fromDio(e, fallback: 'Failed to delete message');
     } catch (e) {
-      AppLogger.d('💥 [MessageService] ❌ Unexpected error deleting message: $e');
-      throw Exception('Failed to delete message: $e');
+      AppLogger.d(
+        '💥 [MessageService] ❌ Unexpected error deleting message: $e',
+      );
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to delete message');
     }
   }
 }
