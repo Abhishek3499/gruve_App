@@ -180,7 +180,10 @@ class _SignInScreenState extends State<SignInScreen> {
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFBB86FC),
+                            ),
                           ),
                         ),
                       )

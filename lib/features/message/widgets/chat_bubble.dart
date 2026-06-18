@@ -240,10 +240,39 @@ class MessageBubble extends StatelessWidget {
         ),
         if (!isReceived) ...[
           const SizedBox(width: 4),
-          const Icon(Icons.done_all, size: 14, color: Colors.blueAccent),
+          _buildTickIcon(),
         ],
       ],
     );
+  }
+
+  Widget _buildTickIcon() {
+    switch (message.status) {
+      case MessageStatus.sent:
+        return Icon(
+          Icons.done,
+          size: 14,
+          color: Colors.white.withValues(alpha: 0.5),
+        );
+      case MessageStatus.delivered:
+        return Icon(
+          Icons.done_all,
+          size: 14,
+          color: Colors.white.withValues(alpha: 0.5),
+        );
+      case MessageStatus.read:
+        return const Icon(
+          Icons.done_all,
+          size: 14,
+          color: Color(0xFF34B7F1), // Sleek WhatsApp double blue tick color
+        );
+      case MessageStatus.failed:
+        return const Icon(
+          Icons.error_outline,
+          size: 14,
+          color: Colors.red,
+        );
+    }
   }
 
   String _formatTime() {

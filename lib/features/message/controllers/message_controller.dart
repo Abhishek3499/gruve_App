@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/services/socket_service.dart';
 
 import '../models/message_model.dart';
 import '../services/message_service.dart';
@@ -29,6 +31,7 @@ class MessageController extends ChangeNotifier {
   Future<void>? _activeFetch;
   String? _error;
   int _currentPage = 1;
+  Timer? _readDebounceTimer;
 
   // Enhanced request tracking
   final Map<String, DateTime> _requestTimestamps = {};
@@ -280,6 +283,112 @@ class MessageController extends ChangeNotifier {
     AppLogger.d('🔄 [MessageController] Message replaced: ${message.id}');
   }
 
+  void markMessageAsFailed(String messageId) {
+    final index = _messages.indexWhere((m) => m.id == messageId);
+    if (index != -1) {
+      _messages[index] = _messages[index].copyWith(
+        status: MessageStatus.failed,
+      );
+      _notify();
+      AppLogger.d('❌ [MessageController] Message marked as failed: $messageId');
+    }
+  }
+
+  void handleMessageDelivered(String messageId) {
+    var index = _messages.indexWhere((m) => m.id == messageId);
+    if (index == -1) {
+      // Locate the oldest local optimistic message
+      index = _messages.indexWhere((m) => m.id.startsWith('local-'));
+    }
+
+    if (index != -1) {
+      final currentMsg = _messages[index];
+      // Only upgrade if current status is less than delivered (i.e. is sent)
+      if (currentMsg.status == MessageStatus.sent) {
+        _messages[index] = currentMsg.copyWith(
+          id: messageId,
+          status: MessageStatus.delivered,
+          isRead: false,
+        );
+        _notify();
+        AppLogger.d('📡 [MessageController] Message delivered status updated: $messageId');
+      }
+    }
+  }
+
+  void handleMessagesRead(List<String>? messageIds) {
+    var changed = false;
+    if (messageIds == null || messageIds.isEmpty) {
+      // Mark all outgoing messages as read
+      for (var i = 0; i < _messages.length; i++) {
+        if (_messages[i].isSent && _messages[i].status != MessageStatus.read) {
+          _messages[i] = _messages[i].copyWith(
+            status: MessageStatus.read,
+            isRead: true,
+          );
+          changed = true;
+        }
+      }
+    } else {
+      for (final id in messageIds) {
+        var index = _messages.indexWhere((m) => m.id == id);
+        if (index == -1) {
+          // Fallback: Locate the oldest local optimistic message
+          index = _messages.indexWhere((m) => m.id.startsWith('local-'));
+        }
+
+        if (index != -1) {
+          final currentMsg = _messages[index];
+          if (currentMsg.status != MessageStatus.read) {
+            _messages[index] = currentMsg.copyWith(
+              id: id,
+              status: MessageStatus.read,
+              isRead: true,
+            );
+            changed = true;
+          }
+        }
+      }
+    }
+    if (changed) {
+      _notify();
+      AppLogger.d('📡 [MessageController] Message read statuses updated for: $messageIds');
+    }
+  }
+
+  Future<void> markAsRead() async {
+    if (conversationId.isEmpty) return;
+
+    final eventData = {
+      'type': 'message.read',
+      'conversation_id': conversationId,
+    };
+
+    final socketService = SocketService();
+    if (socketService.isConnected) {
+      AppLogger.d('📡 [MessageController] Sending message.read over WebSocket');
+      final success = socketService.sendEvent(eventData);
+      if (success) return;
+    }
+
+    // Fallback: REST API
+    AppLogger.d('📡 [MessageController] WebSocket unavailable. Calling REST markAsRead fallback.');
+    try {
+      await _messageService.markConversationAsRead(conversationId);
+    } catch (e) {
+      AppLogger.d('❌ [MessageController] REST fallback markAsRead failed: $e');
+    }
+  }
+
+  void markAsReadDebounced() {
+    if (_readDebounceTimer?.isActive ?? false) {
+      _readDebounceTimer!.cancel();
+    }
+    _readDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      markAsRead();
+    });
+  }
+
   /// Send message via REST API with comprehensive logging
   /// Returns the sent message on success, null on failure
   Future<MessageModel?> sendMessage(String content) async {
@@ -507,6 +616,8 @@ class MessageController extends ChangeNotifier {
 
     _disposed = true;
     _cancelToken.cancel('Screen disposed');
+
+    _readDebounceTimer?.cancel();
 
     // Clear all locks and requests
     _lockedOperations.clear();

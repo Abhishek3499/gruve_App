@@ -207,6 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
       AppLogger.d('[ChatScreen] Fetch messages requested for $_conversationId');
       _hasCompletedInitialScroll = false;
       _messageController.fetchInitialMessages();
+      _messageController.markAsReadDebounced();
     });
   }
 
@@ -286,38 +287,82 @@ class _ChatScreenState extends State<ChatScreen> {
       AppLogger.d('🔥 SOCKET DATA => $data');
 
       try {
-        final messageData = _extractRealtimeMessagePayload(data);
-        if (messageData == null) {
-          AppLogger.d('[ChatScreen] Socket payload skipped: no message content');
+        final event = data['event']?.toString();
+        final type = data['type']?.toString().toLowerCase();
+
+        if (type == 'error') {
+          final detail = data['detail']?.toString() ?? 'An error occurred';
+          AppLogger.d('💥 SOCKET ERROR EVENT => $detail');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Socket Error: $detail'), backgroundColor: Colors.red),
+            );
+          }
           return;
         }
 
-        final incomingConversationId = _extractConversationId(data);
+        if (type == 'message') {
+          if (event == 'message.delivered') {
+            final nested = data['data'];
+            if (nested is Map) {
+              final messageId = nested['message_id']?.toString();
+              if (messageId != null) {
+                _messageController.handleMessageDelivered(messageId);
+              }
+            }
+            return;
+          } else if (event == 'message.read') {
+            final nested = data['data'];
+            if (nested is Map) {
+              final messageIds = (nested['message_ids'] as List?)?.map((e) => e.toString()).toList();
+              _messageController.handleMessagesRead(messageIds);
+            }
+            return;
+          }
 
-        // Adopt conversation ID if empty and message is relevant to this user
-        if (incomingConversationId.isNotEmpty && _conversationId.isEmpty) {
-          final senderIdStr = (messageData['sender_id'] ?? messageData['senderId'] ?? '').toString();
-          final receiverIdStr = (messageData['receiver_id'] ?? messageData['receiverId'] ?? '').toString();
-          final isRelevant = senderIdStr == _userId || receiverIdStr == _userId;
+          // Default / Fallback case: new message event (event == 'message.sent' or general message)
+          final nested = data['data'];
+          final messageData = nested is Map
+              ? Map<String, dynamic>.from(nested)
+              : Map<String, dynamic>.from(data);
 
-          if (isRelevant) {
-            AppLogger.d('[ChatScreen] Adopting new conversation ID from socket: $incomingConversationId');
-            _resolvedConversationId = incomingConversationId;
-            _messageController.conversationId = incomingConversationId;
-            _messageController.onConversationIdChanged?.call(incomingConversationId);
+          final incomingConversationId = _extractConversationId(data);
+
+          // Adopt conversation ID if empty and message is relevant to this user
+          if (incomingConversationId.isNotEmpty && _conversationId.isEmpty) {
+            final senderIdStr = (messageData['sender_id'] ?? messageData['senderId'] ?? '').toString();
+            final receiverIdStr = (messageData['receiver_id'] ?? messageData['receiverId'] ?? '').toString();
+            final isRelevant = senderIdStr == _userId || receiverIdStr == _userId;
+
+            if (isRelevant) {
+              AppLogger.d('[ChatScreen] Adopting new conversation ID from socket: $incomingConversationId');
+              _resolvedConversationId = incomingConversationId;
+              _messageController.conversationId = incomingConversationId;
+              _messageController.onConversationIdChanged?.call(incomingConversationId);
+            }
+          }
+
+          if (incomingConversationId.isNotEmpty &&
+              incomingConversationId != _conversationId) {
+            return;
+          }
+
+          final hasMessageText =
+              messageData['content'] != null ||
+              messageData['text'] != null ||
+              messageData['message'] != null;
+          final looksLikeMessage =
+              hasMessageText ||
+              messageData.containsKey('sender_id') ||
+              messageData.containsKey('senderId');
+
+          if (looksLikeMessage) {
+            _messageController.addRealtimeMessage(messageData);
+            _messageController.markAsReadDebounced();
+            AppLogger.d('✅ REALTIME MESSAGE ADDED');
+            _scrollToBottom();
           }
         }
-
-        if (incomingConversationId.isNotEmpty &&
-            incomingConversationId != _conversationId) {
-          return;
-        }
-
-        _messageController.addRealtimeMessage(messageData);
-
-        AppLogger.d('✅ REALTIME MESSAGE ADDED');
-
-        _scrollToBottom();
       } catch (e) {
         AppLogger.d('💥 SOCKET ERROR => $e');
       }
@@ -339,30 +384,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return '';
-  }
-
-  Map<String, dynamic>? _extractRealtimeMessagePayload(
-    Map<String, dynamic> data,
-  ) {
-    final nested = data['data'];
-    final payload = nested is Map
-        ? Map<String, dynamic>.from(nested)
-        : Map<String, dynamic>.from(data);
-
-    payload.putIfAbsent('conversation_id', () => _extractConversationId(data));
-
-    final hasMessageText =
-        payload['content'] != null ||
-        payload['text'] != null ||
-        payload['message'] != null;
-    final type = data['type']?.toString().toLowerCase() ?? '';
-    final looksLikeMessage =
-        hasMessageText ||
-        type.contains('message') ||
-        payload.containsKey('sender_id') ||
-        payload.containsKey('senderId');
-
-    return looksLikeMessage ? payload : null;
   }
 
   void _showMessagePopup(
@@ -445,6 +466,7 @@ class _ChatScreenState extends State<ChatScreen> {
       isSent: true,
       senderId: 'me',
       replyTo: _activeReply?.originalMessage,
+      status: MessageStatus.sent,
     );
 
     if (!mounted) return;
@@ -472,7 +494,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     } catch (e) {
       AppLogger.d('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
-      _messageController.removeMessages({localId});
+      _messageController.markMessageAsFailed(localId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

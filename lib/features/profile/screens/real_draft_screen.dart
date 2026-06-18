@@ -95,7 +95,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: Color(0xFFBB86FC)),
         ),
       );
 
@@ -189,7 +189,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
   Widget _buildBody(DraftsProvider provider) {
     if (provider.isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: CircularProgressIndicator(color: Color(0xFFBB86FC)),
       );
     }
 

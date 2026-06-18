@@ -436,20 +436,33 @@ class MessageService {
   }
 
   /// Marks messages as read for a specific conversation
-  Future<bool> markConversationAsRead(String conversationId) async {
+  Future<bool> markConversationAsRead(
+    String conversationId, {
+    List<String>? messageIds,
+    CancelToken? cancelToken,
+  }) async {
     if (conversationId.isEmpty) {
       throw ArgumentError('Conversation ID cannot be empty');
     }
 
+    final endpoint = '/conversations/$conversationId/messages/read';
+
     try {
-      AppLogger.d(
-        '👁️ [MessageService] Marking conversation as read locally: $conversationId',
+      AppLogger.d('👁️ [MessageService] POST $endpoint');
+      final data = messageIds != null ? {'message_ids': messageIds} : <String, dynamic>{};
+      final response = await _dio.post<dynamic>(
+        endpoint,
+        data: data,
+        cancelToken: cancelToken,
       );
 
-      AppLogger.d(
-        '✅ [MessageService] Conversation marked as read locally (backend API not implemented)',
-      );
-      return true;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        AppLogger.d(
+          '✅ [MessageService] Conversation marked as read: $conversationId',
+        );
+        return true;
+      }
+      return false;
     } catch (e) {
       AppLogger.d('💥 [MessageService] Error marking conversation as read: $e');
       return false;

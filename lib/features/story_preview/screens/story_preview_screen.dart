@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
@@ -15,8 +16,12 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/features/camera/models/sticker_data.dart';
 import 'package:gruve_app/features/camera/widgets/sticker_overlay.dart';
-import 'package:gruve_app/features/camera/widgets/emoji_picker_sheet.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/story_preview/widgets/story_text_editor.dart';
+import 'package:gruve_app/features/story_preview/widgets/story_music_picker.dart';
+import 'package:gruve_app/features/camera/models/filter_model.dart';
+import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';
+import 'package:gruve_app/features/camera/controller/filter_controller.dart';
 
 class StoryPreviewScreen extends StatefulWidget {
   final String mediaPath;
@@ -41,6 +46,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   late final List<StickerData> _stickers;
   String? _selectedStickerId;
   double _videoSpeed = 1.0;
+  final GlobalKey _boundaryKey = GlobalKey();
+  bool _isPickerOrEditorOpen = false;
+  FilterModel _activeFilter = FilterModel.availableFilters.first;
 
   Widget _buildUserAvatar(String? imageUrl, String username) {
     final trimmed = imageUrl?.trim() ?? '';
@@ -71,6 +79,36 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     );
   }
 
+  Future<String> _captureFlattenedImage() async {
+    if (_isVideo) return widget.mediaPath;
+
+    try {
+      // Clear selection border before capturing
+      setState(() {
+        _selectedStickerId = null;
+      });
+      // Allow frame to render without selection border
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final boundary = _boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return widget.mediaPath;
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return widget.mediaPath;
+
+      final bytes = byteData.buffer.asUint8List();
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/story_flattened_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(bytes);
+      AppLogger.d('📸 [StoryPreviewScreen] Flattened canvas captured: ${file.path}');
+      return file.path;
+    } catch (e) {
+      AppLogger.d('❌ [StoryPreviewScreen] Error flattening canvas: $e');
+      return widget.mediaPath;
+    }
+  }
+
   Future<void> _shareToYourStory() async {
     if (_isYourStorySharing) return;
 
@@ -84,16 +122,18 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         listen: false,
       );
 
+      final finalPath = await _captureFlattenedImage();
+
       await storyController.createStory(
         caption: '',
-        mediaPath: widget.mediaPath,
+        mediaPath: finalPath,
       );
 
       if (!mounted) return;
 
       if (storyController.isSuccess) {
         context.read<StoryStateController>().markStoryAsShared(
-          widget.mediaPath,
+          finalPath,
         );
 
         // Notify that the counts/story changed so Profile screen updates.
@@ -130,6 +170,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   @override
   void initState() {
     super.initState();
+    _activeFilter = FilterController().selectedFilter;
     _stickers = List.from(widget.initialStickers);
     _initializeMedia();
 
@@ -393,65 +434,108 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
               Expanded(
                 child: Stack(
                   children: [
-                    /// MEDIA
                     Positioned.fill(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedStickerId = null;
-                          });
-                        },
-                        child: _isInitialized
-                            ? _buildMediaPreview()
-                            : const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    CircularProgressIndicator(
-                                      color: Color(0xFFBB86FC),
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text(
-                                      "Loading Preview...",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 14,
+                      child: RepaintBoundary(
+                        key: _boundaryKey,
+                        child: Stack(
+                          children: [
+                            /// MEDIA
+                            Positioned.fill(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedStickerId = null;
+                                  });
+                                },
+                                child: _isInitialized
+                                    ? _buildMediaPreview()
+                                    : const Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            CircularProgressIndicator(
+                                              color: Color(0xFFBB86FC),
+                                            ),
+                                            SizedBox(height: 16),
+                                            Text(
+                                              "Loading Preview...",
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
                               ),
+                            ),
+
+                            ..._stickers.map((sticker) {
+                              return StickerOverlay(
+                                key: ValueKey(sticker.id),
+                                sticker: sticker,
+                                isSelected: _selectedStickerId == sticker.id,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedStickerId = sticker.id;
+                                  });
+                                },
+                                onDelete: () {
+                                  setState(() {
+                                    _stickers.removeWhere((s) => s.id == sticker.id);
+                                    if (_selectedStickerId == sticker.id) {
+                                      _selectedStickerId = null;
+                                    }
+                                  });
+                                },
+                                onUpdate: (position, scale, rotation) {
+                                  setState(() {
+                                    sticker.position = position;
+                                    sticker.scale = scale;
+                                    sticker.rotation = rotation;
+                                  });
+                                },
+                                onEdit: () async {
+                                  if (_isPickerOrEditorOpen) return;
+                                  _isPickerOrEditorOpen = true;
+                                  try {
+                                    if (sticker.isMusic) {
+                                      final updated = await StoryMusicPicker.open(
+                                        context,
+                                        initialSticker: sticker,
+                                      );
+                                      if (updated != null && mounted) {
+                                        setState(() {
+                                          final index = _stickers.indexWhere((s) => s.id == sticker.id);
+                                          if (index != -1) {
+                                            _stickers[index] = updated;
+                                          }
+                                        });
+                                      }
+                                    } else if (sticker.isText) {
+                                      final updated = await StoryTextEditor.open(
+                                        context,
+                                        initialSticker: sticker,
+                                      );
+                                      if (updated != null && mounted) {
+                                        setState(() {
+                                          final index = _stickers.indexWhere((s) => s.id == sticker.id);
+                                          if (index != -1) {
+                                            _stickers[index] = updated;
+                                          }
+                                        });
+                                      }
+                                    }
+                                  } finally {
+                                    _isPickerOrEditorOpen = false;
+                                  }
+                                },
+                              );
+                            }),
+                          ],
+                        ),
                       ),
                     ),
-
-                    ..._stickers.map((sticker) {
-                      return StickerOverlay(
-                        key: ValueKey(sticker.id),
-                        sticker: sticker,
-                        isSelected: _selectedStickerId == sticker.id,
-                        onTap: () {
-                          setState(() {
-                            _selectedStickerId = sticker.id;
-                          });
-                        },
-                        onDelete: () {
-                          setState(() {
-                            _stickers.removeWhere((s) => s.id == sticker.id);
-                            if (_selectedStickerId == sticker.id) {
-                              _selectedStickerId = null;
-                            }
-                          });
-                        },
-                        onUpdate: (position, scale, rotation) {
-                          setState(() {
-                            sticker.position = position;
-                            sticker.scale = scale;
-                            sticker.rotation = rotation;
-                          });
-                        },
-                      );
-                    }),
-
                     /// TOP BAR + ACTION BUTTONS (ONE ROW)
                     Positioned(
                       top: 10,
@@ -475,22 +559,50 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                             currentSpeed: _videoSpeed,
                             onSpeedTap: _isVideo ? _changeVideoSpeed : null,
                             onTextTap: () async {
-                              final emoji = await showModalBottomSheet<String>(
-                                context: context,
-                                backgroundColor: Colors.transparent,
-                                isScrollControlled: true,
-                                builder: (context) => const EmojiPickerSheet(),
-                              );
-                              if (emoji != null) {
-                                setState(() {
-                                  final newSticker = StickerData(
-                                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                    text: emoji,
-                                    position: const Offset(150, 250),
-                                  );
-                                  _stickers.add(newSticker);
-                                  _selectedStickerId = newSticker.id;
-                                });
+                              if (_isPickerOrEditorOpen) return;
+                              _isPickerOrEditorOpen = true;
+                              try {
+                                final newTextSticker = await StoryTextEditor.open(context);
+                                if (newTextSticker != null && mounted) {
+                                  setState(() {
+                                    _stickers.add(newTextSticker);
+                                    _selectedStickerId = newTextSticker.id;
+                                  });
+                                }
+                              } finally {
+                                _isPickerOrEditorOpen = false;
+                              }
+                            },
+                            onMusicTap: () async {
+                              if (_isPickerOrEditorOpen) return;
+                              _isPickerOrEditorOpen = true;
+                              try {
+                                final musicSticker = await StoryMusicPicker.open(context);
+                                if (musicSticker != null && mounted) {
+                                  setState(() {
+                                    _stickers.add(musicSticker);
+                                    _selectedStickerId = musicSticker.id;
+                                  });
+                                }
+                              } finally {
+                                _isPickerOrEditorOpen = false;
+                              }
+                            },
+                            onFilterTap: () async {
+                              if (_isPickerOrEditorOpen) return;
+                              _isPickerOrEditorOpen = true;
+                              try {
+                                await StoryFilterPicker.open(
+                                  context,
+                                  initialFilter: _activeFilter,
+                                  onFilterChanged: (filter) {
+                                    setState(() {
+                                      _activeFilter = filter;
+                                    });
+                                  },
+                                );
+                              } finally {
+                                _isPickerOrEditorOpen = false;
                               }
                             },
                           ),
@@ -611,10 +723,26 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
                           /// SEND
                           GestureDetector(
-                            onTap: () {
+                            onTap: () async {
                               AppLogger.d("\n🚀 SEND BUTTON CLICKED");
                               AppLogger.d("📤 Opening Story Share Sheet...");
-                              AppLogger.d("📁 MediaPath: ${widget.mediaPath}");
+
+                              // Show visual loader while capturing
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(
+                                  child: CircularProgressIndicator(color: Color(0xFFC358D7)),
+                                ),
+                              );
+
+                              final finalPath = await _captureFlattenedImage();
+
+                              if (context.mounted) {
+                                Navigator.pop(context); // Dismiss loading dialog
+                              }
+
+                              if (!context.mounted) return;
 
                               showModalBottomSheet(
                                 context: context,
@@ -627,7 +755,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                       listen: false,
                                     ),
                                     child: StoryShareSheet(
-                                      mediaPath: widget.mediaPath,
+                                      mediaPath: finalPath,
                                     ),
                                   );
                                 },
@@ -661,8 +789,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   }
 
   Widget _buildMediaPreview() {
+    Widget preview;
     if (_isVideo && _videoController != null) {
-      return FittedBox(
+      preview = FittedBox(
         fit: BoxFit.cover,
         child: SizedBox(
           width: _videoController!.value.size.width,
@@ -670,16 +799,31 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
           child: VideoPlayer(_videoController!),
         ),
       );
+    } else {
+      preview = Image.file(
+        File(widget.mediaPath),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(
+            child: Icon(Icons.error, color: Colors.white, size: 48),
+          );
+        },
+      );
     }
 
-    return Image.file(
-      File(widget.mediaPath),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return const Center(
-          child: Icon(Icons.error, color: Colors.white, size: 48),
-        );
-      },
+    if (!_activeFilter.hasMatrix) {
+      return preview;
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 120),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeOut,
+      child: ColorFiltered(
+        key: ValueKey(_activeFilter.type),
+        colorFilter: ColorFilter.matrix(_activeFilter.matrix),
+        child: preview,
+      ),
     );
   }
 }

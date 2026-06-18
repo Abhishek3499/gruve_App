@@ -3,7 +3,20 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/post/more_option_screen.dart';
 
 class PostActionButtons extends StatelessWidget {
-  const PostActionButtons({super.key});
+  final bool isMuted;
+  final VoidCallback onMuteToggle;
+  final VoidCallback? onTextTap;
+  final VoidCallback? onMusicTap;
+  final VoidCallback? onFilterTap;
+
+  const PostActionButtons({
+    super.key,
+    required this.isMuted,
+    required this.onMuteToggle,
+    this.onTextTap,
+    this.onMusicTap,
+    this.onFilterTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -12,66 +25,73 @@ class PostActionButtons extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-        _buildActionButton(
-          const Icon(Icons.volume_up, color: Colors.white),
-          "Volume",
-          size: 28,
-        ),
-        const SizedBox(width: 13),
-
-        _buildActionButton(
-          Image.asset(AppAssets.text, color: Colors.white),
-          "Aa",
-          size: 22,
-        ),
-        const SizedBox(width: 13),
-
-        _buildActionButton(
-          Image.asset(AppAssets.musics, color: Colors.white),
-          "Music",
-          size: 22,
-        ),
-        const SizedBox(width: 13),
-
-        _buildActionButton(
-          Image.asset(AppAssets.filter, color: Colors.white),
-          "Filter",
-          size: 22,
-        ),
-        const SizedBox(width: 13),
-        _buildActionButton(
-          Image.asset(AppAssets.cuts, color: Colors.white),
-          "Trim",
-          size: 22,
-        ),
-        const SizedBox(width: 13),
-        _buildActionButton(
-          Image.asset(AppAssets.download2, color: Colors.white),
-          "Download",
-          size: 22,
-        ),
-        const SizedBox(width: 13),
-        _buildActionButton(
-          Image.asset(AppAssets.gallery2, color: Colors.white),
-          "Gallery",
-          size: 22,
-        ),
-        const SizedBox(width: 13),
-
-        // ✅ MORE BUTTON
-        _buildActionButton(
-          const Icon(Icons.more_horiz, color: Colors.white),
-          "More",
-          size: 22,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MoreOptionScreen()),
+          _buildActionButton(
+            Icon(
+              isMuted ? Icons.volume_off : Icons.volume_up,
+              color: Colors.white,
+            ),
+            "Volume",
+            size: 28,
+            onTap: onMuteToggle,
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(width: 13),
+
+          _buildActionButton(
+            Image.asset(AppAssets.text, color: Colors.white),
+            "Aa",
+            size: 22,
+            onTap: onTextTap,
+          ),
+          const SizedBox(width: 13),
+
+          _buildActionButton(
+            Image.asset(AppAssets.musics, color: Colors.white),
+            "Music",
+            size: 22,
+            onTap: onMusicTap,
+          ),
+          const SizedBox(width: 13),
+
+          _buildActionButton(
+            Image.asset(AppAssets.filter, color: Colors.white),
+            "Filter",
+            size: 22,
+            onTap: onFilterTap,
+          ),
+          // const SizedBox(width: 13),
+          // _buildActionButton(
+          //   Image.asset(AppAssets.cuts, color: Colors.white),
+          //   "Trim",
+          //   size: 22,
+          // ),
+          // const SizedBox(width: 13),
+          // _buildActionButton(
+          //   Image.asset(AppAssets.download2, color: Colors.white),
+          //   "Download",
+          //   size: 22,
+          // ),
+          // const SizedBox(width: 13),
+          // _buildActionButton(
+          //   Image.asset(AppAssets.gallery2, color: Colors.white),
+          //   "Gallery",
+          //   size: 22,
+          // ),
+          const SizedBox(width: 13),
+
+          // ✅ MORE BUTTON
+          _buildActionButton(
+            const Icon(Icons.more_horiz, color: Colors.white),
+            "More",
+            size: 22,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MoreOptionScreen()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ✅ BUTTON BUILDER
   Widget _buildActionButton(

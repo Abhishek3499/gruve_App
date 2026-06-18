@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/widgets/app_cached_image.dart';
 
 class StorySelectorScreen extends StatefulWidget {
   final List<String> mediaPaths;
@@ -18,14 +19,12 @@ class _StorySelectorScreenState extends State<StorySelectorScreen> {
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
+      return AppCachedImage(
+        imageUrl: path,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey),
-          );
-        },
+        errorWidget: const Center(
+          child: Icon(Icons.broken_image, color: Colors.grey),
+        ),
       );
     } else {
       return Image.file(
@@ -138,14 +137,12 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
+      return AppCachedImage(
+        imageUrl: path,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey),
-          );
-        },
+        errorWidget: const Center(
+          child: Icon(Icons.broken_image, color: Colors.grey),
+        ),
       );
     } else {
       return Image.file(

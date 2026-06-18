@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:gruve_app/features/story_preview/widgets/story_music_picker.dart';
 import '../controller/camera_controller_service.dart';
 import '../widgets/camera_preview_widget.dart';
 import '../widgets/top_bar.dart';
@@ -24,8 +24,7 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   final CameraControllerService _cameraService = CameraControllerService();
   String? _selectedStickerId;
-  String? _selectedMusicName;
-  String? _selectedMusicPath;
+  bool _isPickerOpen = false;
 
   @override
   void initState() {
@@ -60,30 +59,20 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _pickMusic() async {
+    if (_isPickerOpen) return;
+    _isPickerOpen = true;
     try {
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.audio,
-      );
-
-      if (result != null && result.files.single.path != null) {
+      final musicSticker = await StoryMusicPicker.open(context);
+      if (musicSticker != null && mounted) {
+        ModeService().addSticker(musicSticker);
         setState(() {
-          _selectedMusicName = result.files.single.name;
-          _selectedMusicPath = result.files.single.path;
+          _selectedStickerId = musicSticker.id;
         });
-
-        CameraLogger.logVerbose('Selected music file path: $_selectedMusicPath');
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Selected Music: $_selectedMusicName 🎵'),
-            backgroundColor: const Color(0xFFC358D7),
-          ),
-        );
       }
     } catch (e) {
-      CameraLogger.log('Error picking music file: $e');
+      CameraLogger.log('Error opening music picker: $e');
+    } finally {
+      _isPickerOpen = false;
     }
   }
 
@@ -174,51 +163,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Widget _buildSelectedMusicBadge() {
-    if (_selectedMusicName == null) return const SizedBox.shrink();
-
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.only(top: 104),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFC358D7).withValues(alpha: 0.4), width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.music_note, color: Color(0xFFC358D7), size: 16),
-            const SizedBox(width: 6),
-            Flexible(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 200),
-                child: Text(
-                  _selectedMusicName!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedMusicName = null;
-                  _selectedMusicPath = null;
-                });
-              },
-              child: const Icon(Icons.close, color: Colors.white70, size: 14),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildCountdownOverlay() {

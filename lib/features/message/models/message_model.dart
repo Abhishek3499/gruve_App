@@ -1,6 +1,27 @@
 import '../../../core/parsing/safe_parsing_helpers.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
+enum MessageStatus {
+  sent,
+  delivered,
+  read,
+  failed;
+
+  static MessageStatus fromString(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'delivered':
+        return MessageStatus.delivered;
+      case 'read':
+        return MessageStatus.read;
+      case 'failed':
+        return MessageStatus.failed;
+      case 'sent':
+      default:
+        return MessageStatus.sent;
+    }
+  }
+}
+
 class MessageModel {
   final String id;
   final String text;
@@ -13,6 +34,7 @@ class MessageModel {
   final bool isRead;
   final String? senderAvatar;
   final String? senderName;
+  final MessageStatus status;
 
   const MessageModel({
     required this.id,
@@ -26,6 +48,7 @@ class MessageModel {
     this.isRead = false,
     this.senderAvatar,
     this.senderName,
+    this.status = MessageStatus.sent,
   });
 
   factory MessageModel.fromJson(
@@ -69,6 +92,9 @@ class MessageModel {
             fallback: false,
           );
 
+    final explicitIsRead = _resolveIsRead(safeJson);
+    final status = _resolveStatus(safeJson, explicitIsRead);
+
     return MessageModel(
       id: _resolveMessageId(safeJson),
       text: _resolveMessageText(safeJson),
@@ -86,9 +112,10 @@ class MessageModel {
         const ['is_pinned', 'isPinned'],
         fallback: false,
       ),
-      isRead: _resolveIsRead(safeJson),
+      isRead: status == MessageStatus.read,
       senderAvatar: senderAvatar,
       senderName: senderName,
+      status: status,
     );
   }
 
@@ -102,6 +129,7 @@ class MessageModel {
       'created_at': timestamp.toIso8601String(),
       'sender_id': senderId,
       'is_read': isRead,
+      'status': status.name,
       if (imagePath != null) 'image': imagePath,
     };
   }
@@ -118,6 +146,7 @@ class MessageModel {
     bool? isRead,
     String? senderAvatar,
     String? senderName,
+    MessageStatus? status,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -128,9 +157,10 @@ class MessageModel {
       imagePath: imagePath ?? this.imagePath,
       replyTo: replyTo ?? this.replyTo,
       isPinned: isPinned ?? this.isPinned,
-      isRead: isRead ?? this.isRead,
+      isRead: isRead ?? (status != null ? status == MessageStatus.read : this.isRead),
       senderAvatar: senderAvatar ?? this.senderAvatar,
       senderName: senderName ?? this.senderName,
+      status: status ?? this.status,
     );
   }
 
@@ -209,6 +239,32 @@ class MessageModel {
     }
 
     return false;
+  }
+
+  static MessageStatus _resolveStatus(Map<String, dynamic> json, bool fallbackIsRead) {
+    final statusStr = json['status']?.toString();
+    if (statusStr != null && statusStr.isNotEmpty) {
+      return MessageStatus.fromString(statusStr);
+    }
+
+    final deliveryStatus = json['delivery_status'];
+    if (deliveryStatus is Map) {
+      final deliveryMap = Map<String, dynamic>.from(deliveryStatus);
+      final readAt = deliveryMap['read_at'] ?? deliveryMap['readAt'];
+      if (readAt != null && readAt.toString().trim().isNotEmpty) {
+        return MessageStatus.read;
+      }
+      final deliveredAt = deliveryMap['delivered_at'] ?? deliveryMap['deliveredAt'];
+      if (deliveredAt != null && deliveredAt.toString().trim().isNotEmpty) {
+        return MessageStatus.delivered;
+      }
+    }
+
+    if (fallbackIsRead) {
+      return MessageStatus.read;
+    }
+
+    return MessageStatus.sent;
   }
 
   static DateTime _parseDateTime(dynamic value) {

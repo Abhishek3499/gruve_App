@@ -100,7 +100,7 @@ class LogoutWidget extends StatelessWidget {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFBB86FC)),
                                       ),
                                     )
                                   : const Text(

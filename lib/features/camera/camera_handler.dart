@@ -42,7 +42,10 @@ class CameraHandler {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PostPreviewScreen(mediaPath: imagePath),
+              builder: (context) => PostPreviewScreen(
+                mediaPath: imagePath,
+                initialStickers: capture?.stickers ?? [],
+              ),
             ),
           );
 

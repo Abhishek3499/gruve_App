@@ -429,7 +429,7 @@ class SocketService {
 
     // 🚨 PRODUCTION FIX: Use correct event structure for backend
     final messageData = {
-      'type': 'send_message', // ✅ Correct event type
+      'type': 'chat.send', // ✅ Correct event type
       'conversation_id': conversationId, // ✅ Required: UUID string
       'content': message, // ✅ Required: message content
       'sender_id': senderId ?? 'current_user', // ✅ Required: sender ID
@@ -453,6 +453,23 @@ class SocketService {
       return sent;
     } catch (e) {
       AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");
+      return false;
+    }
+  }
+
+  /// Send an event map directly via WebSocket (e.g. read receipt)
+  bool sendEvent(Map<String, dynamic> eventData) {
+    if (!_reconnectManager.isConnected) {
+      AppLogger.d("⚠️ [SocketService] ⚠️ WEBSOCKET NOT CONNECTED - Event not sent");
+      return false;
+    }
+
+    try {
+      AppLogger.d("🚀 [SocketService] 🚀 Sending event via WebSocket: ${eventData['type']}");
+      final sent = _reconnectManager.sendMessage(eventData);
+      return sent;
+    } catch (e) {
+      AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND EVENT: $e");
       return false;
     }
   }

@@ -192,11 +192,11 @@ class PersonalInfoCard extends StatelessWidget {
           child: Center(
             child: isUpdating
                 ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: 24,
+                    height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFBB86FC)),
                     ),
                   )
                 : const Text(

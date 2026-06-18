@@ -43,7 +43,7 @@ class _MessageScreenState extends State<MessageScreen> {
 
   Future<void> _fetchInitialData() async {
     _prefetchUsersForAvatarRow();
-    await context.read<MessageProvider>().fetchConversations();
+    await context.read<MessageProvider>().fetchConversations(refresh: true);
     AppLogger.d('[MessageScreen] Conversations loaded');
   }
 
@@ -395,13 +395,18 @@ class _MessageScreenState extends State<MessageScreen> {
       ),
     );
 
-    if (shouldRefresh == true && mounted) {
+    if (!mounted) return;
+
+    if (shouldRefresh == true) {
       AppLogger.d('🔄 [MessageScreen] Refreshing after block action');
       context.read<MessageProvider>().removeConversation(conversation.id);
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         await _handleRefresh();
       });
+    } else {
+      AppLogger.d('🔄 [MessageScreen] User returned from ChatScreen - refreshing list');
+      unawaited(context.read<MessageProvider>().fetchConversations(refresh: true));
     }
   }
 }

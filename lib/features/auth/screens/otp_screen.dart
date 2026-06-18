@@ -631,7 +631,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                                         strokeWidth: 2.0,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              Color(0xFFB86AD0),
+                                              Color(0xFFBB86FC),
                                             ),
                                       ),
                                     )

@@ -5,6 +5,8 @@ class StoryActionButtons extends StatelessWidget {
   final bool isMuted;
   final VoidCallback onMuteToggle;
   final VoidCallback? onTextTap;
+  final VoidCallback? onMusicTap;
+  final VoidCallback? onFilterTap;
   final VoidCallback? onSpeedTap;
   final double currentSpeed;
 
@@ -13,6 +15,8 @@ class StoryActionButtons extends StatelessWidget {
     required this.isMuted,
     required this.onMuteToggle,
     this.onTextTap,
+    this.onMusicTap,
+    this.onFilterTap,
     this.onSpeedTap,
     this.currentSpeed = 1.0,
   });
@@ -24,6 +28,7 @@ class StoryActionButtons extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // VOLUME
         _buildActionButton(
           Icon(
             isMuted ? Icons.volume_off : Icons.volume_up,
@@ -35,6 +40,7 @@ class StoryActionButtons extends StatelessWidget {
         ),
         const SizedBox(width: 15),
 
+        // TEXT (Aa)
         _buildActionButton(
           Image.asset(AppAssets.text, color: Colors.white),
           "Aa",
@@ -43,20 +49,25 @@ class StoryActionButtons extends StatelessWidget {
         ),
         const SizedBox(width: 15),
 
+        // MUSIC
         _buildActionButton(
           Image.asset(AppAssets.musics, color: Colors.white),
           "Music",
           size: 22,
+          onTap: onMusicTap,
         ),
         const SizedBox(width: 15),
 
+        // EFFECTS
         _buildActionButton(
           Image.asset(AppAssets.filter, color: Colors.white),
           "Effects",
           size: 22,
+          onTap: onFilterTap,
         ),
         const SizedBox(width: 15),
 
+        // SPEED (Video only)
         if (onSpeedTap != null) ...[
           _buildActionButton(
             const Icon(Icons.speed, color: Colors.white, size: 24),
@@ -67,44 +78,43 @@ class StoryActionButtons extends StatelessWidget {
           const SizedBox(width: 15),
         ],
 
-        // ✅ MORE BUTTON
-        _buildActionButton(
-          Image.asset(AppAssets.extradots, color: Colors.white),
-          "More",
-          size: 22,
-          key: _moreKey,
-          onTap: () {
-            final RenderBox renderBox =
-                _moreKey.currentContext!.findRenderObject() as RenderBox;
+        // MORE
+        // _buildActionButton(
+        //   Image.asset(AppAssets.extradots, color: Colors.white),
+        //   "More",
+        //   size: 22,
+        //   key: _moreKey,
+        //   onTap: () {
+        //     final RenderBox renderBox =
+        //         _moreKey.currentContext!.findRenderObject() as RenderBox;
 
-            final position = renderBox.localToGlobal(Offset.zero);
-            final size = renderBox.size;
+        //     final position = renderBox.localToGlobal(Offset.zero);
+        //     final size = renderBox.size;
 
-            showMenu(
-              context: context,
-              position: RelativeRect.fromLTRB(
-                position.dx,
-                position.dy + size.height + 8,
-                position.dx + size.width,
-                0,
-              ),
-              color: const Color.fromARGB(255, 80, 33, 86),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16), // 👈 cleaner radius
-              ),
-              items: [
-                _popupItem(AppAssets.draw, 'Draw'),
-                _popupItem(AppAssets.saves, 'Save'),
-                _popupItem(AppAssets.turnoff, 'Turn off commenting'),
-              ],
-            );
-          },
-        ),
+        //     showMenu(
+        //       context: context,
+        //       position: RelativeRect.fromLTRB(
+        //         position.dx,
+        //         position.dy + size.height + 8,
+        //         position.dx + size.width,
+        //         0,
+        //       ),
+        //       color: const Color.fromARGB(255, 80, 33, 86),
+        //       shape: RoundedRectangleBorder(
+        //         borderRadius: BorderRadius.circular(16),
+        //       ),
+        //       items: [
+        //         _popupItem(AppAssets.draw, 'Draw'),
+        //         _popupItem(AppAssets.saves, 'Save'),
+        //         _popupItem(AppAssets.turnoff, 'Turn off commenting'),
+        //       ],
+        //     );
+        //   },
+        // ),
       ],
     );
   }
 
-  // ✅ BUTTON BUILDER
   Widget _buildActionButton(
     Widget icon,
     String tooltip, {
@@ -131,19 +141,13 @@ class StoryActionButtons extends StatelessWidget {
     );
   }
 
-  // 🔥 COMPACT POPUP ITEM (HEIGHT FIXED HERE)
   PopupMenuItem _popupItem(String assetPath, String text) {
     return PopupMenuItem(
       height: 35,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
-          Image.asset(
-            assetPath,
-            color: Colors.white, // 👈 white tint
-            width: 18,
-            height: 18,
-          ),
+          Image.asset(assetPath, color: Colors.white, width: 18, height: 18),
           const SizedBox(width: 8),
           Text(text, style: const TextStyle(color: Colors.white, fontSize: 14)),
         ],
