@@ -58,29 +58,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     _newPasswordController.addListener(_validatePasswords);
     _confirmPasswordController.addListener(_validatePasswords);
-    _setupFocusListeners();
   }
 
-  void _setupFocusListeners() {
-    _newPasswordFocus.addListener(() {
-      if (!_newPasswordFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _passwordTouched = true;
-          });
-        }
-      }
-    });
-    _confirmPasswordFocus.addListener(() {
-      if (!_confirmPasswordFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _confirmPasswordTouched = true;
-          });
-        }
-      }
-    });
-  }
+
 
   bool _validatePasswords() {
     final password = _newPasswordController.text;

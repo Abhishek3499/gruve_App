@@ -62,20 +62,8 @@ class StoryAvatarIndicator extends StatelessWidget {
       height: avatarDiameter,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: innerBackgroundColor,
-          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-        ),
+        color: innerBackgroundColor,
+        image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
       ),
     );
 
@@ -99,19 +87,6 @@ class StoryAvatarIndicator extends StatelessWidget {
                   Color(0xFF962FBF),
                 ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: (isViewed ? Colors.grey : const Color(0xFFD62976))
-                .withValues(alpha: 0.35),
-            blurRadius: 18,
-            spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Container(
         padding: EdgeInsets.all(ringGap),

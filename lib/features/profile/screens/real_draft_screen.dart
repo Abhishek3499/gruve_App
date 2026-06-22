@@ -5,6 +5,7 @@ import 'package:gruve_app/features/profile/widgets/draft_tile.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_draft_model.dart';
 import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ReelsDraftsScreen extends StatefulWidget {
   const ReelsDraftsScreen({super.key});
@@ -25,6 +26,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
   }
 
   void _editDraft(PostDraft draft) async {
+    AppLogger.d("📝 [ReelsDraftsScreen] Editing draft with ID: '${draft.id}', caption: '${draft.caption}', mediaUrl: '${draft.mediaUrl}'");
     if (draft.mediaUrl == null || draft.mediaUrl!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
-import 'package:gruve_app/core/routing/app_route_names.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
@@ -12,6 +11,7 @@ import 'package:gruve_app/features/story_preview/widgets/story_view_topbar/story
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/widgets/app_cached_image.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 
 void _log(String message) {
   AppLogger.d(message);
@@ -169,7 +169,8 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         sheetNavigator.pop();
 
         _log('[Flow] Navigation triggered');
-        rootNavigator.pushReplacementNamed(AppRouteNames.profile);
+        PostShareFlowBridge.onRequestShowProfileTab?.call();
+        rootNavigator.pop();
       } else {
         _log('[Flow] API FAILED');
         if (mounted && _createController.message.isNotEmpty) {

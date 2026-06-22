@@ -113,39 +113,26 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
           height: 56,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
-
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF43184D), // 🔥 exact figma color
+                Color(0xFF43184D),
                 Color(0xFF2A0D33),
               ],
             ),
-
             border: Border.all(
               color: effectiveErrorText != null
                   ? const Color(0xFFFF6B6B)
                   : const Color(0xFFB86AD0),
               width: 1.2,
             ),
-
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFB86AD0).withValues(alpha: 0.25),
-                blurRadius: 12,
-                spreadRadius: 1,
-              ),
-            ],
           ),
           child: Row(
             children: [
               // ── COUNTRY PICKER ──────────────────────────
               GestureDetector(
                 onTap: () {
-                  // Dismiss keyboard first to avoid modal layout animation jank/lag
-                  FocusScope.of(context).unfocus();
-
                   showCountryPicker(
                     context: context,
                     favorite: const <String>['IN', 'US', 'GB'],
@@ -232,7 +219,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (mounted) setState(() => _errorText = error);
                           });
-                          return null; // andar mat dikhao
+                          return null;
                         },
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
@@ -247,7 +234,6 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             ],
           ),
         ),
-
         // ✅ Error bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),

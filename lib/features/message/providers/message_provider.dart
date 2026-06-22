@@ -116,7 +116,7 @@ class MessageProvider extends ChangeNotifier {
 
   // Getters
   List<ConversationModel> get conversations =>
-      List.unmodifiable(_conversations);
+      List.unmodifiable(_conversations.where((c) => c.hasLastMessage));
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isRefreshing => _isRefreshing;
@@ -127,18 +127,18 @@ class MessageProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
 
   /// Get conversations count
-  int get conversationCount => _conversations.length;
+  int get conversationCount => conversations.length;
 
   /// Get total unread count across all conversations
   int get totalUnreadCount {
-    return _conversations.fold(
+    return conversations.fold(
       0,
       (sum, conversation) => sum + conversation.unreadCount,
     );
   }
 
   /// Check if there are any conversations
-  bool get hasConversations => _conversations.isNotEmpty;
+  bool get hasConversations => conversations.isNotEmpty;
 
   /// Get conversation by user ID (other user)
   ConversationModel? getConversationByUserId(String userId) {

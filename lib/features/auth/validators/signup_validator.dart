@@ -53,16 +53,7 @@ class SignupValidator {
     if (trimmed.length < 3) return "Username must be at least 3 characters";
     if (trimmed.length > 30) return "Username must be 30 characters or less";
     if (!RegExp(r'^[a-zA-Z0-9._]+$').hasMatch(trimmed)) {
-      return "Username can only contain letters, numbers, dots, and underscores";
-    }
-    if (trimmed.startsWith('.') ||
-        trimmed.endsWith('.') ||
-        trimmed.startsWith('_') ||
-        trimmed.endsWith('_')) {
-      return "Username cannot start or end with dot or underscore";
-    }
-    if (trimmed.contains('..') || trimmed.contains('__')) {
-      return "Username cannot contain repeated dots or underscores";
+      return "Username can contain only letters, numbers, dots (.), and underscores (_).";
     }
     return null;
   }

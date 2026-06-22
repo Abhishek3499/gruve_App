@@ -8,7 +8,6 @@ import '../widgets/search_bar.dart';
 
 import '../data/services/recent_search_service.dart';
 import '../../../../core/widgets/shimmer/search_shimmer.dart';
-import '../../message/controllers/conversation_controller.dart';
 import '../../message/providers/message_provider.dart';
 import '../../message/screen/chat_screen.dart';
 import '../../user_profile/presentation/screens/user_profile_screen.dart';
@@ -176,7 +175,6 @@ class _SearchPageState extends State<SearchPage> {
         );
 
         final messageProvider = context.read<MessageProvider>();
-        final conversationController = context.read<ConversationController>();
 
         final existingConversation = messageProvider.getConversationByUserId(
           user.id,
@@ -202,55 +200,20 @@ class _SearchPageState extends State<SearchPage> {
           ).then((_) => _loadRecentSearches());
         } else {
           AppLogger.d(
-            '🆕 [SearchPage] Creating new conversation with user: ${user.name}',
+            '🆕 [SearchPage] Opening ChatScreen immediately for user: ${user.name}',
           );
           if (!mounted) return;
 
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                receiverId: user.id,
+                userName: user.name,
+                profileImage: user.avatar.isNotEmpty ? user.avatar : null,
+              ),
             ),
-          );
-
-          try {
-            final conversation = await conversationController
-                .createOrGetConversation(user.id);
-
-            final existingInProvider = messageProvider.getConversationById(
-              conversation.id,
-            );
-            if (existingInProvider == null) {
-              messageProvider.addConversation(conversation);
-            }
-
-            if (!mounted) return;
-            Navigator.pop(context);
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChatScreen(
-                  conversationId: conversation.id,
-                  receiverId: user.id,
-                  userName: user.name,
-                  profileImage: user.avatar.isNotEmpty ? user.avatar : null,
-                  userOrConversation: conversation,
-                ),
-              ),
-            ).then((_) => _loadRecentSearches());
-          } catch (e) {
-            AppLogger.d('❌ [SearchPage] Error creating conversation: $e');
-            if (!mounted) return;
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to start conversation: ${e.toString()}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+          ).then((_) => _loadRecentSearches());
         }
       }
     } finally {

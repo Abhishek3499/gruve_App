@@ -149,6 +149,7 @@ class PersonalInfoCard extends StatelessWidget {
           enabled: !fieldReadOnly, // ✅ Read-only mode
           readOnly: fieldReadOnly, // ✅ Read-only mode
           maxLines: isBio ? 3 : 1,
+          maxLength: isBio ? 150 : null,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14,
@@ -161,6 +162,7 @@ class PersonalInfoCard extends StatelessWidget {
             enabledBorder: InputBorder.none,
             disabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
+            counterText: '',
           ),
         ),
       ],

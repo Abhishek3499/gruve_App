@@ -143,6 +143,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         postImage: n.postImage,
         isRead: n.isRead,
         onTap: () => _handleNotificationTap(n),
+        userId: n.actor?.id,
       );
     }
   }

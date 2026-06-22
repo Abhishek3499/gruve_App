@@ -40,8 +40,8 @@ class ChatScreen extends StatefulWidget {
     this.profileImage,
     this.userOrConversation,
   }) : assert(
-         conversationId != null || userOrConversation != null,
-         'Either conversationId or userOrConversation must be provided',
+         conversationId != null || receiverId != null || userOrConversation != null,
+         'Either conversationId, receiverId, or userOrConversation must be provided',
        );
 
   @override
@@ -90,7 +90,7 @@ class _ChatScreenState extends State<ChatScreen> {
       return userData['name']?.toString() ?? 'Unknown';
     }
 
-    return userData.name?.toString() ?? 'Unknown';
+    return userData?.name?.toString() ?? 'Unknown';
   }
 
   String get _userId {
@@ -109,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
       return userData['id']?.toString() ?? '';
     }
 
-    return userData.id?.toString() ?? '';
+    return userData?.id?.toString() ?? '';
   }
 
   String get _conversationId {
@@ -131,7 +131,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // Priority 3: Legacy user data
     try {
       final dynamic legacyUser = widget.userOrConversation;
-      return legacyUser.conversationId?.toString() ?? '';
+      return legacyUser?.conversationId?.toString() ?? '';
     } catch (_) {
       return '';
     }
@@ -153,7 +153,7 @@ class _ChatScreenState extends State<ChatScreen> {
       return userData['profileImage']?.toString();
     }
 
-    return userData.profileImage?.toString();
+    return userData?.profileImage?.toString();
   }
 
   List<MessageModel> get _messages => _messageController.messages;

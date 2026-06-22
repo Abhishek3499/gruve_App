@@ -165,6 +165,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    FocusScope.of(context).unfocus();
     final fullname = _nameController.text.trim();
     final username = _usernameController.text.trim();
     final bio = _bioController.text.trim().isEmpty
@@ -321,20 +322,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // Background color split to maintain top header purple and bottom dark body
+                        // A top purple block extending far above to cover overscroll stretch
+                        Positioned(
+                          top: -500,
+                          left: 0,
+                          right: 0,
+                          height: 620, // 500px buffer + 120px normal height
+                          child: Container(
+                            color: const Color(0xFF7A2C8F),
+                          ),
+                        ),
+                        // The bottom body background
                         Positioned.fill(
-                          child: Column(
-                            children: [
-                              Container(
-                                height: 120,
-                                color: const Color(0xFF7A2C8F),
-                              ),
-                              Expanded(
-                                child: Container(
-                                  color: const Color(0xFF1B182D),
-                                ),
-                              ),
-                            ],
+                          top: 120,
+                          child: Container(
+                            color: const Color(0xFF1B182D),
                           ),
                         ),
                         // The dark form container

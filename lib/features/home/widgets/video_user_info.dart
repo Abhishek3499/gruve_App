@@ -5,7 +5,6 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music_screen/music_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/subscribe_controller.dart';
 import 'subscribe_button.dart';
 
@@ -51,6 +50,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   @override
   void initState() {
     super.initState();
+    _isResolvingIdentity = true;
     _resolveProfileIdentity();
   }
 
@@ -58,15 +58,12 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   void didUpdateWidget(covariant VideoUserInfo oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.userId != widget.userId) {
+      _isResolvingIdentity = true;
       _resolveProfileIdentity();
     }
   }
 
   Future<void> _resolveProfileIdentity() async {
-    setState(() {
-      _isResolvingIdentity = true;
-    });
-
     final resolution = await ProfileIdentityService.instance
         .resolveProfileIdentity(widget.userId);
 
@@ -386,28 +383,14 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
             children: [
               GestureDetector(
                 onTap: () => _openProfile(context),
-                child: Container(
-                  width: 35,
-                  height: 35,
-                  decoration: const BoxDecoration(shape: BoxShape.circle),
-                  clipBehavior: Clip.antiAlias,
-                  child:
-                      (widget.profilePicture != null &&
-                          widget.profilePicture!.isNotEmpty &&
-                          widget.profilePicture!.startsWith('http'))
-                      ? CachedNetworkImage(
-                          imageUrl: widget.profilePicture!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) {
-                            return Image.asset(
-                              AppAssets.user,
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                      : Image.asset(AppAssets.user, fit: BoxFit.cover),
+                child: OptimizedAvatar(
+                  imageUrl: widget.profilePicture,
+                  radius: 17.5,
+                  name: widget.username,
+                  fallback: Image.asset(
+                    AppAssets.user,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

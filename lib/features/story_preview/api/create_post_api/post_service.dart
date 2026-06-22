@@ -73,14 +73,13 @@ class PostService {
 
   /// Returns true if the path points to a video file.
   static bool _isVideo(String path) {
-    final lower = path.toLowerCase();
-    return lower.endsWith('.mp4') ||
-        lower.endsWith('.mov') ||
-        lower.endsWith('.avi') ||
-        lower.endsWith('.mkv');
+    final uri = Uri.tryParse(path);
+    final cleanPath = uri?.path.toLowerCase() ?? path.toLowerCase();
+    return cleanPath.endsWith('.mp4') ||
+        cleanPath.endsWith('.mov') ||
+        cleanPath.endsWith('.avi') ||
+        cleanPath.endsWith('.mkv');
   }
-
-
 
   Future<CreatePostResponse> createPost({
     String? caption,
@@ -94,8 +93,11 @@ class PostService {
     bool hideShareCount = false,
     List<String>? taggedUserIds,
   }) async {
+    File? tempDownloadedFile;
     try {
-      final isVideo = mediaPath != null && mediaPath.isNotEmpty ? _isVideo(mediaPath) : false;
+      final isVideo = mediaPath != null && mediaPath.isNotEmpty
+          ? _isVideo(mediaPath)
+          : false;
       AppLogger.d('\n🚀 [PostService] ===== CREATE POST START =====');
       AppLogger.d('📁 [PostService] mediaPath: $mediaPath');
 
@@ -110,12 +112,22 @@ class PostService {
         formData.fields.add(MapEntry('location_name', locationName.trim()));
       }
 
-      formData.fields.add(MapEntry('audience_everyone', audienceEveryone.toString()));
-      formData.fields.add(MapEntry('audience_close_friends', audienceCloseFriends.toString()));
+      formData.fields.add(
+        MapEntry('audience_everyone', audienceEveryone.toString()),
+      );
+      formData.fields.add(
+        MapEntry('audience_close_friends', audienceCloseFriends.toString()),
+      );
       formData.fields.add(MapEntry('schedule_reel', scheduleReel.toString()));
-      formData.fields.add(MapEntry('upload_high_quality', uploadHighQuality.toString()));
-      formData.fields.add(MapEntry('hide_like_count', hideLikeCount.toString()));
-      formData.fields.add(MapEntry('hide_share_count', hideShareCount.toString()));
+      formData.fields.add(
+        MapEntry('upload_high_quality', uploadHighQuality.toString()),
+      );
+      formData.fields.add(
+        MapEntry('hide_like_count', hideLikeCount.toString()),
+      );
+      formData.fields.add(
+        MapEntry('hide_share_count', hideShareCount.toString()),
+      );
 
       if (taggedUserIds != null && taggedUserIds.isNotEmpty) {
         for (final id in taggedUserIds) {
@@ -124,9 +136,25 @@ class PostService {
       }
 
       if (mediaPath != null && mediaPath.isNotEmpty) {
-        final file = File(mediaPath);
+        File file;
+        if (mediaPath.startsWith('http://') ||
+            mediaPath.startsWith('https://')) {
+          AppLogger.d(
+            '📥 [PostService] Downloading remote draft media: $mediaPath',
+          );
+          final tempDir = Directory.systemTemp;
+          final fileName = mediaPath.split('/').last.split('?').first;
+          final tempFile = File('${tempDir.path}/$fileName');
+          await _dio.download(mediaPath, tempFile.path);
+          file = tempFile;
+          tempDownloadedFile = tempFile;
+          AppLogger.d('📥 [PostService] Downloaded to: ${file.path}');
+        } else {
+          file = File(mediaPath);
+        }
+
         if (file.existsSync()) {
-          final fileName = mediaPath.replaceAll(r'\', '/').split('/').last;
+          final fileName = file.path.replaceAll(r'\', '/').split('/').last;
           File uploadFile = file;
           if (!isVideo) {
             AppLogger.d('🗜️ [PostService] Compressing image for post...');
@@ -136,21 +164,25 @@ class PostService {
                 maxFileSizeKB: 400,
               );
             } catch (e) {
-              AppLogger.d('⚠️ [PostService] Image compression failed, using original: $e');
+              AppLogger.d(
+                '⚠️ [PostService] Image compression failed, using original: $e',
+              );
             }
           }
-          formData.files.add(MapEntry(
-            'file',
-            await MultipartFile.fromFile(
-              uploadFile.path,
-              filename: fileName,
-              contentType: isVideo
-                  ? DioMediaType('video', 'mp4')
-                  : DioMediaType('image', 'jpeg'),
+          formData.files.add(
+            MapEntry(
+              'file',
+              await MultipartFile.fromFile(
+                uploadFile.path,
+                filename: fileName,
+                contentType: isVideo
+                    ? DioMediaType('video', 'mp4')
+                    : DioMediaType('image', 'jpeg'),
+              ),
             ),
-          ));
+          );
         } else {
-          AppLogger.d('❌ [PostService] File not found at path: $mediaPath');
+          AppLogger.d('❌ [PostService] File not found at path: ${file.path}');
           throw Exception('File not found at path');
         }
       }
@@ -175,11 +207,22 @@ class PostService {
       AppLogger.d('\n❌ [PostService] DIO ERROR');
       AppLogger.d('⚠️ [PostService] type: ${e.type}');
       AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
-      AppLogger.d('📥 [PostService] response status: ${e.response?.statusCode}');
+      AppLogger.d(
+        '📥 [PostService] response status: ${e.response?.statusCode}',
+      );
       rethrow;
     } catch (e) {
       AppLogger.d('\n💥 [PostService] UNKNOWN ERROR: $e');
       rethrow;
+    } finally {
+      if (tempDownloadedFile != null && tempDownloadedFile.existsSync()) {
+        try {
+          await tempDownloadedFile.delete();
+          AppLogger.d('🧹 [PostService] Temporary downloaded file deleted');
+        } catch (e) {
+          AppLogger.d('⚠️ [PostService] Failed to delete temp file: $e');
+        }
+      }
     }
   }
 
@@ -200,7 +243,8 @@ class PostService {
 
       final Map<String, dynamic> dataMap = {
         if (caption != null && caption.isNotEmpty) 'caption': caption,
-        if (locationName != null && locationName.isNotEmpty) 'location_name': locationName,
+        if (locationName != null && locationName.isNotEmpty)
+          'location_name': locationName,
         'audience_everyone': audienceEveryone,
         'audience_close_friends': audienceCloseFriends,
         'schedule_reel': scheduleReel,
@@ -223,7 +267,9 @@ class PostService {
                 maxFileSizeKB: 400,
               );
             } catch (e) {
-              AppLogger.d('⚠️ [PostService] Draft image compression failed, using original: $e');
+              AppLogger.d(
+                '⚠️ [PostService] Draft image compression failed, using original: $e',
+              );
             }
           }
           dataMap['file'] = await MultipartFile.fromFile(
@@ -258,7 +304,9 @@ class PostService {
       AppLogger.d('\n❌ [PostService] SAVE DRAFT DIO ERROR');
       AppLogger.d('⚠️ [PostService] type: ${e.type}');
       AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
-      AppLogger.d('📥 [PostService] response status: ${e.response?.statusCode}');
+      AppLogger.d(
+        '📥 [PostService] response status: ${e.response?.statusCode}',
+      );
       rethrow;
     } catch (e) {
       AppLogger.d('\n💥 [PostService] SAVE DRAFT UNKNOWN ERROR: $e');
@@ -273,10 +321,7 @@ class PostService {
     try {
       AppLogger.d('🚀 [PostService] ===== GET DRAFTS START =====');
       final token = await TokenStorage.getAccessToken();
-      final queryParams = {
-        'page': page,
-        'limit': limit,
-      };
+      final queryParams = {'page': page, 'limit': limit};
 
       final res = await _getWithRetry(
         "posts/drafts/",
@@ -313,35 +358,46 @@ class PostService {
   }) async {
     try {
       AppLogger.d('\n🚀 [PostService] ===== UPDATE DRAFT START =====');
+      AppLogger.d('🆔 [PostService] draftId: $draftId');
+      AppLogger.d('📁 [PostService] mediaPath: $mediaPath');
       final token = await TokenStorage.getAccessToken();
 
       final Map<String, dynamic> dataMap = {
-        'caption':? caption,
-        'location_name':? locationName,
-        'audience_everyone':? audienceEveryone,
-        'audience_close_friends':? audienceCloseFriends,
-        'schedule_reel':? scheduleReel,
-        'upload_high_quality':? uploadHighQuality,
-        'hide_like_count':? hideLikeCount,
-        'hide_share_count':? hideShareCount,
+        'caption': ?caption,
+        'location_name': ?locationName,
+        'audience_everyone': ?audienceEveryone,
+        'audience_close_friends': ?audienceCloseFriends,
+        'schedule_reel': ?scheduleReel,
+        'upload_high_quality': ?uploadHighQuality,
+        'hide_like_count': ?hideLikeCount,
+        'hide_share_count': ?hideShareCount,
         'clear_media': clearMedia,
       };
 
-      if (mediaPath != null && mediaPath.isNotEmpty && !mediaPath.startsWith('http') && !mediaPath.startsWith('https')) {
+      AppLogger.d('📦 [PostService] updateDraft dataMap: $dataMap');
+
+      if (mediaPath != null &&
+          mediaPath.isNotEmpty &&
+          !mediaPath.startsWith('http') &&
+          !mediaPath.startsWith('https')) {
         final file = File(mediaPath);
         if (file.existsSync()) {
           final isVideo = _isVideo(mediaPath);
           final fileName = mediaPath.replaceAll(r'\', '/').split('/').last;
           File uploadFile = file;
           if (!isVideo) {
-            AppLogger.d('🗜️ [PostService] Compressing draft image for update...');
+            AppLogger.d(
+              '🗜️ [PostService] Compressing draft image for update...',
+            );
             try {
               uploadFile = await ImageFilterProcessor.compressImageForUpload(
                 file,
                 maxFileSizeKB: 400,
               );
             } catch (e) {
-              AppLogger.d('⚠️ [PostService] Draft image compression failed during update, using original: $e');
+              AppLogger.d(
+                '⚠️ [PostService] Draft image compression failed during update, using original: $e',
+              );
             }
           }
           dataMap['file'] = await MultipartFile.fromFile(
@@ -369,6 +425,7 @@ class PostService {
       );
 
       AppLogger.d('✅ [PostService] Update Draft Status: ${res.statusCode}');
+      AppLogger.d('📥 [PostService] Update Draft Response body: ${res.data}');
       AppLogger.d('🏁 [PostService] ===== UPDATE DRAFT SUCCESS =====\n');
 
       return Map<String, dynamic>.from(res.data);
@@ -376,7 +433,10 @@ class PostService {
       AppLogger.d('\n❌ [PostService] UPDATE DRAFT DIO ERROR');
       AppLogger.d('⚠️ [PostService] type: ${e.type}');
       AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
-      AppLogger.d('📥 [PostService] response status: ${e.response?.statusCode}');
+      AppLogger.d(
+        '📥 [PostService] response status: ${e.response?.statusCode}',
+      );
+      AppLogger.d('📥 [PostService] response body: ${e.response?.data}');
       rethrow;
     } catch (e) {
       AppLogger.d('\n💥 [PostService] UPDATE DRAFT UNKNOWN ERROR: $e');
@@ -393,9 +453,7 @@ class PostService {
 
       final res = await _dio.delete(
         'posts/drafts/$draftId/',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
       AppLogger.d('✅ [PostService] Delete Draft Status: ${res.statusCode}');
@@ -453,7 +511,9 @@ class PostService {
       AppLogger.d('📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit');
 
       final token = await TokenStorage.getAccessToken();
-      final queryParams = <String, dynamic>{'limit': limit.clamp(1, 20)}; // Increased from 10 to 20
+      final queryParams = <String, dynamic>{
+        'limit': limit.clamp(1, 20),
+      }; // Increased from 10 to 20
 
       if (cursor?.isValid == true) {
         queryParams.addAll(cursor!.toJson());
@@ -720,9 +780,7 @@ class PostService {
 
       final res = await _dio.delete(
         'posts/$postId/',
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
       AppLogger.d('✅ [PostService] Delete Post Status: ${res.statusCode}');
@@ -765,21 +823,21 @@ class PostService {
       }
       throw Exception('Post not found or invalid format');
     } catch (e) {
-      AppLogger.d('⚠️ [PostService] posts/get-post/?post_id=$postId failed: $e. Trying posts/$postId/');
+      AppLogger.d(
+        '⚠️ [PostService] posts/get-post/?post_id=$postId failed: $e. Trying posts/$postId/',
+      );
       try {
-        final res = await _dio.get(
-          "posts/$postId/",
-          options: opts,
-        );
+        final res = await _dio.get("posts/$postId/", options: opts);
         if (res.statusCode == 200 && res.data != null) {
           final dynamic responseData = res.data['data'] ?? res.data;
           return Post.fromJson(Map<String, dynamic>.from(responseData));
         }
       } catch (innerErr) {
-        AppLogger.d('❌ [PostService] Both fetch post by ID endpoints failed: $innerErr');
+        AppLogger.d(
+          '❌ [PostService] Both fetch post by ID endpoints failed: $innerErr',
+        );
       }
       rethrow;
     }
   }
 }
-

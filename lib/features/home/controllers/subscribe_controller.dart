@@ -18,6 +18,8 @@ class SubscribeController extends ChangeNotifier {
   final Map<String, bool> _serverStates = {};
   final Set<String> _syncingUsers = <String>{};
 
+  Map<String, SubscribeModel> get users => Map.unmodifiable(_users);
+
   void _log(String message) {
     AppLogger.d('🎛️ [SubscribeController] $message');
   }
@@ -251,5 +253,12 @@ class SubscribeController extends ChangeNotifier {
         _log('⚠️ skipped invalid initializeUsers row=$data');
       }
     }
+  }
+
+  @override
+  void notifyListeners() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      super.notifyListeners();
+    });
   }
 }

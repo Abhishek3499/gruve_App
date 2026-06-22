@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/routing/app_routes.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
@@ -86,6 +87,9 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(
           value: authStateManager ?? AuthStateManager(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CurrentUserProvider(),
         ),
         ChangeNotifierProvider.value(value: StoryStateController()),
         ChangeNotifierProvider(

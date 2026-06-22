@@ -74,6 +74,7 @@ class PostShareFlowBridge {
     bool hideLikeCount = false,
     bool hideShareCount = false,
     List<String>? taggedUserIds,
+    String? draftId,
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runShareUploadChain(
@@ -87,14 +88,17 @@ class PostShareFlowBridge {
         hideLikeCount: hideLikeCount,
         hideShareCount: hideShareCount,
         taggedUserIds: taggedUserIds,
+        draftId: draftId,
       );
     });
   }
 
   static bool _isVideoPath(String path) {
-    return path.toLowerCase().endsWith('.mp4') ||
-        path.toLowerCase().endsWith('.mov') ||
-        path.toLowerCase().endsWith('.avi');
+    final uri = Uri.tryParse(path);
+    final cleanPath = uri?.path.toLowerCase() ?? path.toLowerCase();
+    return cleanPath.endsWith('.mp4') ||
+        cleanPath.endsWith('.mov') ||
+        cleanPath.endsWith('.avi');
   }
 
   /// Ensures the processing overlay route is committed before [createPost] runs.
@@ -119,12 +123,12 @@ class PostShareFlowBridge {
     bool hideLikeCount = false,
     bool hideShareCount = false,
     List<String>? taggedUserIds,
+    String? draftId,
   }) async {
     try {
       final isVideo = mediaPath != null && mediaPath.isNotEmpty ? _isVideoPath(mediaPath) : false;
       AppLogger.d("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
-        AppLogger.d("📁 [Bridge] Path: $mediaPath");
-      
+      AppLogger.d("📁 [Bridge] Path: $mediaPath");
       
       notifyShareStartProcessing(isVideo);
       await _waitForProcessingOverlayFrame();
@@ -144,6 +148,10 @@ class PostShareFlowBridge {
       
       AppLogger.d("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");
       
+      if (draftId != null && draftId.isNotEmpty) {
+        AppLogger.d("🧹 [Bridge] Deleting draft after successful share: $draftId");
+        await PostService().deleteDraft(draftId);
+      }
       
       await notifyPostCreated(isVideo: isVideo);
       

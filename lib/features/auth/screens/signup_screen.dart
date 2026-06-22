@@ -59,6 +59,8 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _passwordTouched = false;
   bool _confirmPasswordTouched = false;
 
+
+
   // ── Other State ──────────────────────────────────────────
 
   final SignupController controller = SignupController();
@@ -71,6 +73,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final GlobalKey _genderFieldKey = GlobalKey();
   final GlobalKey _passwordKey = GlobalKey();
   final GlobalKey _confirmPasswordKey = GlobalKey();
+  OverlayEntry? _genderDropdownEntry;
+  final LayerLink _layerLink = LayerLink();
+  bool _isGenderMenuOpen = false;
 
   @override
   void initState() {
@@ -86,44 +91,32 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameFocus.addListener(() {
       if (_nameFocus.hasFocus) {
         _scrollToField(_nameKey);
-      } else {
-        if (mounted) {
-          setState(() {
-            _nameTouched = true;
-          });
+        if (mounted && _isGenderMenuOpen) {
+          _hideGenderMenu();
         }
       }
     });
     _identifierFocus.addListener(() {
       if (_identifierFocus.hasFocus) {
         _scrollToField(_identifierKey);
-      } else {
-        if (mounted) {
-          setState(() {
-            _identifierTouched = true;
-          });
+        if (mounted && _isGenderMenuOpen) {
+          _hideGenderMenu();
         }
       }
     });
     _passwordFocus.addListener(() {
       if (_passwordFocus.hasFocus) {
         _scrollToField(_passwordKey);
-      } else {
-        if (mounted) {
-          setState(() {
-            _passwordTouched = true;
-          });
+        if (mounted && _isGenderMenuOpen) {
+          _hideGenderMenu();
         }
       }
     });
     _confirmPasswordFocus.addListener(() {
       if (_confirmPasswordFocus.hasFocus) {
         _scrollToField(_confirmPasswordKey);
-      } else {
-        if (mounted) {
-          setState(() {
-            _confirmPasswordTouched = true;
-          });
+        if (mounted && _isGenderMenuOpen) {
+          _hideGenderMenu();
         }
       }
     });
@@ -131,7 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _scrollToField(GlobalKey key) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 250), () {
+      Future.delayed(const Duration(milliseconds: 350), () {
         if (!mounted) return;
         final targetContext = key.currentContext;
         if (targetContext != null) {
@@ -139,7 +132,7 @@ class _SignupScreenState extends State<SignupScreen> {
             targetContext,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            alignment: 0.1,
+            alignment: 0.3,
           );
         }
       });
@@ -270,6 +263,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _hideGenderMenu();
     _nameController.dispose();
 
     _identifierController.dispose();
@@ -403,7 +397,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           NeonTextField(
                             controller: _nameController,
 
-                            hintText: 'Skyler',
+                            hintText: 'Enter your name',
 
                             prefixIcon: AppAssets.user2,
 
@@ -484,71 +478,72 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       GestureDetector(
                         key: _genderFieldKey,
-
-                        onTap: () async {
-                          final authUi = context.read<AuthUiProvider>();
-                          authUi.touchGender();
-
-                          await _showGenderMenu();
+                        onTap: () {
+                          FocusScope.of(context).unfocus();
+                          _showGenderMenu();
                         },
-
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-
                           children: [
-                            Container(
-                              width: double.infinity,
+                            CompositedTransformTarget(
+                              link: _layerLink,
+                              child: Container(
+                                width: double.infinity,
 
-                              height: 56,
+                                height: 56,
 
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(28),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(28),
 
-                                border: Border.all(
-                                  color: genderError != null
-                                      ? const Color(0xFFFF6B6B) // ✅ red
-                                      : const Color(0xFFB86AD0),
+                                  border: Border.all(
+                                    color: genderError != null
+                                        ? const Color(0xFFFF6B6B) // ✅ red
+                                        : const Color(0xFFAF50C4),
+                                    width: 1.0,
+                                  ),
+
+                                  color: const Color(0xFF461851),
                                 ),
 
-                                color: const Color(0xFF461851),
-                              ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
 
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
+                                child: Row(
+                                  children: [
+                                    Image.asset(
+                                      AppAssets.user2,
 
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    AppAssets.user2,
+                                      width: 22,
 
-                                    width: 22,
+                                      height: 22,
 
-                                    height: 22,
+                                      color: const Color(0x99FF00FF),
+                                    ),
 
-                                    color: const Color(0x99FF00FF),
-                                  ),
+                                    const SizedBox(width: 8),
 
-                                  const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        selectedGender ?? 'Select Gender',
 
-                                  Expanded(
-                                    child: Text(
-                                      selectedGender ?? 'Select Gender',
-
-                                      style: TextStyle(
-                                        color: selectedGender == null
-                                            ? Colors.white54
-                                            : Colors.white,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: selectedGender == null
+                                              ? FontWeight.w700
+                                              : FontWeight.normal,
+                                        ),
                                       ),
                                     ),
-                                  ),
 
-                                  const Icon(
-                                    Icons.arrow_drop_down,
+                                    const Icon(
+                                      Icons.arrow_drop_down,
 
-                                    color: Colors.white,
-                                  ),
-                                ],
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
 
@@ -878,97 +873,106 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Future<void> _showGenderMenu() async {
-    final context = _genderFieldKey.currentContext;
+  void _hideGenderMenu() {
+    if (mounted && _isGenderMenuOpen) {
+      setState(() {
+        _isGenderMenuOpen = false;
+      });
+    }
+    _genderDropdownEntry?.remove();
+    _genderDropdownEntry = null;
+  }
 
+  void _showGenderMenu() {
+    _hideGenderMenu();
+
+    setState(() {
+      _isGenderMenuOpen = true;
+    });
+
+    final context = _genderFieldKey.currentContext;
     if (context == null) return;
 
     final RenderBox box = context.findRenderObject()! as RenderBox;
-
-    final Offset topLeft = box.localToGlobal(Offset.zero);
-
     final Size size = box.size;
 
-    final selected = await showMenu<String>(
-      context: this.context,
-
-      color: const Color(0xFF461851),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFB86AD0), width: 1.5),
-      ),
-      elevation: 8,
-
-      position: RelativeRect.fromLTRB(
-        topLeft.dx + size.width - 165,
-
-        topLeft.dy + 2,
-
-        topLeft.dx + size.width - 35,
-
-        0,
-      ),
-
-      items: const [
-        PopupMenuItem(
-          value: 'Male',
-          height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.male, color: Color(0xFFB86AD0), size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Male',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+    _genderDropdownEntry = OverlayEntry(
+      builder: (context) {
+        return Stack(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _hideGenderMenu,
+              child: const SizedBox.expand(),
+            ),
+            Positioned(
+              width: 130,
+              child: CompositedTransformFollower(
+                link: _layerLink,
+                showWhenUnlinked: false,
+                offset: Offset(size.width - 165, 56 + 4),
+                child: Material(
+                  color: Colors.transparent,
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Color(0xFFAF50C4), width: 1.5),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF461851),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildGenderOption('Male', Icons.male),
+                        _buildGenderOption('Female', Icons.female),
+                        _buildGenderOption('Other', Icons.transgender),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-
-        PopupMenuItem(
-          value: 'Female',
-          height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.female, color: Color(0xFFB86AD0), size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Female',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        PopupMenuItem(
-          value: 'Other',
-          height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.transgender, color: Color(0xFFB86AD0), size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Other',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
 
-    if (selected == null || !mounted) return;
+    Overlay.of(this.context).insert(_genderDropdownEntry!);
+  }
 
-    this.context.read<AuthUiProvider>().setGender(selected);
-    FocusScope.of(this.context).requestFocus(_passwordFocus);
+  Widget _buildGenderOption(String value, IconData icon) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          _hideGenderMenu();
+          if (!mounted) return;
+          context.read<AuthUiProvider>().setGender(value);
+          FocusScope.of(context).requestFocus(_passwordFocus);
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: const Color(0xFFB86AD0), size: 18),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

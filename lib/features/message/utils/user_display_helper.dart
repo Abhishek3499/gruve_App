@@ -91,6 +91,11 @@ class UserDisplayHelper {
   /// 
   /// Handles various legacy user object formats with same priority logic
   static String getDisplayNameForLegacyUser(dynamic user) {
+    if (user == null) {
+      AppLogger.d('⚠️ [UserDisplayHelper] Legacy user is null, returning fallback');
+      return 'Unknown User';
+    }
+    
     try {
       AppLogger.d('🔍 [UserDisplayHelper] Processing legacy user: ${user.runtimeType}');
       
@@ -135,6 +140,11 @@ class UserDisplayHelper {
   /// 
   /// Centralized ID extraction with null safety
   static String getUserIdForUser(dynamic user) {
+    if (user == null) {
+      AppLogger.d('⚠️ [UserDisplayHelper] User is null in getUserIdForUser, returning empty ID');
+      return '';
+    }
+    
     try {
       if (user is UserEntity) {
         return user.userId.trim();
@@ -166,6 +176,10 @@ class UserDisplayHelper {
   /// 
   /// Centralized profile image extraction with null safety
   static String? getProfileImageForUser(dynamic user) {
+    if (user == null) {
+      return null;
+    }
+    
     try {
       if (user is UserEntity) {
         return user.profilePicture?.trim();

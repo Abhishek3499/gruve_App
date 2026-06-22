@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
@@ -193,6 +195,7 @@ class VideoFeedController {
         _nextCursor = response.nextCursor;
         _hasMore = canLoadMore;
         _notifyFeedChanged();
+        unawaited(_precacheProfilePictures(uniquePosts));
         unawaited(
           _ensureControllersAroundIndex(_currentIndex.value, requestId),
         );
@@ -263,6 +266,7 @@ class VideoFeedController {
           _currentIndex.value = 0;
           _isPlaying.value = false;
           _notifyFeedChanged();
+          unawaited(_precacheProfilePictures(_posts));
           
           // Preload first cached video
           unawaited(
@@ -338,10 +342,12 @@ class VideoFeedController {
           AppLogger.d(
             '🔄 feed refresh merged slice: ${uniquePosts.length} posts',
           );
+          unawaited(_precacheProfilePictures(uniquePosts));
         } else {
           _posts = uniquePosts;
           _mediaUrls = _posts.map((e) => e.media).toList();
           AppLogger.d('✅ [VideoFeed] Initial load: ${uniquePosts.length} posts');
+          unawaited(_precacheProfilePictures(uniquePosts));
 
           // Save newly fetched posts to Hive cache
           final postsJson = uniquePosts.map((e) => e.toJson()).toList();
@@ -723,5 +729,51 @@ class VideoFeedController {
     }
     AppLogger.d('⏸️ All videos paused');
     
+  }
+
+  Future<void> _precacheProfilePictures(List<Post> posts) async {
+    final futures = <Future<void>>[];
+    for (final post in posts) {
+      final imgUrl = post.profilePicture.trim();
+      if (imgUrl.isNotEmpty && imgUrl.startsWith('http')) {
+        final completer = Completer<void>();
+        final provider = CachedNetworkImageProvider(imgUrl);
+        final stream = provider.resolve(ImageConfiguration.empty);
+        late ImageStreamListener listener;
+        listener = ImageStreamListener(
+          (info, synchronousCall) {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            stream.removeListener(listener);
+          },
+          onError: (exception, stackTrace) {
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            stream.removeListener(listener);
+          },
+        );
+        stream.addListener(listener);
+        futures.add(
+          completer.future.timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              if (!completer.isCompleted) {
+                completer.complete();
+              }
+            },
+          ),
+        );
+      }
+    }
+    if (futures.isNotEmpty) {
+      try {
+        await Future.wait(futures);
+        AppLogger.d('✅ [VideoFeedController] Precached ${futures.length} profile pictures.');
+      } catch (e) {
+        AppLogger.d('⚠️ Error pre-caching profile pictures: $e');
+      }
+    }
   }
 }

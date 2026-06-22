@@ -42,20 +42,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     });
     _phoneController = TextEditingController();
     _setupRealTimeValidation();
-    _setupFocusListeners();
   }
 
-  void _setupFocusListeners() {
-    _phoneFocus.addListener(() {
-      if (!_phoneFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _phoneTouched = true;
-          });
-        }
-      }
-    });
-  }
+
 
   void _setupRealTimeValidation() {
     // Phone field real-time validation

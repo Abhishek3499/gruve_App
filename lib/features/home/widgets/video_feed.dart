@@ -35,9 +35,6 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
 
   String selectedContentTab = 'For You';
   int _lastPaginationTriggerItemCount = 0;
-  int _overlayTriggerCounter = 0;
-  bool _overlayIsPlayingIcon = false;
-  bool _isPausedByUser = false;
 
   @override
   void initState() {
@@ -90,10 +87,6 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   }
 
   void _onPageChanged(int page) {
-    setState(() {
-      _isPausedByUser = false;
-      _overlayTriggerCounter = 0;
-    });
     _controller.playVideo(page);
     HapticFeedback.selectionClick();
 
@@ -112,17 +105,6 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     }
   }
 
-  void _onVideoTap() {
-    _controller.togglePlayPause();
-    final videoController = _controller.controllerForMediaIndex(_controller.currentIndex.value);
-    final isPlaying = videoController?.value.isPlaying ?? false;
-    setState(() {
-      _isPausedByUser = !isPlaying;
-      _overlayIsPlayingIcon = isPlaying;
-      _overlayTriggerCounter++;
-    });
-  }
-
   void _onTabChanged(String tab) {
     setState(() {
       selectedContentTab = tab;
@@ -138,8 +120,6 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     }
 
     _lastPaginationTriggerItemCount = 0;
-    _isPausedByUser = false;
-    _overlayTriggerCounter = 0;
     await _controller.initVideos(refresh: true);
 
     if (!mounted || !_pageController.hasClients) return;
@@ -151,180 +131,7 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     }
   }
 
-  bool _isNetworkMediaUrl(String url) {
-    final uri = Uri.tryParse(url.trim());
-    if (uri == null) {
-      return false;
-    }
 
-    return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
-  }
-
-  Widget _buildFeedItem(int index) {
-    final url = _controller.mediaUrls[index].trim();
-    final post = _controller.posts[index];
-    final effectiveVideo = post.isVideo || Post.mediaUrlLooksLikeVideo(url);
-    final isValidNetworkUrl = _isNetworkMediaUrl(url);
-    final videoController = _controller.controllerForMediaIndex(index);
-    final hasVideoLoadFailed = _controller.hasVideoLoadFailed(index);
-
-    return RepaintBoundary(
-      child: GestureDetector(
-        onTap: effectiveVideo ? _onVideoTap : null,
-        child: Stack(
-          children: [
-            Container(
-              color: Colors.black,
-              child: _buildMediaContent(
-                url: url,
-                isVideo: effectiveVideo,
-                isValidNetworkUrl: isValidNetworkUrl,
-                videoController: videoController,
-                hasVideoLoadFailed: hasVideoLoadFailed,
-                context: context,
-              ),
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: _controller.currentIndex,
-              builder: (context, currentIdx, _) {
-                if (currentIdx != index) return const SizedBox.shrink();
-                return Stack(
-                  children: [
-                    OptimizedVideoOverlay(
-                      selectedTab: selectedContentTab,
-                      onTabChanged: _onTabChanged,
-                      controller: _controller,
-                      onOwnProfileTap: () => widget.onTabChanged(4),
-                      currentIndex: currentIdx,
-                    ),
-                    if (effectiveVideo && _overlayTriggerCounter > 0)
-                      PlayPauseAnimationOverlay(
-                        key: ValueKey(_overlayTriggerCounter),
-                        isPlaying: _overlayIsPlayingIcon,
-                      ),
-                    if (_isPausedByUser && effectiveVideo && videoController != null)
-                      ValueListenableBuilder<VideoPlayerValue>(
-                        valueListenable: videoController,
-                        builder: (context, value, child) {
-                          if (!value.isInitialized || value.isPlaying) {
-                            return const SizedBox.shrink();
-                          }
-                          return IgnorePointer(
-                            child: Center(
-                              child: Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.pause_rounded,
-                                  color: Colors.white,
-                                  size: 45,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMediaContent({
-    required String url,
-    required bool isVideo,
-    required bool isValidNetworkUrl,
-    required VideoPlayerController? videoController,
-    required bool hasVideoLoadFailed,
-    required BuildContext context,
-  }) {
-    if (isVideo) {
-      if (hasVideoLoadFailed) {
-        AppLogger.d('❌ video filtered/skipped — player failed: $url');
-        
-        return _brokenMediaIcon();
-      }
-
-      if (videoController == null) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        );
-      }
-
-      if (!videoController.value.isInitialized) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        );
-      }
-
-      return RepaintBoundary(
-        child: AnimatedOpacity(
-          opacity: 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: SizedBox.expand(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: videoController.value.size.width,
-                height: videoController.value.size.height,
-                child: VideoPlayer(videoController),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (!isValidNetworkUrl) {
-      AppLogger.d('❌ image filtered/skipped — bad network URL url=$url');
-      
-      return _brokenMediaIcon();
-    }
-
-    final mediaSize = MediaQuery.sizeOf(context);
-    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-    // Reduced memory usage: 0.8x multiplier and lower max resolution
-    final cacheWidth = (mediaSize.width * devicePixelRatio * 0.8)
-        .round()
-        .clamp(320, 1080) // Reduced from 1440 to 1080
-        .toInt();
-    final cacheHeight = (mediaSize.height * devicePixelRatio * 0.8)
-        .round()
-        .clamp(640, 1920) // Reduced from 2560 to 1920
-        .toInt();
-
-    return RepaintBoundary(
-      child: CachedNetworkImage(
-        imageUrl: url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        memCacheWidth: cacheWidth,
-        memCacheHeight: cacheHeight,
-        maxWidthDiskCache: cacheWidth,
-        maxHeightDiskCache: cacheHeight,
-        fadeInDuration: const Duration(milliseconds: 200),
-        fadeOutDuration: const Duration(milliseconds: 100),
-        useOldImageOnUrlChange: true,
-        placeholder: (context, url) => Container(color: Colors.black),
-        errorWidget: (context, url, error) => _brokenMediaIcon(),
-      ),
-    );
-  }
-
-  Widget _brokenMediaIcon() {
-    return const Center(
-      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
-    );
-  }
 
   Widget _buildInitialLoader() {
     // ✅ PRODUCTION SHIMMER — shows exact layout of what's loading
@@ -420,6 +227,9 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
               _buildEmptyState()
             else if (showRefreshIndicator)
               RefreshIndicator(
+                notificationPredicate: (notification) =>
+                    notification.depth == 0 &&
+                    _controller.currentIndex.value == 0,
                 onRefresh: _refreshFeed,
                 color: Colors.white,
                 backgroundColor: Colors.grey[800],
@@ -431,7 +241,13 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
                   physics: const AlwaysScrollableScrollPhysics(
                     parent: BouncingScrollPhysics(),
                   ),
-                  itemBuilder: (context, index) => _buildFeedItem(index),
+                  itemBuilder: (context, index) => FeedItemWidget(
+                    index: index,
+                    controller: _controller,
+                    selectedTab: selectedContentTab,
+                    onTabChanged: _onTabChanged,
+                    onOwnProfileTap: () => widget.onTabChanged(4),
+                  ),
                 ),
               )
             else
@@ -444,7 +260,13 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
                 physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
-                itemBuilder: (context, index) => _buildFeedItem(index),
+                itemBuilder: (context, index) => FeedItemWidget(
+                  index: index,
+                  controller: _controller,
+                  selectedTab: selectedContentTab,
+                  onTabChanged: _onTabChanged,
+                  onOwnProfileTap: () => widget.onTabChanged(4),
+                ),
               ),
             _buildPagingLoader(),
             VideoTopBar(
@@ -548,6 +370,207 @@ class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class FeedItemWidget extends StatefulWidget {
+  final int index;
+  final VideoFeedController controller;
+  final String selectedTab;
+  final Function(String) onTabChanged;
+  final VoidCallback onOwnProfileTap;
+
+  const FeedItemWidget({
+    super.key,
+    required this.index,
+    required this.controller,
+    required this.selectedTab,
+    required this.onTabChanged,
+    required this.onOwnProfileTap,
+  });
+
+  @override
+  State<FeedItemWidget> createState() => _FeedItemWidgetState();
+}
+
+class _FeedItemWidgetState extends State<FeedItemWidget> {
+  bool _isPausedByUser = false;
+  bool _overlayIsPlayingIcon = false;
+  int _overlayTriggerCounter = 0;
+
+  void _onVideoTap() {
+    widget.controller.togglePlayPause();
+    final videoController = widget.controller.controllerForMediaIndex(widget.index);
+    final isPlaying = videoController?.value.isPlaying ?? false;
+    setState(() {
+      _isPausedByUser = !isPlaying;
+      _overlayIsPlayingIcon = isPlaying;
+      _overlayTriggerCounter++;
+    });
+  }
+
+  bool _isNetworkMediaUrl(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null) return false;
+    return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
+  Widget _brokenMediaIcon() {
+    return const Center(
+      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = widget.controller.mediaUrls[widget.index].trim();
+    final post = widget.controller.posts[widget.index];
+    final effectiveVideo = post.isVideo || Post.mediaUrlLooksLikeVideo(url);
+    final isValidNetworkUrl = _isNetworkMediaUrl(url);
+    final videoController = widget.controller.controllerForMediaIndex(widget.index);
+    final hasVideoLoadFailed = widget.controller.hasVideoLoadFailed(widget.index);
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: effectiveVideo ? _onVideoTap : null,
+        child: Stack(
+          children: [
+            Container(
+              color: Colors.black,
+              child: _buildMediaContent(
+                url: url,
+                isVideo: effectiveVideo,
+                isValidNetworkUrl: isValidNetworkUrl,
+                videoController: videoController,
+                hasVideoLoadFailed: hasVideoLoadFailed,
+              ),
+            ),
+            ValueListenableBuilder<int>(
+              valueListenable: widget.controller.currentIndex,
+              builder: (context, currentIdx, _) {
+                if (currentIdx != widget.index) return const SizedBox.shrink();
+                return Stack(
+                  children: [
+                    OptimizedVideoOverlay(
+                      selectedTab: widget.selectedTab,
+                      onTabChanged: widget.onTabChanged,
+                      controller: widget.controller,
+                      onOwnProfileTap: widget.onOwnProfileTap,
+                      currentIndex: currentIdx,
+                    ),
+                    if (effectiveVideo && _overlayTriggerCounter > 0)
+                      PlayPauseAnimationOverlay(
+                        key: ValueKey(_overlayTriggerCounter),
+                        isPlaying: _overlayIsPlayingIcon,
+                      ),
+                    if (_isPausedByUser && effectiveVideo && videoController != null)
+                      ValueListenableBuilder<VideoPlayerValue>(
+                        valueListenable: videoController,
+                        builder: (context, value, child) {
+                          if (!value.isInitialized || value.isPlaying) {
+                            return const SizedBox.shrink();
+                          }
+                          return IgnorePointer(
+                            child: Center(
+                              child: Container(
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.pause_rounded,
+                                  color: Colors.white,
+                                  size: 45,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaContent({
+    required String url,
+    required bool isVideo,
+    required bool isValidNetworkUrl,
+    required VideoPlayerController? videoController,
+    required bool hasVideoLoadFailed,
+  }) {
+    if (isVideo) {
+      if (hasVideoLoadFailed) {
+        AppLogger.d('❌ video filtered/skipped — player failed: $url');
+        return _brokenMediaIcon();
+      }
+
+      if (videoController == null) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      }
+
+      if (!videoController.value.isInitialized) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      }
+
+      return RepaintBoundary(
+        child: SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: videoController.value.size.width,
+              height: videoController.value.size.height,
+              child: VideoPlayer(videoController),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (!isValidNetworkUrl) {
+      AppLogger.d('❌ image filtered/skipped — bad network URL url=$url');
+      return _brokenMediaIcon();
+    }
+
+    final mediaSize = MediaQuery.sizeOf(context);
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = (mediaSize.width * devicePixelRatio * 0.8)
+        .round()
+        .clamp(320, 1080)
+        .toInt();
+    final cacheHeight = (mediaSize.height * devicePixelRatio * 0.8)
+        .round()
+        .clamp(640, 1920)
+        .toInt();
+
+    return RepaintBoundary(
+      child: CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        memCacheWidth: cacheWidth,
+        memCacheHeight: cacheHeight,
+        maxWidthDiskCache: cacheWidth,
+        maxHeightDiskCache: cacheHeight,
+        fadeInDuration: const Duration(milliseconds: 200),
+        fadeOutDuration: const Duration(milliseconds: 100),
+        useOldImageOnUrlChange: true,
+        placeholder: (context, url) => Container(color: Colors.black),
+        errorWidget: (context, url, error) => _brokenMediaIcon(),
       ),
     );
   }

@@ -45,20 +45,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     _emailController = TextEditingController();
 
     _setupRealTimeValidation();
-    _setupFocusListeners();
   }
 
-  void _setupFocusListeners() {
-    _emailFocus.addListener(() {
-      if (!_emailFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _emailTouched = true;
-          });
-        }
-      }
-    });
-  }
+
 
   void _setupRealTimeValidation() {
     // Email field real-time validation

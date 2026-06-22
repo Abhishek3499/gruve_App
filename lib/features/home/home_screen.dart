@@ -10,6 +10,7 @@ import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -28,8 +29,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // 🚀 OPTIMIZED: Use ValueNotifier for selective rebuilds
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<int> _previousIndex = ValueNotifier(0);
@@ -51,13 +51,17 @@ class _HomeScreenState extends State<HomeScreen>
   /// True once the share processing [showGeneralDialog] route is on the stack.
   bool _shareProcessingOverlayVisible = false;
 
-
-
   @override
   void initState() {
     super.initState();
     AppLogger.d("🏠 Home Screen initState called");
-    
+
+    // Fetch current user profile for bottom nav avatar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CurrentUserProvider>().fetchCurrentUserProfile();
+      }
+    });
 
     // ✅ Initialize screens ONCE
     _screens = List<Widget?>.filled(5, null);
@@ -65,9 +69,9 @@ class _HomeScreenState extends State<HomeScreen>
 
     PostShareFlowBridge.onShareStartProcessing = (isVideo) {
       AppLogger.d(
-          "🏠 Home Screen: Share start processing callback triggered (isVideo=$isVideo)",
-        );
-      
+        "🏠 Home Screen: Share start processing callback triggered (isVideo=$isVideo)",
+      );
+
       if (mounted && !_isDisposed) _startVideoProcessing(isVideo);
     };
 
@@ -164,20 +168,19 @@ class _HomeScreenState extends State<HomeScreen>
           selectedIndex: _currentIndex.value,
           onTabChanged: _onItemTapped,
           onControllerReady: (controller) {
-            AppLogger.d(
-                "ðŸ  Home Screen: VideoFeed onControllerReady called!",
-              );
-            
+            AppLogger.d("🏠 Home Screen: VideoFeed onControllerReady called!");
+
             _videoController = controller;
             PostShareFlowBridge.setVideoController(controller);
             AppLogger.d(
-                "ðŸ  Home Screen: Video controller ready and set to bridge",
-              );
-            
+              "🏠 Home Screen: Video controller ready and set to bridge",
+            );
           },
         );
       case 1:
         return const SearchScreen();
+      case 3:
+        return const MessageScreen();
       case 4:
         return const ProfileScreen();
       default:
@@ -221,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_isDisposed) return;
     AppLogger.d("📱 App lifecycle state: $state");
-    
+
     if (state == AppLifecycleState.paused) _handleAppBackgrounded();
     if (state == AppLifecycleState.resumed) _handleAppResumed();
   }
@@ -298,7 +301,9 @@ class _HomeScreenState extends State<HomeScreen>
     // Handle Home tab logic
     if (index == 0) {
       if (_currentIndex.value == 0) {
-        AppLogger.d("🔄 Home Screen: Refreshing feed because Home tab clicked again");
+        AppLogger.d(
+          "🔄 Home Screen: Refreshing feed because Home tab clicked again",
+        );
         _videoController?.onScrollToTop?.call();
         _videoController?.initVideos(refresh: true);
         return;
@@ -315,8 +320,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     if (index == _currentIndex.value) {
       if (index == 4) {
-        AppLogger.d("🔄 Home Screen: Refreshing profile because Profile tab clicked again");
-        context.read<ProfileProvider>().refreshProfileData(reason: 'tab_tap_refresh');
+        AppLogger.d(
+          "🔄 Home Screen: Refreshing profile because Profile tab clicked again",
+        );
+        context.read<ProfileProvider>().refreshProfileData(
+          reason: 'tab_tap_refresh',
+        );
       }
       return;
     }
@@ -352,14 +361,6 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const MessageScreen()),
-      );
-      return;
-    }
-
     // 🚀 OPTIMIZED: Use ValueNotifier instead of setState
     _visitTab(index);
     _previousIndex.value = _currentIndex.value;
@@ -369,25 +370,23 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _handleTabChange(int newIndex) {
     AppLogger.d(
-        "🏠 Home Screen: Tab changed to $newIndex, previous: ${_previousIndex.value}",
-      );
-    
+      "🏠 Home Screen: Tab changed to $newIndex, previous: ${_previousIndex.value}",
+    );
 
     // Check if we're switching back to home tab and need refresh
     if (newIndex == 0 && PostShareFlowBridge.checkAndClearRefreshNeeded()) {
       AppLogger.d("🔄 Home Screen: Refreshing due to new post");
-      
+
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           if (_videoController != null) {
             _videoController!.initVideos(refresh: true);
             AppLogger.d("✅ Home Screen: Video feed refreshed on tab change");
-            
           } else {
             AppLogger.d(
-                "🔄 Home Screen: Video controller not available, but refresh triggered",
-              );
-            
+              "🔄 Home Screen: Video controller not available, but refresh triggered",
+            );
+
             // 🚀 OPTIMIZED: Force refresh without full rebuild
             // _screens.clear();
             // _initializeScreens();
@@ -423,45 +422,45 @@ class _HomeScreenState extends State<HomeScreen>
     }
     if (_isDisposed) return const SizedBox.shrink();
 
-    // 🚀 OPTIMIZED: Use RepaintBoundary for selective repaints
-    return RepaintBoundary(
-      child: Scaffold(
-        extendBody: true,
-        resizeToAvoidBottomInset: false,
-        backgroundColor: Colors.black,
-        // 🚀 PERFORMANCE: Use ValueListenableBuilder for efficient rebuilds
-        body: ValueListenableBuilder<int>(
-          valueListenable: _currentIndex,
-          builder: (context, currentIndex, _) {
-            return IndexedStack(
-              index: currentIndex,
-              children: List.generate(_screens.length, (index) {
-                if (!_visitedTabs.contains(index)) {
-                  return const SizedBox.shrink();
-                }
-                return _screens[index] ??= _createScreen(index);
-              }),
-            );
+    return ValueListenableBuilder<int>(
+      valueListenable: _currentIndex,
+      builder: (context, currentIndex, _) {
+        return PopScope(
+          canPop: currentIndex == 0,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _ensureHomeFeedTab();
           },
-        ),
-        bottomNavigationBar: ValueListenableBuilder<int>(
-          valueListenable: _currentIndex,
-          builder: (context, currentIndex, _) {
-            return CustomBottomNavigationBar(
-              selectedIndex: currentIndex,
-              onItemSelected: _onItemTapped,
-            );
-          },
-        ),
-      ),
+          child: RepaintBoundary(
+            child: Scaffold(
+              extendBody: true,
+              resizeToAvoidBottomInset: false,
+              backgroundColor: Colors.black,
+              body: IndexedStack(
+                index: currentIndex,
+                children: List.generate(_screens.length, (index) {
+                  if (!_visitedTabs.contains(index)) {
+                    return const SizedBox.shrink();
+                  }
+                  return _screens[index] ??= _createScreen(index);
+                }),
+              ),
+              bottomNavigationBar: CustomBottomNavigationBar(
+                selectedIndex: currentIndex,
+                onItemSelected: _onItemTapped,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   @override
   void dispose() {
     AppLogger.d("🏠 Home Screen: Disposing, clearing callbacks");
-      AppLogger.d("🏠 Home Screen: Total rebuilds: $_rebuildCount");
-    
+    AppLogger.d("🏠 Home Screen: Total rebuilds: $_rebuildCount");
+
     PostShareFlowBridge.clearCallbacks();
     _isDisposed = true;
     _currentVideoService?.dispose();

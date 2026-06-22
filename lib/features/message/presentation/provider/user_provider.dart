@@ -1,16 +1,84 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../../domain/repository/user_repository.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../data/repository/user_repository_impl.dart';
 import '../../data/models/user_model.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;
   UserProvider(this.repository) {
     AppLogger.d('🔥 UserProvider CONSTRUCTOR CALLED');
+    _listenToSubscriptions();
+  }
+
+  Timer? _subscriptionDebounceTimer;
+  bool _needsRefreshAfterCurrent = false;
+
+  void _listenToSubscriptions() {
+    SubscribeController().addListener(_onSubscriptionChanged);
+  }
+
+  void _onSubscriptionChanged() {
+    AppLogger.d('🔔 [UserProvider] Subscription status changed in SubscribeController');
+    _lastFetchTime = null; // Invalidate the memory cache!
+
+    // ⚡ OPTIMISTIC UPDATE:
+    bool changed = false;
+    final controller = SubscribeController();
+    final controllerUsers = controller.users;
+
+    // 1. Remove unsubscribed users immediately
+    final beforeCount = _users.length;
+    _users.removeWhere((user) {
+      final isSubscribed = controller.isUserSubscribed(user.userId);
+      return !isSubscribed;
+    });
+    if (_users.length != beforeCount) {
+      changed = true;
+      AppLogger.d('⚡ [UserProvider] Optimistic Remove -> total users count: ${_users.length}');
+    }
+
+    // 2. Add newly subscribed users immediately
+    for (final entry in controllerUsers.entries) {
+      final userId = entry.key;
+      final model = entry.value;
+
+      if (model.isSubscribed) {
+        final alreadyExists = _users.any((u) => u.userId == userId);
+        if (!alreadyExists) {
+          AppLogger.d('⚡ [UserProvider] Optimistic Add: ${model.username}');
+          _users.add(UserEntity(
+            userId: userId,
+            username: model.username,
+            fullName: model.username, // Fallback to username
+          ));
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      notifyListeners();
+    }
+
+    // Trigger background fetch if we have already initialized, so the UI updates immediately
+    if (_hasInitialized) {
+      _subscriptionDebounceTimer?.cancel();
+      _subscriptionDebounceTimer = Timer(const Duration(milliseconds: 750), () {
+        if (!_isLoading) {
+          AppLogger.d('🔄 [UserProvider] Subscription change debounce completed -> fetching updated users list');
+          fetchUsers();
+        } else {
+          AppLogger.d('🔄 [UserProvider] Subscription change debounce completed but already loading -> scheduling refresh');
+          _needsRefreshAfterCurrent = true;
+        }
+      });
+    }
   }
 
   List<UserEntity> _users = [];
@@ -202,6 +270,13 @@ class UserProvider extends ChangeNotifier {
         '🏁 [UserProvider] Loading states cleared - isLoading: $_isLoading, isFetchingMore: $_isFetchingMore',
       );
       notifyListeners();
+
+      if (!loadMore && _needsRefreshAfterCurrent) {
+        _needsRefreshAfterCurrent = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          fetchUsers();
+        });
+      }
     }
   }
 
@@ -228,6 +303,8 @@ class UserProvider extends ChangeNotifier {
 
   /// Reset provider state
   void reset() {
+    _subscriptionDebounceTimer?.cancel();
+    _needsRefreshAfterCurrent = false;
     _users.clear();
     _isLoading = false;
     _isFetchingMore = false;
@@ -243,6 +320,8 @@ class UserProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    SubscribeController().removeListener(_onSubscriptionChanged);
+    _subscriptionDebounceTimer?.cancel();
     cancelActiveRequests();
     AppLogger.d('🗑️ [UserProvider] Disposed');
     super.dispose();

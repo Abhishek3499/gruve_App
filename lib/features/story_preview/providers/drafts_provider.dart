@@ -93,6 +93,7 @@ class DraftsProvider extends ChangeNotifier {
     bool? hideShareCount,
     bool clearMedia = false,
   }) async {
+    AppLogger.d("🔄 [DraftsProvider] updateDraft - draftId: '$draftId', caption: '$caption'");
     try {
       final responseMap = await _postService.updateDraft(
         draftId: draftId,
@@ -109,13 +110,18 @@ class DraftsProvider extends ChangeNotifier {
       );
 
       final dynamic rawData = responseMap['data'] ?? responseMap;
+      AppLogger.d("🔄 [DraftsProvider] updateDraft API response rawData keys: ${rawData is Map ? rawData.keys : rawData.runtimeType}");
       if (rawData != null) {
         final updatedDraft = PostDraft.fromJson(Map<String, dynamic>.from(rawData));
+        AppLogger.d("🔄 [DraftsProvider] parsed updatedDraft.id: '${updatedDraft.id}'");
         final idx = _drafts.indexWhere((d) => d.id == draftId);
+        AppLogger.d("🔄 [DraftsProvider] index of original draft ID in local list: $idx");
         if (idx != -1) {
           _drafts[idx] = updatedDraft;
+          AppLogger.d("🔄 [DraftsProvider] Updated local list draft at index $idx");
         } else {
           _drafts.insert(0, updatedDraft);
+          AppLogger.d("🔄 [DraftsProvider] Inserted updatedDraft at index 0 because it was not in list");
         }
         notifyListeners();
       }

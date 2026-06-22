@@ -1,5 +1,3 @@
-import 'package:gruve_app/core/cache/cache_manager.dart';
-
 /// Cache configuration for different endpoints
 /// Optimizes data loading with proper TTL and stale-while-revalidate strategy
 class CacheConfigs {

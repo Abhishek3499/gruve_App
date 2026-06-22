@@ -59,29 +59,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       if (mounted) context.read<AuthUiProvider>().resetLogin();
     });
     _setupRealTimeValidation();
-    _setupFocusListeners();
   }
 
-  void _setupFocusListeners() {
-    _emailFocus.addListener(() {
-      if (!_emailFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _emailTouched = true;
-          });
-        }
-      }
-    });
-    _passwordFocus.addListener(() {
-      if (!_passwordFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _passwordTouched = true;
-          });
-        }
-      }
-    });
-  }
+
 
   void _setupRealTimeValidation() {
     // Email field real-time validation
@@ -214,9 +194,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       });
 
       AppLogger.d("🏠 [Login] 🏠 Navigating to HomeScreen");
-      Navigator.pushReplacement(
-        context,
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
       );
 
       return true;

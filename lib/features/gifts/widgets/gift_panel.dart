@@ -109,8 +109,9 @@ class _GiftPanelState extends State<GiftPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Container(
-      height: MediaQuery.of(context).size.height * 0.60,
+      height: MediaQuery.of(context).size.height * 0.60 + bottomInset,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
@@ -204,6 +205,7 @@ class _GiftPanelState extends State<GiftPanel> {
               );
             },
           ),
+          SizedBox(height: bottomInset),
         ],
       ),
     );

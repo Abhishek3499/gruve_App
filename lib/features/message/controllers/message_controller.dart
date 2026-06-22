@@ -452,13 +452,6 @@ class MessageController extends ChangeNotifier {
     required int page,
     required bool replace,
   }) async {
-    if (conversationId.isEmpty) {
-      _error = 'Conversation ID is missing';
-      _activeFetch = null;
-      _notify();
-      return;
-    }
-
     if (replace) {
       _setInitialLoading(true);
     } else {
@@ -467,6 +460,20 @@ class MessageController extends ChangeNotifier {
     _setError(null);
 
     try {
+      if (conversationId.isEmpty) {
+        if (receiverUserId.isEmpty) {
+          throw Exception('Receiver user ID is missing');
+        }
+        AppLogger.d('📡 [MessageController] Conversation ID is empty, fetching/creating from backend...');
+        final conversation = await _messageService.createOrGetConversation(
+          receiverUserId,
+          cancelToken: _cancelToken,
+        );
+        conversationId = conversation.id;
+        onConversationIdChanged?.call(conversation.id);
+        AppLogger.d('📡 [MessageController] Conversation ID resolved: $conversationId');
+      }
+
       AppLogger.d(
         '📡 [MessageController] Fetch messages conversation=$conversationId page=$page replace=$replace',
       );

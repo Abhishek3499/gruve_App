@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 
 class NotificationTile extends StatelessWidget {
   final String username;
@@ -9,6 +10,7 @@ class NotificationTile extends StatelessWidget {
   final String? postImage;
   final bool isRead;
   final VoidCallback? onTap;
+  final String? userId;
 
   const NotificationTile({
     super.key,
@@ -19,6 +21,7 @@ class NotificationTile extends StatelessWidget {
     this.postImage,
     this.isRead = true,
     this.onTap,
+    this.userId,
   });
 
   @override
@@ -61,7 +64,23 @@ class NotificationTile extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-            CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+            GestureDetector(
+              onTap: () {
+                if (userId != null && userId!.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserProfileScreen(
+                        profileUserId: userId!,
+                        userName: username,
+                        profileImageUrl: profileImage.isNotEmpty ? profileImage : null,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

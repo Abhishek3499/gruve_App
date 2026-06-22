@@ -85,8 +85,8 @@ class _NeonTextFieldState extends State<NeonTextField> {
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: effectiveErrorText != null
-                  ? const Color(0xFFFF6B6B) // ❌ red border on error
-                  : const Color(0xFFAF50C4), // ✅ normal border
+                  ? const Color(0xFFFF6B6B)
+                  : const Color(0xFFAF50C4),
               width: 1,
             ),
           ),
@@ -112,7 +112,7 @@ class _NeonTextFieldState extends State<NeonTextField> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) setState(() => _errorText = error);
                     });
-                    return null; // andar mat dikhao
+                    return null;
                   },
             style: const TextStyle(
               color: Colors.white,
@@ -129,7 +129,7 @@ class _NeonTextFieldState extends State<NeonTextField> {
                 decoration: TextDecoration.none,
               ),
               border: InputBorder.none,
-              errorStyle: const TextStyle(fontSize: 0, height: 0), // hide
+              errorStyle: const TextStyle(fontSize: 0, height: 0),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
@@ -161,7 +161,6 @@ class _NeonTextFieldState extends State<NeonTextField> {
             ),
           ),
         ),
-
         // ✅ Error text field ke bahar
         AnimatedSize(
           duration: const Duration(milliseconds: 200),

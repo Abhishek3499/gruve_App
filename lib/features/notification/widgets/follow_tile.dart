@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import '../../message/utils/conversation_utils.dart';
 
 class FollowTile extends StatelessWidget {
@@ -49,7 +50,23 @@ class FollowTile extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-            CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+            GestureDetector(
+              onTap: () {
+                if (userId.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserProfileScreen(
+                        profileUserId: userId,
+                        userName: username,
+                        profileImageUrl: profileImage.isNotEmpty ? profileImage : null,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

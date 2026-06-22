@@ -73,29 +73,6 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // ── Outer dark glow ──
-            Center(
-              child: Container(
-                width: widget.radius * 2 + 12,
-                height: widget.radius * 2 + 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1A0A2E).withValues(alpha: 0.9),
-                      blurRadius: 30,
-                      spreadRadius: 10,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF9C27B0).withValues(alpha: 0.35),
-                      blurRadius: 40,
-                      spreadRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             // ── Neon gradient ring ──
             Center(
               child: Container(

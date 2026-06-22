@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../controllers/conversation_controller.dart';
 import '../services/message_service.dart';
 import '../models/conversation_model.dart';
+import '../providers/message_provider.dart';
+import '../screen/chat_screen.dart';
 import 'conversation_error_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -64,36 +67,45 @@ class ConversationUtils {
     }
 
     ConversationErrorHandler.logOperation(
-      operation: 'Starting conversation flow',
+      operation: 'Starting conversation flow (immediate)',
       receiverId: receiverId,
       receiverName: receiverName,
       source: source,
     );
 
     try {
-      // Create conversation controller for this operation
-      final conversationController = ConversationController(MessageService());
-      
-      final conversation = await conversationController.navigateToChat(
-        receiverId: receiverId,
-        receiverName: receiverName,
-        receiverProfileImage: receiverProfileImage,
-        context: context,
-      );
-      
-      ConversationErrorHandler.logResult(
-        operation: 'Conversation navigation',
-        success: true,
-        conversationId: conversation.id,
-        source: source,
-      );
-      
+      final messageProvider = context.read<MessageProvider>();
+      final existingConversation = messageProvider.getConversationByUserId(receiverId);
+
       if (!context.mounted) return;
-      
-      ConversationErrorHandler.showSuccess(
-        context: context,
-        message: 'Chat opened successfully',
-      );
+
+      if (existingConversation != null) {
+        AppLogger.d('🧭 [ConversationUtils] Navigating to existing conversation: ${existingConversation.id}');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              conversationId: existingConversation.id,
+              receiverId: receiverId,
+              userName: receiverName,
+              profileImage: receiverProfileImage,
+              userOrConversation: existingConversation,
+            ),
+          ),
+        );
+      } else {
+        AppLogger.d('🧭 [ConversationUtils] Navigating to new chat screen immediately (async resolve)');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              receiverId: receiverId,
+              userName: receiverName,
+              profileImage: receiverProfileImage,
+            ),
+          ),
+        );
+      }
     } catch (e) {
       ConversationErrorHandler.logResult(
         operation: 'Conversation navigation',

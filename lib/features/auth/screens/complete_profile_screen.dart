@@ -47,15 +47,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       }
     });
 
-    _usernameFocus.addListener(() {
-      if (!_usernameFocus.hasFocus) {
-        if (mounted) {
-          setState(() {
-            _usernameTouched = true;
-          });
-        }
-      }
-    });
+
   }
 
   @override

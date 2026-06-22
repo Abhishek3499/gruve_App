@@ -74,6 +74,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
   @override
   void initState() {
     super.initState();
+    AppLogger.d("🎬 [SharePostScreen] initState - widget.draftId: '${widget.draftId}', initialCaption: '${widget.initialCaption}'");
     captionController = TextEditingController(text: widget.initialCaption);
     isEveryone = widget.initialIsEveryone ?? true;
     isCloseFriends = widget.initialIsCloseFriends ?? false;
@@ -119,12 +120,13 @@ class _SharePostScreenState extends State<SharePostScreen> {
   }
 
   bool _isVideoPath(String path) {
-    final lower = path.toLowerCase();
-    return lower.endsWith('.mp4') ||
-        lower.endsWith('.mov') ||
-        lower.endsWith('.avi') ||
-        lower.endsWith('.mkv') ||
-        lower.endsWith('.webm');
+    final uri = Uri.tryParse(path);
+    final cleanPath = uri?.path.toLowerCase() ?? path.toLowerCase();
+    return cleanPath.endsWith('.mp4') ||
+        cleanPath.endsWith('.mov') ||
+        cleanPath.endsWith('.avi') ||
+        cleanPath.endsWith('.mkv') ||
+        cleanPath.endsWith('.webm');
   }
 
   void _showLocationDialog() {
@@ -278,6 +280,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
       hideLikeCount: hideLikeCount,
       hideShareCount: hideShareCount,
       taggedUserIds: taggedUserIds,
+      draftId: widget.draftId,
     );
   }
 
@@ -311,12 +314,13 @@ class _SharePostScreenState extends State<SharePostScreen> {
 
     setState(() => _isSavingDraft = true);
 
-    AppLogger.d("💾 SAVE DRAFT CLICKED (Synchronous Loader & Profile Redirection)");
+    AppLogger.d("💾 [SharePostScreen] _handleSaveDraft - widget.draftId is: '${widget.draftId}'");
 
     final draftsProvider = context.read<DraftsProvider>();
 
     try {
       if (widget.draftId != null) {
+        AppLogger.d("💾 [SharePostScreen] _handleSaveDraft: Calling updateDraft with draftId: '${widget.draftId}'");
         await draftsProvider.updateDraft(
           draftId: widget.draftId!,
           caption: caption,
@@ -330,6 +334,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
           hideShareCount: hideShareCount,
         );
       } else {
+        AppLogger.d("💾 [SharePostScreen] _handleSaveDraft: Calling saveDraft (draftId is null)");
         await draftsProvider.saveDraft(
           caption: caption,
           mediaPath: mediaPath,

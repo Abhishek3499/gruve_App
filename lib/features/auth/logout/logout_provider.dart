@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/api/controllers/logout_controller.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
@@ -73,6 +74,7 @@ class LogoutProvider extends ChangeNotifier {
         final draftsProvider = _tryGetProvider<DraftsProvider>(context);
         final userProfileController =
             _tryGetProvider<UserProfileController>(context);
+        final currentUserProvider = _tryGetProvider<CurrentUserProvider>(context);
 
         AppLogger.d('[LogoutProvider] Resetting local providers');
         profileProvider?.reset();
@@ -86,6 +88,7 @@ class LogoutProvider extends ChangeNotifier {
         notificationProvider?.reset();
         draftsProvider?.reset();
         userProfileController?.reset();
+        currentUserProvider?.clear();
         AppLogger.d('[LogoutProvider] Local providers cleared');
       }
 

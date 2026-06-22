@@ -27,19 +27,6 @@ class MessageHeader extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                /// Back
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Image.asset(
-                      AppAssets.back,
-                      width: 24,
-                      height: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
 
                 /// Title
                 const Text(
