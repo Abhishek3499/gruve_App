@@ -74,7 +74,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
   @override
   void initState() {
     super.initState();
-    AppLogger.d("🎬 [SharePostScreen] initState - widget.draftId: '${widget.draftId}', initialCaption: '${widget.initialCaption}'");
+    AppLogger.d(
+      "🎬 [SharePostScreen] initState - widget.draftId: '${widget.draftId}', initialCaption: '${widget.initialCaption}'",
+    );
     captionController = TextEditingController(text: widget.initialCaption);
     isEveryone = widget.initialIsEveryone ?? true;
     isCloseFriends = widget.initialIsCloseFriends ?? false;
@@ -107,8 +109,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
           : VideoPlayerController.file(File(widget.mediaPath));
 
       await _videoController!.initialize();
-      await _videoController!.setLooping(true);
-      await _videoController!.play();
+      await _videoController!.setLooping(false);
 
       if (!mounted) return;
       setState(() => _isVideoInitialized = true);
@@ -314,13 +315,17 @@ class _SharePostScreenState extends State<SharePostScreen> {
 
     setState(() => _isSavingDraft = true);
 
-    AppLogger.d("💾 [SharePostScreen] _handleSaveDraft - widget.draftId is: '${widget.draftId}'");
+    AppLogger.d(
+      "💾 [SharePostScreen] _handleSaveDraft - widget.draftId is: '${widget.draftId}'",
+    );
 
     final draftsProvider = context.read<DraftsProvider>();
 
     try {
       if (widget.draftId != null) {
-        AppLogger.d("💾 [SharePostScreen] _handleSaveDraft: Calling updateDraft with draftId: '${widget.draftId}'");
+        AppLogger.d(
+          "💾 [SharePostScreen] _handleSaveDraft: Calling updateDraft with draftId: '${widget.draftId}'",
+        );
         await draftsProvider.updateDraft(
           draftId: widget.draftId!,
           caption: caption,
@@ -334,7 +339,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
           hideShareCount: hideShareCount,
         );
       } else {
-        AppLogger.d("💾 [SharePostScreen] _handleSaveDraft: Calling saveDraft (draftId is null)");
+        AppLogger.d(
+          "💾 [SharePostScreen] _handleSaveDraft: Calling saveDraft (draftId is null)",
+        );
         await draftsProvider.saveDraft(
           caption: caption,
           mediaPath: mediaPath,
@@ -366,6 +373,14 @@ class _SharePostScreenState extends State<SharePostScreen> {
     }
   }
 
+  static const _backgroundGradient = BoxDecoration(
+    gradient: RadialGradient(
+      center: Alignment(-0.8, -0.8),
+      colors: [Color(0xFF2A0944), Color(0xFF0D0214)],
+      radius: 1.5,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     // Debug logging
@@ -374,13 +389,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0D0214), // Dark purple background
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(-0.8, -0.8),
-            colors: [Color(0xFF2A0944), Color(0xFF0D0214)],
-            radius: 1.5,
-          ),
-        ),
+        decoration: _backgroundGradient,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,7 +535,8 @@ class _SharePostScreenState extends State<SharePostScreen> {
                           if (result != null && result is Map<String, bool>) {
                             setState(() {
                               isEveryone = result['isEveryone'] ?? true;
-                              isCloseFriends = result['isCloseFriends'] ?? false;
+                              isCloseFriends =
+                                  result['isCloseFriends'] ?? false;
                             });
                           }
                         },
@@ -536,7 +546,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       MenuRow(
                         icon: Icons.more_horiz,
                         title: 'More options',
-                        subtitle: (scheduleReel || uploadHighQuality || hideLikeCount || hideShareCount)
+                        subtitle:
+                            (scheduleReel ||
+                                uploadHighQuality ||
+                                hideLikeCount ||
+                                hideShareCount)
                             ? 'Customized preferences'
                             : null,
                         onTap: () async {
@@ -551,12 +565,16 @@ class _SharePostScreenState extends State<SharePostScreen> {
                               ),
                             ),
                           );
-                          if (result != null && result is Map<String, dynamic>) {
+                          if (result != null &&
+                              result is Map<String, dynamic>) {
                             setState(() {
                               scheduleReel = result['schedule_reel'] ?? false;
-                              uploadHighQuality = result['upload_high_quality'] ?? false;
-                              hideLikeCount = result['hide_like_count'] ?? false;
-                              hideShareCount = result['hide_share_count'] ?? false;
+                              uploadHighQuality =
+                                  result['upload_high_quality'] ?? false;
+                              hideLikeCount =
+                                  result['hide_like_count'] ?? false;
+                              hideShareCount =
+                                  result['hide_share_count'] ?? false;
                             });
                           }
                         },
@@ -575,7 +593,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       child: SizedBox(
                         height: 42,
                         child: GestureDetector(
-                          onTap: (_isSavingDraft || _isSharing) ? null : _handleSaveDraft,
+                          onTap: (_isSavingDraft || _isSharing)
+                              ? null
+                              : _handleSaveDraft,
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
@@ -612,7 +632,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       child: SizedBox(
                         height: 42,
                         child: GestureDetector(
-                          onTap: (_isSharing || _isSavingDraft) ? null : _handleShare,
+                          onTap: (_isSharing || _isSavingDraft)
+                              ? null
+                              : _handleShare,
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
@@ -709,6 +731,8 @@ class _SharePostScreenState extends State<SharePostScreen> {
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
+        cacheHeight: 400,
+        cacheWidth: 400,
         errorBuilder: (context, error, stackTrace) {
           return Container(
             width: double.infinity,
@@ -734,12 +758,13 @@ class _SharePostScreenState extends State<SharePostScreen> {
     } else {
       // Local file
       final file = File(widget.mediaPath);
-      // Image file
       return Image.file(
         file,
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
+        cacheHeight: 400,
+        cacheWidth: 400,
         errorBuilder: (context, error, stackTrace) {
           return Container(
             width: double.infinity,

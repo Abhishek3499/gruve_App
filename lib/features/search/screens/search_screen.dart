@@ -17,11 +17,7 @@ class SearchScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment(-0.2, -1.0),
             end: Alignment(0.2, 1.0),
-            colors: [
-              Color(0xFF42174C),
-              Color(0xFF210C26),
-              Color(0xFF000000),
-            ],
+            colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
             stops: [0.0, 0.4172, 0.9933],
           ),
         ),
@@ -51,70 +47,69 @@ class SearchScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                /// BANNER
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: RepaintBoundary(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        AppAssets.baner,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
+                // /// BANNER
+                // Padding(
+                //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                //   child: RepaintBoundary(
+                //     child: ClipRRect(
+                //       borderRadius: BorderRadius.circular(16),
+                //       child: Image.asset(
+                //         AppAssets.baner,
+                //         height: 180,
+                //         width: double.infinity,
+                //         fit: BoxFit.cover,
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
-                const SizedBox(height: 20),
+                // const SizedBox(height: 20),
 
-                /// FIRST PROFILE
-                const RepaintBoundary(
-                  child: ProfileSection(
-                    username: "MindChargedBody",
-                    subtitle: "Challenge",
-                    stats: "1.5 B",
-                    profileImage: AppAssets.profile,
-                  ),
-                ),
+                // /// FIRST PROFILE
+                // const RepaintBoundary(
+                //   child: ProfileSection(
+                //     username: "MindChargedBody",
+                //     subtitle: "Challenge",
+                //     stats: "1.5 B",
+                //     profileImage: AppAssets.profile,
+                //   ),
+                // ),
 
-                const SizedBox(height: 16),
+                // const SizedBox(height: 16),
 
-                RepaintBoundary(
-                  child: HorizontalImageList(
-                    imageList: [
-                      AppAssets.frame1,
-                      AppAssets.frame2,
-                      AppAssets.frame3,
-                    ],
-                  ),
-                ),
+                // RepaintBoundary(
+                //   child: HorizontalImageList(
+                //     imageList: [
+                //       AppAssets.frame1,
+                //       AppAssets.frame2,
+                //       AppAssets.frame3,
+                //     ],
+                //   ),
+                // ),
 
-                const SizedBox(height: 24),
+                // const SizedBox(height: 24),
 
-                /// SECOND PROFILE
-                const RepaintBoundary(
-                  child: ProfileSection(
-                    username: "Fitnessguru",
-                    subtitle: "Challenge",
-                    stats: "2.3 B",
-                    profileImage: AppAssets.profile,
-                  ),
-                ),
+                // /// SECOND PROFILE
+                // const RepaintBoundary(
+                //   child: ProfileSection(
+                //     username: "Fitnessguru",
+                //     subtitle: "Challenge",
+                //     stats: "2.3 B",
+                //     profileImage: AppAssets.profile,
+                //   ),
+                // ),
 
-                const SizedBox(height: 16),
+                // const SizedBox(height: 16),
 
-                RepaintBoundary(
-                  child: HorizontalImageList(
-                    imageList: [
-                      AppAssets.frame1,
-                      AppAssets.frame1,
-                      AppAssets.frame3,
-                    ],
-                  ),
-                ),
-
+                // RepaintBoundary(
+                //   child: HorizontalImageList(
+                //     imageList: [
+                //       AppAssets.frame1,
+                //       AppAssets.frame1,
+                //       AppAssets.frame3,
+                //     ],
+                //   ),
+                // ),
                 const SizedBox(height: 100),
               ],
             ),

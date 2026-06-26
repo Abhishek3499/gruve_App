@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/widgets/cached_avatar.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
@@ -49,35 +50,6 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
   bool _isPickerOrEditorOpen = false;
   FilterModel _activeFilter = FilterModel.availableFilters.first;
-
-  Widget _buildUserAvatar(String? imageUrl, String username) {
-    final trimmed = imageUrl?.trim() ?? '';
-    if (trimmed.startsWith('http')) {
-      return CircleAvatar(
-        radius: 13,
-        backgroundColor: Colors.white12,
-        backgroundImage: NetworkImage(trimmed),
-      );
-    }
-    final fallbackLetter = username.isNotEmpty ? username[0].toUpperCase() : '';
-    return CircleAvatar(
-      radius: 13,
-      backgroundColor: Colors.white12,
-      backgroundImage: fallbackLetter.isEmpty
-          ? const AssetImage(AppAssets.profile)
-          : null,
-      child: fallbackLetter.isEmpty
-          ? null
-          : Text(
-              fallbackLetter,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-    );
-  }
 
   Future<String> _captureFlattenedImage() async {
     if (_isVideo) return widget.mediaPath;
@@ -174,12 +146,15 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     _stickers = List.from(widget.initialStickers);
     _initializeMedia();
 
-    // Fetch own profile data if not loaded yet so that the avatar image is shown
+    // ✅ OPTIMIZED: Fetch profile ONLY if cache is stale
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final profileProvider = context.read<ProfileProvider>();
-        if (profileProvider.profile == null && !profileProvider.isLoading) {
-          profileProvider.fetchProfileData(fetchUserReason: 'story_preview_init');
+        
+        // Only fetch if profile is null OR stale (>5 minutes)
+        if (!profileProvider.hasFreshProfile && !profileProvider.isLoading) {
+          // Fetch avatar only (skip highlights for speed)
+          profileProvider.fetchAvatarOnly();
         }
       }
     });
@@ -660,9 +635,14 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                               strokeWidth: 2,
                                             ),
                                           )
-                                        : _buildUserAvatar(
-                                            user?.profileImage,
-                                            user?.username ?? '',
+                                        : Consumer<ProfileProvider>(
+                                            builder: (context, provider, _) {
+                                              return CachedAvatar(
+                                                imageUrl: provider.cachedUser?.profileImage,
+                                                username: provider.cachedUser?.username ?? '',
+                                                radius: 13,
+                                              );
+                                            },
                                           ),
                                     const SizedBox(
                                       width: 8,

@@ -58,6 +58,16 @@ class ProfileProvider extends ChangeNotifier {
 
   Listenable get contentListenable => controller.contentListenable;
 
+  /// NEW: Check if cached profile is fresh (call this synchronously)
+  bool get hasFreshProfile {
+    if (user == null || _lastProfileFetch == null) return false;
+    final age = DateTime.now().difference(_lastProfileFetch!);
+    return age < const Duration(minutes: 5);
+  }
+
+  /// NEW: Get cached user immediately (no async)
+  ProfileModel? get cachedUser => user;
+
   void _log(String message) {
     AppLogger.d(message);
   }
@@ -101,8 +111,9 @@ class ProfileProvider extends ChangeNotifier {
   Future<void> _runProfileFetch({
     required String fetchUserReason,
     bool force = false,
+    bool avatarOnly = false,
   }) async {
-    _log('[Profile] Fetch start');
+    _log('[Profile] Fetch start (avatarOnly=$avatarOnly)');
 
     final now = DateTime.now();
     final shouldFetchProfile =
@@ -112,9 +123,10 @@ class ProfileProvider extends ChangeNotifier {
         now.difference(_lastProfileFetch!) >= const Duration(minutes: 5);
 
     final shouldFetchHighlights =
-        force ||
+        !avatarOnly &&
+        (force ||
         _lastHighlightsFetch == null ||
-        now.difference(_lastHighlightsFetch!) >= const Duration(minutes: 5);
+        now.difference(_lastHighlightsFetch!) >= const Duration(minutes: 5));
 
     if (!shouldFetchProfile && !shouldFetchHighlights) {
       _log('[Profile] Both profile and highlights are fresh. Skipping fetch.');
@@ -130,9 +142,15 @@ class ProfileProvider extends ChangeNotifier {
         futures.add(
           controller
               .fetchUser(reason: fetchUserReason)
-              .timeout(const Duration(seconds: 18))
+              .timeout(const Duration(seconds: 8))
               .then((_) {
                 _lastProfileFetch = DateTime.now();
+                user = controller.user;
+                
+                // Pre-cache avatar after successful fetch
+                if (user != null) {
+                  unawaited(_precacheUserAvatar(user!));
+                }
               }),
         );
       }
@@ -157,7 +175,11 @@ class ProfileProvider extends ChangeNotifier {
         _log('[Profile] Posts count: ${posts.length}');
       }
     } catch (error, stackTrace) {
-      errorMessage = 'Failed to load profile';
+      if (error is TimeoutException) {
+        errorMessage = 'Profile load timeout. Check your connection.';
+      } else {
+        errorMessage = 'Failed to load profile';
+      }
       _log('[Profile] API failed: $error');
       _log('$stackTrace');
     } finally {
@@ -330,6 +352,56 @@ class ProfileProvider extends ChangeNotifier {
     highlights = List<HighlightModel>.unmodifiable(updated);
     controller.highlightList.value = highlights;
     notifyListeners();
+  }
+
+  /// NEW: Quick fetch for avatar only (skip highlights)
+  Future<void> fetchAvatarOnly() async {
+    return _runProfileFetch(
+      fetchUserReason: 'avatar_only',
+      avatarOnly: true,
+    );
+  }
+
+  /// NEW: Pre-cache avatar after profile fetch
+  Future<void> _precacheUserAvatar(ProfileModel user) async {
+    final imageUrl = user.profileImage.trim();
+    if (imageUrl.isEmpty || !imageUrl.startsWith('http')) return;
+    
+    try {
+      final provider = CachedNetworkImageProvider(imageUrl);
+      final stream = provider.resolve(ImageConfiguration.empty);
+      final completer = Completer<void>();
+      
+      late ImageStreamListener listener;
+      listener = ImageStreamListener(
+        (info, synchronousCall) {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+          stream.removeListener(listener);
+        },
+        onError: (exception, stackTrace) {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+          stream.removeListener(listener);
+        },
+      );
+      
+      stream.addListener(listener);
+      await completer.future.timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+      
+      AppLogger.d('✅ [ProfileProvider] Pre-cached user avatar');
+    } catch (e) {
+      AppLogger.d('⚠️ [ProfileProvider] Avatar pre-cache failed: $e');
+    }
   }
 
   @override

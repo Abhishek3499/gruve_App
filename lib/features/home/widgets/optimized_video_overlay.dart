@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/app_navigator.dart';
-import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 
 import 'video_user_info.dart';
@@ -99,109 +98,61 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
         Positioned(
           right: 16,
           bottom: 150,
-          child: RightActionBar(
-            likeCount: post.likesCount,
-            isLiked: post.isLiked,
-            commentCount: post.commentsCount,
-            shareCount: 2100,
-            onGift: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const GiftPanel(),
-              );
-            },
-            onLike: () {
-              final postId = post.id;
-              if (postId.isNotEmpty) {
-                // Save previous state for rollback on error
-                final bool wasLiked = post.isLiked;
-                final int previousCount = post.likesCount;
-
-                setState(() {
-                  post.isLiked = !post.isLiked;
-                  if (post.isLiked) {
-                    post.likesCount++;
-                  } else {
-                    post.likesCount--;
-                  }
-                });
-
-                PostService().likePost(postId).then((success) async {
-                  if (success) {
-                    await ProfileCountRefreshBridge.notifyCountsChanged(
-                      reason: 'post_like_toggled',
-                    );
-                  } else {
-                    // Revert state on failure
-                    if (mounted) {
-                      setState(() {
-                        post.isLiked = wasLiked;
-                        post.likesCount = previousCount;
-                      });
-                      scaffoldMessengerKey.currentState?.showSnackBar(
-                        const SnackBar(
-                          content: Text('Something went wrong'),
-                          duration: Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                }).catchError((error) {
-                  // Revert state on exception
-                  if (mounted) {
-                    setState(() {
-                      post.isLiked = wasLiked;
-                      post.likesCount = previousCount;
-                    });
-                    scaffoldMessengerKey.currentState?.showSnackBar(
-                      const SnackBar(
-                        content: Text('Something went wrong'),
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                });
-              }
-            },
-            onComment: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => CommentSheet(
-                  postId: post.id,
-                  onCommentAdded: () {
-                    setState(() {
-                      post.commentsCount++;
-                    });
-                  },
-                ),
-              );
-            },
-            onShare: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const ShareBottomSheet(),
-              );
-            },
-            onOptions: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => VideoOptionsSheet(
-                  userId: post.userId,
-                  currentUserId: _currentUserId,
-                  userName: post.username,
-                  profileImage: post.profilePicture,
-                  postId: post.id,
-                ),
+          child: Consumer<PostLikeProvider>(
+            builder: (context, likeProvider, _) {
+              return RightActionBar(
+                likeCount: likeProvider.likesCount(post),
+                isLiked: likeProvider.isLiked(post),
+                commentCount: post.commentsCount,
+                shareCount: 2100,
+                onGift: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const GiftPanel(),
+                  );
+                },
+                onLike: () {
+                  likeProvider.toggleLike(post);
+                },
+                onComment: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => CommentSheet(
+                      postId: post.id,
+                      onCommentAdded: () {
+                        setState(() {
+                          post.commentsCount++;
+                        });
+                      },
+                    ),
+                  );
+                },
+                onShare: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => ShareBottomSheet(postId: post.id),
+                  );
+                },
+                onOptions: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => VideoOptionsSheet(
+                      userId: post.userId,
+                      currentUserId: _currentUserId,
+                      userName: post.username,
+                      profileImage: post.profilePicture,
+                      postId: post.id,
+                    ),
+                  );
+                },
               );
             },
           ),

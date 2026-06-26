@@ -3,18 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
+import 'package:gruve_app/features/share/providers/post_share_provider.dart';
 
 import 'share_user_item.dart';
 
 class ShareUserGrid extends StatefulWidget {
-  final Set<SearchUser> selectedUsers;
-  final ValueChanged<SearchUser> onUserToggle;
-
-  const ShareUserGrid({
-    super.key,
-    required this.selectedUsers,
-    required this.onUserToggle,
-  });
+  const ShareUserGrid({super.key});
 
   @override
   State<ShareUserGrid> createState() => _ShareUserGridState();
@@ -22,10 +16,6 @@ class ShareUserGrid extends StatefulWidget {
 
 class _ShareUserGridState extends State<ShareUserGrid> {
   final TextEditingController _searchController = TextEditingController();
-  final DebouncedUserSearch _userSearch = DebouncedUserSearch();
-  List<SearchUser> _users = [];
-  bool _isSearching = false;
-  String? _searchError;
   late final ScrollController _scrollController;
 
   @override
@@ -43,7 +33,6 @@ class _ShareUserGridState extends State<ShareUserGrid> {
   @override
   void dispose() {
     _searchController.dispose();
-    _userSearch.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -66,45 +55,15 @@ class _ShareUserGridState extends State<ShareUserGrid> {
   }
 
   void _onSearchChanged(String query) {
-    setState(() {
-      _searchError = null;
-      _isSearching = query.trim().isNotEmpty;
-      if (query.trim().isEmpty) {
-        _users = [];
-      }
-    });
-
-    if (query.trim().isEmpty) {
-      _userSearch.clear();
-      return;
-    }
-
-    _userSearch.search(
-      query,
-      onResults: (users) {
-        if (!mounted) return;
-        setState(() {
-          _users = users;
-          _isSearching = false;
-        });
-      },
-      onError: (_) {
-        if (!mounted) return;
-        setState(() {
-          _users = [];
-          _isSearching = false;
-          _searchError = 'Unable to search users right now';
-        });
-      },
-    );
+    context.read<PostShareProvider>().updateSearchQuery(query);
   }
 
-  void _onUserTap(SearchUser user) {
-    widget.onUserToggle(user);
+  void _onUserTap(PostShareProvider shareProvider, SearchUser user) {
+    shareProvider.toggleUser(user);
   }
 
-  bool _isUserSelected(SearchUser user) {
-    return widget.selectedUsers.any((u) => u.id == user.id);
+  bool _isUserSelected(PostShareProvider shareProvider, SearchUser user) {
+    return shareProvider.selectedUsers.any((u) => u.id == user.id);
   }
 
   @override
@@ -146,16 +105,21 @@ class _ShareUserGridState extends State<ShareUserGrid> {
   }
 
   Widget _buildContent() {
-    if (_isSearching) {
+    final shareProvider = context.watch<PostShareProvider>();
+    final isSearching = shareProvider.isSearching;
+    final searchError = shareProvider.searchError;
+    final searchResults = shareProvider.searchResults;
+
+    if (isSearching) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
       );
     }
 
-    if (_searchError != null) {
+    if (searchError != null) {
       return Center(
         child: Text(
-          _searchError!,
+          searchError,
           style: const TextStyle(color: Colors.white54, fontSize: 14),
         ),
       );
@@ -163,7 +127,7 @@ class _ShareUserGridState extends State<ShareUserGrid> {
 
     // 1. Search Results Mode
     if (_searchController.text.trim().isNotEmpty) {
-      if (_users.isEmpty) {
+      if (searchResults.isEmpty) {
         return const Center(
           child: Text(
             'No users found',
@@ -181,13 +145,13 @@ class _ShareUserGridState extends State<ShareUserGrid> {
           mainAxisSpacing: 16,
           childAspectRatio: 0.75,
         ),
-        itemCount: _users.length,
+        itemCount: searchResults.length,
         itemBuilder: (context, index) {
-          final user = _users[index];
+          final user = searchResults[index];
           return ShareUserItem(
             user: user,
-            isSelected: _isUserSelected(user),
-            onTap: () => _onUserTap(user),
+            isSelected: _isUserSelected(shareProvider, user),
+            onTap: () => _onUserTap(shareProvider, user),
           );
         },
       );
@@ -264,8 +228,8 @@ class _ShareUserGridState extends State<ShareUserGrid> {
 
         return ShareUserItem(
           user: searchUser,
-          isSelected: _isUserSelected(searchUser),
-          onTap: () => _onUserTap(searchUser),
+          isSelected: _isUserSelected(shareProvider, searchUser),
+          onTap: () => _onUserTap(shareProvider, searchUser),
         );
       },
     );

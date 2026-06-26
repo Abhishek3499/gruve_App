@@ -106,9 +106,19 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   }
 
   void _onTabChanged(String tab) {
+    if (selectedContentTab == tab) return;
+
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+
+    _controller.changeFeed(tab);
+
     setState(() {
       selectedContentTab = tab;
     });
+
+    _controller.initVideos();
   }
 
   Future<void> _refreshFeed() async {

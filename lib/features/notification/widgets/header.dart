@@ -74,17 +74,21 @@ class Header extends StatelessWidget {
                 onTap: () => provider.setUnreadOnly(false),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    "All",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      decoration: !provider.unreadOnly
-                          ? TextDecoration.underline
-                          : TextDecoration.none,
-                      decorationColor: Colors.white,
-                      fontWeight:
-                          !provider.unreadOnly ? FontWeight.w700 : FontWeight.w500,
+                  child: Container(
+                    height: 32,
+                    alignment: Alignment.center,
+                    child: Text(
+                      "All",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        decoration: !provider.unreadOnly
+                            ? TextDecoration.underline
+                            : TextDecoration.none,
+                        decorationColor: Colors.white,
+                        fontWeight:
+                            !provider.unreadOnly ? FontWeight.w700 : FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),

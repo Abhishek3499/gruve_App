@@ -13,6 +13,8 @@ import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
+import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';
+import 'package:gruve_app/features/share/providers/post_share_provider.dart';
 import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:provider/provider.dart';
@@ -75,6 +77,8 @@ class LogoutProvider extends ChangeNotifier {
         final userProfileController =
             _tryGetProvider<UserProfileController>(context);
         final currentUserProvider = _tryGetProvider<CurrentUserProvider>(context);
+        final postLikeProvider = _tryGetProvider<PostLikeProvider>(context);
+        final postShareProvider = _tryGetProvider<PostShareProvider>(context);
 
         AppLogger.d('[LogoutProvider] Resetting local providers');
         profileProvider?.reset();
@@ -89,6 +93,8 @@ class LogoutProvider extends ChangeNotifier {
         draftsProvider?.reset();
         userProfileController?.reset();
         currentUserProvider?.clear();
+        postLikeProvider?.reset();
+        postShareProvider?.clearSelection();
         AppLogger.d('[LogoutProvider] Local providers cleared');
       }
 

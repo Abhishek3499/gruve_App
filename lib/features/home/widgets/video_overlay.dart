@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
+
 
 import 'video_user_info.dart';
 
@@ -36,21 +37,12 @@ class VideoOverlay extends StatefulWidget {
 
 class _VideoOverlayState extends State<VideoOverlay> {
   late final SubscribeController _subscribeController;
-  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _subscribeController = SubscribeController();
     _initializeUsers();
-    _loadCurrentUserId();
-  }
-
-  Future<void> _loadCurrentUserId() async {
-    final userId = await TokenStorage.getCurrentUserId();
-    setState(() {
-      _currentUserId = userId;
-    });
   }
 
   void _initializeUsers() {
@@ -84,6 +76,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final loggedInUserId = Provider.of<AuthStateManager>(context).currentUserId;
     return Stack(
       children: [
         // User Info at Bottom Left
@@ -131,89 +124,73 @@ class _VideoOverlayState extends State<VideoOverlay> {
               }
               final post = widget.controller.posts[index];
 
-              return RightActionBar(
-                likeCount: post.likesCount,
-                isLiked: post.isLiked,
-                commentCount: post.commentsCount,
-                shareCount: 2100,
+              return Consumer<PostLikeProvider>(
+                builder: (context, likeProvider, _) {
+                  return RightActionBar(
+                    likeCount: likeProvider.likesCount(post),
+                    isLiked: likeProvider.isLiked(post),
+                    commentCount: post.commentsCount,
+                    shareCount: 2100,
 
-                /// 🎁
-                onGift: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const GiftPanel(),
-                  );
-                },
+                    /// 🎁
+                    onGift: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const GiftPanel(),
+                      );
+                    },
 
-                /// ❤️ LIKE (same as before)
-                onLike: () {
-                  final postId = post.id;
+                    /// ❤️ LIKE (managed via provider)
+                    onLike: () {
+                      likeProvider.toggleLike(post);
+                    },
 
-                  if (postId.isNotEmpty) {
-                    setState(() {
-                      post.isLiked = !post.isLiked;
+                    /// 💬 COMMENT
+                    onComment: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => CommentSheet(
+                          postId: post.id,
+                          onCommentAdded: () {
+                            setState(() {
+                              post.commentsCount++; // 🔥 MAIN FIX
+                            });
 
-                      if (post.isLiked) {
-                        post.likesCount++;
-                      } else {
-                        post.likesCount--;
-                      }
-                    });
+                            AppLogger.d("💬 COUNT: ${post.commentsCount}");
+                          },
+                        ),
+                      );
+                    },
 
-                    PostService().likePost(postId).then((success) async {
-                      if (success) {
-                        await ProfileCountRefreshBridge.notifyCountsChanged(
-                          reason: 'post_like_toggled',
-                        );
-                      }
-                    });
-                  }
-                },
+                    /// 🔗 SHARE
+                    onShare: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => ShareBottomSheet(postId: post.id),
+                      );
+                    },
 
-                /// 💬 COMMENT
-                onComment: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => CommentSheet(
-                      postId: post.id,
-                      onCommentAdded: () {
-                        setState(() {
-                          post.commentsCount++; // 🔥 MAIN FIX
-                        });
-
-                        AppLogger.d("💬 COUNT: ${post.commentsCount}");
-                      },
-                    ),
-                  );
-                },
-
-                /// 🔗 SHARE
-                onShare: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const ShareBottomSheet(),
-                  );
-                },
-
-                /// ⚙️ OPTIONS
-                onOptions: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => VideoOptionsSheet(
-                      userId: post.userId,
-                      currentUserId: _currentUserId,
-                      userName: post.username,
-                      profileImage: post.profilePicture,
-                      postId: post.id,
-                    ),
+                    /// ⚙️ OPTIONS
+                    onOptions: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => VideoOptionsSheet(
+                          userId: post.userId,
+                          currentUserId: loggedInUserId,
+                          userName: post.username,
+                          profileImage: post.profilePicture,
+                          postId: post.id,
+                        ),
+                      );
+                    },
                   );
                 },
               );

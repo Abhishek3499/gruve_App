@@ -30,6 +30,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
   StreamSubscription<bool>? _initSub;
   StreamSubscription<String>? _errorSub;
   StreamSubscription<double>? _zoomSub;
+  Timer? _loadingTimer;
 
   @override
   void initState() {
@@ -81,6 +82,10 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
       if (!mounted) return;
 
       if (isInitialized) {
+        // Cancel any pending loading timer since the camera is ready
+        _loadingTimer?.cancel();
+        _loadingTimer = null;
+
         final initTime = DateTime.now().difference(initStart);
         developer.log(
           '[PERF] Camera initialized in ${initTime.inMilliseconds}ms',
@@ -91,9 +96,16 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
         return;
       }
 
-      setState(() {
-        _isInitialized = isInitialized;
-        _errorMessage = null;
+      // 🚀 OPTIMIZATION: Delay showing the loader to prevent flickers
+      // during extremely fast lens-switches (like switching to 0.5 zoom).
+      _loadingTimer?.cancel();
+      _loadingTimer = Timer(const Duration(milliseconds: 150), () {
+        if (mounted) {
+          setState(() {
+            _isInitialized = false;
+            _errorMessage = null;
+          });
+        }
       });
     });
 
@@ -130,7 +142,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 100),
         switchInCurve: Curves.easeOut,
         switchOutCurve: Curves.easeOut,
         child: _buildPreview(),
@@ -156,6 +168,10 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
     return GestureDetector(
       onScaleStart: _handleScaleStart,
       onScaleUpdate: _handleScaleUpdate,
+      onDoubleTap: () {
+        CameraLogger.logUserAction('Double-tap detected: Flipping camera');
+        _cameraService.switchCamera();
+      },
       child: Stack(
         children: [
           SizedBox.expand(child: _buildFilteredCameraPreview(controller)),
@@ -217,17 +233,13 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
   }
 
   Widget _buildLoadingState() {
-    return const ColoredBox(
+    return const DecoratedBox(
       key: ValueKey('camera-warming'),
-      color: Colors.black,
-      child: Center(
-        child: SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            color: Colors.white70,
-            strokeWidth: 2,
-          ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1E002C), Color(0xFF0A0010)], // Deep premium dark violet/black gradient
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
     );
@@ -245,6 +257,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
 
   @override
   void dispose() {
+    _loadingTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _filterController.removeListener(_onFilterChanged);
     _initSub?.cancel();

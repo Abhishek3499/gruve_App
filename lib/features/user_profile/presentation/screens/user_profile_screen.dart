@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/home/models/subscribe_model.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_filter_tabs.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_highlights_list.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
@@ -32,6 +34,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
+  String? _lastLoggedInUserId;
   int _selectedTab = 0;
   late final UserProfileController _profileController;
   late final SubscribeController _subscribeController;
@@ -135,6 +138,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentUserId = Provider.of<AuthStateManager>(context).currentUserId;
+
+    if (currentUserId != _lastLoggedInUserId) {
+      _lastLoggedInUserId = currentUserId;
+      _isResolvingIdentity = true;
+      _resolveIdentity();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
@@ -170,7 +185,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildMainContent(BoxConstraints constraints) {
+    final loggedInUserId = _lastLoggedInUserId;
+    final isDirectOwnProfile = loggedInUserId != null &&
+        loggedInUserId.isNotEmpty &&
+        loggedInUserId.trim() == widget.profileUserId.trim();
+
     final showSubscribeButton =
+        !isDirectOwnProfile &&
         !_isResolvingIdentity &&
         (_identityResolution?.shouldShowSubscribeButton ?? false);
     final showProfileShimmer =

@@ -9,6 +9,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/post_servic
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'subscribe_controller.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: TikTok-style video controller management
 /// Keeps only current + next video initialized for optimal memory usage
@@ -26,6 +27,10 @@ class VideoFeedController {
   int _feedLoadGeneration = 0;
   bool _isAnyOperationInProgress = false;
 
+  VideoFeedController() {
+    SubscribeController().addListener(_onSubscriptionChanged);
+  }
+
   List<String> _mediaUrls = [];
   List<String> get mediaUrls => _mediaUrls;
 
@@ -42,6 +47,8 @@ class VideoFeedController {
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
   final ValueNotifier<int> _feedRevision = ValueNotifier(0);
+  String _currentFeed = 'for_you';
+  String get currentFeed => _currentFeed;
 
   // 🚀 NEW: Memory optimization constants
   static const int maxCachedControllers = 5; // Increased from 3 for smoother scrolling
@@ -156,6 +163,7 @@ class VideoFeedController {
 
       final response = await _postService.getPaginatedPosts(
         cursor: _nextCursor,
+        feed: _currentFeed,
       );
 
       if (requestId != _feedLoadGeneration) {
@@ -254,7 +262,7 @@ class VideoFeedController {
     if (!refresh && _posts.isEmpty) {
       final cachedData = HiveService().getCachedData(
         HiveService.feedCacheBoxName,
-        'feed_posts',
+        'feed_posts_$_currentFeed',
       );
       if (cachedData is List) {
         AppLogger.d('📦 [VideoFeedController] Cache HIT. Loading cached posts first.');
@@ -278,6 +286,8 @@ class VideoFeedController {
       }
     }
 
+    final oldPosts = List<Post>.from(_posts);
+
     try {
       if (refresh) {
         AppLogger.d('🔄 feed refresh — fetching latest posts');
@@ -296,6 +306,7 @@ class VideoFeedController {
       final response = await _postService.getPaginatedPosts(
         cursor: _nextCursor,
         refresh: refresh,
+        feed: _currentFeed,
       );
 
       AppLogger.d(
@@ -353,7 +364,7 @@ class VideoFeedController {
           final postsJson = uniquePosts.map((e) => e.toJson()).toList();
           unawaited(HiveService().cacheData(
             HiveService.feedCacheBoxName,
-            'feed_posts',
+            'feed_posts_$_currentFeed',
             postsJson,
           ));
         }
@@ -368,15 +379,40 @@ class VideoFeedController {
       if (requestId != _feedLoadGeneration) return null;
 
       if (!refresh) {
-        await _disposeAllControllers();
+        // Smart preserve: Keep controllers whose media URL at the same index matches
+        final Map<int, VideoPlayerController> preservedControllers = {};
+        for (int i = 0; i < oldPosts.length; i++) {
+          final oldPost = oldPosts[i];
+          final oldController = _controllers[i];
+          if (oldController != null && i < _posts.length && _posts[i].media == oldPost.media) {
+            preservedControllers[i] = oldController;
+            AppLogger.d('♻️ Preserving video player controller for index $i (media matched)');
+          }
+        }
+
+        // Dispose controllers that were NOT preserved
+        final controllersToDispose = _controllers.entries
+            .where((entry) => !preservedControllers.containsKey(entry.key))
+            .map((entry) => entry.value)
+            .toList();
+
+        _controllers.clear();
+        _controllers.addAll(preservedControllers);
+        _initializingVideoIndexes.clear();
+
+        for (final controller in controllersToDispose) {
+          try {
+            await controller.dispose();
+          } catch (e) {
+            AppLogger.d('❌ Error disposing controller: $e');
+          }
+        }
+
         _failedVideoIndexes.clear();
-        // ✅ FIX: Set index to 0 but do NOT call playVideo(0) here.
-        // _ensureControllersAroundIndex is async and will auto-play index 0
-        // once the VideoPlayerController finishes initializing.
-        // Calling playVideo(0) here always finds _controllers[0] == null
-        // because initialization hasn't completed yet → black screen.
         _currentIndex.value = 0;
-        _isPlaying.value = false;
+        if (!preservedControllers.containsKey(0)) {
+          _isPlaying.value = false;
+        }
       }
 
       // ✅ FIX: Let _ensureControllersAroundIndex handle playback.
@@ -430,7 +466,7 @@ class VideoFeedController {
       return;
     }
 
-    _pauseAllVideos();
+    _pauseAllVideos(exceptIndex: index);
     if (controller.value.isInitialized) {
       controller.play();
       _isPlaying.value = true;
@@ -467,6 +503,8 @@ class VideoFeedController {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+
+    SubscribeController().removeListener(_onSubscriptionChanged);
 
     AppLogger.d(
         '🧹 VideoFeedController disposing ${_controllers.length} controllers...',
@@ -543,6 +581,53 @@ class VideoFeedController {
     AppLogger.d('✅ [VideoFeedController] State reset complete');
   }
 
+  /// Changes the feed (Subscribed vs For You) and disposes of current video controllers/posts
+  void changeFeed(String feedTab) {
+    if (_disposed) return;
+
+    AppLogger.d('🔄 [VideoFeedController] Changing feed to $feedTab...');
+
+    // Asynchronously dispose of controllers to avoid blocking the UI thread
+    final controllersToDispose = List<VideoPlayerController>.from(_controllers.values);
+    _controllers.clear();
+    for (final controller in controllersToDispose) {
+      Future.microtask(() async {
+        try {
+          await controller.pause();
+          await controller.dispose();
+        } catch (e) {
+          AppLogger.d('❌ Error disposing controller during feed change: $e');
+        }
+      });
+    }
+
+    _initializingVideoIndexes.clear();
+    _failedVideoIndexes.clear();
+    _posts.clear();
+    _mediaUrls.clear();
+    _currentIndex.value = 0;
+    _isPlaying.value = false;
+    _nextCursor = null;
+    _hasMore = true;
+    _loadError = null;
+
+    // Reset loading states and increment generation to cancel any in-flight requests
+    _isInitialLoading = false;
+    _isRefreshing = false;
+    _isLoadingMore = false;
+    _isAnyOperationInProgress = false;
+    _feedLoadGeneration++;
+
+    if (feedTab == 'Subscribed') {
+      _currentFeed = 'subscribed';
+    } else {
+      _currentFeed = 'for_you';
+    }
+
+    _notifyFeedChanged();
+    AppLogger.d('✅ [VideoFeedController] Feed successfully changed to $_currentFeed (gen: $_feedLoadGeneration)');
+  }
+
   List<Post> _filterPostsWithSupportedMedia(List<Post> raw) {
     final out = <Post>[];
     for (final post in raw) {
@@ -581,15 +666,6 @@ class VideoFeedController {
     if (idx < 0 || idx >= _posts.length) return false;
     final post = _posts[idx];
     return post.isVideo || Post.mediaUrlLooksLikeVideo(post.media);
-  }
-
-  Future<void> _disposeAllControllers() async {
-    AppLogger.d('🗑️ Disposing all controllers');
-    for (final controller in _controllers.values) {
-      await controller.dispose();
-    }
-    _controllers.clear();
-    _initializingVideoIndexes.clear();
   }
 
   Future<void> _ensureControllersAroundIndex(int index, int generation) async {
@@ -649,7 +725,7 @@ class VideoFeedController {
         controller = VideoPlayerController.networkUrl(
           Uri.parse(url),
           videoPlayerOptions: VideoPlayerOptions(
-            mixWithOthers: true,
+            mixWithOthers: false,
             allowBackgroundPlayback: false,
           ),
         );
@@ -693,7 +769,7 @@ class VideoFeedController {
       // was null → early return → video never played → black screen.
       // Now we play here, after await controller.initialize() has resolved.
       if (mediaIndex == _currentIndex.value && !_disposed) {
-        _pauseAllVideos();
+        _pauseAllVideos(exceptIndex: mediaIndex);
         controller.play();
         _isPlaying.value = true;
         AppLogger.d(
@@ -721,14 +797,17 @@ class VideoFeedController {
     }
   }
 
-  void _pauseAllVideos() {
-    for (final controller in _controllers.values) {
-      if (controller.value.isPlaying) {
-        controller.pause();
+  void _pauseAllVideos({int? exceptIndex}) {
+    _controllers.forEach((index, controller) {
+      if (exceptIndex == null || index != exceptIndex) {
+        try {
+          controller.pause();
+        } catch (e) {
+          AppLogger.d('❌ Error pausing controller at $index: $e');
+        }
       }
-    }
-    AppLogger.d('⏸️ All videos paused');
-    
+    });
+    AppLogger.d('⏸️ All other videos paused');
   }
 
   Future<void> _precacheProfilePictures(List<Post> posts) async {
@@ -774,6 +853,83 @@ class VideoFeedController {
       } catch (e) {
         AppLogger.d('⚠️ Error pre-caching profile pictures: $e');
       }
+    }
+  }
+
+  /// Real-time listener that handles instant removal of posts from unsubscribed creators
+  void _onSubscriptionChanged() {
+    if (_disposed) return;
+
+    if (_currentFeed == 'subscribed' && _posts.isNotEmpty) {
+      final subscribeController = SubscribeController();
+      final unsubscribedUserIds = <String>{};
+
+      for (final post in _posts) {
+        final isSubscribed = subscribeController.isUserSubscribed(post.userId);
+        if (!isSubscribed) {
+          unsubscribedUserIds.add(post.userId);
+        }
+      }
+
+      if (unsubscribedUserIds.isNotEmpty) {
+        AppLogger.d('🗑️ [VideoFeedController] Instantly removing posts for unsubscribed creators: $unsubscribedUserIds');
+        _removePostsByUsers(unsubscribedUserIds);
+      }
+    }
+  }
+
+  /// Removes posts of specific userIds, cleans up their players, and updates indices
+  void _removePostsByUsers(Set<String> userIds) {
+    if (userIds.isEmpty || _posts.isEmpty) return;
+
+    final Map<int, VideoPlayerController> preservedControllers = {};
+    final List<Post> newPosts = [];
+    final List<String> newMediaUrls = [];
+
+    int oldIndex = 0;
+    int newIndex = 0;
+
+    for (final post in _posts) {
+      if (userIds.contains(post.userId)) {
+        // Asynchronously dispose of the player controller for the removed post
+        final controller = _controllers[oldIndex];
+        if (controller != null) {
+          Future.microtask(() async {
+            try {
+              await controller.pause();
+              await controller.dispose();
+            } catch (e) {
+              AppLogger.d('❌ Error disposing controller for removed post at index $oldIndex: $e');
+            }
+          });
+        }
+      } else {
+        newPosts.add(post);
+        newMediaUrls.add(post.media);
+        final controller = _controllers[oldIndex];
+        if (controller != null) {
+          preservedControllers[newIndex] = controller;
+        }
+        newIndex++;
+      }
+      oldIndex++;
+    }
+
+    _controllers.clear();
+    _controllers.addAll(preservedControllers);
+    _posts = newPosts;
+    _mediaUrls = newMediaUrls;
+
+    // Cap the active index to the new boundaries
+    if (_currentIndex.value >= _posts.length) {
+      _currentIndex.value = (_posts.length - 1).clamp(0, double.infinity).toInt();
+    }
+
+    _notifyFeedChanged();
+
+    // Smoothly auto-play the next video in line at the current index if the feed is not empty
+    if (_posts.isNotEmpty) {
+      playVideo(_currentIndex.value);
     }
   }
 }

@@ -72,8 +72,11 @@ class AppDio {
               options.headers.containsKey('Authorization') &&
               (options.headers['Authorization']?.toString().trim().isNotEmpty ??
                   false);
+          final isExternal = (options.path.startsWith('http://') || options.path.startsWith('https://')) &&
+              !options.path.startsWith(baseUrl);
           final skipAuth =
               options.extra['skipAuth'] == true ||
+              isExternal ||
               AuthEndpointPaths.shouldSkipAuth(options.path);
 
           if (!skipAuth && !hasAuthorizationHeader) {

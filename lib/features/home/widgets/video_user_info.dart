@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music_screen/music_screen.dart';
@@ -10,6 +11,7 @@ import 'subscribe_button.dart';
 
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/core/widgets/optimized/optimized_image.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 
 class VideoUserInfo extends StatefulWidget {
   final String username;
@@ -46,6 +48,7 @@ class VideoUserInfo extends StatefulWidget {
 class _VideoUserInfoState extends State<VideoUserInfo> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
+  String? _lastLoggedInUserId;
 
   @override
   void initState() {
@@ -78,6 +81,16 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   }
 
   Future<void> _openProfile(BuildContext context) async {
+    final loggedInUserId = _lastLoggedInUserId;
+    final isDirectOwnProfile = loggedInUserId != null &&
+        loggedInUserId.isNotEmpty &&
+        loggedInUserId.trim() == widget.userId.trim();
+
+    if (isDirectOwnProfile) {
+      widget.onOwnProfileTap();
+      return;
+    }
+
     final resolution =
         _identityResolution ??
         await ProfileIdentityService.instance.resolveProfileIdentity(
@@ -326,9 +339,26 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
     );
   }
 
+  bool get _isOwnProfile {
+    final loggedInUserId = _lastLoggedInUserId;
+    if (loggedInUserId == null || loggedInUserId.isEmpty) {
+      return false; // Not logged in or loading, treat as not own profile
+    }
+    return loggedInUserId.trim() == widget.userId.trim();
+  }
+
   bool get _hasVisibleSubscribeButton {
+    final loggedInUserId = _lastLoggedInUserId;
+    if (loggedInUserId == null || loggedInUserId.isEmpty) {
+      return false; // Hide button completely if not logged in or loading!
+    }
+
+    if (_isOwnProfile) {
+      return false; // Hide on own posts
+    }
+
     if (_isResolvingIdentity) {
-      return true;
+      return true; // Show placeholder during identity resolution
     }
 
     if (!(_identityResolution?.shouldShowSubscribeButton ?? false)) {
@@ -343,6 +373,11 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   }
 
   Widget _buildSubscribeButton() {
+    final loggedInUserId = _lastLoggedInUserId;
+    if (loggedInUserId == null || loggedInUserId.isEmpty || _isOwnProfile) {
+      return const SizedBox.shrink(); // Hide button completely if not logged in or own post!
+    }
+
     if (_isResolvingIdentity) {
       return const SizedBox(width: 96, height: 32);
     }
@@ -368,6 +403,18 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
         subscribeController: widget.subscribeController,
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentUserId = Provider.of<AuthStateManager>(context).currentUserId;
+
+    if (currentUserId != _lastLoggedInUserId) {
+      _lastLoggedInUserId = currentUserId;
+      _isResolvingIdentity = true;
+      _resolveProfileIdentity();
+    }
   }
 
   @override

@@ -15,10 +15,12 @@ import 'package:gruve_app/features/profile/presentation/providers/user_profile_p
 import 'package:gruve_app/features/user_profile/data/services/user_profile_service.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
+import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';
+import 'package:gruve_app/features/share/providers/post_share_provider.dart';
 import 'package:gruve_app/features/auth/logout/logout_provider.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
@@ -32,6 +34,7 @@ import 'package:gruve_app/core/network/api_client.dart';
 import 'package:gruve_app/features/notification/providers/notification_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -61,14 +64,19 @@ Future<void> main() async {
   }
 
   try {
-    await SharedPreferences.getInstance(); // Ensure SharedPreferences is ready
+    await TokenStorage.init(); // Ensure SharedPreferences and cached userId are ready
   } catch (e) {
-    AppLogger.d('🚨 [Main] SharedPreferences initialization failed: $e');
+    AppLogger.d('🚨 [Main] TokenStorage initialization failed: $e');
   }
 
   final authStateManager = AuthStateManager();
   try {
     await authStateManager.initialize();
+    
+    // Eagerly prime ProfileIdentityService with the logged-in user ID for instant synchronous resolution!
+    if (authStateManager.currentUserId != null) {
+      ProfileIdentityService.instance.primeLoggedInUserId(authStateManager.currentUserId);
+    }
   } catch (e) {
     AppLogger.d('🚨 [Main] AuthStateManager initialization failed: $e');
   }
@@ -158,6 +166,12 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => DraftsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PostLikeProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PostShareProvider(),
         ),
       ],
       child: MaterialApp(

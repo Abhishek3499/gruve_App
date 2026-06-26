@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/auth/current_user_provider.dart';
+
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/widgets/profile_grid.dart';
@@ -35,7 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _log(String message) {
     AppLogger.d(message);
-    
   }
 
   @override
@@ -318,9 +318,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           final newImageUrl = response.data.profilePicture;
                           final newUsername = response.data.username;
                           context.read<CurrentUserProvider>().updateProfileData(
-                                username: newUsername,
-                                imageUrl: newImageUrl,
-                              );
+                            username: newUsername,
+                            imageUrl: newImageUrl,
+                          );
                         },
                       ),
                     ),

@@ -4,6 +4,7 @@ import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation
@@ -32,12 +33,24 @@ class AuthStateManager extends ChangeNotifier {
   /// Initializes auth state by checking stored tokens
   Future<void> initialize() async {
     try {
+      // 🚀 EAGER LOAD: Try reading synchronously from SharedPreferences first
+      final syncUserId = TokenStorage.getCurrentUserIdSync();
+      if (syncUserId != null && syncUserId.isNotEmpty) {
+        _currentUserId = syncUserId;
+        ProfileIdentityService.instance.primeLoggedInUserId(syncUserId);
+        AppLogger.d('🔐 [AuthState] Eagerly loaded userId synchronously: $_currentUserId');
+      }
+
       final accessToken = await TokenStorage.getAccessToken();
       final userId = await TokenStorage.getCurrentUserId();
 
       final expired = await TokenStorage.isTokenExpired();
       _isAuthenticated = accessToken != null && accessToken.isNotEmpty && !expired;
-      _currentUserId = userId;
+      
+      if (userId != null) {
+        _currentUserId = userId;
+        ProfileIdentityService.instance.primeLoggedInUserId(userId);
+      }
 
       AppLogger.d(
         '🔐 [AuthState] Initialized - Authenticated: $_isAuthenticated, UserId: $_currentUserId',
@@ -46,6 +59,7 @@ class AuthStateManager extends ChangeNotifier {
       AppLogger.d('🚨 [AuthState] Initialization failed, resetting state: $e');
       _isAuthenticated = false;
       _currentUserId = null;
+      ProfileIdentityService.instance.clearCachedLoggedInUserId();
       try {
         await TokenStorage.clearTokens();
       } catch (_) {}
@@ -69,6 +83,8 @@ class AuthStateManager extends ChangeNotifier {
     _currentUserId = userId;
     _isLoggingOut = false;
 
+    ProfileIdentityService.instance.primeLoggedInUserId(userId);
+
     AppLogger.d('✅ [AuthState] Authentication successful for user: $userId');
     notifyListeners();
   }
@@ -84,6 +100,8 @@ class AuthStateManager extends ChangeNotifier {
       // Clear all stored data
       await TokenStorage.clearTokens();
       await TokenStorage.clearResetToken();
+
+      ProfileIdentityService.instance.clearCachedLoggedInUserId();
 
       // Disconnect socket
       SocketService().disconnect();

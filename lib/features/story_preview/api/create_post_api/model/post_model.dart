@@ -178,6 +178,7 @@ class Post {
           json['user']?['id']?.toString() ??
           json['user_id']?.toString() ??
           json['author_id']?.toString() ??
+          json['userId']?.toString() ??
           "unknown",
       likesCount: json['likes_count'] ?? json['like_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
@@ -186,7 +187,10 @@ class Post {
           json['user']?['username']?.toString() ??
           json['username']?.toString() ??
           "unknown",
-      isSubscribed: json['user']?['is_subscribed'] ?? false,
+      isSubscribed:
+          json['user']?['is_subscribed'] ??
+          json['is_subscribed'] ??
+          false,
       profilePicture: _normalizeUrl(
         json['user']?['profile_picture'] ?? json['profile_picture'] ?? "",
       ),

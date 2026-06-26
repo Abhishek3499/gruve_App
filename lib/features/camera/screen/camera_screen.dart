@@ -12,6 +12,7 @@ import '../widgets/horizontal_filter_selector.dart';
 import '../utils/camera_logger.dart';
 import '../services/mode_service.dart';
 import '../models/sticker_data.dart';
+import '../controller/filter_controller.dart';
 import '../widgets/sticker_overlay.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -30,6 +31,9 @@ class _CameraScreenState extends State<CameraScreen> {
   void initState() {
     super.initState();
     CameraLogger.log('CameraScreen initialized');
+
+    // Reset filters to Normal when opening the camera screen
+    FilterController().reset();
 
     ModeService().clearStickers();
     ModeService().setShootDuration(0);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/screen/camera_screen.dart';
 import 'package:gruve_app/features/camera/services/mode_service.dart';
+import 'package:gruve_app/features/camera/controller/camera_controller_service.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_screen.dart';
@@ -12,6 +13,15 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 class CameraHandler {
   static Future<dynamic> openCamera(BuildContext context) async {
     try {
+      // 🚀 OPTIMIZATION: Initialize camera controller BEFORE pushing the screen
+      // so that the camera screen opens instantly with the live preview already active (no black screen!).
+      final service = CameraControllerService();
+      if (!service.isInitialized) {
+        await service.initializeCamera();
+      }
+
+      if (!context.mounted) return null;
+
       final CameraCaptureResult? capture =
           await Navigator.push<CameraCaptureResult>(
             context,

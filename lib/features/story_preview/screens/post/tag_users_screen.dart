@@ -127,6 +127,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
 
                   TextButton(
                     onPressed: () {
+                      FocusScope.of(context).unfocus();
                       Navigator.pop(context, selectedUsers);
                     },
                     child: const Text(

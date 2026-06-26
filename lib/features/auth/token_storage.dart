@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenStorage {
   static const String _accessTokenKey = 'access_token';
@@ -12,6 +13,30 @@ class TokenStorage {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
+
+  static SharedPreferences? _prefs;
+
+  static Future<void> init() async {
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      
+      // Eagerly sync user ID from secure storage to SharedPreferences if not already done
+      final syncUserId = _prefs?.getString(_currentUserIdKey);
+      if (syncUserId == null) {
+        final secureUserId = await _readSecure(_currentUserIdKey);
+        if (secureUserId != null && secureUserId.isNotEmpty) {
+          await _prefs?.setString(_currentUserIdKey, secureUserId);
+          _log('Synced current user ID from secure storage to SharedPreferences: $secureUserId');
+        }
+      }
+    } catch (e) {
+      _log('Failed to initialize SharedPreferences in TokenStorage: $e');
+    }
+  }
+
+  static String? getCurrentUserIdSync() {
+    return _prefs?.getString(_currentUserIdKey);
+  }
 
   static void _log(String message) {
     AppLogger.d('[TokenStorage] $message');
@@ -76,6 +101,12 @@ class TokenStorage {
   static Future<void> saveCurrentUserId(String userId) async {
     _log('Saving current user ID');
     await _writeSecure(_currentUserIdKey, userId);
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs?.setString(_currentUserIdKey, userId);
+    } catch (e) {
+      _log('Failed to save current user ID to SharedPreferences: $e');
+    }
   }
 
   static Future<String?> getCurrentUserId() async {
@@ -98,6 +129,12 @@ class TokenStorage {
     await _deleteSecure(_accessTokenKey);
     await _deleteSecure(_refreshTokenKey);
     await _deleteSecure(_currentUserIdKey);
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs?.remove(_currentUserIdKey);
+    } catch (e) {
+      _log('Failed to clear current user ID from SharedPreferences: $e');
+    }
   }
 
   static Future<void> saveResetToken(String token) async {

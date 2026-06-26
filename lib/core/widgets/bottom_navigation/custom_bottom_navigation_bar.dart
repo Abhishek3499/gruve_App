@@ -4,11 +4,12 @@ import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'nav_item.dart';
 import 'nav_bar_clipper.dart';
 import 'center_nav_button.dart';
 
-class CustomBottomNavigationBar extends StatelessWidget {
+class CustomBottomNavigationBar extends StatefulWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
 
@@ -17,6 +18,23 @@ class CustomBottomNavigationBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemSelected,
   });
+
+  @override
+  State<CustomBottomNavigationBar> createState() => _CustomBottomNavigationBarState();
+}
+
+class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Eagerly pre-fetch profile data on startup so it is completely ready
+        context.read<CurrentUserProvider>().fetchCurrentUserProfile();
+        context.read<ProfileProvider>().fetchProfileData(fetchUserReason: 'bottom_nav_eager_load');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,21 +63,21 @@ class CustomBottomNavigationBar extends StatelessWidget {
                       NavItem(
                         imagePath: AppAssets.homelogo,
                         index: 0,
-                        selectedIndex: selectedIndex,
-                        onTap: () => onItemSelected(0),
+                        selectedIndex: widget.selectedIndex,
+                        onTap: () => widget.onItemSelected(0),
                       ),
                       NavItem(
                         imagePath: AppAssets.search,
                         index: 1,
-                        selectedIndex: selectedIndex,
-                        onTap: () => onItemSelected(1),
+                        selectedIndex: widget.selectedIndex,
+                        onTap: () => widget.onItemSelected(1),
                       ),
                       const SizedBox(width: 55),
                       NavItem(
                         imagePath: AppAssets.notification,
                         index: 3,
-                        selectedIndex: selectedIndex,
-                        onTap: () => onItemSelected(3),
+                        selectedIndex: widget.selectedIndex,
+                        onTap: () => widget.onItemSelected(3),
                       ),
                       _buildProfileNavItem(context),
                     ],
@@ -73,8 +91,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
           Positioned(
             top: 32,
             child: CenterNavButton(
-              isSelected: selectedIndex == 2,
-              onTap: () => onItemSelected(2),
+              isSelected: widget.selectedIndex == 2,
+              onTap: () => widget.onItemSelected(2),
             ),
           ),
         ],
@@ -87,11 +105,11 @@ class CustomBottomNavigationBar extends StatelessWidget {
       builder: (context, userProvider, _) {
         final profileImageUrl = userProvider.profileImageUrl;
         final username = userProvider.username;
-        final isActive = selectedIndex == 4;
+        final isActive = widget.selectedIndex == 4;
         final initials = _getInitials(username);
 
         return GestureDetector(
-          onTap: () => onItemSelected(4),
+          onTap: () => widget.onItemSelected(4),
           behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),

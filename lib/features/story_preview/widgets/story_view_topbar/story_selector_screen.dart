@@ -122,6 +122,7 @@ class CreateHighlightSheet extends StatefulWidget {
 class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
   final TextEditingController _nameController = TextEditingController();
   late final HighlightCreateController _createController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -252,90 +253,141 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: ElevatedButton(
-              onPressed: () async {
-                AppLogger.d("➕ New highlight submit → API CALL START");
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      AppLogger.d("➕ New highlight submit → API CALL START");
 
-                // ✅ Validate title
-                if (_nameController.text.trim().isEmpty) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a highlight name'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  return;
-                }
+                      // ✅ Validate title
+                      if (_nameController.text.trim().isEmpty) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a highlight name'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                        return;
+                      }
 
-                // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
-                final storyId = widget.storyId;
+                      // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
+                      final storyId = widget.storyId;
 
-                AppLogger.d("🧪 [DEBUG] FIXED Story ID: $storyId");
-                AppLogger.d(
-                  "🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}",
-                );
+                      AppLogger.d("🧪 [DEBUG] FIXED Story ID: $storyId");
+                      AppLogger.d(
+                        "🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}",
+                      );
 
-                // ❌ prevent null / empty
-                if (storyId.isEmpty) {
-                  AppLogger.d("❌ ERROR: Story ID is empty");
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Story ID not found. Please try again.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  return;
-                }
+                      // ❌ prevent null / empty
+                      if (storyId.isEmpty) {
+                        AppLogger.d("❌ ERROR: Story ID is empty");
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Story ID not found. Please try again.',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                        return;
+                      }
 
-                // ❌ prevent wrong format
-                if (storyId.endsWith('.jpg') ||
-                    storyId.endsWith('.png') ||
-                    storyId.endsWith('.mp4')) {
-                  AppLogger.d("❌ ERROR: Wrong storyId (image file detected)");
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Invalid story ID format.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  return;
-                }
+                      // ❌ prevent wrong format
+                      if (storyId.endsWith('.jpg') ||
+                          storyId.endsWith('.png') ||
+                          storyId.endsWith('.mp4')) {
+                        AppLogger.d(
+                          "❌ ERROR: Wrong storyId (image file detected)",
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Invalid story ID format.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                        return;
+                      }
 
-                // 🚀 API CALL
-                await _createController.addStoryToHighlight(
-                  highlightId: null,
-                  storyId: storyId,
-                  title: _nameController.text.trim(),
-                );
+                      setState(() {
+                        _isLoading = true;
+                      });
 
-                // ✅ Success handling
-                if (_createController.isSuccess) {
-                  AppLogger.d("✅ Highlight created successfully");
+                      try {
+                        // 🚀 API CALL
+                        await _createController.addStoryToHighlight(
+                          highlightId: null,
+                          storyId: storyId,
+                          title: _nameController.text.trim(),
+                        );
 
-                  if (!mounted) return;
+                        // ✅ Success handling
+                        if (_createController.isSuccess) {
+                          AppLogger.d("✅ Highlight created successfully");
 
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Highlight created successfully! 🎉'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } else {
-                  AppLogger.d("❌ Highlight creation failed");
-                }
-              },
+                          if (!mounted) return;
+
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Highlight created successfully! 🎉',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } else {
+                          AppLogger.d("❌ Highlight creation failed");
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Failed to create highlight. Please try again.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        AppLogger.d(
+                          "❌ Exception during highlight creation: $e",
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
-              child: const Text("Add"),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text("Add"),
             ),
           ),
         ],

@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/screen/message_screen.dart';
 import 'package:gruve_app/features/profile/screens/profile_screen.dart';
 import 'package:gruve_app/features/search/screens/search_screen.dart';
 import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
 import 'package:gruve_app/features/story_preview/api/post/processing_dialog.dart';
+import 'package:gruve_app/features/camera/controller/camera_controller_service.dart';
 import 'package:gruve_app/core/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
@@ -56,10 +59,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     AppLogger.d("🏠 Home Screen initState called");
 
-    // Fetch current user profile for bottom nav avatar
+    // Fetch current user profile for bottom nav avatar and eager-load profile data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<CurrentUserProvider>().fetchCurrentUserProfile();
+        
+        // Eagerly load the profile data on app start so the Profile tab is ready instantly!
+        context.read<ProfileProvider>().fetchProfileData(fetchUserReason: 'app_start_eager_load');
+        
+        // 🚀 OPTIMIZATION: Pre-warm camera for instant opening
+        CameraControllerService.prewarmCamera();
       }
     });
 
@@ -115,43 +124,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     };
 
     PostShareFlowBridge.onShowSuccessSnackbar = (isVideo) {
-      if (!mounted || _isDisposed) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  isVideo
-                      ? 'Video posted successfully!'
-                      : 'Photo posted successfully!',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(
-            0xFF8B25C6,
-          ), // Premium violet color matching app theme
-          behavior: SnackBarBehavior.floating,
-          elevation: 6,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      // Disabled as per user request to remove success snackbar
     };
 
     PostShareFlowBridge.onRequestShowHomeFeed = _ensureHomeFeedTab;
@@ -348,6 +321,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _ensureHomeFeedTab();
 
       _cameraFlowInProgress = true;
+      
+      // 🚀 OPTIMIZATION: Pre-warm camera again right before opening
+      unawaited(CameraControllerService.prewarmCamera());
+      
       try {
         final result = await CameraHandler.openCamera(context);
         if (!mounted || _isDisposed) return;
@@ -357,6 +334,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
       } finally {
         _cameraFlowInProgress = false;
+        // 🚀 OPTIMIZATION: Pre-warm camera again in background after it's closed
+        CameraControllerService.prewarmCamera();
       }
       return;
     }
@@ -411,6 +390,66 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _videoController!.playVideo(_videoController!.currentIndex.value);
   }
 
+  Future<bool?> _showExitConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
+        ),
+        title: const Text(
+          'Exit Gruve',
+          style: TextStyle(
+            color: Colors.white, 
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to exit the app?',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.white60,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC358D7),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: const Text(
+              'Exit',
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 🚀 PERFORMANCE: Track rebuild metrics
@@ -426,10 +465,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       valueListenable: _currentIndex,
       builder: (context, currentIndex, _) {
         return PopScope(
-          canPop: currentIndex == 0,
-          onPopInvokedWithResult: (didPop, result) {
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
             if (didPop) return;
-            _ensureHomeFeedTab();
+            if (currentIndex != 0) {
+              _ensureHomeFeedTab();
+            } else {
+              final shouldExit = await _showExitConfirmationDialog(context);
+              if (shouldExit == true) {
+                await SystemNavigator.pop();
+              }
+            }
           },
           child: RepaintBoundary(
             child: Scaffold(

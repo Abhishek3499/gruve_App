@@ -10,6 +10,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:video_compress/video_compress.dart';
 
 class PostService {
   late final Dio _dio;
@@ -94,8 +95,10 @@ class PostService {
     List<String>? taggedUserIds,
   }) async {
     File? tempDownloadedFile;
+    File? tempCompressedVideo;
+    bool isVideo = false;
     try {
-      final isVideo = mediaPath != null && mediaPath.isNotEmpty
+      isVideo = mediaPath != null && mediaPath.isNotEmpty
           ? _isVideo(mediaPath)
           : false;
       AppLogger.d('\n🚀 [PostService] ===== CREATE POST START =====');
@@ -145,7 +148,7 @@ class PostService {
           final tempDir = Directory.systemTemp;
           final fileName = mediaPath.split('/').last.split('?').first;
           final tempFile = File('${tempDir.path}/$fileName');
-          await _dio.download(mediaPath, tempFile.path);
+          await Dio().download(mediaPath, tempFile.path);
           file = tempFile;
           tempDownloadedFile = tempFile;
           AppLogger.d('📥 [PostService] Downloaded to: ${file.path}');
@@ -166,6 +169,30 @@ class PostService {
             } catch (e) {
               AppLogger.d(
                 '⚠️ [PostService] Image compression failed, using original: $e',
+              );
+            }
+          } else {
+            AppLogger.d('🗜️ [PostService] Compressing video for post...');
+            try {
+              final mediaInfo = await VideoCompress.compressVideo(
+                file.path,
+                quality: VideoQuality.DefaultQuality,
+                deleteOrigin: false,
+                includeAudio: true,
+              );
+              if (mediaInfo != null && mediaInfo.path != null) {
+                final compressedFile = File(mediaInfo.path!);
+                if (compressedFile.existsSync()) {
+                  uploadFile = compressedFile;
+                  tempCompressedVideo = compressedFile;
+                  AppLogger.d(
+                    '🗜️ [PostService] Video compressed successfully: ${file.lengthSync()} -> ${compressedFile.lengthSync()} bytes',
+                  );
+                }
+              }
+            } catch (e) {
+              AppLogger.d(
+                '⚠️ [PostService] Video compression failed, using original: $e',
               );
             }
           }
@@ -222,6 +249,22 @@ class PostService {
         } catch (e) {
           AppLogger.d('⚠️ [PostService] Failed to delete temp file: $e');
         }
+      }
+      if (tempCompressedVideo != null && tempCompressedVideo.existsSync()) {
+        try {
+          await tempCompressedVideo.delete();
+          AppLogger.d('🧹 [PostService] Temporary compressed video file deleted');
+        } catch (e) {
+          AppLogger.d('⚠️ [PostService] Failed to delete compressed file: $e');
+        }
+      }
+      try {
+        if (isVideo) {
+          await VideoCompress.deleteAllCache();
+          AppLogger.d('🧹 [PostService] VideoCompress cache cleared');
+        }
+      } catch (e) {
+        AppLogger.d('⚠️ [PostService] Failed to clear VideoCompress cache: $e');
       }
     }
   }
@@ -473,10 +516,11 @@ class PostService {
     CursorModel? cursor,
     int limit = 20, // Increased from 10 to reduce API calls
     bool refresh = false,
+    String? feed,
   }) async {
     final isInitialLoad = cursor == null || !cursor.isValid;
     final requestKey =
-        '${refresh ? 'refresh' : 'page'}_${cursor?.toString() ?? 'first'}_$limit';
+        '${refresh ? 'refresh' : 'page'}_${cursor?.toString() ?? 'first'}_${limit}_${feed ?? 'none'}';
     final inFlight = _inFlightPageRequests[requestKey];
     if (inFlight != null) {
       AppLogger.d('🔄 PostService: Joining duplicate paginated request');
@@ -508,12 +552,16 @@ class PostService {
     _lastRequestKey = requestKey;
 
     try {
-      AppLogger.d('📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit');
+      AppLogger.d('📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit for feed: ${feed ?? "default"}');
 
       final token = await TokenStorage.getAccessToken();
       final queryParams = <String, dynamic>{
         'limit': limit.clamp(1, 20),
       }; // Increased from 10 to 20
+
+      if (feed != null && feed.isNotEmpty) {
+        queryParams['feed'] = feed;
+      }
 
       if (cursor?.isValid == true) {
         queryParams.addAll(cursor!.toJson());
@@ -676,6 +724,30 @@ class PostService {
         rethrow;
       }
       return false;
+    }
+  }
+
+  Future<bool> sharePost({
+    required String postId,
+    required List<String> recipientUserIds,
+  }) async {
+    final token = await TokenStorage.getAccessToken();
+    try {
+      AppLogger.d('🚀 [PostService] sharePost START postId=$postId, recipients=$recipientUserIds');
+      final res = await _dio.post(
+        "posts/share/",
+        data: {
+          "post_id": postId,
+          "recipient_user_ids": recipientUserIds,
+        },
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      AppLogger.d("✅ [PostService] SHARE SUCCESS: ${res.data}");
+      return res.statusCode == 200 || res.statusCode == 201;
+    } catch (e) {
+      AppLogger.d("❌ [PostService] SHARE ERROR: $e");
+      rethrow;
     }
   }
 
