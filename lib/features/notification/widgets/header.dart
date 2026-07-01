@@ -17,15 +17,8 @@ class Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 34,
-                  minHeight: 34,
-                  maxWidth: 34,
-                  maxHeight: 34,
-                ),
-                icon: Image.asset(AppAssets.back, height: 20, width: 20),
+              BackButton(
+                color: Colors.white,
                 onPressed: () {
                   Navigator.pop(context);
                 },

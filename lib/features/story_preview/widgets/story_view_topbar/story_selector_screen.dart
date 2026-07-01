@@ -4,6 +4,7 @@ import 'package:gruve_app/features/highlights_create/controller/highlight_create
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/widgets/app_cached_image.dart';
+import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 
 class StorySelectorScreen extends StatefulWidget {
   final List<String> mediaPaths;
@@ -256,6 +257,7 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
               onPressed: _isLoading
                   ? null
                   : () async {
+                      FocusScope.of(context).unfocus();
                       AppLogger.d("➕ New highlight submit → API CALL START");
 
                       // ✅ Validate title
@@ -332,13 +334,25 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
                           if (!mounted) return;
 
                           if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            // Pop everything back to the main/home screen smoothly
+                            navigator.popUntil((route) => route.isFirst);
+
+                            // Switch to Profile Tab
+                            PostShareFlowBridge.onRequestShowProfileTab?.call();
+
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Highlight created successfully! 🎉',
+                                  'Highlight created successfully.',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                                backgroundColor: Colors.green,
+                                backgroundColor: Color(0xFF9544A7),
                               ),
                             );
                           }

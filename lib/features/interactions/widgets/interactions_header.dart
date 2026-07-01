@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import '../../../../core/constants/app_colors.dart';
 
 /// Interactions header widget
@@ -17,15 +16,9 @@ class InteractionsHeader extends StatelessWidget {
           // Back Button
           Align(
             alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-
-              child: Image.asset(
-                AppAssets.back,
-                color: AppColors.white,
-                width: 25,
-                height: 25,
-              ),
+            child: BackButton(
+              color: AppColors.white,
+              onPressed: () => Navigator.pop(context),
             ),
           ),
 

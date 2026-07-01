@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
@@ -62,16 +61,11 @@ class UserProfileHeader extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              IconButton(
+              BackButton(
+                color: Colors.white,
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                icon: Image.asset(
-                  AppAssets.back,
-                  color: Colors.white,
-                  height: 22,
-                  width: 22,
-                ),
               ),
               const Spacer(),
             ],

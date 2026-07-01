@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/message/models/conversation_model.dart';
 import 'package:gruve_app/features/message/widgets/chat_header_menu.dart';
@@ -132,14 +131,9 @@ class ChatHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: onBack,
-            child: Image.asset(
-              AppAssets.back,
-              width: 24,
-              height: 24,
-              color: Colors.white,
-            ),
+          BackButton(
+            color: Colors.white,
+            onPressed: onBack,
           ),
           const SizedBox(width: 16),
           GestureDetector(

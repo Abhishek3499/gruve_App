@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,15 @@ class MessageScreen extends StatefulWidget {
 class _MessageScreenState extends State<MessageScreen> {
   bool _isLoadingMoreConversations = false;
   bool _startedUserPrefetch = false;
+  MessageProvider? _messageProvider;
+  UserProvider? _userProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messageProvider ??= context.read<MessageProvider>();
+    _userProvider ??= context.read<UserProvider>();
+  }
 
   @override
   void initState() {
@@ -36,8 +46,8 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   void dispose() {
-    context.read<MessageProvider>().cancelActiveRequests();
-    context.read<UserProvider>().cancelActiveRequests();
+    _messageProvider?.cancelActiveRequests();
+    _userProvider?.cancelActiveRequests();
     super.dispose();
   }
 
@@ -193,68 +203,33 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildConversationList(MessageProvider messageProvider) {
-    AppLogger.d(
-      '🔍 [buildConversationList] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    );
-    AppLogger.d(
-      '🔍 [buildConversationList] isLoading: ${messageProvider.isLoading} | isRefreshing: ${messageProvider.isRefreshing}',
-    );
-    AppLogger.d(
-      '📊 [buildConversationList] conversationCount: ${messageProvider.conversationCount} | hasMore: ${messageProvider.hasMoreData} | page: ${messageProvider.currentPage}',
-    );
-    AppLogger.d(
-      '📩 [buildConversationList] totalUnread: ${messageProvider.totalUnreadCount}',
-    );
-
-    if (messageProvider.hasError) {
-      AppLogger.d('❌ [buildConversationList] error: ${messageProvider.error}');
-    }
-    if (!messageProvider.hasConversations && !messageProvider.isLoading) {
-      AppLogger.d('⚠️ [buildConversationList] conversations list is NULL/EMPTY');
-    }
-    if (messageProvider.hasConversations) {
-      final ids = messageProvider.conversations
-          .map((c) => c.id)
-          .take(5)
-          .toList();
-      final unreadCounts = messageProvider.conversations
-          .take(5)
-          .map((c) => '${c.id.substring(0, 6)}:${c.unreadCount}')
-          .toList();
-      AppLogger.d('💬 [buildConversationList] conversationIDs (first 5): $ids');
+    if (kDebugMode) {
       AppLogger.d(
-        '🔔 [buildConversationList] unreadCounts (first 5): $unreadCounts',
+        '🔍 [buildConversationList] isLoading: ${messageProvider.isLoading} | count: ${messageProvider.conversationCount}',
       );
     }
 
     // Show loading shimmer on initial load
     if (messageProvider.isLoading && !messageProvider.hasConversations) {
-      AppLogger.d('🚀 [buildConversationList] → showing shimmer (initial load)');
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show shimmer during refresh
     if (messageProvider.isRefreshing && !messageProvider.hasConversations) {
-      AppLogger.d('🔄 [buildConversationList] → showing shimmer (refreshing)');
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show error state
     if (messageProvider.hasError && !messageProvider.hasConversations) {
-      AppLogger.d('❌ [buildConversationList] → showing error state');
       return _buildErrorState(messageProvider);
     }
 
     // Show empty state
     if (!messageProvider.hasConversations && !messageProvider.isLoading) {
-      AppLogger.d('⚠️ [buildConversationList] → showing empty state');
       return _buildEmptyState();
     }
 
     // Show conversation list
-    AppLogger.d(
-      '✅ [buildConversationList] → rendering ${messageProvider.conversationCount} conversations',
-    );
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
         // Prevent pagination spam with threshold and loading guard
@@ -265,7 +240,6 @@ class _MessageScreenState extends State<MessageScreen> {
             scrollInfo.metrics.pixels >=
                 scrollInfo.metrics.maxScrollExtent - 200) {
           _isLoadingMoreConversations = true;
-          AppLogger.d('⬇️ [MessageScreen] Loading more conversations');
           messageProvider.loadMoreConversations().then((_) {
             if (mounted) {
               _isLoadingMoreConversations = false;
@@ -328,7 +302,6 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildErrorState(MessageProvider messageProvider) {
-    AppLogger.d('💥 [MessageScreen] Building error state widget');
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -355,7 +328,6 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildEmptyState() {
-    AppLogger.d('📭 [MessageScreen] Building empty state widget');
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

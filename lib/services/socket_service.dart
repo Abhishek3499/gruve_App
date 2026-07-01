@@ -397,18 +397,22 @@ class SocketService {
     );
   }
 
-  /// Send message through enhanced socket with timeout protection
-  /// Returns true if message was successfully queued, false otherwise
+  /// Send chat message through WebSocket (`chat.send`).
+  /// Supports text-only, media-only, text+media, and replies.
   bool sendMessage({
     required String conversationId,
-    required String message,
+    String? content,
+    String? replyToMessageId,
+    Map<String, dynamic>? media,
     String? senderId,
     Map<String, dynamic>? additionalData,
   }) {
     AppLogger.d(
       "[SOCKET SERVICE] sendMessage() state=${_reconnectManager.state.name} connected=${_reconnectManager.isConnected}",
     );
-    if (message.trim().isEmpty) {
+
+    final trimmedContent = content?.trim() ?? '';
+    if (trimmedContent.isEmpty && media == null) {
       AppLogger.d("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
       return false;
     }
@@ -420,19 +424,14 @@ class SocketService {
       return false;
     }
 
-    AppLogger.d(
-      "📝 [SocketService] 📝 Sending to conversation: $conversationId",
-    );
-    AppLogger.d(
-      "💬 [SocketService] 💬 Message: ${message.length > 50 ? '${message.substring(0, 50)}...' : message}",
-    );
-
-    // 🚨 PRODUCTION FIX: Use correct event structure for backend
-    final messageData = {
-      'type': 'chat.send', // ✅ Correct event type
-      'conversation_id': conversationId, // ✅ Required: UUID string
-      'content': message, // ✅ Required: message content
-      'sender_id': senderId ?? 'current_user', // ✅ Required: sender ID
+    final messageData = <String, dynamic>{
+      'type': 'chat.send',
+      'conversation_id': conversationId,
+      if (trimmedContent.isNotEmpty) 'content': trimmedContent,
+      if (replyToMessageId != null && replyToMessageId.isNotEmpty)
+        'reply_to_message_id': replyToMessageId,
+      if (media != null) 'media': media,
+      if (senderId != null && senderId.isNotEmpty) 'sender_id': senderId,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
       ...?additionalData,
     };
@@ -440,16 +439,7 @@ class SocketService {
     AppLogger.d("[SOCKET SERVICE] outgoing payload => $messageData");
 
     try {
-      AppLogger.d("🚀 [SocketService] 🚀 Attempting to send via WebSocket...");
       final sent = _reconnectManager.sendMessage(messageData);
-      AppLogger.d("[SOCKET SERVICE] low-level send result => $sent");
-
-      if (sent) {
-        AppLogger.d("✅ [SocketService] ✅ MESSAGE QUEUED FOR DELIVERY");
-      } else {
-        AppLogger.d("❌ [SocketService] ❌ MESSAGE NOT QUEUED");
-      }
-
       return sent;
     } catch (e) {
       AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");

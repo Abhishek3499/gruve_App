@@ -10,6 +10,8 @@ import '../../../features/auth/token_storage.dart';
 
 import '../controllers/message_controller.dart';
 import '../models/conversation_model.dart';
+import '../models/message_media_model.dart';
+import '../models/message_reply_preview.dart';
 import '../models/message_model.dart';
 import '../models/reply_message_model.dart';
 import '../services/message_service.dart';
@@ -17,6 +19,7 @@ import '../widgets/chat_header.dart';
 import '../widgets/chat_input_field.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_popup_menu.dart';
+import '../widgets/block/block_user_widget.dart';
 import '../widgets/pinned_message_banner.dart';
 import '../widgets/reply_preview_bar.dart';
 import '../../../core/widgets/shimmer/chat_shimmer.dart';
@@ -51,15 +54,18 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   late final MessageController _messageController;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _inputController = TextEditingController();
   final SocketService _socketService = SocketService();
 
   StreamSubscription? _socketSubscription;
 
-  bool _isSending = false;
   bool _isLoadingOlderMessages = false;
+  bool _isUploadingMedia = false;
   bool _hasCompletedInitialScroll = false;
   String? _resolvedConversationId;
+  String? _currentUserId;
   ReplyMessageModel? _activeReply;
+  MessageModel? _editingMessage;
   MessageModel? _pinnedMessage;
 
   bool _showPopup = false;
@@ -156,11 +162,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return userData?.profileImage?.toString();
   }
 
-  List<MessageModel> get _messages => _messageController.messages;
-  bool _isBlocked(BuildContext context) {
-    return context.watch<BlockProvider>().isBlocked(_userId);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -186,6 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _initializeSocketListener();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      _currentUserId = await TokenStorage.getCurrentUserId();
       final blockProvider = context.read<BlockProvider>();
       try {
         await blockProvider.fetchBlockedUsers();
@@ -260,19 +262,170 @@ class _ChatScreenState extends State<ChatScreen> {
         _messageController.hasMessages &&
         !_hasCompletedInitialScroll) {
       _hasCompletedInitialScroll = true;
-      _scrollToBottom();
+      _scrollToBottom(animated: true);
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animated = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        0.0, // With reverse: true, 0.0 is the bottom
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-      );
+      if (animated) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(0.0);
+      }
     });
+  }
+
+  bool _isChatSocketEvent(String? type, String? event) {
+    if (type == null || type.isEmpty) return false;
+    final normalized = type.toLowerCase();
+    if (normalized == 'message') return true;
+    if (normalized.startsWith('message.')) return true;
+    if (normalized.startsWith('chat.') && normalized != 'chat.send') {
+      return true;
+    }
+    if (normalized == 'new_message' || normalized == 'message_received') {
+      return true;
+    }
+    if (event != null &&
+        (event.startsWith('message.') || event.startsWith('chat.'))) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _isDeliveryEvent(String? type, String? event) {
+    final normalizedType = type?.toLowerCase() ?? '';
+    final normalizedEvent = event?.toLowerCase() ?? '';
+    return normalizedEvent == 'message.delivered' ||
+        normalizedType == 'message.delivered' ||
+        normalizedType == 'chat.delivered';
+  }
+
+  bool _isReadEvent(String? type, String? event) {
+    final normalizedType = type?.toLowerCase() ?? '';
+    final normalizedEvent = event?.toLowerCase() ?? '';
+    return normalizedEvent == 'message.read' ||
+        normalizedType == 'message.read' ||
+        normalizedType == 'chat.read';
+  }
+
+  bool _isEditedEvent(String? type, String? event) {
+    final normalizedType = type?.toLowerCase() ?? '';
+    final normalizedEvent = event?.toLowerCase() ?? '';
+    return normalizedEvent == 'message.edited' ||
+        normalizedType == 'message.edited' ||
+        normalizedType == 'chat.edited';
+  }
+
+  Map<String, dynamic> _extractMessagePayload(Map<String, dynamic> data) {
+    final nested = data['data'];
+    if (nested is Map) {
+      return Map<String, dynamic>.from(nested);
+    }
+    final payload = data['payload'];
+    if (payload is Map) {
+      return Map<String, dynamic>.from(payload);
+    }
+    return Map<String, dynamic>.from(data);
+  }
+
+  void _handleIncomingSocketMessage(Map<String, dynamic> data) {
+    final event = data['event']?.toString();
+    final type = data['type']?.toString().toLowerCase();
+
+    if (!_isChatSocketEvent(type, event)) return;
+
+    if (_isDeliveryEvent(type, event)) {
+      final messageData = _extractMessagePayload(data);
+      final messageId =
+          messageData['message_id']?.toString() ??
+          messageData['id']?.toString();
+      if (messageId != null && messageId.isNotEmpty) {
+        final content =
+            messageData['content']?.toString() ??
+            messageData['text']?.toString();
+        _messageController.handleMessageDelivered(
+          messageId,
+          content: content,
+        );
+      }
+      return;
+    }
+
+    if (_isReadEvent(type, event)) {
+      final messageData = _extractMessagePayload(data);
+      final messageIds =
+          (messageData['message_ids'] as List?)
+              ?.map((e) => e.toString())
+              .toList();
+      _messageController.handleMessagesRead(messageIds);
+      return;
+    }
+
+    if (_isEditedEvent(type, event)) {
+      final messageData = _extractMessagePayload(data);
+      final incomingConversationId = _extractConversationId(data);
+      if (incomingConversationId.isNotEmpty &&
+          incomingConversationId != _conversationId) {
+        return;
+      }
+      _messageController.handleMessageEdited(messageData);
+      return;
+    }
+
+    final messageData = _extractMessagePayload(data);
+    final incomingConversationId = _extractConversationId(data);
+
+    if (incomingConversationId.isNotEmpty && _conversationId.isEmpty) {
+      final senderIdStr =
+          (messageData['sender_id'] ?? messageData['senderId'] ?? '')
+              .toString();
+      final receiverIdStr =
+          (messageData['receiver_id'] ?? messageData['receiverId'] ?? '')
+              .toString();
+      final isRelevant =
+          senderIdStr == _userId ||
+          receiverIdStr == _userId ||
+          senderIdStr == _currentUserId ||
+          receiverIdStr == _currentUserId;
+
+      if (isRelevant) {
+        _resolvedConversationId = incomingConversationId;
+        _messageController.conversationId = incomingConversationId;
+        _messageController.onConversationIdChanged?.call(
+          incomingConversationId,
+        );
+      }
+    }
+
+    if (incomingConversationId.isNotEmpty &&
+        incomingConversationId != _conversationId) {
+      return;
+    }
+
+    final hasMessageText =
+        messageData['content'] != null ||
+        messageData['text'] != null ||
+        messageData['message'] != null;
+    final looksLikeMessage =
+        hasMessageText ||
+        messageData.containsKey('sender_id') ||
+        messageData.containsKey('senderId');
+
+    if (!looksLikeMessage) return;
+
+    _messageController.addRealtimeMessage(
+      messageData,
+      currentUserId: _currentUserId,
+    );
+    _messageController.markAsReadDebounced();
+    _scrollToBottom();
   }
 
   void _initializeSocketListener() {
@@ -284,85 +437,25 @@ class _ChatScreenState extends State<ChatScreen> {
     AppLogger.d('🎧 SOCKET LISTENER STARTED');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
-      AppLogger.d('🔥 SOCKET DATA => $data');
+      if (!mounted) return;
 
       try {
-        final event = data['event']?.toString();
         final type = data['type']?.toString().toLowerCase();
 
         if (type == 'error') {
           final detail = data['detail']?.toString() ?? 'An error occurred';
-          AppLogger.d('💥 SOCKET ERROR EVENT => $detail');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Socket Error: $detail'), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text('Socket Error: $detail'),
+                backgroundColor: Colors.red,
+              ),
             );
           }
           return;
         }
 
-        if (type == 'message') {
-          if (event == 'message.delivered') {
-            final nested = data['data'];
-            if (nested is Map) {
-              final messageId = nested['message_id']?.toString();
-              if (messageId != null) {
-                _messageController.handleMessageDelivered(messageId);
-              }
-            }
-            return;
-          } else if (event == 'message.read') {
-            final nested = data['data'];
-            if (nested is Map) {
-              final messageIds = (nested['message_ids'] as List?)?.map((e) => e.toString()).toList();
-              _messageController.handleMessagesRead(messageIds);
-            }
-            return;
-          }
-
-          // Default / Fallback case: new message event (event == 'message.sent' or general message)
-          final nested = data['data'];
-          final messageData = nested is Map
-              ? Map<String, dynamic>.from(nested)
-              : Map<String, dynamic>.from(data);
-
-          final incomingConversationId = _extractConversationId(data);
-
-          // Adopt conversation ID if empty and message is relevant to this user
-          if (incomingConversationId.isNotEmpty && _conversationId.isEmpty) {
-            final senderIdStr = (messageData['sender_id'] ?? messageData['senderId'] ?? '').toString();
-            final receiverIdStr = (messageData['receiver_id'] ?? messageData['receiverId'] ?? '').toString();
-            final isRelevant = senderIdStr == _userId || receiverIdStr == _userId;
-
-            if (isRelevant) {
-              AppLogger.d('[ChatScreen] Adopting new conversation ID from socket: $incomingConversationId');
-              _resolvedConversationId = incomingConversationId;
-              _messageController.conversationId = incomingConversationId;
-              _messageController.onConversationIdChanged?.call(incomingConversationId);
-            }
-          }
-
-          if (incomingConversationId.isNotEmpty &&
-              incomingConversationId != _conversationId) {
-            return;
-          }
-
-          final hasMessageText =
-              messageData['content'] != null ||
-              messageData['text'] != null ||
-              messageData['message'] != null;
-          final looksLikeMessage =
-              hasMessageText ||
-              messageData.containsKey('sender_id') ||
-              messageData.containsKey('senderId');
-
-          if (looksLikeMessage) {
-            _messageController.addRealtimeMessage(messageData);
-            _messageController.markAsReadDebounced();
-            AppLogger.d('✅ REALTIME MESSAGE ADDED');
-            _scrollToBottom();
-          }
-        }
+        _handleIncomingSocketMessage(data);
       } catch (e) {
         AppLogger.d('💥 SOCKET ERROR => $e');
       }
@@ -392,8 +485,40 @@ class _ChatScreenState extends State<ChatScreen> {
     Size bubbleSize,
   ) {
     if (!mounted) return;
-    final topInset = MediaQuery.of(context).padding.top;
-    final menuTop = (globalPosition.dy - topInset) + bubbleSize.height + 10;
+
+    final mediaQuery = MediaQuery.of(context);
+    final topInset = mediaQuery.padding.top;
+    final bottomPadding = mediaQuery.padding.bottom;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final screenHeight = mediaQuery.size.height;
+
+    // Calculate safe area height (where the Stack/Scaffold is visible)
+    final safeAreaHeight = screenHeight - topInset - keyboardHeight - (keyboardHeight > 0 ? 0.0 : bottomPadding);
+
+    // Height of the popup menu: 5 items (isSent/own message) vs 4 items (received/other message).
+    // Each item is 52px, container vertical padding is 4px.
+    final double menuHeight = message.isSent ? 264.0 : 212.0;
+
+    // Position of the bubble top/bottom relative to the safe area
+    final bubbleTop = globalPosition.dy - topInset;
+    final bubbleBottom = bubbleTop + bubbleSize.height;
+
+    double menuTop = bubbleBottom + 10.0;
+
+    // If showing below the bubble exceeds the safe area, show above it.
+    if (menuTop + menuHeight > safeAreaHeight - 10.0) {
+      final menuTopAbove = bubbleTop - menuHeight - 10.0;
+      // Ensure we don't go above the header (height 60)
+      if (menuTopAbove >= 60.0) {
+        menuTop = menuTopAbove;
+      } else {
+        // If it doesn't fit above either, clamp it or show it where it fits best.
+        // We must ensure min <= max for the clamp method to avoid throwing an error.
+        final maxTop = (safeAreaHeight - menuHeight - 10.0).clamp(60.0, double.infinity);
+        menuTop = menuTopAbove.clamp(60.0, maxTop);
+      }
+    }
+
     setState(() {
       _showPopup = true;
       _popupMessage = message;
@@ -451,49 +576,150 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _sendMessage(String text) async {
+  void _sendMessage(String text) {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
-    AppLogger.d(
-      '[ChatScreen] 📤 SEND FLOW START: conversation=$_conversationId',
-    );
+    if (_editingMessage != null) {
+      unawaited(_submitEdit(trimmedText));
+      return;
+    }
+
+    final replyMessage = _activeReply?.originalMessage;
+    final replyToMessageId = replyMessage?.id;
+
     final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
     final newMessage = MessageModel(
       id: localId,
       text: trimmedText,
       timestamp: DateTime.now(),
       isSent: true,
-      senderId: 'me',
-      replyTo: _activeReply?.originalMessage,
+      senderId: _currentUserId ?? 'me',
+      replyTo: replyMessage,
+      replyPreview: replyMessage != null
+          ? MessageReplyPreview.fromMessage(
+              replyMessage,
+              senderName: replyMessage.isSent ? 'You' : _userName,
+            )
+          : null,
       status: MessageStatus.sent,
     );
 
     if (!mounted) return;
-    setState(() {
-      _isSending = true;
-      _activeReply = null;
-    });
+    if (_activeReply != null) {
+      setState(() => _activeReply = null);
+    }
 
-    // Step 1: Optimistic local append
-    AppLogger.d('[ChatScreen] 📝 Step 1: Local message appended id=$localId');
     _messageController.appendLocalMessage(newMessage);
     _scrollToBottom();
 
-    // Step 2: Attempt backend persistence with timeout protection
-    try {
-      AppLogger.d('[ChatScreen] 🌐 Step 2: Starting backend send...');
+    unawaited(
+      _deliverMessage(
+        localId: localId,
+        content: trimmedText,
+        replyToMessageId: replyToMessageId,
+      ),
+    );
+  }
 
-      await _sendToBackend(trimmedText).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw TimeoutException('Send timeout after 15s'),
+  Future<void> _submitEdit(String trimmedText) async {
+    final editing = _editingMessage;
+    if (editing == null) return;
+
+    if (trimmedText == editing.text.trim()) {
+      _clearEdit();
+      return;
+    }
+
+    _clearEdit();
+
+    try {
+      final socketService = SocketService();
+      if (socketService.isConnected) {
+        final sent = socketService.sendEvent({
+          'type': 'chat.edit',
+          'conversation_id': _conversationId,
+          'message_id': editing.id,
+          'content': trimmedText,
+        });
+        if (sent) {
+          _messageController.handleMessageEdited({
+            'message_id': editing.id,
+            'content': {'type': 'text', 'text': trimmedText},
+            'is_edited': true,
+          });
+          return;
+        }
+      }
+
+      final success = await _messageController.editMessage(
+        messageId: editing.id,
+        content: trimmedText,
       );
 
-      AppLogger.d('[ChatScreen] ✅ Step 3: Backend send SUCCESS');
-      // The socket listener handles adding and replacing the optimistic message
-      _scrollToBottom();
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to edit message'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
-      AppLogger.d('[ChatScreen] ❌ Step 3: Backend send FAILED: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to edit message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _startEdit(MessageModel message) {
+    if (!message.isEditable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This message cannot be edited')),
+      );
+      return;
+    }
+
+    setState(() {
+      _activeReply = null;
+      _editingMessage = message;
+      _inputController.text = message.text;
+      _inputController.selection = TextSelection.collapsed(
+        offset: _inputController.text.length,
+      );
+    });
+  }
+
+  void _clearEdit() {
+    if (_editingMessage == null) return;
+    setState(() {
+      _editingMessage = null;
+      _inputController.clear();
+    });
+  }
+
+  Future<void> _deliverMessage({
+    required String localId,
+    String? content,
+    String? replyToMessageId,
+    MessageMediaPayload? media,
+  }) async {
+    try {
+      await _sendToBackend(
+        localId: localId,
+        content: content,
+        replyToMessageId: replyToMessageId,
+        media: media,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Send timeout after 30s'),
+      );
+    } catch (e) {
       _messageController.markMessageAsFailed(localId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -504,73 +730,103 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isSending = false);
+      if (mounted && _isUploadingMedia) {
+        setState(() => _isUploadingMedia = false);
       }
-      AppLogger.d('[ChatScreen] 🏁 SEND FLOW COMPLETE');
     }
   }
 
-  Future<void> _sendToBackend(String content) async {
-    AppLogger.d('[ChatScreen] 🔄 Backend send: WebSocket is primary, REST is fallback ONLY');
+  Future<void> _sendToBackend({
+    required String localId,
+    String? content,
+    String? replyToMessageId,
+    MessageMediaPayload? media,
+  }) async {
+    final mediaPayload = media?.toApiPayload();
 
-    final socketService = SocketService();
-    if (socketService.isConnected) {
-      AppLogger.d('[ChatScreen] Socket is connected. Using WebSocket only.');
-      final wsSuccess = await _tryWebSocketSend(content).timeout(
-        const Duration(seconds: 12),
-        onTimeout: () {
-          AppLogger.d('[ChatScreen] WebSocket send timed out after 12s');
-          return false;
-        },
-      );
-
-      if (wsSuccess) {
-        AppLogger.d('[ChatScreen] ✅ WebSocket send SUCCESS');
-        return;
-      }
-      throw Exception('Failed to send message via WebSocket');
-    } else {
-      AppLogger.d('[ChatScreen] Socket is NOT connected. Using REST fallback.');
-      final restMessage = await _messageController.sendMessage(content);
-      if (restMessage != null) {
-        AppLogger.d('[ChatScreen] ✅ REST fallback send SUCCESS');
-        return;
-      }
-      throw Exception('Failed to send message via REST fallback');
-    }
-  }
-
-  Future<bool> _tryWebSocketSend(String content) async {
+    // Prefer REST (POST .../messages/); fall back to WebSocket if REST fails.
     try {
-      AppLogger.d('[ChatScreen] 📡 WebSocket send attempt start');
-      final socketService = SocketService();
+      final restMessage = await _messageController.sendMessage(
+        content,
+        replyToMessageId: replyToMessageId,
+        media: mediaPayload,
+        localId: localId,
+      );
+      if (restMessage != null) return;
 
-      if (!socketService.isConnected) {
-        AppLogger.d('[ChatScreen] ⚠️ WebSocket NOT CONNECTED');
+      if (await _waitForLocalMessageConfirmation(localId)) return;
+    } catch (e) {
+      AppLogger.d('[ChatScreen] REST send failed, trying WebSocket: $e');
+    }
+
+    final wsSuccess = await _tryWebSocketSend(
+      content: content,
+      replyToMessageId: replyToMessageId,
+      media: mediaPayload,
+    ).timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => false,
+    );
+
+    if (wsSuccess) {
+      if (await _waitForLocalMessageConfirmation(localId)) return;
+      throw Exception('Failed to confirm message via WebSocket');
+    }
+
+    throw Exception('Failed to send message');
+  }
+
+  Future<bool> _waitForLocalMessageConfirmation(
+    String localId, {
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (_messageController.isLocalMessageConfirmed(localId)) {
+        return true;
+      }
+      await Future.delayed(const Duration(milliseconds: 80));
+    }
+    return _messageController.isLocalMessageConfirmed(localId);
+  }
+
+  Future<bool> _tryWebSocketSend({
+    String? content,
+    String? replyToMessageId,
+    Map<String, dynamic>? media,
+  }) async {
+    try {
+      await _messageController.ensureConversationReady();
+
+      if (!_socketService.isConnected) {
         final accessToken = await TokenStorage.getAccessToken();
         if (accessToken == null || accessToken.isEmpty) {
-          AppLogger.d('[ChatScreen] No token available for WebSocket reconnect');
           return false;
         }
 
-        await socketService.connect(accessToken);
-        final connected = await _waitForSocketConnection(socketService);
-        if (!connected) {
-          AppLogger.d('[ChatScreen] WebSocket reconnect did not complete');
-          return false;
-        }
+        await _socketService.connect(accessToken);
+        final connected = await _waitForSocketConnection(_socketService);
+        if (!connected) return false;
       }
 
-      final sent = socketService.sendMessage(
-        conversationId: _conversationId,
-        message: content,
-      );
+      _currentUserId ??= await TokenStorage.getCurrentUserId();
 
-      AppLogger.d('[ChatScreen] 📡 WebSocket send result: $sent');
-      return sent;
+      final sanitizedReplyId =
+          replyToMessageId != null &&
+              !replyToMessageId.startsWith('local-') &&
+              !replyToMessageId.startsWith('realtime_')
+          ? replyToMessageId
+          : null;
+
+      return _socketService.sendMessage(
+        conversationId: _messageController.conversationId,
+        content: content,
+        replyToMessageId: sanitizedReplyId,
+        media: media,
+        senderId: _currentUserId,
+      );
     } catch (e) {
-      AppLogger.d('[ChatScreen] ❌ WebSocket send exception: $e');
+      AppLogger.d('[ChatScreen] WebSocket send exception: $e');
       return false;
     }
   }
@@ -587,11 +843,79 @@ class _ChatScreenState extends State<ChatScreen> {
     return socketService.isConnected;
   }
 
-  void _sendImage(String imagePath) {
-    AppLogger.d('[ChatScreen] 🖼️ Image send not yet implemented: $imagePath');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Image sending coming soon!')));
+  bool _isVideoPath(String path) {
+    final lower = path.toLowerCase().split('?').first;
+    const hints = ['.mp4', '.mov', '.m4v', '.webm', '.mkv', '.3gp'];
+    for (final hint in hints) {
+      if (lower.endsWith(hint)) return true;
+    }
+    return false;
+  }
+
+  void _sendImage(String mediaPath) {
+    unawaited(_sendMedia(mediaPath));
+  }
+
+  Future<void> _sendMedia(String mediaPath) async {
+    if (_isUploadingMedia) return;
+
+    final isVideo = _isVideoPath(mediaPath);
+    final caption = _inputController.text.trim();
+    final replyMessage = _activeReply?.originalMessage;
+    final replyToMessageId = replyMessage?.id;
+
+    if (!mounted) return;
+    setState(() => _isUploadingMedia = true);
+
+    if (_activeReply != null) {
+      setState(() => _activeReply = null);
+    }
+    if (caption.isNotEmpty) {
+      _inputController.clear();
+    }
+
+    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final newMessage = MessageModel(
+      id: localId,
+      text: caption,
+      timestamp: DateTime.now(),
+      isSent: true,
+      senderId: _currentUserId ?? 'me',
+      imagePath: mediaPath,
+      mediaKind: isVideo ? 'video' : 'image',
+      replyTo: replyMessage,
+      replyPreview: replyMessage != null
+          ? MessageReplyPreview.fromMessage(
+              replyMessage,
+              senderName: replyMessage.isSent ? 'You' : _userName,
+            )
+          : null,
+      status: MessageStatus.sent,
+    );
+
+    _messageController.appendLocalMessage(newMessage);
+    _scrollToBottom();
+
+    try {
+      final uploaded = await _messageController.uploadMessageMedia(mediaPath);
+      await _deliverMessage(
+        localId: localId,
+        content: caption.isEmpty ? null : caption,
+        replyToMessageId: replyToMessageId,
+        media: uploaded,
+      );
+    } catch (e) {
+      _messageController.markMessageAsFailed(localId);
+      if (mounted) {
+        setState(() => _isUploadingMedia = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload media: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
@@ -605,14 +929,15 @@ class _ChatScreenState extends State<ChatScreen> {
           _activeReply = ReplyMessageModel(
             originalMessage: message,
             username: message.isSent ? 'yourself' : _userName,
-            previewText: message.text.isNotEmpty ? message.text : 'Image',
+            previewText: MessageReplyPreview.fromMessage(
+              message,
+              senderName: message.isSent ? 'You' : _userName,
+            ).displayText,
           );
         });
         break;
-      case MessageAction.forward:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Forward feature coming soon!')),
-        );
+      case MessageAction.edit:
+        _startEdit(message);
         break;
       case MessageAction.pin:
         _pinMessage(message);
@@ -787,20 +1112,61 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _activeReply = null);
   }
 
-  Future<void> _unblockUser() async {
-    final blockProvider = context.read<BlockProvider>();
-    await blockProvider.toggleBlockUser(
-      _userId,
-      refreshList: true,
-      optimistic: false,
+  Widget _buildEditPreviewBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.edit, color: Colors.white70, size: 16),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'Editing message',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: _clearEdit,
+            child: const Icon(Icons.close, color: Colors.white, size: 20),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Never sort [MessageController.messages] in place — it is unmodifiable.
-  List<MessageModel> _sortedMessagesCopy() {
-    final sorted = List<MessageModel>.from(_messages);
-    sorted.sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Descending order (newest first)
-    return sorted;
+  Future<void> _unblockUser() async {
+    final blockProvider = context.read<BlockProvider>();
+    final isBlocked = blockProvider.isBlocked(_userId);
+
+    await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'UnblockUserDialog',
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return BlockUserWidget(
+          name: _userName,
+          username: "@$_userName",
+          userId: _userId,
+          isBlocked: isBlocked,
+        );
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: ScaleTransition(
+            scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+            child: child,
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -810,14 +1176,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.removeListener(_onMessageScroll);
     _messageController.dispose();
     _scrollController.dispose();
+    _inputController.dispose();
     AppLogger.d('[ChatScreen] dispose conversation=$_conversationId');
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isBlocked = _isBlocked(context);
-
     return PopScope(
       canPop: !_isDeleteMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -857,37 +1222,46 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: ListenableBuilder(
                         listenable: _messageController,
-                        builder: (context, _) {
-                          final sortedMessages = _sortedMessagesCopy();
-                          return _buildMessageBody(sortedMessages);
-                        },
+                        builder: (context, _) =>
+                            _buildMessageBody(_messageController.messagesNewestFirst),
                       ),
                     ),
-                    ListenableBuilder(
-                      listenable: _messageController,
-                      builder: (context, _) {
-                        if (_messageController.isInitialLoading) {
-                          return const SizedBox.shrink();
-                        }
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_activeReply != null && !_isDeleteMode)
-                              ReplyPreviewBar(
-                                replyMessage: _activeReply!,
-                                onClose: _clearReply,
-                              ),
-                            if (_isDeleteMode)
-                              _buildDeleteBottomBar()
-                            else if (isBlocked)
-                              _buildBlockedBottomBar()
-                            else
-                              ChatInputField(
-                                onSendMessage: _sendMessage,
-                                onSendImage: _sendImage,
-                                isLoading: _isSending,
-                              ),
-                          ],
+                    Selector<BlockProvider, bool>(
+                      selector: (_, block) => block.isBlocked(_userId),
+                      builder: (context, isBlocked, _) {
+                        return ListenableBuilder(
+                          listenable: _messageController,
+                          builder: (context, _) {
+                            if (_messageController.isInitialLoading) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_activeReply != null && !_isDeleteMode)
+                                  ReplyPreviewBar(
+                                    replyMessage: _activeReply!,
+                                    onClose: _clearReply,
+                                  ),
+                                if (_editingMessage != null && !_isDeleteMode)
+                                  _buildEditPreviewBar(),
+                                if (_isDeleteMode)
+                                  _buildDeleteBottomBar()
+                                else if (isBlocked)
+                                  _buildBlockedBottomBar()
+                                else
+                                  ChatInputField(
+                                    controller: _inputController,
+                                    hintText: _editingMessage != null
+                                        ? 'Edit message'
+                                        : null,
+                                    onSendMessage: _sendMessage,
+                                    onSendImage: _sendImage,
+                                    isLoading: _isUploadingMedia,
+                                  ),
+                              ],
+                            );
+                          },
                         );
                       },
                     ),
@@ -920,6 +1294,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       onDeleteMode: _enterDeleteMode,
                       onDismiss: _dismissPopup,
                       isOwnMessage: _popupMessage!.isSent,
+                      canEdit: _popupMessage!.isEditable,
                     ),
                   ),
               ],
@@ -947,7 +1322,10 @@ class _ChatScreenState extends State<ChatScreen> {
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 16),
       physics: const BouncingScrollPhysics(),
-      reverse: true, // Optimizes chat loading and places index 0 at the bottom
+      reverse: true,
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
       itemCount:
           sortedMessages.length + (_messageController.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
@@ -976,9 +1354,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageRow(MessageModel message, int index) {
     final isSelected = _selectedMessageIds.contains(message.id);
+    final stableKey = message.id.startsWith('local-')
+        ? 'local_${message.timestamp.microsecondsSinceEpoch}_${message.text.hashCode}'
+        : message.id;
 
     Widget bubble = MessageBubble(
-      key: ValueKey(message.id),
       message: message,
       onActionSelected: (action) => _handleMessageAction(action, message),
       onLongPress: (globalPos, size) =>
@@ -994,13 +1374,16 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    return Column(
-      children: [
-        if (index > 0) const SizedBox(height: 10), // When reverse: true, this adds space above the message (between older and newer)
-        bubble,
-        if (message.isPinned)
-          PinnedMessageBanner(pinnedMessage: message, username: _userName),
-      ],
+    return RepaintBoundary(
+      key: ValueKey(stableKey),
+      child: Column(
+        children: [
+          if (index > 0) const SizedBox(height: 10),
+          bubble,
+          if (message.isPinned)
+            PinnedMessageBanner(pinnedMessage: message, username: _userName),
+        ],
+      ),
     );
   }
 

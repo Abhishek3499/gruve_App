@@ -21,14 +21,9 @@ class SubscriptionHeader extends StatelessWidget {
           Positioned(
             top: 35,
             left: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Image.asset(
-                AppAssets.back,
-                color: AppColors.white,
-                width: 25,
-                height: 25,
-              ),
+            child: BackButton(
+              color: AppColors.white,
+              onPressed: () => Navigator.pop(context),
             ),
           ),
 

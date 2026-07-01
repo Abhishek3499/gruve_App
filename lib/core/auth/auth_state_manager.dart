@@ -73,11 +73,13 @@ class AuthStateManager extends ChangeNotifier {
     required String refreshToken,
     required String userId,
   }) async {
-    await TokenStorage.saveTokens(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    );
-    await TokenStorage.saveCurrentUserId(userId);
+    await Future.wait<void>([
+      TokenStorage.saveTokens(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      ),
+      TokenStorage.saveCurrentUserId(userId),
+    ]);
 
     _isAuthenticated = true;
     _currentUserId = userId;

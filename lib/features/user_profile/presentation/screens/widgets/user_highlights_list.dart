@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/core/widgets/app_cached_image.dart';
+import 'package:provider/provider.dart';
 
 /// Reusable highlights list for user profile
 /// Similar to StoryList but without "Add Story" button
@@ -21,7 +23,6 @@ class UserHighlightsList extends StatelessWidget {
 
   void _log(String message) {
     AppLogger.d(message);
-    
   }
 
   @override
@@ -29,7 +30,6 @@ class UserHighlightsList extends StatelessWidget {
     _log('[UserHighlightsList] Building with ${highlights.length} highlights');
     _log('[UserHighlightsList] isOwnProfile: $isOwnProfile');
 
-    // Hide if no highlights
     if (highlights.isEmpty) {
       _log('[UserHighlightsList] No highlights, returning empty widget');
       return const SizedBox.shrink();
@@ -49,21 +49,21 @@ class UserHighlightsList extends StatelessWidget {
   }
 
   Widget _buildHighlightItem(BuildContext context, HighlightModel highlight) {
-    final cover = _coverFor(highlight);
+    final cover = highlight.coverPreviewUrl;
 
     return Padding(
       padding: const EdgeInsets.only(right: 18),
       child: GestureDetector(
         onTap: () {
           _log('[UserHighlightsList] Highlight tapped: ${highlight.title}');
-          _log('[UserHighlightsList] Highlight ID: ${highlight.id}');
-          _log('[UserHighlightsList] Stories count: ${highlight.stories.length}');
-          _log('[UserHighlightsList] Navigating to viewer');
-
+          context.read<HighlightController>().cacheHighlightStories(highlight);
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => HighlightViewerScreen(highlightId: highlight.id),
+              builder: (_) => HighlightViewerScreen(
+                highlightId: highlight.id,
+                initialHighlight: highlight,
+              ),
             ),
           );
         },
@@ -73,12 +73,12 @@ class UserHighlightsList extends StatelessWidget {
             _HighlightCircle(
               child: ClipOval(
                 child: cover != null
-                    ? AppCachedImage(
-                        imageUrl: cover,
-                        fit: BoxFit.cover,
+                    ? MediaUrlThumbnail(
+                        url: cover,
                         width: 60,
                         height: 60,
-                        errorWidget: _placeholderIcon(),
+                        fallback: _placeholderIcon(),
+                        placeholder: _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),
@@ -98,19 +98,6 @@ class UserHighlightsList extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String? _coverFor(HighlightModel highlight) {
-    if (highlight.coverMediaUrl.trim().isNotEmpty) {
-      return highlight.coverMediaUrl.trim();
-    }
-
-    if (highlight.stories.isNotEmpty &&
-        highlight.stories.first.mediaUrl.trim().isNotEmpty) {
-      return highlight.stories.first.mediaUrl.trim();
-    }
-
-    return null;
   }
 
   Widget _placeholderIcon() {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class UserHeader extends StatelessWidget {
   const UserHeader({super.key});
@@ -21,9 +20,9 @@ class UserHeader extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Image.asset(AppAssets.back, height: 24, width: 24),
+                BackButton(
+                  color: Colors.white,
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),

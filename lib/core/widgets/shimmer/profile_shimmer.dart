@@ -324,7 +324,13 @@ class _UserProfileHeaderShimmer extends StatelessWidget {
                     SizedBox(height: 16),
                     Row(
                       children: [
-                        ShimmerBox(width: 132, height: 42, borderRadius: 30),
+                        Expanded(
+                          child: ShimmerBox(
+                            width: double.infinity,
+                            height: 42,
+                            borderRadius: 30,
+                          ),
+                        ),
                         SizedBox(width: 21),
                         ShimmerCircle(radius: 21),
                       ],

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gruve_app/core/app_navigator.dart';
@@ -10,6 +12,7 @@ class PostLikeProvider extends ChangeNotifier {
   final PostService _postService = PostService();
   final Map<String, bool> _likedPosts = {};
   final Map<String, int> _likesCount = {};
+  final Set<String> _inFlight = {};
 
   bool isLiked(Post post) => _likedPosts[post.id] ?? post.isLiked;
 
@@ -17,7 +20,7 @@ class PostLikeProvider extends ChangeNotifier {
 
   Future<void> toggleLike(Post post) async {
     final postId = post.id;
-    if (postId.isEmpty) return;
+    if (postId.isEmpty || _inFlight.contains(postId)) return;
 
     final currentLiked = isLiked(post);
     final currentCount = likesCount(post);
@@ -25,12 +28,11 @@ class PostLikeProvider extends ChangeNotifier {
     final nextLiked = !currentLiked;
     final nextCount = nextLiked ? currentCount + 1 : currentCount - 1;
 
-    // Optimistic UI updates
+    _inFlight.add(postId);
     _likedPosts[postId] = nextLiked;
     _likesCount[postId] = nextCount;
     notifyListeners();
 
-    // Trigger haptics only when liking
     if (nextLiked) {
       try {
         await HapticFeedback.vibrate();
@@ -42,34 +44,37 @@ class PostLikeProvider extends ChangeNotifier {
     try {
       final success = await _postService.likePost(postId);
       if (success) {
-        // Sync back to the actual model reference if still matching
         post.isLiked = nextLiked;
         post.likesCount = nextCount;
 
-        await ProfileCountRefreshBridge.notifyCountsChanged(
-          reason: 'post_like_toggled',
+        unawaited(
+          ProfileCountRefreshBridge.notifyCountsChanged(
+            reason: 'post_like_toggled',
+          ),
         );
       } else {
-        // Rollback state on failure
-        _likedPosts[postId] = currentLiked;
-        _likesCount[postId] = currentCount;
-        notifyListeners();
+        _rollbackLike(postId, currentLiked, currentCount);
         _showErrorSnackBar();
       }
     } catch (e) {
       AppLogger.d('❌ [PostLikeProvider] error toggling like: $e');
-      // Rollback state on exception
-      _likedPosts[postId] = currentLiked;
-      _likesCount[postId] = currentCount;
-      notifyListeners();
+      _rollbackLike(postId, currentLiked, currentCount);
       _showErrorSnackBar();
+    } finally {
+      _inFlight.remove(postId);
     }
+  }
+
+  void _rollbackLike(String postId, bool liked, int count) {
+    _likedPosts[postId] = liked;
+    _likesCount[postId] = count;
+    notifyListeners();
   }
 
   void _showErrorSnackBar() {
     scaffoldMessengerKey.currentState?.showSnackBar(
       const SnackBar(
-        content: Text('Something went wrong'),
+        content: Text('Could not update like. Please try again.'),
         duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -80,6 +85,7 @@ class PostLikeProvider extends ChangeNotifier {
     AppLogger.d('🔄 [PostLikeProvider] Resetting like data...');
     _likedPosts.clear();
     _likesCount.clear();
+    _inFlight.clear();
     notifyListeners();
     AppLogger.d('✅ [PostLikeProvider] Like data reset complete');
   }

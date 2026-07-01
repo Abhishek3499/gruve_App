@@ -4,7 +4,6 @@ import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'nav_item.dart';
 import 'nav_bar_clipper.dart';
 import 'center_nav_button.dart';
@@ -24,18 +23,6 @@ class CustomBottomNavigationBar extends StatefulWidget {
 }
 
 class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        // Eagerly pre-fetch profile data on startup so it is completely ready
-        context.read<CurrentUserProvider>().fetchCurrentUserProfile();
-        context.read<ProfileProvider>().fetchProfileData(fetchUserReason: 'bottom_nav_eager_load');
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(

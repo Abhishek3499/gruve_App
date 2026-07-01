@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/services/socket_service.dart';
-import 'package:provider/provider.dart';
-
 import 'package:gruve_app/core/assets.dart';
-
-import 'package:gruve_app/features/home/home_screen.dart';
-import 'package:gruve_app/features/profile/provider/profile_provider.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
-
 import 'package:gruve_app/features/auth/api/controllers/login_controller.dart';
+import 'package:gruve_app/features/auth/core/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
+import 'package:gruve_app/features/home/home_screen.dart';
+import 'package:provider/provider.dart';
 
 import 'package:gruve_app/features/auth/screens/forgot_password_screen.dart';
 
@@ -23,7 +18,6 @@ import 'package:gruve_app/core/widgets/video_background.dart';
 import 'package:gruve_app/core/widgets/inputs/neon_text_field.dart';
 
 import 'package:gruve_app/core/widgets/inputs/neon_password_field.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({super.key});
@@ -71,13 +65,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         _emailController.text,
       );
 
-      context.read<AuthUiProvider>().setError('login_email', error);
+      context.read<AuthUiProvider>().setValidationError('login_email', error);
     });
 
     // Password field real-time validation
     _passwordController.addListener(() {
       final error = _validatePasswordForLogin(_passwordController.text);
-      context.read<AuthUiProvider>().setError('login_password', error);
+      context.read<AuthUiProvider>().setValidationError('login_password', error);
     });
   }
 
@@ -163,37 +157,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     }
 
     if (_controller.response?.success == true) {
-      AppLogger.d("🎉 [Login] 🎉 LOGIN SUCCESS -> GO TO HOME");
-      SocketService().connect(_controller.response!.data!.accessToken);
-      AppLogger.d("🔌 [Login] 🔌 WebSocket connection initiated");
-
       if (!mounted) return false;
 
-      final profileProvider = Provider.of<ProfileProvider>(
-        context,
-        listen: false,
-      );
-      final storyController = Provider.of<StoryController>(
-        context,
-        listen: false,
-      );
+      final accessToken = _controller.response!.data!.accessToken;
+      AuthSessionHelper.bootstrapAfterLogin(context, accessToken);
 
-      // Refresh application state in the background to keep login fast.
-      Future<void>.delayed(Duration.zero, () async {
-        try {
-          AppLogger.d('🔄 [Login] 🔄 Refreshing providers in background...');
-          await profileProvider.refreshProfile();
-          AppLogger.d('👤 [Login] 👤 Profile data refreshed');
-          storyController.reset();
-          AppLogger.d('📖 [Login] 📖 Story data reset');
-          AppLogger.d('✅ [Login] ✅ Background refresh completed');
-        } catch (e, stackTrace) {
-          AppLogger.d('❌ [Login] ❌ Background refresh failed: $e');
-          AppLogger.d('$stackTrace');
-        }
-      });
-
-      AppLogger.d("🏠 [Login] 🏠 Navigating to HomeScreen");
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
         (route) => false,
@@ -483,12 +451,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(left: 24, top: 25),
 
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-
-                  onTap: () => Navigator.pop(context),
-
-                  child: Image.asset(AppAssets.back, height: 25, width: 25),
+                child: BackButton(
+                  color: Colors.white,
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),

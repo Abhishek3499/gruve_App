@@ -115,10 +115,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 child: Align(
                   alignment: Alignment.topLeft,
 
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-
-                    child: Image.asset(AppAssets.back, height: 22, width: 22),
+                  child: BackButton(
+                    color: Colors.white,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
               ),

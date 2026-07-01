@@ -124,7 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _scrollToField(GlobalKey key) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 350), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         if (!mounted) return;
         final targetContext = key.currentContext;
         if (targetContext != null) {
@@ -147,7 +147,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _nameController.text,
       );
 
-      context.read<AuthUiProvider>().setError('signup_name', error);
+      context.read<AuthUiProvider>().setValidationError('signup_name', error);
     });
 
     // Identifier field real-time validation
@@ -155,7 +155,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _identifierController.addListener(() {
       final error = _validateIdentifier(_identifierController.text);
 
-      context.read<AuthUiProvider>().setError('signup_identifier', error);
+      context.read<AuthUiProvider>().setValidationError('signup_identifier', error);
     });
 
     // Password field real-time validation
@@ -165,7 +165,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _passwordController.text,
       );
 
-      context.read<AuthUiProvider>().setError('signup_password', error);
+      context.read<AuthUiProvider>().setValidationError('signup_password', error);
 
       // Revalidate confirm password when password changes
 
@@ -176,7 +176,7 @@ class _SignupScreenState extends State<SignupScreen> {
           _confirmPasswordController.text,
         );
 
-        context.read<AuthUiProvider>().setError(
+        context.read<AuthUiProvider>().setValidationError(
           'signup_confirm_password',
           confirmError,
         );
@@ -192,7 +192,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _confirmPasswordController.text,
       );
 
-      context.read<AuthUiProvider>().setError('signup_confirm_password', error);
+      context.read<AuthUiProvider>().setValidationError('signup_confirm_password', error);
     });
   }
 
@@ -699,14 +699,19 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           if (!mounted) return false;
 
-                          if (controller.errorMessage != null) {
+                          if (!mounted) return false;
+
+                          final response = controller.signupResponse;
+                          if (controller.errorMessage != null ||
+                              response == null ||
+                              response.success != true ||
+                              response.data == null) {
+                            final errorText =
+                                controller.errorMessage ??
+                                'Signup failed. Please try again.';
                             messenger
                               ..hideCurrentSnackBar()
-                              ..showSnackBar(
-                                SnackBar(
-                                  content: Text(controller.errorMessage!),
-                                ),
-                              );
+                              ..showSnackBar(SnackBar(content: Text(errorText)));
 
                             return false;
                           }
@@ -727,8 +732,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                     'Enter the code sent to $identifier',
 
                                 buttonText: 'Continue',
-
-                                isLogin: false,
 
                                 onVerified: () {
                                   Navigator.pushAndRemoveUntil(

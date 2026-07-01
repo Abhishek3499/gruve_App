@@ -20,6 +20,13 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   final ScrollController _scrollController = ScrollController();
+  NotificationProvider? _notificationProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _notificationProvider ??= context.read<NotificationProvider>();
+  }
 
   @override
   void initState() {
@@ -35,7 +42,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    context.read<NotificationProvider>().cancelActiveRequests();
+    _notificationProvider?.cancelActiveRequests();
     super.dispose();
   }
 

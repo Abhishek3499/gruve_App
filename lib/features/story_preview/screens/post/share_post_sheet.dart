@@ -3,7 +3,10 @@ import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
 
 /// Full-height bottom sheet with [SharePostScreen]; pops with same results as push.
-Future<String?> showSharePostOnHomeSheet(String mediaPath) async {
+Future<String?> showSharePostOnHomeSheet(
+  String mediaPath, {
+  String? mediaMimeType,
+}) async {
   final ctx = rootNavigatorKey.currentContext;
   if (ctx == null) return null;
 
@@ -18,7 +21,10 @@ Future<String?> showSharePostOnHomeSheet(String mediaPath) async {
         height: height * 0.94,
         child: ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: SharePostScreen(mediaPath: mediaPath),
+          child: SharePostScreen(
+            mediaPath: mediaPath,
+            mediaMimeType: mediaMimeType,
+          ),
         ),
       );
     },

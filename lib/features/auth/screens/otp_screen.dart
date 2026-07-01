@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/controllers/verifyotp_controller.dart';
+import '../api/services/verify_otp_service.dart';
 
 import 'package:sms_autofill/sms_autofill.dart';
 
@@ -14,7 +15,7 @@ import 'package:gruve_app/features/auth/widgets/otp_input_box.dart';
 
 import 'package:gruve_app/main.dart';
 
-import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/features/auth/core/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
 import 'package:provider/provider.dart';
 import '../validators/signup_validator.dart';
@@ -89,6 +90,12 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   bool get _blocksSystemBack => !widget.isLogin && !widget.isForgot;
 
+  String get _otpPurpose {
+    if (widget.isForgot) return OtpPurpose.resetPassword;
+    if (widget.isLogin) return OtpPurpose.login;
+    return OtpPurpose.signup;
+  }
+
   void _popFromOtp() {
     if (!_blocksSystemBack) {
       Navigator.pop(context);
@@ -150,8 +157,6 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     AppLogger.d("🔥 OTP SCREEN INIT");
 
     AppLogger.d("👉 isForgot: ${widget.isForgot}");
-
-    AppLogger.d("👉 isLogin: ${widget.isLogin}");
 
     AppLogger.d("👉 type: ${widget.type}");
 
@@ -231,15 +236,15 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   Future<void> _resendOtp() async {
     final authUi = context.read<AuthUiProvider>();
-    if (authUi.isLoading(AuthLoadingKey.otp)) return;
+    if (authUi.isLoading(AuthLoadingKey.resendOtp)) return;
 
-    authUi.setLoading(AuthLoadingKey.otp, true);
+    authUi.setLoading(AuthLoadingKey.resendOtp, true);
 
-    String purpose = "signup";
+    String purpose = OtpPurpose.signup;
     if (widget.isForgot) {
-      purpose = "reset_password";
+      purpose = OtpPurpose.resetPassword;
     } else if (widget.isLogin) {
-      purpose = "login";
+      purpose = OtpPurpose.login;
     }
 
     try {
@@ -267,7 +272,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       }
     } finally {
       if (mounted) {
-        authUi.setLoading(AuthLoadingKey.otp, false);
+        authUi.setLoading(AuthLoadingKey.resendOtp, false);
       }
     }
   }
@@ -290,38 +295,17 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     FocusScope.of(context).unfocus();
 
-    if (widget.isForgot) {
-      if (widget.onVerifiedWithToken != null) {
-        widget.onVerifiedWithToken!(otp);
-      }
-      return true;
-    }
-
     authUi.setLoading(AuthLoadingKey.otp, true);
 
-    AppLogger.d("🟡 BEFORE API CALL");
-
-    AppLogger.d("👉 isForgot: ${widget.isForgot}");
-
-    AppLogger.d("👉 isLogin: ${widget.isLogin}");
-
-    AppLogger.d("📡 CALLING CONTROLLER...");
+    AppLogger.d('🟡 BEFORE API CALL');
+    AppLogger.d('👉 purpose: $_otpPurpose');
+    AppLogger.d('📡 CALLING CONTROLLER...');
 
     try {
       await controller.verifyOtp(
         identifier: widget.identifier,
-
-        phoneNumber: widget.type == "phone" ? widget.identifier : "",
-
-        email: widget.type == "email" ? widget.identifier : "",
-
-        type: widget.type,
-
         otp: otp,
-
-        isLogin: widget.isLogin,
-
-        isForgot: widget.isForgot,
+        purpose: _otpPurpose,
       );
     } finally {
       if (mounted) {
@@ -341,7 +325,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     if (controller.verifyOtpResponse?.success == true) {
       if (widget.isForgot) {
-        final token = controller.verifyOtpResponse?.resetToken ?? "";
+        final token = controller.verifyOtpResponse?.resetToken ?? otp;
 
         if (widget.onVerifiedWithToken != null) {
           widget.onVerifiedWithToken!(token);
@@ -349,24 +333,17 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
           AppLogger.d("⚠️ onVerifiedWithToken is null");
         }
       } else {
-        // 🔌 CONNECT WEBSOCKET FOR LOGIN/SIGNUP SUCCESS
-        final accessToken = controller.verifyOtpResponse?.data?.accessToken;
-        if (accessToken != null && accessToken.isNotEmpty) {
-          AppLogger.d("OTP success: connecting websocket after verification");
-          SocketService().connect(accessToken);
-          AppLogger.d("✅ [OTP Success] ✅ WebSocket connection initiated");
-        } else {
-          AppLogger.d(
-            "⚠️ [OTP Success] ⚠️ No access token available for websocket connection",
-          );
+        if (widget.onVerified != null) {
+          widget.onVerified!();
         }
 
-        if (widget.onVerified != null) {
-          AppLogger.d("🎯 [OTP Success] 🎯 Calling onVerified callback");
-          widget.onVerified!();
-          AppLogger.d("✅ [OTP Success] ✅ onVerified callback executed");
-        } else {
-          AppLogger.d("⚠️ [OTP Success] ⚠️ onVerified is null");
+        final accessToken = controller.verifyOtpResponse?.data?.accessToken;
+        if (accessToken != null && accessToken.isNotEmpty && mounted) {
+          if (widget.isLogin) {
+            AuthSessionHelper.bootstrapAfterLogin(context, accessToken);
+          } else {
+            AuthSessionHelper.connectSocket(accessToken);
+          }
         }
       }
 
@@ -423,6 +400,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     final isLoading = context.select<AuthUiProvider, bool>(
       (authUi) => authUi.isLoading(AuthLoadingKey.otp),
     );
+    final isResending = context.select<AuthUiProvider, bool>(
+      (authUi) => authUi.isLoading(AuthLoadingKey.resendOtp),
+    );
 
     return PopScope(
       canPop: !_blocksSystemBack || _allowSignupOtpPop,
@@ -452,14 +432,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: _popFromOtp,
-
-                        child: Image.asset(
-                          AppAssets.back,
-                          height: 25,
-                          width: 25,
-                        ),
+                      BackButton(
+                        color: Colors.white,
+                        onPressed: _popFromOtp,
                       ),
 
                       const SizedBox(width: 55),
@@ -621,9 +596,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                             alignment: Alignment.centerRight,
 
                             child: TextButton(
-                              onPressed: isLoading ? null : _resendOtp,
+                              onPressed: (isLoading || isResending) ? null : _resendOtp,
 
-                              child: isLoading
+                              child: isResending
                                   ? const SizedBox(
                                       height: 16,
                                       width: 16,

@@ -18,6 +18,9 @@ class CurrentUserProvider extends ChangeNotifier {
   /// Fetches current user's profile data
   Future<void> fetchCurrentUserProfile() async {
     if (_isLoading) return;
+    if (_profileImageUrl != null && _profileImageUrl!.trim().isNotEmpty) {
+      return;
+    }
     
     _isLoading = true;
     notifyListeners();

@@ -27,7 +27,6 @@ class MessageHeader extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-
                 /// Title
                 const Text(
                   "Chat",
@@ -45,7 +44,9 @@ class MessageHeader extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
                     onTap: () {
-                      AppLogger.d('🔍 [MessageHeader] Opening search from message header');
+                      AppLogger.d(
+                        '🔍 [MessageHeader] Opening search from message header',
+                      );
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -57,8 +58,8 @@ class MessageHeader extends StatelessWidget {
                     },
                     child: Image.asset(
                       AppAssets.search2,
-                      width: 24,
-                      height: 24,
+                      width: 28,
+                      height: 28,
                       color: Colors.white,
                     ),
                   ),
@@ -70,10 +71,7 @@ class MessageHeader extends StatelessWidget {
           const SizedBox(height: 45),
 
           /// ===== AVATAR LIST =====
-          SizedBox(
-            height: 90,
-            child: const MessageAvatarList(),
-          ),
+          SizedBox(height: 90, child: const MessageAvatarList()),
         ],
       ),
     );

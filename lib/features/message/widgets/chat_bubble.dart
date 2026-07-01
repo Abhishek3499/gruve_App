@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shimmer/shimmer.dart';
 import '../models/message_model.dart';
+import '../utils/shared_post_message_parser.dart';
 import 'message_popup_menu.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
-import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';
+import 'shared_post_preview_card.dart';
 
 class ChatBubble extends MessageBubble {
   const ChatBubble({
@@ -45,6 +46,7 @@ class MessageBubble extends StatelessWidget {
 
   // ── Capture position of the bubble on long press ──
   void _handleLongPress(BuildContext context, LongPressStartDetails details) {
+    HapticFeedback.vibrate();
     // Get the RenderBox of this widget to find its global position & size
     final RenderBox? box = context.findRenderObject() as RenderBox?;
     if (box != null) {
@@ -63,6 +65,18 @@ class MessageBubble extends StatelessWidget {
 
   /// ✅ RECEIVED (LEFT - FIXED WITH AVATAR)
   Widget _buildReceivedBubble(BuildContext context) {
+    if (message.hasMedia && !message.isSharedPost) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _SenderAvatar(avatarUrl: message.senderAvatar, name: message.senderName),
+          const SizedBox(width: 8),
+          _buildMediaBubble(context, isSent: false),
+        ],
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -77,12 +91,15 @@ class MessageBubble extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 10, 15, 10),
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.68,
+              maxWidth: message.isSharedPost
+                  ? MediaQuery.of(context).size.width * 0.72
+                  : MediaQuery.of(context).size.width * 0.68,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (message.hasImage) _buildImageContent(),
+                if (message.hasReply) _buildReplyQuote(),
+                if (message.hasImage) _buildImageContent(context),
                 _buildMessageContent(context),
                 const SizedBox(height: 4),
                 _buildStatusRow(isReceived: true),
@@ -96,6 +113,16 @@ class MessageBubble extends StatelessWidget {
 
   /// ✅ SENT (RIGHT - NO AVATAR)
   Widget _buildSentBubble(BuildContext context) {
+    if (message.hasMedia && !message.isSharedPost) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _buildMediaBubble(context, isSent: true),
+        ],
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -108,12 +135,15 @@ class MessageBubble extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.fromLTRB(15, 10, 20, 10),
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.68,
+              maxWidth: message.isSharedPost
+                  ? MediaQuery.of(context).size.width * 0.72
+                  : MediaQuery.of(context).size.width * 0.68,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (message.hasImage) _buildImageContent(),
+                if (message.hasReply) _buildReplyQuote(),
+                if (message.hasImage) _buildImageContent(context),
                 _buildMessageContent(context),
                 const SizedBox(height: 4),
                 _buildStatusRow(isReceived: false),
@@ -125,112 +155,276 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent(BuildContext context) {
-    final postTagRegex = RegExp(r'View post:\s*(pst_[a-zA-Z0-9_\-]+)');
-    final match = postTagRegex.firstMatch(message.text);
-    if (match != null) {
-      final postId = match.group(1);
-      if (postId != null) {
-        return Column(
-          crossAxisAlignment: message.isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+  bool _hasVisibleCaption() {
+    if (_shouldHideMediaCaption()) return false;
+    return message.text.trim().isNotEmpty;
+  }
+
+  /// WhatsApp-style media bubble: large image with optional caption below.
+  Widget _buildMediaBubble(BuildContext context, {required bool isSent}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final mediaWidth = screenWidth * 0.72;
+    final mediaHeight = mediaWidth * 0.75;
+    final hasCaption = _hasVisibleCaption();
+
+    return CustomPaint(
+      painter: ChatBubblePainter(
+        isSent: isSent,
+        bubbleColor: isSent ? const Color(0xFF4A148C) : const Color(0xFF6A008A),
+      ),
+      child: Container(
+        constraints: BoxConstraints(maxWidth: mediaWidth + 12),
+        padding: EdgeInsets.fromLTRB(
+          isSent ? 4 : 8,
+          4,
+          isSent ? 8 : 4,
+          4,
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            if (message.hasReply) _buildReplyQuote(),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: mediaWidth,
+                    height: mediaHeight,
+                    child: _buildMediaWidget(mediaWidth, mediaHeight),
+                  ),
+                ),
+                if (!hasCaption)
+                  Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: _buildMediaTimestampOverlay(isReceived: !isSent),
+                  ),
+              ],
+            ),
+            if (hasCaption) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+                child: Text(
+                  message.text,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 2, left: 8),
+                child: _buildStatusRow(isReceived: !isSent),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaTimestampOverlay({required bool isReceived}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: _buildStatusRow(isReceived: isReceived),
+    );
+  }
+
+  Widget _buildMediaWidget(double width, double height) {
+    final path = message.imagePath!.trim();
+
+    if (message.isVideo) {
+      return Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [
+          if (!message.isLocalMedia)
+            CachedNetworkImage(
+              imageUrl: path,
+              fit: BoxFit.cover,
+              width: width,
+              height: height,
+              placeholder: (_, _) => _mediaPlaceholder(width, height),
+              errorWidget: (_, _, _) => _mediaError(width, height),
+            )
+          else
+            ColoredBox(
+              color: Colors.black26,
+              child: Image.file(
+                File(path),
+                fit: BoxFit.cover,
+                width: width,
+                height: height,
+                errorBuilder: (_, _, _) => _mediaError(width, height),
+              ),
+            ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.35),
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(12),
+            child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
+          ),
+        ],
+      );
+    }
+
+    if (message.isLocalMedia) {
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        width: width,
+        height: height,
+        errorBuilder: (_, _, _) => _mediaError(width, height),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: path,
+      fit: BoxFit.cover,
+      width: width,
+      height: height,
+      placeholder: (_, _) => _mediaPlaceholder(width, height),
+      errorWidget: (_, _, _) => _mediaError(width, height),
+    );
+  }
+
+  Widget _mediaPlaceholder(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.white12,
+      child: const Center(
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+      ),
+    );
+  }
+
+  Widget _mediaError(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.white12,
+      child: const Icon(Icons.broken_image, color: Colors.white54, size: 40),
+    );
+  }
+
+  Widget _buildMessageContent(BuildContext context) {
+    if (message.isSharedPost) {
+      final companion = message.sharedPostCompanionText;
+      return Column(
+        crossAxisAlignment:
+            message.isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (companion != null) ...[
             Text(
-              message.text,
+              companion,
               style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            _buildViewPostButton(context, postId),
           ],
-        );
-      }
+          SharedPostPreviewCard(
+            key: ValueKey(
+              'shared_post_${message.id}_${message.sharedPostId}',
+            ),
+            postId: message.sharedPostId!,
+            isSent: message.isSent,
+            initialPreviewUrl: message.sharedPostPreviewUrl,
+            isTaggedPost: SharedPostMessageParser.isTaggedPostMessage(
+              message.text,
+            ),
+            preloadedPost: message.sharedPost,
+          ),
+        ],
+      );
     }
+
+    if (_shouldHideMediaCaption()) {
+      return const SizedBox.shrink();
+    }
+
     return Text(
       message.text,
       style: const TextStyle(color: Colors.white, fontSize: 14),
     );
   }
 
-  Widget _buildViewPostButton(BuildContext context, String postId) {
-    return InkWell(
-      onTap: () => _handleViewPostTap(context, postId),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1.0,
-          ),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.play_circle_fill_outlined,
-              color: Colors.white,
-              size: 18,
-            ),
-            SizedBox(width: 6),
-            Text(
-              "View Post",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  bool _shouldHideMediaCaption() {
+    if (!message.hasMedia) return message.text.trim().isEmpty;
+    if (message.text.trim().isEmpty) return true;
+    final label = message.text.trim().toLowerCase();
+    return label == 'photo' || label == 'video' || label == 'image';
   }
 
-  void _handleViewPostTap(BuildContext context, String postId) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+  Widget _buildReplyQuote() {
+    final preview = message.effectiveReplyPreview;
+    if (preview == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(
+            color: message.isSent
+                ? const Color(0xFFCE93D8)
+                : const Color(0xFFE1BEE7),
+            width: 3,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            preview.senderName,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            preview.displayText,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 13,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
-
-    try {
-      final postService = PostService();
-      final post = await postService.fetchPostById(postId);
-
-      if (context.mounted) {
-        Navigator.pop(context); // pop loading dialog
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfilePostDetailScreen(
-              post: post,
-              allPosts: [post],
-              initialIndex: 0,
-              isOwnProfile: false,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context); // pop loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to load post: $e"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   Widget _buildStatusRow({required bool isReceived}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (message.isEdited) ...[
+          Text(
+            'edited',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
         Text(
           _formatTime(),
           style: TextStyle(
@@ -287,12 +481,20 @@ class MessageBubble extends StatelessWidget {
     return '$hour:$minute $period';
   }
 
-  Widget _buildImageContent() {
+  Widget _buildImageContent(BuildContext context) {
+    // Legacy text-bubble media fallback (shared posts use separate layout).
+    final screenWidth = MediaQuery.of(context).size.width;
+    final mediaWidth = screenWidth * 0.68;
+    final mediaHeight = mediaWidth * 0.72;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(File(message.imagePath!), fit: BoxFit.cover),
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: mediaWidth,
+          height: mediaHeight,
+          child: _buildMediaWidget(mediaWidth, mediaHeight),
+        ),
       ),
     );
   }

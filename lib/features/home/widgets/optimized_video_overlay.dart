@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 
+import '../models/subscribe_model.dart';
 import 'video_user_info.dart';
 import '../controllers/video_feed_controller.dart';
 import '../controllers/subscribe_controller.dart';
@@ -40,8 +41,17 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
   void initState() {
     super.initState();
     _subscribeController = SubscribeController();
-    _initializeUsers();
+    _seedCurrentUser();
     _loadCurrentUserId();
+  }
+
+  @override
+  void didUpdateWidget(covariant OptimizedVideoOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex ||
+        oldWidget.selectedTab != widget.selectedTab) {
+      _seedCurrentUser();
+    }
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -53,19 +63,23 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
     }
   }
 
-  void _initializeUsers() {
-    if (widget.controller.posts.isNotEmpty) {
-      final usersData = widget.controller.posts
-          .map(
-            (post) => {
-              'userId': post.userId,
-              'username': post.username,
-              'isSubscribed': post.isSubscribed,
-            },
-          )
-          .toList();
-      _subscribeController.initializeUsers(usersData);
+  void _seedCurrentUser() {
+    final index = widget.currentIndex;
+    if (widget.controller.posts.isEmpty ||
+        index < 0 ||
+        index >= widget.controller.posts.length) {
+      return;
     }
+
+    final post = widget.controller.posts[index];
+    final isSubscribedFeed = widget.selectedTab == 'Subscribed';
+    _subscribeController.addOrUpdateUser(
+      SubscribeModel(
+        userId: post.userId,
+        username: post.username,
+        isSubscribed: isSubscribedFeed || post.isSubscribed,
+      ),
+    );
   }
 
   @override
@@ -88,7 +102,8 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
             musicTitle: "Original Audio - ${post.username}",
             userId: post.userId,
             profilePicture: post.profilePicture,
-            initialIsSubscribed: post.isSubscribed,
+            initialIsSubscribed:
+                widget.selectedTab == 'Subscribed' || post.isSubscribed,
             hasActiveStory: post.hasActiveStory,
             subscribeController: _subscribeController,
             onOwnProfileTap: widget.onOwnProfileTap,
@@ -98,11 +113,18 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
         Positioned(
           right: 16,
           bottom: 150,
-          child: Consumer<PostLikeProvider>(
-            builder: (context, likeProvider, _) {
+          child: Selector<PostLikeProvider, (bool, int)>(
+            key: ValueKey(post.id),
+            selector: (_, likeProvider) => (
+              likeProvider.isLiked(post),
+              likeProvider.likesCount(post),
+            ),
+            builder: (context, likeState, _) {
+              final isLiked = likeState.$1;
+              final likeCount = likeState.$2;
               return RightActionBar(
-                likeCount: likeProvider.likesCount(post),
-                isLiked: likeProvider.isLiked(post),
+                likeCount: likeCount,
+                isLiked: isLiked,
                 commentCount: post.commentsCount,
                 shareCount: 2100,
                 onGift: () {
@@ -114,7 +136,7 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
                   );
                 },
                 onLike: () {
-                  likeProvider.toggleLike(post);
+                  context.read<PostLikeProvider>().toggleLike(post);
                 },
                 onComment: () {
                   showModalBottomSheet(

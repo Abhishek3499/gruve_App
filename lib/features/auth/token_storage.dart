@@ -60,8 +60,10 @@ class TokenStorage {
     required String refreshToken,
   }) async {
     _log('Saving tokens');
-    await _writeSecure(_accessTokenKey, accessToken);
-    await _writeSecure(_refreshTokenKey, refreshToken);
+    await Future.wait<void>([
+      _writeSecure(_accessTokenKey, accessToken),
+      _writeSecure(_refreshTokenKey, refreshToken),
+    ]);
     _log('Tokens saved successfully');
   }
 

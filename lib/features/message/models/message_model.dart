@@ -1,5 +1,8 @@
+import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import '../../../core/parsing/safe_parsing_helpers.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import '../utils/shared_post_message_parser.dart';
+import 'message_reply_preview.dart';
 
 enum MessageStatus {
   sent,
@@ -29,12 +32,18 @@ class MessageModel {
   final bool isSent;
   final String senderId;
   final String? imagePath;
+  final String? mediaKind;
   final MessageModel? replyTo;
+  final MessageReplyPreview? replyPreview;
   final bool isPinned;
   final bool isRead;
   final String? senderAvatar;
   final String? senderName;
   final MessageStatus status;
+  final String? sharedPostId;
+  final String? sharedPostPreviewUrl;
+  final Post? sharedPost;
+  final bool isEdited;
 
   const MessageModel({
     required this.id,
@@ -43,12 +52,18 @@ class MessageModel {
     required this.isSent,
     required this.senderId,
     this.imagePath,
+    this.mediaKind,
     this.replyTo,
+    this.replyPreview,
     this.isPinned = false,
     this.isRead = false,
     this.senderAvatar,
     this.senderName,
     this.status = MessageStatus.sent,
+    this.sharedPostId,
+    this.sharedPostPreviewUrl,
+    this.sharedPost,
+    this.isEdited = false,
   });
 
   factory MessageModel.fromJson(
@@ -94,19 +109,53 @@ class MessageModel {
 
     final explicitIsRead = _resolveIsRead(safeJson);
     final status = _resolveStatus(safeJson, explicitIsRead);
+    final messageText = _resolveMessageText(safeJson);
+    final sharedPostId = SharedPostMessageParser.extractPostId(
+      safeJson,
+      messageText,
+    );
+    final sharedPostPreviewUrl = sharedPostId != null
+        ? SharedPostMessageParser.extractPreviewUrl(
+            safeJson,
+            postId: sharedPostId,
+          )
+        : null;
+
+    final sharedPostMap = safeJson['shared_post'] ??
+        safeJson['tagged_post'] ??
+        safeJson['post'] ??
+        safeJson['attachment'];
+    Post? sharedPost;
+    if (sharedPostMap is Map && sharedPostId != null) {
+      final postMap = Map<String, dynamic>.from(sharedPostMap);
+      if (postMap['id'] == null) {
+        postMap['id'] = sharedPostId;
+      }
+      try {
+        final parsed = Post.fromJson(postMap);
+        if (parsed.username != 'unknown') {
+          sharedPost = parsed;
+        }
+      } catch (e) {
+        AppLogger.d('⚠️ Error parsing sharedPost in MessageModel.fromJson: $e');
+      }
+    }
+
+    final mediaUrl = _resolveMediaUrl(safeJson);
+    final resolvedMediaKind = _resolveMediaKind(safeJson);
+    final replyPreview = _parseReplyPreview(safeJson);
 
     return MessageModel(
       id: _resolveMessageId(safeJson),
-      text: _resolveMessageText(safeJson),
+      text: messageText,
       timestamp: _parseDateTime(
         safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
       ),
       isSent: isSent,
       senderId: senderId,
-      imagePath: SafeParsingHelpers.safeNullableString(
-        safeJson,
-        const ['image', 'image_url', 'media_url', 'file'],
-      ),
+      imagePath: mediaUrl,
+      mediaKind: resolvedMediaKind,
+      replyPreview: replyPreview,
       isPinned: SafeParsingHelpers.safeBool(
         safeJson,
         const ['is_pinned', 'isPinned'],
@@ -116,11 +165,57 @@ class MessageModel {
       senderAvatar: senderAvatar,
       senderName: senderName,
       status: status,
+      sharedPostId: sharedPostId,
+      sharedPostPreviewUrl: sharedPostPreviewUrl,
+      sharedPost: sharedPost,
+      isEdited: SafeParsingHelpers.safeBool(
+        safeJson,
+        const ['is_edited', 'isEdited'],
+        fallback: false,
+      ),
     );
   }
 
-  bool get hasImage => imagePath != null && imagePath!.isNotEmpty;
-  bool get hasReply => replyTo != null;
+  bool get hasImage => hasMedia;
+  bool get hasMedia => imagePath != null && imagePath!.isNotEmpty;
+  bool get isLocalMedia {
+    final path = imagePath?.trim() ?? '';
+    if (path.isEmpty) return false;
+    return !path.startsWith('http://') && !path.startsWith('https://');
+  }
+
+  bool get isVideo =>
+      mediaKind?.toLowerCase() == 'video' ||
+      (hasMedia && !isLocalMedia && _urlLooksLikeVideo(imagePath!));
+
+  static bool _urlLooksLikeVideo(String url) {
+    final lower = url.toLowerCase().split('?').first;
+    const hints = ['.mp4', '.mov', '.m4v', '.webm', '.mkv', '.3gp'];
+    for (final h in hints) {
+      if (lower.contains(h)) return true;
+    }
+    return false;
+  }
+
+  bool get hasReply => replyPreview != null || replyTo != null;
+
+  MessageReplyPreview? get effectiveReplyPreview {
+    if (replyPreview != null) return replyPreview;
+    if (replyTo == null) return null;
+    return MessageReplyPreview.fromMessage(replyTo!);
+  }
+
+  bool get isSharedPost => sharedPostId != null && sharedPostId!.isNotEmpty;
+  bool get isEditable =>
+      isSent &&
+      !hasMedia &&
+      !isSharedPost &&
+      !id.startsWith('local-');
+
+  String? get sharedPostCompanionText {
+    if (!isSharedPost) return null;
+    return SharedPostMessageParser.companionText(text, sharedPostId!);
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -141,12 +236,18 @@ class MessageModel {
     bool? isSent,
     String? senderId,
     String? imagePath,
+    String? mediaKind,
     MessageModel? replyTo,
+    MessageReplyPreview? replyPreview,
     bool? isPinned,
     bool? isRead,
     String? senderAvatar,
     String? senderName,
     MessageStatus? status,
+    String? sharedPostId,
+    String? sharedPostPreviewUrl,
+    Post? sharedPost,
+    bool? isEdited,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -155,12 +256,19 @@ class MessageModel {
       isSent: isSent ?? this.isSent,
       senderId: senderId ?? this.senderId,
       imagePath: imagePath ?? this.imagePath,
+      mediaKind: mediaKind ?? this.mediaKind,
       replyTo: replyTo ?? this.replyTo,
+      replyPreview: replyPreview ?? this.replyPreview,
       isPinned: isPinned ?? this.isPinned,
       isRead: isRead ?? (status != null ? status == MessageStatus.read : this.isRead),
       senderAvatar: senderAvatar ?? this.senderAvatar,
       senderName: senderName ?? this.senderName,
       status: status ?? this.status,
+      sharedPostId: sharedPostId ?? this.sharedPostId,
+      sharedPostPreviewUrl:
+          sharedPostPreviewUrl ?? this.sharedPostPreviewUrl,
+      sharedPost: sharedPost ?? this.sharedPost,
+      isEdited: isEdited ?? this.isEdited,
     );
   }
 
@@ -221,6 +329,87 @@ class MessageModel {
       const ['content', 'text', 'message'],
       fallback: '',
     );
+  }
+
+  static String? _resolveMediaUrl(Map<String, dynamic> json) {
+    final media = json['media'];
+    if (media is Map) {
+      final mediaMap = Map<String, dynamic>.from(media);
+      final url = mediaMap['media_url']?.toString().trim();
+      if (url != null && url.isNotEmpty) return url;
+    }
+
+    final attachments = json['attachments'];
+    if (attachments is List && attachments.isNotEmpty) {
+      final first = attachments.first;
+      if (first is Map) {
+        final map = Map<String, dynamic>.from(first);
+        final url = map['media_url']?.toString().trim();
+        if (url != null && url.isNotEmpty) return url;
+      }
+    }
+
+    final content = json['content'];
+    if (content is Map) {
+      final contentMap = Map<String, dynamic>.from(content);
+      final type = contentMap['type']?.toString().toLowerCase();
+      if (type == 'image' || type == 'video') {
+        final directUrl = contentMap['url'] ??
+            contentMap['media_url'] ??
+            contentMap['image_url'];
+        final url = directUrl?.toString().trim();
+        if (url != null && url.isNotEmpty) return url;
+      }
+      final metadata = contentMap['metadata'];
+      if (metadata is Map) {
+        final metaMap = Map<String, dynamic>.from(metadata);
+        final url = metaMap['media_url']?.toString().trim();
+        if (url != null && url.isNotEmpty) return url;
+      }
+    }
+
+    return SafeParsingHelpers.safeNullableString(
+      json,
+      const ['image', 'image_url', 'media_url', 'file'],
+    );
+  }
+
+  static String? _resolveMediaKind(Map<String, dynamic> json) {
+    final media = json['media'];
+    if (media is Map) {
+      final kind = Map<String, dynamic>.from(media)['media_kind']?.toString();
+      if (kind != null && kind.isNotEmpty) return kind;
+    }
+
+    final attachments = json['attachments'];
+    if (attachments is List && attachments.isNotEmpty) {
+      final first = attachments.first;
+      if (first is Map) {
+        final kind = Map<String, dynamic>.from(first)['media_kind']?.toString();
+        if (kind != null && kind.isNotEmpty) return kind;
+      }
+    }
+
+    final content = json['content'];
+    if (content is Map) {
+      final contentMap = Map<String, dynamic>.from(content);
+      final type = contentMap['type']?.toString();
+      if (type != null && type.isNotEmpty && type != 'text') return type;
+      final metadata = contentMap['metadata'];
+      if (metadata is Map) {
+        final kind =
+            Map<String, dynamic>.from(metadata)['media_kind']?.toString();
+        if (kind != null && kind.isNotEmpty) return kind;
+      }
+    }
+
+    return null;
+  }
+
+  static MessageReplyPreview? _parseReplyPreview(Map<String, dynamic> json) {
+    final raw = json['reply_to'];
+    if (raw is! Map) return null;
+    return MessageReplyPreview.fromJson(Map<String, dynamic>.from(raw));
   }
 
   static bool _resolveIsRead(Map<String, dynamic> json) {

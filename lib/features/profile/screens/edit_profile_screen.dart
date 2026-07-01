@@ -249,29 +249,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Positioned(
                     left: 16,
                     top: 15,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(30),
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        child: SizedBox(
-                          height: 60,
-                          width: 50,
-                          child: Center(
-                            child: SizedBox(
-                              height: 30,
-                              width: 30,
-                              child: Image.asset(AppAssets.back),
-                            ),
-                          ),
-                        ),
-                      ),
+                    child: BackButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+                      },
                     ),
                   ),
                   Positioned(

@@ -30,18 +30,39 @@ class ApiException implements Exception {
 
     if (data is Map) {
       final map = Map<String, dynamic>.from(data);
-      for (final key in const ['message', 'detail', 'error', 'msg']) {
+      final keysToCheck = const ['error', 'message', 'detail', 'msg', 'errors'];
+
+      // 1. Try to find the first non-technical message in the preferred keys
+      for (final key in keysToCheck) {
+        final value = map[key];
+        final text = _coerceMessage(value);
+        if (text.isNotEmpty) {
+          final userMsg = _userFacingMessage(text, fallback: '');
+          if (userMsg.isNotEmpty) {
+            return userMsg;
+          }
+        }
+      }
+
+      // 2. Try to find any other non-technical field error in the map
+      for (final entry in map.entries) {
+        if (keysToCheck.contains(entry.key)) continue;
+        final text = _coerceMessage(entry.value);
+        if (text.isNotEmpty) {
+          final userMsg = _userFacingMessage(text, fallback: '');
+          if (userMsg.isNotEmpty) {
+            return userMsg;
+          }
+        }
+      }
+
+      // 3. Fallback: if all messages were technical/generic, return the first available one with the fallback
+      for (final key in keysToCheck) {
         final value = map[key];
         final text = _coerceMessage(value);
         if (text.isNotEmpty) {
           return _userFacingMessage(text, fallback: fallback);
         }
-      }
-
-      final errors = map['errors'];
-      final text = _coerceMessage(errors);
-      if (text.isNotEmpty) {
-        return _userFacingMessage(text, fallback: fallback);
       }
     }
 

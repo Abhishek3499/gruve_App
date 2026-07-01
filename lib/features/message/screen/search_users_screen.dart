@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/assets.dart';
 import '../../search/widgets/search_bar.dart';
 
 class SearchUsersScreen extends StatelessWidget {
@@ -19,14 +18,9 @@ class SearchUsersScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   /// Back Button
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Image.asset(
-                      AppAssets.back,
-                      width: 24,
-                      height: 24,
-                      color: Colors.white,
-                    ),
+                  BackButton(
+                    color: Colors.white,
+                    onPressed: () => Navigator.pop(context),
                   ),
 
                   const SizedBox(height: 20),

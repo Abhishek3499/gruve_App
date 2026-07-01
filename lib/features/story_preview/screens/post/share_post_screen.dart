@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/story_preview/screens/audience/audience_screen.dart';
@@ -12,9 +11,11 @@ import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart'
 import 'package:gruve_app/features/story_preview/api/post/menu_row.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 
 class SharePostScreen extends StatefulWidget {
   final String mediaPath;
+  final String? mediaMimeType;
   final List<ChatUser>? taggedUsers;
 
   /// When [SharePostScreen] was pushed from [PostPreviewScreen], pop that route
@@ -35,6 +36,7 @@ class SharePostScreen extends StatefulWidget {
   const SharePostScreen({
     super.key,
     required this.mediaPath,
+    this.mediaMimeType,
     this.taggedUsers,
     this.popPostPreviewRouteAfterShare = false,
     this.draftId,
@@ -100,17 +102,44 @@ class _SharePostScreenState extends State<SharePostScreen> {
   }
 
   Future<void> _initializeVideoPreview() async {
-    _isVideo = _isVideoPath(widget.mediaPath);
-    if (!_isVideo) return;
+    if (widget.mediaPath.startsWith('http')) {
+      try {
+        _videoController = VideoPlayerController.networkUrl(
+          Uri.parse(widget.mediaPath),
+        );
+        await _videoController!.initialize();
+        await _videoController!.setLooping(false);
+        if (!mounted) return;
+        setState(() {
+          _isVideo = true;
+          _isVideoInitialized = true;
+        });
+      } catch (e) {
+        AppLogger.d('SharePostScreen video preview error: $e');
+        if (!mounted) return;
+        setState(() => _isVideoInitialized = false);
+      }
+      return;
+    }
+
+    final resolved = await LocalMediaUtils.resolveForPreview(widget.mediaPath);
+    if (!mounted) return;
+
+    _isVideo = resolved.kind == LocalMediaKind.video;
+    if (!_isVideo) {
+      resolved.controller?.dispose();
+      return;
+    }
+
+    final controller = resolved.controller;
+    if (controller == null) {
+      setState(() => _isVideoInitialized = false);
+      return;
+    }
 
     try {
-      _videoController = widget.mediaPath.startsWith('http')
-          ? VideoPlayerController.networkUrl(Uri.parse(widget.mediaPath))
-          : VideoPlayerController.file(File(widget.mediaPath));
-
-      await _videoController!.initialize();
+      _videoController = controller;
       await _videoController!.setLooping(false);
-
       if (!mounted) return;
       setState(() => _isVideoInitialized = true);
     } catch (e) {
@@ -118,16 +147,6 @@ class _SharePostScreenState extends State<SharePostScreen> {
       if (!mounted) return;
       setState(() => _isVideoInitialized = false);
     }
-  }
-
-  bool _isVideoPath(String path) {
-    final uri = Uri.tryParse(path);
-    final cleanPath = uri?.path.toLowerCase() ?? path.toLowerCase();
-    return cleanPath.endsWith('.mp4') ||
-        cleanPath.endsWith('.mov') ||
-        cleanPath.endsWith('.avi') ||
-        cleanPath.endsWith('.mkv') ||
-        cleanPath.endsWith('.webm');
   }
 
   void _showLocationDialog() {
@@ -273,6 +292,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
     PostShareFlowBridge.scheduleShareUploadAfterReturningHome(
       caption: caption,
       mediaPath: mediaPath,
+      mediaMimeType: widget.mediaMimeType,
       locationName: locationName,
       audienceEveryone: isEveryone,
       audienceCloseFriends: isCloseFriends,
@@ -330,6 +350,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
           draftId: widget.draftId!,
           caption: caption,
           mediaPath: mediaPath,
+          mediaMimeType: widget.mediaMimeType,
           locationName: locationName ?? "",
           audienceEveryone: isEveryone,
           audienceCloseFriends: isCloseFriends,
@@ -345,6 +366,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
         await draftsProvider.saveDraft(
           caption: caption,
           mediaPath: mediaPath,
+          mediaMimeType: widget.mediaMimeType,
           locationName: locationName,
           audienceEveryone: isEveryone,
           audienceCloseFriends: isCloseFriends,
@@ -395,13 +417,8 @@ class _SharePostScreenState extends State<SharePostScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Back Button
-              IconButton(
-                icon: Image.asset(
-                  AppAssets.back,
-                  color: Colors.white,
-                  height: 28,
-                  width: 28,
-                ),
+              BackButton(
+                color: Colors.white,
                 onPressed: () {
                   Navigator.pop(context, taggedUsers);
                 },

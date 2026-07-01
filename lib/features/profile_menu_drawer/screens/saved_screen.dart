@@ -215,7 +215,7 @@ class _SavedScreenContent extends StatelessWidget {
                                                 );
                                               },
                                         ),
-                                  if (post.media.toLowerCase().contains('.mp4'))
+                                  if (post.isVideo)
                                     Positioned(
                                       top: 8,
                                       right: 8,

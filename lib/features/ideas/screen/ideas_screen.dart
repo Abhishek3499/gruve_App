@@ -103,17 +103,8 @@ class IdeasScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
                 // Wrap in Material to support ink ripples on the back button
-                child: Material(
-                  color: Colors.transparent,
-                  child: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    tooltip: 'Back',
-                  ),
+                child: const BackButton(
+                  color: Colors.white,
                 ),
               ),
 

@@ -47,6 +47,7 @@ class DraftsProvider extends ChangeNotifier {
   Future<void> saveDraft({
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool audienceEveryone = true,
     bool audienceCloseFriends = false,
@@ -59,6 +60,7 @@ class DraftsProvider extends ChangeNotifier {
       final responseMap = await _postService.saveDraft(
         caption: caption,
         mediaPath: mediaPath,
+        mediaMimeType: mediaMimeType,
         locationName: locationName,
         audienceEveryone: audienceEveryone,
         audienceCloseFriends: audienceCloseFriends,
@@ -84,6 +86,7 @@ class DraftsProvider extends ChangeNotifier {
     required String draftId,
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool? audienceEveryone,
     bool? audienceCloseFriends,
@@ -99,6 +102,7 @@ class DraftsProvider extends ChangeNotifier {
         draftId: draftId,
         caption: caption,
         mediaPath: mediaPath,
+        mediaMimeType: mediaMimeType,
         locationName: locationName,
         audienceEveryone: audienceEveryone,
         audienceCloseFriends: audienceCloseFriends,

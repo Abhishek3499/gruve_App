@@ -258,13 +258,9 @@ class _SearchPageState extends State<SearchPage> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: _closeSearch,
-                        child: Image.asset(
-                          AppAssets.back,
-                          height: 24,
-                          width: 24,
-                        ),
+                      BackButton(
+                        color: Colors.white,
+                        onPressed: _closeSearch,
                       ),
                       const SizedBox(width: 22),
 

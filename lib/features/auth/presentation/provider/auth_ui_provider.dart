@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 
@@ -7,6 +9,7 @@ enum AuthLoadingKey {
   phoneLogin,
   forgotPassword,
   otp,
+  resendOtp,
   resetPassword,
   completeProfile,
 }
@@ -14,6 +17,8 @@ enum AuthLoadingKey {
 class AuthUiProvider extends ChangeNotifier {
   final Set<AuthLoadingKey> _loading = <AuthLoadingKey>{};
   final Map<String, String?> _errors = <String, String?>{};
+  final Map<String, Timer> _validationDebounceTimers = <String, Timer>{};
+  static const Duration _validationDebounce = Duration(milliseconds: 200);
 
   bool _useEmail = true;
   bool _genderTouched = false;
@@ -48,6 +53,33 @@ class AuthUiProvider extends ChangeNotifier {
     if (_errors[key] == value) return;
     _errors[key] = value;
     notifyListeners();
+  }
+
+  /// Debounced field validation to avoid rebuilding auth screens on every keystroke.
+  void setValidationError(String key, String? value) {
+    _validationDebounceTimers[key]?.cancel();
+    if (value == null) {
+      setError(key, null);
+      return;
+    }
+
+    _validationDebounceTimers[key] = Timer(_validationDebounce, () {
+      setError(key, value);
+    });
+  }
+
+  void _cancelValidationTimers([Iterable<String>? keys]) {
+    if (keys == null) {
+      for (final timer in _validationDebounceTimers.values) {
+        timer.cancel();
+      }
+      _validationDebounceTimers.clear();
+      return;
+    }
+
+    for (final key in keys) {
+      _validationDebounceTimers.remove(key)?.cancel();
+    }
   }
 
   void setErrors(Map<String, String?> errors) {
@@ -100,6 +132,12 @@ class AuthUiProvider extends ChangeNotifier {
     _selectedGender = null;
     _genderTouched = false;
     _useEmail = true;
+    _cancelValidationTimers(const [
+      'signup_name',
+      'signup_identifier',
+      'signup_password',
+      'signup_confirm_password',
+    ]);
     for (final key in const [
       'signup_name',
       'signup_identifier',
@@ -113,6 +151,7 @@ class AuthUiProvider extends ChangeNotifier {
 
   void resetLogin() {
     var changed = _loading.remove(AuthLoadingKey.login);
+    _cancelValidationTimers(const ['login_email', 'login_password']);
     changed = _removeError('login_email') || changed;
     changed = _removeError('login_password') || changed;
     if (changed) notifyListeners();
@@ -126,6 +165,7 @@ class AuthUiProvider extends ChangeNotifier {
 
   void resetPhoneLogin() {
     var changed = _loading.remove(AuthLoadingKey.phoneLogin);
+    _cancelValidationTimers(const ['phone_login_phone']);
     changed = _removeError('phone_login_phone') || changed;
     if (changed) notifyListeners();
   }
@@ -140,8 +180,9 @@ class AuthUiProvider extends ChangeNotifier {
   }
 
   void resetOtp() {
-    final changed = _loading.remove(AuthLoadingKey.otp);
-    if (changed) notifyListeners();
+    final changed1 = _loading.remove(AuthLoadingKey.otp);
+    final changed2 = _loading.remove(AuthLoadingKey.resendOtp);
+    if (changed1 || changed2) notifyListeners();
   }
 
   void resetResetPassword() {

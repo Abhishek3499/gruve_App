@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';
-import 'package:gruve_app/core/widgets/app_cached_image.dart';
+import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 
 class UserProfileGrid extends StatelessWidget {
   final UserProfileController controller;
@@ -28,6 +28,7 @@ class UserProfileGrid extends StatelessWidget {
       id: post.id,
       caption: post.caption,
       media: post.media,
+      thumbnailUrl: post.thumbnailUrl,
       mediaType: post.mediaType,
       userId: userProfile.id.isNotEmpty ? userProfile.id : post.userId,
       likesCount: post.likesCount,
@@ -163,29 +164,27 @@ class UserProfileGrid extends StatelessWidget {
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(18),
-            child: enrichedPost.isVideo
-                ? Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Icon(
-                        Icons.play_circle_outline,
-                        color: Colors.white,
-                        size: 40,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PostGridThumbnail(post: enrichedPost),
+                if (enrichedPost.isVideo)
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                  )
-                : AppCachedImage(
-                    imageUrl: post.media,
-                    fit: BoxFit.cover,
-                    errorWidget: Container(
-                      color: Colors.grey,
                       child: const Icon(
-                        Icons.broken_image,
+                        Icons.play_arrow_rounded,
                         color: Colors.white,
-                        size: 30,
+                        size: 24,
                       ),
                     ),
                   ),
+              ],
+            ),
           ),
         );
       },

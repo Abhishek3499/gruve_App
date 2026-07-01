@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,10 +7,12 @@ import 'package:gruve_app/features/story_preview/providers/save_post_provider.da
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/main.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../story_preview/api/create_post_api/model/post_model.dart';
 import '../controllers/video_feed_controller.dart';
 import 'optimized_video_overlay.dart';
+import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'video_top_bar.dart';
 import '../../../core/widgets/shimmer/feed_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -32,6 +36,7 @@ class VideoFeed extends StatefulWidget {
 class _VideoFeedState extends State<VideoFeed> with RouteAware {
   late VideoFeedController _controller;
   late PageController _pageController;
+  VoidCallback? _blockListener;
 
   String selectedContentTab = 'For You';
   int _lastPaginationTriggerItemCount = 0;
@@ -41,6 +46,25 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     super.initState();
 
     _controller = VideoFeedController();
+
+    // Set isBlockedUser callback to filter blocked users on load/pagination
+    final blockProvider = context.read<BlockProvider>();
+    _controller.isBlockedUser = (userId) => blockProvider.isBlocked(userId);
+
+    // Listen to BlockProvider for immediate feed removal of blocked users
+    _blockListener = () {
+      if (!mounted) return;
+      final blockedUserIds = _controller.posts
+          .map((post) => post.userId)
+          .where((userId) => blockProvider.isBlocked(userId))
+          .toSet();
+      if (blockedUserIds.isNotEmpty) {
+        AppLogger.d('🔒 [VideoFeed] Blocked users detected in feed, removing: $blockedUserIds');
+        _controller.removePostsByUsers(blockedUserIds);
+      }
+    };
+    blockProvider.addListener(_blockListener!);
+
     _pageController = PageController(viewportFraction: 1.0);
 
     _controller.onScrollToTop = () {
@@ -69,6 +93,13 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
+    if (_blockListener != null) {
+      try {
+        context.read<BlockProvider>().removeListener(_blockListener!);
+      } catch (e) {
+        AppLogger.d('⚠️ Error removing block listener: $e');
+      }
+    }
     _controller.dispose();
     _pageController.dispose();
     super.dispose();
@@ -217,75 +248,74 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Split state: Only rebuild UI when feed structure changes, not on every video load
-    return ValueListenableBuilder<int>(
-      valueListenable: _controller.feedRevision,
-      builder: (context, _, _) {
-        final showInitialLoader =
-            _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
-        final showEmptyState =
-            !_controller.isInitialLoading &&
-            _controller.mediaUrls.isEmpty &&
-            !_controller.isRefreshing;
-        final showRefreshIndicator = _controller.mediaUrls.isNotEmpty;
+    return Stack(
+      children: [
+        ValueListenableBuilder<int>(
+          valueListenable: _controller.feedRevision,
+          builder: (context, _, __) {
+            final showInitialLoader =
+                _controller.isInitialLoading && _controller.mediaUrls.isEmpty;
+            final showEmptyState =
+                !_controller.isInitialLoading &&
+                _controller.mediaUrls.isEmpty &&
+                !_controller.isRefreshing;
 
-        return Stack(
-          children: [
-            if (showInitialLoader)
-              _buildInitialLoader()
-            else if (showEmptyState)
-              _buildEmptyState()
-            else if (showRefreshIndicator)
-              RefreshIndicator(
-                notificationPredicate: (notification) =>
-                    notification.depth == 0 &&
-                    _controller.currentIndex.value == 0,
-                onRefresh: _refreshFeed,
-                color: Colors.white,
-                backgroundColor: Colors.grey[800],
-                child: PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  onPageChanged: _onPageChanged,
-                  itemCount: _controller.mediaUrls.length,
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
+            if (showInitialLoader) return _buildInitialLoader();
+            if (showEmptyState) return _buildEmptyState();
+            return const SizedBox.shrink();
+          },
+        ),
+        ValueListenableBuilder<int>(
+          valueListenable: _controller.feedRevision,
+          builder: (context, _, __) {
+            if (_controller.mediaUrls.isEmpty) return const SizedBox.shrink();
+
+            return RefreshIndicator(
+              notificationPredicate: (notification) =>
+                  notification.depth == 0 &&
+                  _controller.currentIndex.value == 0,
+              onRefresh: _refreshFeed,
+              color: Colors.white,
+              backgroundColor: Colors.grey[800],
+              child: PageView.builder(
+                key: ValueKey(_controller.currentFeed),
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                allowImplicitScrolling: true,
+                onPageChanged: _onPageChanged,
+                itemCount: _controller.mediaUrls.length,
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: PageScrollPhysics(
+                    parent: ClampingScrollPhysics(),
                   ),
-                  itemBuilder: (context, index) => FeedItemWidget(
+                ),
+                itemBuilder: (context, index) {
+                  final post = _controller.posts[index];
+                  final url = _controller.mediaUrls[index].trim();
+                  return FeedItemWidget(
+                    key: ValueKey(
+                      post.id.isNotEmpty ? 'feed_${post.id}' : 'feed_$url',
+                    ),
                     index: index,
                     controller: _controller,
                     selectedTab: selectedContentTab,
                     onTabChanged: _onTabChanged,
                     onOwnProfileTap: () => widget.onTabChanged(4),
-                  ),
-                ),
-              )
-            else
-              // Fallback: show feed without refresh indicator if needed
-              PageView.builder(
-                controller: _pageController,
-                scrollDirection: Axis.vertical,
-                onPageChanged: _onPageChanged,
-                itemCount: _controller.mediaUrls.length,
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                itemBuilder: (context, index) => FeedItemWidget(
-                  index: index,
-                  controller: _controller,
-                  selectedTab: selectedContentTab,
-                  onTabChanged: _onTabChanged,
-                  onOwnProfileTap: () => widget.onTabChanged(4),
-                ),
+                  );
+                },
               ),
-            _buildPagingLoader(),
-            VideoTopBar(
-              selectedTab: selectedContentTab,
-              onTabChanged: _onTabChanged,
-            ),
-          ],
-        );
-      },
+            );
+          },
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: _controller.isLoadingMoreListenable,
+          builder: (context, _, __) => _buildPagingLoader(),
+        ),
+        VideoTopBar(
+          selectedTab: selectedContentTab,
+          onTabChanged: _onTabChanged,
+        ),
+      ],
     );
   }
 }
@@ -310,7 +340,7 @@ class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 280),
     );
 
     _scaleAnimation = TweenSequence<double>([
@@ -427,12 +457,6 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
     return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
   }
 
-  Widget _brokenMediaIcon() {
-    return const Center(
-      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final url = widget.controller.mediaUrls[widget.index].trim();
@@ -440,7 +464,6 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
     final effectiveVideo = post.isVideo || Post.mediaUrlLooksLikeVideo(url);
     final isValidNetworkUrl = _isNetworkMediaUrl(url);
     final videoController = widget.controller.controllerForMediaIndex(widget.index);
-    final hasVideoLoadFailed = widget.controller.hasVideoLoadFailed(widget.index);
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -449,12 +472,13 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
           children: [
             Container(
               color: Colors.black,
-              child: _buildMediaContent(
+              child: FeedMediaContent(
+                index: widget.index,
+                controller: widget.controller,
                 url: url,
+                posterUrl: post.feedPosterUrl,
                 isVideo: effectiveVideo,
                 isValidNetworkUrl: isValidNetworkUrl,
-                videoController: videoController,
-                hasVideoLoadFailed: hasVideoLoadFailed,
               ),
             ),
             ValueListenableBuilder<int>(
@@ -510,51 +534,33 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
       ),
     );
   }
+}
 
-  Widget _buildMediaContent({
-    required String url,
-    required bool isVideo,
-    required bool isValidNetworkUrl,
-    required VideoPlayerController? videoController,
-    required bool hasVideoLoadFailed,
-  }) {
-    if (isVideo) {
-      if (hasVideoLoadFailed) {
-        AppLogger.d('❌ video filtered/skipped — player failed: $url');
-        return _brokenMediaIcon();
-      }
+class FeedPosterShimmer extends StatelessWidget {
+  const FeedPosterShimmer({super.key});
 
-      if (videoController == null) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        );
-      }
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[900]!,
+      highlightColor: Colors.grey[800]!,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.black,
+      ),
+    );
+  }
+}
 
-      if (!videoController.value.isInitialized) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        );
-      }
+/// Instant poster frame for feed videos — no fade, sized for device memory.
+class FeedPosterImage extends StatelessWidget {
+  final String url;
 
-      return RepaintBoundary(
-        child: SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: videoController.value.size.width,
-              height: videoController.value.size.height,
-              child: VideoPlayer(videoController),
-            ),
-          ),
-        ),
-      );
-    }
+  const FeedPosterImage({super.key, required this.url});
 
-    if (!isValidNetworkUrl) {
-      AppLogger.d('❌ image filtered/skipped — bad network URL url=$url');
-      return _brokenMediaIcon();
-    }
-
+  @override
+  Widget build(BuildContext context) {
     final mediaSize = MediaQuery.sizeOf(context);
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final cacheWidth = (mediaSize.width * devicePixelRatio * 0.8)
@@ -576,11 +582,244 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
         memCacheHeight: cacheHeight,
         maxWidthDiskCache: cacheWidth,
         maxHeightDiskCache: cacheHeight,
-        fadeInDuration: const Duration(milliseconds: 200),
-        fadeOutDuration: const Duration(milliseconds: 100),
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         useOldImageOnUrlChange: true,
-        placeholder: (context, url) => Container(color: Colors.black),
-        errorWidget: (context, url, error) => _brokenMediaIcon(),
+        placeholder: (context, url) => const FeedPosterShimmer(),
+        errorWidget: (context, url, error) => const ColoredBox(color: Colors.black),
+      ),
+    );
+  }
+}
+
+class FeedMediaContent extends StatelessWidget {
+  final int index;
+  final VideoFeedController controller;
+  final String url;
+  final String posterUrl;
+  final bool isVideo;
+  final bool isValidNetworkUrl;
+
+  const FeedMediaContent({
+    super.key,
+    required this.index,
+    required this.controller,
+    required this.url,
+    this.posterUrl = '',
+    required this.isVideo,
+    required this.isValidNetworkUrl,
+  });
+
+  Widget _brokenMediaIcon() {
+    return const Center(
+      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isVideo) {
+      return _buildImage(context);
+    }
+
+    return FeedVideoPlayer(
+      index: index,
+      controller: controller,
+      url: url,
+      posterUrl: posterUrl,
+    );
+  }
+
+  Widget _buildImage(BuildContext context) {
+    if (!isValidNetworkUrl) {
+      AppLogger.d('❌ image filtered/skipped — bad network URL url=$url');
+      return _brokenMediaIcon();
+    }
+
+    return FeedPosterImage(url: url);
+  }
+}
+
+/// Keeps a stable [VideoPlayer] instance so the texture is not torn down
+/// every time a neighboring slot finishes loading.
+class FeedVideoPlayer extends StatefulWidget {
+  final int index;
+  final VideoFeedController controller;
+  final String url;
+  final String posterUrl;
+
+  const FeedVideoPlayer({
+    super.key,
+    required this.index,
+    required this.controller,
+    required this.url,
+    this.posterUrl = '',
+  });
+
+  @override
+  State<FeedVideoPlayer> createState() => _FeedVideoPlayerState();
+}
+
+class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
+  VideoPlayerController? _boundController;
+  bool _initialized = false;
+  bool _hasRenderedFrame = false;
+
+  bool get _isCurrentItem =>
+      widget.controller.currentIndex.value == widget.index;
+
+  bool _computeHasRenderedFrame(VideoPlayerValue value) {
+    return value.isInitialized &&
+        value.size.width > 0 &&
+        value.size.height > 0 &&
+        (value.position > Duration.zero || !value.isBuffering);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.videoControllersRevision.addListener(_syncController);
+    widget.controller.currentIndex.addListener(_onCurrentIndexChanged);
+    _syncController();
+  }
+
+  @override
+  void didUpdateWidget(covariant FeedVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _detachController();
+      _syncController();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.videoControllersRevision.removeListener(_syncController);
+    widget.controller.currentIndex.removeListener(_onCurrentIndexChanged);
+    _detachController();
+    super.dispose();
+  }
+
+  void _onCurrentIndexChanged() {
+    if (widget.controller.currentIndex.value != widget.index) return;
+
+    final ctrl = _boundController;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
+
+    if (!ctrl.value.isPlaying) {
+      unawaited(ctrl.play());
+    }
+
+    // Recover from a stale black texture after swiping onto a preloaded slot.
+    if (mounted) setState(() {});
+  }
+
+  void _detachController() {
+    _boundController?.removeListener(_onControllerUpdate);
+    _boundController = null;
+    _initialized = false;
+    _hasRenderedFrame = false;
+  }
+
+  void _syncController() {
+    if (widget.controller.hasVideoLoadFailed(widget.index)) {
+      if (_boundController != null) {
+        _detachController();
+        setState(() {});
+      }
+      return;
+    }
+
+    final next = widget.controller.controllerForMediaIndex(widget.index);
+    if (identical(next, _boundController)) return;
+
+    _boundController?.removeListener(_onControllerUpdate);
+    _boundController = next;
+    _initialized = next?.value.isInitialized ?? false;
+    _hasRenderedFrame =
+        next != null && _computeHasRenderedFrame(next.value);
+    _boundController?.addListener(_onControllerUpdate);
+    setState(() {});
+  }
+
+  void _onControllerUpdate() {
+    final ctrl = _boundController;
+    if (ctrl == null) return;
+
+    final nowInitialized = ctrl.value.isInitialized;
+    final nowHasFrame = _computeHasRenderedFrame(ctrl.value);
+    if (nowInitialized != _initialized || nowHasFrame != _hasRenderedFrame) {
+      _initialized = nowInitialized;
+      _hasRenderedFrame = nowHasFrame;
+      setState(() {});
+    }
+  }
+
+  Widget _brokenMediaIcon() {
+    return const Center(
+      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
+    );
+  }
+
+  Widget _buildPoster(BuildContext context) {
+    final poster = widget.posterUrl.trim();
+    if (poster.isEmpty || !poster.startsWith('http')) {
+      return const FeedPosterShimmer();
+    }
+
+    return FeedPosterImage(url: poster);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.controller.hasVideoLoadFailed(widget.index)) {
+      AppLogger.d(
+        '❌ video filtered/skipped — player failed: ${widget.url}',
+      );
+      return _brokenMediaIcon();
+    }
+
+    final videoController = _boundController;
+    final showVideo = videoController != null && _initialized;
+    final hidePoster = showVideo && _hasRenderedFrame;
+
+    if (!showVideo) {
+      return _buildPoster(context);
+    }
+
+    final size = videoController.value.size;
+    final frameWidth = size.width > 0 ? size.width : 1080.0;
+    final frameHeight = size.height > 0 ? size.height : 1920.0;
+
+    return RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildPoster(context),
+          SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: frameWidth,
+                height: frameHeight,
+                child: VideoPlayer(
+                  videoController,
+                  key: ValueKey('video_player_${widget.url}'),
+                ),
+              ),
+            ),
+          ),
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: hidePoster ? 0 : 1,
+              duration: _isCurrentItem
+                  ? Duration.zero
+                  : const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              child: _buildPoster(context),
+            ),
+          ),
+        ],
       ),
     );
   }

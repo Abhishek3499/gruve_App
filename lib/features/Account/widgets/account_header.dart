@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/assets.dart';
 
 /// Header widget for Account screen
 class AccountHeader extends StatelessWidget {
@@ -30,31 +29,14 @@ class AccountHeader extends StatelessWidget {
             Positioned(
               left: 16,
               top: 10,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(30),
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  child: SizedBox(
-                    height: 60,
-                    width: 50,
-                    child: Center(
-                      child: Container(
-                        height: 30,
-                        width: 30,
-                        decoration: const BoxDecoration(shape: BoxShape.circle),
-                        child: Image.asset(AppAssets.back),
-                      ),
+                    child: BackButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+                      },
                     ),
-                  ),
-                ),
-              ),
             ),
             Positioned(
               top: 25,

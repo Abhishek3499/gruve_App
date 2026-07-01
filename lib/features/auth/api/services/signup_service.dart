@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
-import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import '../models/signup_request.dart';
@@ -8,73 +11,93 @@ import '../models/signup_response.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SignupService {
-  final Dio dio = AppDio.getInstance();
+  final Dio dio = AuthDio.getInstance();
 
   Future<SignupResponse> signup(SignupRequest request) async {
-
-    const endpoint = "auth/signup/";
+    const endpoint = 'auth/signup/';
     final payload = request.toJson();
 
     try {
-      AuthApiLogger.request(
-        'Signup',
-        dio: dio,
-        endpoint: endpoint,
-        method: 'POST',
-        body: payload,
-      );
-
-      final response = await dio.post(
-        endpoint,
-        data: payload,
-        options: AuthEndpointPaths.skipAuthOptions(),
-      );
-
-      AuthApiLogger.response('Signup', response);
-
-      final result = SignupResponse.fromJson(response.data);
-
-      if (result.success == true) {
-        return result;
-      } else {
-        throw result.message;
-      }
+      return await _postSignup(endpoint, payload, logLabel: 'Signup');
+    } on AuthApiException {
+      rethrow;
     } on DioException catch (e) {
-      AuthApiLogger.error('Signup', e);
-
-      // Retry once when no response is received (timeout / connection issue).
       if (_shouldRetry(e)) {
+        AppLogger.d('Signup retry attempt');
         try {
-          AppLogger.d("Signup retry attempt");
-          final retryResponse = await dio.post(
-            endpoint,
-            data: payload,
-            options: AuthEndpointPaths.skipAuthOptions(),
-          );
-          AuthApiLogger.response('SignupRetry', retryResponse);
-          final retryResult = SignupResponse.fromJson(retryResponse.data);
-          if (retryResult.success == true) return retryResult;
-          throw retryResult.message;
+          return await _postSignup(endpoint, payload, logLabel: 'SignupRetry');
+        } on AuthApiException {
+          rethrow;
         } on DioException catch (retryError) {
           AuthApiLogger.error('SignupRetry', retryError);
-          throw AuthApiException.extractMessage(
+          throw AuthApiException.fromDio(
             retryError,
             fallback: 'Unable to reach server right now. Please try again.',
           );
-        } catch (retryError) {
-          AppLogger.d("Signup retry failed: $retryError");
-          throw retryError.toString();
         }
       }
 
-      throw AuthApiException.extractMessage(
+      AuthApiLogger.error('Signup', e);
+      throw AuthApiException.fromDio(
         e,
         fallback: 'Unable to reach server right now. Please try again.',
       );
+    } on SocketException catch (e) {
+      AppLogger.d('Signup SocketException: $e');
+      throw const AuthApiException(
+        'No internet connection. Please check your network and try again.',
+        type: 'SocketException',
+      );
+    } on TimeoutException catch (e) {
+      AppLogger.d('Signup TimeoutException: $e');
+      throw const AuthApiException(
+        'Request timed out. Please check your internet and try again.',
+        type: 'TimeoutException',
+      );
+    } on FormatException catch (e) {
+      AppLogger.d('Signup FormatException: $e');
+      throw const AuthApiException(
+        'Server returned an invalid response format.',
+        type: 'FormatException',
+      );
     } catch (e) {
-      AppLogger.d("Signup failed: $e");
-      throw "Signup failed. Please try again.";
+      AppLogger.d('Signup failed: $e');
+      throw AuthApiException(
+        'Something went wrong. Please try again.',
+        type: 'unknown',
+      );
     }
+  }
+
+  Future<SignupResponse> _postSignup(
+    String endpoint,
+    Map<String, dynamic> payload, {
+    required String logLabel,
+  }) async {
+    AuthApiLogger.request(
+      logLabel,
+      dio: dio,
+      endpoint: endpoint,
+      method: 'POST',
+      body: payload,
+    );
+
+    final response = await dio.post(
+      endpoint,
+      data: payload,
+      options: AuthEndpointPaths.skipAuthOptions(),
+    );
+
+    AuthApiLogger.response(logLabel, response);
+
+    final result = SignupResponse.fromJson(response.data);
+    if (result.success == true) {
+      return result;
+    }
+    throw AuthApiException(
+      result.message.isNotEmpty ? result.message : 'Signup failed. Please try again.',
+      statusCode: response.statusCode,
+    );
   }
 
   bool _shouldRetry(DioException e) {
@@ -84,5 +107,4 @@ class SignupService {
             e.type == DioExceptionType.receiveTimeout ||
             e.type == DioExceptionType.connectionError);
   }
-
 }

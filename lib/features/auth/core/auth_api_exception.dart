@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/network/api_exception.dart';
 
@@ -23,23 +25,54 @@ class AuthApiException extends ApiException {
 
     if (data is Map) {
       final map = Map<String, dynamic>.from(data);
-      for (final key in const ['message', 'detail', 'error', 'msg']) {
+      final keysToCheck = const ['error', 'message', 'detail', 'msg', 'errors'];
+
+      // 1. Try to find the first non-technical message in the preferred keys
+      for (final key in keysToCheck) {
+        final value = map[key];
+        final text = _coerceMessage(value);
+        if (text.isNotEmpty) {
+          final userMsg = userFacingMessage(text, fallback: '');
+          if (userMsg.isNotEmpty) {
+            return userMsg;
+          }
+        }
+      }
+
+      // 2. Try to find any other non-technical field error in the map
+      for (final entry in map.entries) {
+        if (keysToCheck.contains(entry.key)) continue;
+        final text = _coerceMessage(entry.value);
+        if (text.isNotEmpty) {
+          final userMsg = userFacingMessage(text, fallback: '');
+          if (userMsg.isNotEmpty) {
+            return userMsg;
+          }
+        }
+      }
+
+      // 3. Fallback: if all messages were technical/generic, return the first available one with the fallback
+      for (final key in keysToCheck) {
         final value = map[key];
         final text = _coerceMessage(value);
         if (text.isNotEmpty) {
           return userFacingMessage(text, fallback: fallback);
         }
       }
-
-      final errors = map['errors'];
-      final text = _coerceMessage(errors);
-      if (text.isNotEmpty) {
-        return userFacingMessage(text, fallback: fallback);
-      }
     }
 
     if (data is String && data.trim().isNotEmpty) {
       return userFacingMessage(data, fallback: fallback);
+    }
+
+    final innerError = error.error;
+    if (innerError is SocketException) {
+      return 'No internet connection. Please check your network and try again.';
+    }
+
+    final statusCode = error.response?.statusCode;
+    if (statusCode != null && statusCode >= 500) {
+      return 'Server is temporarily unavailable. Please try again later.';
     }
 
     switch (error.type) {

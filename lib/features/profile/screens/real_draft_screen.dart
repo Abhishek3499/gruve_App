@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/profile/widgets/draft_tile.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_draft_model.dart';
 import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';
@@ -153,8 +152,8 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: Image.asset(AppAssets.back, height: 24, width: 24),
+                    BackButton(
+                      color: Colors.white,
                       onPressed: () => Navigator.pop(context),
                     ),
                     const Expanded(

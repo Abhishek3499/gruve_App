@@ -6,6 +6,7 @@ import 'package:gruve_app/features/story_preview/providers/save_post_provider.da
 import '../../../../core/assets.dart';
 import 'option_button.dart';
 import 'option_item.dart';
+import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';
 import '../sheets/simple_report_sheet.dart';
 import '../sheets/simple_block_sheet.dart';
 import '../sheets/simple_not_interested_sheet.dart';
@@ -496,13 +497,12 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                               textColor: Colors.red,
                               hasArrow: true,
                               onTap: () {
+                                final userId = widget.userId;
                                 Navigator.of(context).pop();
-                                showModalBottomSheet(
+                                ReportUserFlow.showAndSubmit(
                                   context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) =>
-                                      const SimpleReportSheet(),
+                                  userId: userId,
+                                  target: ReportSheetTarget.post,
                                 );
                               },
                             ),

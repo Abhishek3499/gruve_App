@@ -37,27 +37,98 @@ class MessageProvider extends ChangeNotifier {
     AppLogger.d('🎧 [MessageProvider] Socket listener initialized');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
-      AppLogger.d('🔥 FULL SOCKET DATA => $data');
-
-      AppLogger.d('🔥 SOCKET MESSAGE RECEIVED: $data');
+      if (!_isMessageSocketEvent(data)) return;
 
       try {
         final conversationId = _extractConversationId(data);
         final eventKey = _realtimeEventKey(data, conversationId);
         if (!_seenRealtimeEventKeys.add(eventKey)) {
-          AppLogger.d('🔒 [MessageProvider] Duplicate realtime event skipped');
           return;
         }
         if (_seenRealtimeEventKeys.length > 200) {
           _seenRealtimeEventKeys.remove(_seenRealtimeEventKeys.first);
         }
 
-        AppLogger.d('🔄 [MessageProvider] Realtime message received - triggering auto-refresh');
-        // Silently refresh conversations in background to update UI in real-time
-        fetchConversations(refresh: true);
+        _patchConversationFromSocket(data, conversationId);
+        _scheduleBackgroundRefresh();
       } catch (e) {
         AppLogger.d('💥 SOCKET LISTENER ERROR: $e');
       }
+    });
+  }
+
+  bool _isMessageSocketEvent(Map<String, dynamic> data) {
+    final type = data['type']?.toString().toLowerCase() ?? '';
+    if (type.isEmpty) return false;
+
+    const ignored = {
+      'connected',
+      'presence_snapshot',
+      'online_users',
+      'user_online',
+      'presence_online',
+      'user_connected',
+      'user_active',
+      'user_offline',
+      'presence_offline',
+      'user_disconnected',
+      'user_inactive',
+      'presence_update',
+      'user_presence',
+      'user_status',
+      'status_update',
+      'user_status_changed',
+      'pong',
+      'ping',
+      'error',
+      'chat.send',
+    };
+    if (ignored.contains(type)) return false;
+
+    if (type == 'message' || type.startsWith('chat.')) return true;
+    if (type == 'new_message' || type == 'message_received') return true;
+
+    final event = data['event']?.toString().toLowerCase() ?? '';
+    return event.startsWith('message.') || event.startsWith('chat.');
+  }
+
+  void _patchConversationFromSocket(
+    Map<String, dynamic> data,
+    String conversationId,
+  ) {
+    if (conversationId.isEmpty) return;
+
+    final nested = data['data'];
+    final payload = nested is Map
+        ? Map<String, dynamic>.from(nested)
+        : data;
+    final content = payload['content'] ?? payload['text'] ?? payload['message'];
+    if (content == null || content.toString().trim().isEmpty) return;
+
+    final index = _conversations.indexWhere((c) => c.id == conversationId);
+    if (index == -1) return;
+
+    final now = DateTime.now();
+    final conversation = _conversations[index];
+    final updated = conversation.copyWith(
+      lastMessage: LastMessage(
+        content: content.toString(),
+        createdAt: now,
+      ),
+      hasLastMessage: true,
+      updatedAt: now,
+      unreadCount: conversation.unreadCount + 1,
+    );
+
+    _conversations[index] = updated;
+    _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    notifyListeners();
+  }
+
+  void _scheduleBackgroundRefresh() {
+    _refreshDebounceTimer?.cancel();
+    _refreshDebounceTimer = Timer(const Duration(milliseconds: 800), () {
+      fetchConversations(refresh: true);
     });
   }
 
@@ -108,6 +179,7 @@ class MessageProvider extends ChangeNotifier {
 
   final Map<String, Future<void>> _inFlightFetches = {};
   final Set<String> _seenRealtimeEventKeys = <String>{};
+  Timer? _refreshDebounceTimer;
 
   // Pagination support (for future implementation)
   int _currentPage = 1;
@@ -581,6 +653,7 @@ class MessageProvider extends ChangeNotifier {
 
   /// Reset provider state
   void reset() {
+    _refreshDebounceTimer?.cancel();
     _conversations.clear();
     _error = null;
     _isLoading = false;
@@ -599,6 +672,7 @@ class MessageProvider extends ChangeNotifier {
   @override
   void dispose() {
     cancelActiveRequests();
+    _refreshDebounceTimer?.cancel();
     _socketSubscription?.cancel();
     _socketSubscription = null;
     AppLogger.d('🗑️ [MessageProvider] Disposed and socket listener cancelled');

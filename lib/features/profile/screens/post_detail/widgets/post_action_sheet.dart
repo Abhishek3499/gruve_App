@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';
+import 'package:gruve_app/features/video_options/sheets/simple_report_sheet.dart';
 
 class PostActionSheet extends StatelessWidget {
   final Post post;
@@ -55,8 +57,14 @@ class PostActionSheet extends StatelessWidget {
                       label: 'Report Post',
                       color: Colors.orange,
                       onTap: () {
-                        Navigator.pop(context);
-                        AppLogger.d('🚩 Report post: ${post.id}');
+                        final userId = post.userId;
+                        final navigator = Navigator.of(context);
+                        navigator.pop();
+                        ReportUserFlow.showAndSubmit(
+                          context: navigator.context,
+                          userId: userId,
+                          target: ReportSheetTarget.post,
+                        );
                       },
                     ),
                     _buildActionTile(

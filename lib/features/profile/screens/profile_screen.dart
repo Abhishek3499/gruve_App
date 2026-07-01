@@ -14,6 +14,7 @@ import '../widgets/filter_tabs.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/stats_row.dart';
 import '../widgets/story_list.dart';
+import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -33,6 +34,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Own-profile tab stays mounted under [IndexedStack]; listen for logout clears.
   ProfileProvider? _ownProfileProvider;
+  UserProfileProvider? _userProfileProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.userId == null) {
+      _ownProfileProvider ??= context.read<ProfileProvider>();
+    } else {
+      _userProfileProvider ??= context.read<UserProfileProvider>();
+    }
+  }
 
   void _log(String message) {
     AppLogger.d(message);
@@ -49,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Own profile: fetch whenever session has no user yet (fixes stuck loader when
     // init ran while provider falsely reported loading, and refetch after logout).
     if (widget.userId == null) {
-      _ownProfileProvider = context.read<ProfileProvider>();
+      _ownProfileProvider ??= context.read<ProfileProvider>();
       _ownProfileProvider!.addListener(_ensureOwnProfileLoaded);
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _ensureOwnProfileLoaded(),
@@ -77,7 +89,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _onBridgeRefreshRequested(String reason) async {
     if (!mounted) return;
     try {
-      await context.read<ProfileProvider>().refreshProfileData(reason: reason);
+      final provider = context.read<ProfileProvider>();
+      switch (reason) {
+        case 'post_like_toggled':
+        case 'subscribe_toggled':
+        case 'user_subscribed':
+        case 'user_unsubscribed':
+          await provider.refreshCounts(reason: reason);
+        default:
+          await provider.refreshProfileData(reason: reason);
+      }
     } catch (e, st) {
       _log('[ProfileScreen] Bridge refresh failed: $e\n$st');
     }
@@ -90,9 +111,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
     if (widget.userId == null) {
-      context.read<ProfileProvider>().cancelActiveRequests();
+      _ownProfileProvider?.cancelActiveRequests();
     } else {
-      context.read<UserProfileProvider>().cancelActiveRequests();
+      _userProfileProvider?.cancelActiveRequests();
     }
     super.dispose();
   }
@@ -515,16 +536,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Colors.white.withValues(alpha: 0.10),
                   child: const Icon(Icons.broken_image, color: Colors.white54),
                 )
-              : Image.network(
-                  media,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    child: const Icon(
-                      Icons.broken_image,
-                      color: Colors.white54,
-                    ),
-                  ),
+              : MediaUrlThumbnail(
+                  url: media,
+                  memCacheWidth: 300,
+                  memCacheHeight: 400,
                 ),
         );
       },

@@ -57,7 +57,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _emailController.text,
       );
 
-      context.read<AuthUiProvider>().setError('forgot_email', error);
+      context.read<AuthUiProvider>().setValidationError('forgot_email', error);
     });
   }
 
@@ -289,10 +289,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.only(left: 24, top: 33),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.pop(context),
-                  child: Image.asset(AppAssets.back, height: 25, width: 25),
+                child: BackButton(
+                  color: Colors.white,
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),

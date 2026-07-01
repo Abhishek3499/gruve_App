@@ -50,9 +50,9 @@ class MusicScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Image.asset(AppAssets.back, height: 22, width: 22),
+          BackButton(
+            color: Colors.white,
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),

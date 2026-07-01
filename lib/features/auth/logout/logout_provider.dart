@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/api/controllers/logout_controller.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';
@@ -99,6 +100,7 @@ class LogoutProvider extends ChangeNotifier {
       }
 
       AppDio.cancelAllRequests('User logout');
+      AuthDio.reset();
       _shouldNavigate = true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -106,6 +108,7 @@ class LogoutProvider extends ChangeNotifier {
 
       await AuthStateManager().logout();
       AppDio.cancelAllRequests('User logout fallback');
+      AuthDio.reset();
       _shouldNavigate = true;
     } finally {
       _setLoading(false);

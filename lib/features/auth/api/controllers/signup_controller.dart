@@ -19,6 +19,7 @@ class SignupController {
   }) async {
     isLoading = true;
     errorMessage = null;
+    signupResponse = null;
 
     AppLogger.d("🚀 Signup Start");
     AppLogger.d("Name: $fullName");

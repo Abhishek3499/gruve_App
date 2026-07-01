@@ -10,6 +10,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:video_compress/video_compress.dart';
 
 class PostService {
@@ -72,19 +73,71 @@ class PostService {
     throw lastError ?? StateError('GET request failed for $path');
   }
 
-  /// Returns true if the path points to a video file.
-  static bool _isVideo(String path) {
-    final uri = Uri.tryParse(path);
-    final cleanPath = uri?.path.toLowerCase() ?? path.toLowerCase();
-    return cleanPath.endsWith('.mp4') ||
-        cleanPath.endsWith('.mov') ||
-        cleanPath.endsWith('.avi') ||
-        cleanPath.endsWith('.mkv');
+  Future<({bool isVideo, File uploadFile, String fileName})> _prepareUploadFile({
+    required File file,
+    required String mediaPath,
+    String? mimeType,
+    void Function(File compressedVideo)? onCompressedVideo,
+  }) async {
+    final isVideo = await LocalMediaUtils.isVideoForUpload(
+      mediaPath,
+      mimeType: mimeType,
+    );
+    final fileName = LocalMediaUtils.uploadFilename(
+      mediaPath,
+      isVideo: isVideo,
+    );
+
+    AppLogger.d(
+      '🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
+    );
+
+    File uploadFile = file;
+    if (!isVideo) {
+      AppLogger.d('🗜️ [PostService] Compressing image for post...');
+      try {
+        uploadFile = await ImageFilterProcessor.compressImageForUpload(
+          file,
+          maxFileSizeKB: 400,
+        );
+      } catch (e) {
+        AppLogger.d(
+          '⚠️ [PostService] Image compression failed, using original: $e',
+        );
+      }
+    } else {
+      AppLogger.d('🗜️ [PostService] Compressing video for post...');
+      try {
+        final mediaInfo = await VideoCompress.compressVideo(
+          file.path,
+          quality: VideoQuality.DefaultQuality,
+          deleteOrigin: false,
+          includeAudio: true,
+        );
+        if (mediaInfo != null && mediaInfo.path != null) {
+          final compressedFile = File(mediaInfo.path!);
+          if (compressedFile.existsSync()) {
+            uploadFile = compressedFile;
+            onCompressedVideo?.call(compressedFile);
+            AppLogger.d(
+              '🗜️ [PostService] Video compressed successfully: ${file.lengthSync()} -> ${compressedFile.lengthSync()} bytes',
+            );
+          }
+        }
+      } catch (e) {
+        AppLogger.d(
+          '⚠️ [PostService] Video compression failed, using original: $e',
+        );
+      }
+    }
+
+    return (isVideo: isVideo, uploadFile: uploadFile, fileName: fileName);
   }
 
   Future<CreatePostResponse> createPost({
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool audienceEveryone = true,
     bool audienceCloseFriends = false,
@@ -99,10 +152,13 @@ class PostService {
     bool isVideo = false;
     try {
       isVideo = mediaPath != null && mediaPath.isNotEmpty
-          ? _isVideo(mediaPath)
+          ? await LocalMediaUtils.isVideoForUpload(
+              mediaPath,
+              mimeType: mediaMimeType,
+            )
           : false;
       AppLogger.d('\n🚀 [PostService] ===== CREATE POST START =====');
-      AppLogger.d('📁 [PostService] mediaPath: $mediaPath');
+      AppLogger.d('📁 [PostService] mediaPath: $mediaPath (isVideo=$isVideo)');
 
       final token = await TokenStorage.getAccessToken();
 
@@ -157,52 +213,19 @@ class PostService {
         }
 
         if (file.existsSync()) {
-          final fileName = file.path.replaceAll(r'\', '/').split('/').last;
-          File uploadFile = file;
-          if (!isVideo) {
-            AppLogger.d('🗜️ [PostService] Compressing image for post...');
-            try {
-              uploadFile = await ImageFilterProcessor.compressImageForUpload(
-                file,
-                maxFileSizeKB: 400,
-              );
-            } catch (e) {
-              AppLogger.d(
-                '⚠️ [PostService] Image compression failed, using original: $e',
-              );
-            }
-          } else {
-            AppLogger.d('🗜️ [PostService] Compressing video for post...');
-            try {
-              final mediaInfo = await VideoCompress.compressVideo(
-                file.path,
-                quality: VideoQuality.DefaultQuality,
-                deleteOrigin: false,
-                includeAudio: true,
-              );
-              if (mediaInfo != null && mediaInfo.path != null) {
-                final compressedFile = File(mediaInfo.path!);
-                if (compressedFile.existsSync()) {
-                  uploadFile = compressedFile;
-                  tempCompressedVideo = compressedFile;
-                  AppLogger.d(
-                    '🗜️ [PostService] Video compressed successfully: ${file.lengthSync()} -> ${compressedFile.lengthSync()} bytes',
-                  );
-                }
-              }
-            } catch (e) {
-              AppLogger.d(
-                '⚠️ [PostService] Video compression failed, using original: $e',
-              );
-            }
-          }
+          final prepared = await _prepareUploadFile(
+            file: file,
+            mediaPath: mediaPath,
+            mimeType: mediaMimeType,
+            onCompressedVideo: (compressed) => tempCompressedVideo = compressed,
+          );
           formData.files.add(
             MapEntry(
               'file',
               await MultipartFile.fromFile(
-                uploadFile.path,
-                filename: fileName,
-                contentType: isVideo
+                prepared.uploadFile.path,
+                filename: prepared.fileName,
+                contentType: prepared.isVideo
                     ? DioMediaType('video', 'mp4')
                     : DioMediaType('image', 'jpeg'),
               ),
@@ -250,9 +273,10 @@ class PostService {
           AppLogger.d('⚠️ [PostService] Failed to delete temp file: $e');
         }
       }
-      if (tempCompressedVideo != null && tempCompressedVideo.existsSync()) {
+      final compressedTemp = tempCompressedVideo;
+      if (compressedTemp != null && compressedTemp.existsSync()) {
         try {
-          await tempCompressedVideo.delete();
+          await compressedTemp.delete();
           AppLogger.d('🧹 [PostService] Temporary compressed video file deleted');
         } catch (e) {
           AppLogger.d('⚠️ [PostService] Failed to delete compressed file: $e');
@@ -272,6 +296,7 @@ class PostService {
   Future<Map<String, dynamic>> saveDraft({
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool audienceEveryone = true,
     bool audienceCloseFriends = false,
@@ -299,26 +324,15 @@ class PostService {
       if (mediaPath != null && mediaPath.isNotEmpty) {
         final file = File(mediaPath);
         if (file.existsSync()) {
-          final isVideo = _isVideo(mediaPath);
-          final fileName = mediaPath.replaceAll(r'\', '/').split('/').last;
-          File uploadFile = file;
-          if (!isVideo) {
-            AppLogger.d('🗜️ [PostService] Compressing draft image...');
-            try {
-              uploadFile = await ImageFilterProcessor.compressImageForUpload(
-                file,
-                maxFileSizeKB: 400,
-              );
-            } catch (e) {
-              AppLogger.d(
-                '⚠️ [PostService] Draft image compression failed, using original: $e',
-              );
-            }
-          }
+          final prepared = await _prepareUploadFile(
+            file: file,
+            mediaPath: mediaPath,
+            mimeType: mediaMimeType,
+          );
           dataMap['file'] = await MultipartFile.fromFile(
-            uploadFile.path,
-            filename: fileName,
-            contentType: isVideo
+            prepared.uploadFile.path,
+            filename: prepared.fileName,
+            contentType: prepared.isVideo
                 ? DioMediaType('video', 'mp4')
                 : DioMediaType('image', 'jpeg'),
           );
@@ -390,6 +404,7 @@ class PostService {
     required String draftId,
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool? audienceEveryone,
     bool? audienceCloseFriends,
@@ -425,28 +440,15 @@ class PostService {
           !mediaPath.startsWith('https')) {
         final file = File(mediaPath);
         if (file.existsSync()) {
-          final isVideo = _isVideo(mediaPath);
-          final fileName = mediaPath.replaceAll(r'\', '/').split('/').last;
-          File uploadFile = file;
-          if (!isVideo) {
-            AppLogger.d(
-              '🗜️ [PostService] Compressing draft image for update...',
-            );
-            try {
-              uploadFile = await ImageFilterProcessor.compressImageForUpload(
-                file,
-                maxFileSizeKB: 400,
-              );
-            } catch (e) {
-              AppLogger.d(
-                '⚠️ [PostService] Draft image compression failed during update, using original: $e',
-              );
-            }
-          }
+          final prepared = await _prepareUploadFile(
+            file: file,
+            mediaPath: mediaPath,
+            mimeType: mediaMimeType,
+          );
           dataMap['file'] = await MultipartFile.fromFile(
-            uploadFile.path,
-            filename: fileName,
-            contentType: isVideo
+            prepared.uploadFile.path,
+            filename: prepared.fileName,
+            contentType: prepared.isVideo
                 ? DioMediaType('video', 'mp4')
                 : DioMediaType('image', 'jpeg'),
           );
@@ -715,15 +717,16 @@ class PostService {
     } catch (e) {
       AppLogger.d("❌ LIKE ERROR: $e");
       if (e is DioException) {
-        if (e.response?.statusCode == 401) {
+        final status = e.response?.statusCode;
+        if (status == 401) {
           AppLogger.d("Unauthorized error");
-        } else {
-          rethrow;
+          return false;
         }
-      } else {
-        rethrow;
+        if (status != null && status >= 500) {
+          return false;
+        }
       }
-      return false;
+      rethrow;
     }
   }
 
@@ -870,39 +873,34 @@ class PostService {
   }
 
   Future<Post> fetchPostById(String postId) async {
+    final cleanPostId = postId.startsWith('pst_') ? postId.substring(4) : postId;
     final token = await TokenStorage.getAccessToken();
     final opts = Options(headers: {"Authorization": "Bearer $token"});
 
     try {
-      AppLogger.d('🌐 [PostService] GET posts/get-post/?post_id=$postId');
+      AppLogger.d('🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId');
       final res = await _dio.get(
         "posts/get-post/",
-        queryParameters: {"post_id": postId},
+        queryParameters: {"post_id": cleanPostId},
         options: opts,
       );
 
       if (res.statusCode == 200 && res.data != null) {
         final dynamic responseData = res.data['data'] ?? res.data;
         if (responseData != null) {
-          if (responseData is Map) {
-            final list = responseData['posts'] ?? responseData['results'];
-            if (list is List && list.isNotEmpty) {
-              return Post.fromJson(Map<String, dynamic>.from(list.first));
-            }
-          }
-          return Post.fromJson(Map<String, dynamic>.from(responseData));
+          return _postFromResponseData(responseData, cleanPostId);
         }
       }
       throw Exception('Post not found or invalid format');
     } catch (e) {
       AppLogger.d(
-        '⚠️ [PostService] posts/get-post/?post_id=$postId failed: $e. Trying posts/$postId/',
+        '⚠️ [PostService] posts/get-post/?post_id=$cleanPostId failed: $e. Trying posts/$cleanPostId/',
       );
       try {
-        final res = await _dio.get("posts/$postId/", options: opts);
+        final res = await _dio.get("posts/$cleanPostId/", options: opts);
         if (res.statusCode == 200 && res.data != null) {
           final dynamic responseData = res.data['data'] ?? res.data;
-          return Post.fromJson(Map<String, dynamic>.from(responseData));
+          return _postFromResponseData(responseData, cleanPostId);
         }
       } catch (innerErr) {
         AppLogger.d(
@@ -911,5 +909,51 @@ class PostService {
       }
       rethrow;
     }
+  }
+
+  /// Resolves the requested [postId] from API payloads that may be a single post
+  /// or a paginated list (never blindly use `list.first`).
+  Post _postFromResponseData(dynamic responseData, String postId) {
+    if (responseData is Map) {
+      final map = Map<String, dynamic>.from(responseData);
+      final directId = _readPostId(map['id'] ?? map['post_id'] ?? map['postId']);
+      if (directId == postId) {
+        return Post.fromJson(map);
+      }
+
+      final singlePost = map['post'];
+      if (singlePost is Map) {
+        return Post.fromJson(Map<String, dynamic>.from(singlePost));
+      }
+
+      for (final listKey in ['posts', 'results', 'items']) {
+        final list = map[listKey];
+        if (list is! List || list.isEmpty) continue;
+
+        for (final item in list) {
+          if (item is! Map) continue;
+          final itemMap = Map<String, dynamic>.from(item);
+          final itemId =
+              _readPostId(itemMap['id'] ?? itemMap['post_id'] ?? itemMap['postId']);
+          if (itemId == postId) {
+            return Post.fromJson(itemMap);
+          }
+        }
+
+        if (list.length == 1 && list.first is Map) {
+          return Post.fromJson(Map<String, dynamic>.from(list.first as Map));
+        }
+      }
+
+      return Post.fromJson(map);
+    }
+
+    throw Exception('Post not found or invalid format');
+  }
+
+  String? _readPostId(dynamic raw) {
+    final value = raw?.toString().trim();
+    if (value == null || value.isEmpty) return null;
+    return value;
   }
 }

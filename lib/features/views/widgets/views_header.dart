@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -18,17 +17,12 @@ class ViewsHeader extends StatelessWidget {
           // Back Button
           Align(
             alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () {
+            child: BackButton(
+              color: AppColors.white,
+              onPressed: () {
                 AppLogger.d("[ViewsHeader] Back button tapped");
                 Navigator.pop(context);
               },
-              child: Image.asset(
-                AppAssets.back,
-                color: AppColors.white,
-                width: 25,
-                height: 25,
-              ),
             ),
           ),
 

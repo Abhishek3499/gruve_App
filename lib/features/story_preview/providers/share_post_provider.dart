@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SharePostProvider extends ChangeNotifier {
   VideoPlayerController? _videoController;

@@ -231,6 +231,29 @@ class SubscribeController extends ChangeNotifier {
     return _subscribeService.getSubscriptionCount();
   }
 
+  /// Trusts the subscribed-feed API and marks authors as subscribed locally.
+  /// Without this, missing `is_subscribed` flags make the feed strip every post.
+  void seedSubscribedFeedAuthors(
+    Iterable<({String userId, String username})> authors, {
+    bool notify = false,
+  }) {
+    var seeded = 0;
+    for (final author in authors) {
+      if (author.userId.isEmpty) continue;
+      _applyLocalState(
+        author.userId,
+        true,
+        username: author.username,
+        notify: false,
+      );
+      seeded++;
+    }
+    _log('🌱 seedSubscribedFeedAuthors seeded=$seeded notify=$notify');
+    if (notify && seeded > 0) {
+      notifyListeners();
+    }
+  }
+
   void initializeUsers(List<Map<String, dynamic>> videoData) {
     _log('🎬 initializeUsers count=${videoData.length}');
     for (final data in videoData) {

@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import '../../../core/network/app_dio.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/parsing/safe_parsing_helpers.dart';
 import '../models/conversation_model.dart';
+import '../models/message_media_model.dart';
 import '../models/message_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -288,10 +291,90 @@ class MessageService {
     return data;
   }
 
+  dynamic _unwrapMessagePayload(dynamic responseData) {
+    if (responseData is! Map) return responseData;
+
+    final map = Map<String, dynamic>.from(responseData);
+    final data = map['data'];
+    if (data is Map) {
+      final dataMap = Map<String, dynamic>.from(data);
+      if (dataMap['message'] is Map) return dataMap['message'];
+      if (dataMap.containsKey('id') ||
+          dataMap.containsKey('message_id') ||
+          dataMap.containsKey('content')) {
+        return dataMap;
+      }
+    }
+    if (map['message'] is Map) return map['message'];
+    return map;
+  }
+
+  String? _sanitizeReplyToMessageId(String? replyToMessageId) {
+    final id = replyToMessageId?.trim();
+    if (id == null || id.isEmpty) return null;
+    if (id.startsWith('local-') || id.startsWith('realtime_')) return null;
+    return id;
+  }
+
+  /// Upload image/video before sending via POST .../messages/.
+  Future<MessageMediaPayload> uploadMessageMedia({
+    required String conversationId,
+    required String filePath,
+    CancelToken? cancelToken,
+  }) async {
+    if (conversationId.isEmpty) {
+      throw ArgumentError('Conversation ID cannot be empty');
+    }
+
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw ArgumentError('Media file not found: $filePath');
+    }
+
+    final endpoint = '/conversations/$conversationId/messages/media/';
+    final fileName = filePath.split(Platform.pathSeparator).last;
+
+    try {
+      AppLogger.d('[MessageService] 📤 POST multipart $endpoint');
+      final formData = FormData.fromMap({
+        'media': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+
+      final response = await _dio.post<dynamic>(
+        endpoint,
+        data: formData,
+        cancelToken: cancelToken,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final raw = response.data;
+        final map = raw is Map<String, dynamic>
+            ? raw
+            : SafeParsingHelpers.safeMapParse(raw, context: 'uploadMessageMedia');
+        return MessageMediaPayload.fromJson(map);
+      }
+
+      throw ApiException(
+        'Failed to upload media',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [MessageService] uploadMessageMedia cancelled');
+        rethrow;
+      }
+      AppLogger.d('[MessageService] Upload media DioException: ${e.message}');
+      throw ApiException.fromDio(e, fallback: 'Failed to upload media');
+    }
+  }
+
   /// Sends a message over the authenticated REST endpoint.
   Future<MessageModel?> sendMessage({
     required String conversationId,
-    required String content,
+    String? content,
+    String? replyToMessageId,
+    Map<String, dynamic>? media,
     String? currentUserId,
     String? receiverUserId,
     CancelToken? cancelToken,
@@ -300,21 +383,30 @@ class MessageService {
       throw ArgumentError('Conversation ID cannot be empty');
     }
 
-    final trimmedContent = content.trim();
-    if (trimmedContent.isEmpty) {
-      throw ArgumentError('Message content cannot be empty');
+    final trimmedContent = content?.trim() ?? '';
+    if (trimmedContent.isEmpty && media == null) {
+      throw ArgumentError('Message must have content or media');
     }
 
     final endpoint = '/conversations/$conversationId/messages/';
+    final body = <String, dynamic>{};
+    if (media != null) {
+      // API expects content key (possibly empty) when media is attached.
+      body['content'] = trimmedContent;
+    } else if (trimmedContent.isNotEmpty) {
+      body['content'] = trimmedContent;
+    }
+    final sanitizedReplyId = _sanitizeReplyToMessageId(replyToMessageId);
+    if (sanitizedReplyId != null) {
+      body['reply_to_message_id'] = sanitizedReplyId;
+    }
+    if (media != null) body['media'] = media;
 
     try {
       AppLogger.d('[MessageService] 📤 POST $endpoint');
-      AppLogger.d(
-        '[MessageService] 📦 Request body: {"content": "${trimmedContent.substring(0, trimmedContent.length.clamp(0, 50))}${trimmedContent.length > 50 ? "..." : ""}"}',
-      );
       final response = await _dio.post<dynamic>(
         endpoint,
-        data: {'content': trimmedContent},
+        data: body,
         cancelToken: cancelToken,
       );
 
@@ -323,18 +415,16 @@ class MessageService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = response.data;
-        final messageData =
-            responseData is Map<String, dynamic> &&
-                responseData['data'] is Map<String, dynamic>
-            ? responseData['data']
-            : responseData;
+        final messageData = _unwrapMessagePayload(response.data);
         final responseMap = SafeParsingHelpers.safeMapParse(
           messageData,
           context: '📤 sendMessage',
         );
 
         if (responseMap.isEmpty) {
+          AppLogger.d(
+            '[MessageService] Send accepted (${response.statusCode}) with empty body',
+          );
           return null;
         }
 
@@ -675,6 +765,84 @@ class MessageService {
       );
       if (e is ApiException) rethrow;
       throw ApiException('Failed to delete message');
+    }
+  }
+
+  /// Edits a plain-text message. Only the sender can edit non-deleted messages.
+  Future<MessageModel?> editMessage({
+    required String conversationId,
+    required String messageId,
+    required String content,
+    String? currentUserId,
+    String? receiverUserId,
+    CancelToken? cancelToken,
+  }) async {
+    if (conversationId.isEmpty) {
+      throw ArgumentError('Conversation ID cannot be empty');
+    }
+    if (messageId.isEmpty) {
+      throw ArgumentError('Message ID cannot be empty');
+    }
+
+    final trimmedContent = content.trim();
+    if (trimmedContent.isEmpty) {
+      throw ArgumentError('Message content cannot be empty');
+    }
+
+    final endpoint = '/conversations/$conversationId/messages/$messageId';
+
+    try {
+      AppLogger.d('[MessageService] ✏️ PATCH $endpoint');
+
+      final response = await _dio.patch<dynamic>(
+        endpoint,
+        data: {'content': trimmedContent},
+        cancelToken: cancelToken,
+      );
+
+      AppLogger.d(
+        '[MessageService] Edit message response status=${response.statusCode}',
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        final messageData =
+            responseData is Map<String, dynamic> &&
+                responseData['data'] is Map<String, dynamic>
+            ? responseData['data']
+            : responseData;
+        final responseMap = SafeParsingHelpers.safeMapParse(
+          messageData,
+          context: '✏️ editMessage',
+        );
+
+        if (responseMap.isEmpty) return null;
+
+        return MessageModel.fromJson(
+          responseMap,
+          currentUserId: currentUserId,
+          receiverUserId: receiverUserId,
+        );
+      }
+
+      throw ApiException(
+        'Failed to edit message',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) {
+        AppLogger.d('🚫 [MessageService] editMessage cancelled');
+        return null;
+      }
+      AppLogger.d('[MessageService] Edit message DioException: ${e.message}');
+      AppLogger.d(
+        '[MessageService] Edit message error response: ${e.response?.data}',
+      );
+      throw ApiException.fromDio(e, fallback: 'Failed to edit message');
+    } catch (e) {
+      AppLogger.d('[MessageService] Edit message unexpected error: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to edit message');
     }
   }
 }

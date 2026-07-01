@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 
-enum MessageAction { reply, forward, pin, report, delete }
+enum MessageAction { reply, edit, pin, report, delete }
 
 class MessagePopupMenu extends StatefulWidget {
   final MessageAction? selectedAction;
@@ -14,6 +14,7 @@ class MessagePopupMenu extends StatefulWidget {
   final Function(int)? onMessageToggle;
   final VoidCallback? onDismiss;
   final bool isOwnMessage;
+  final bool canEdit;
 
   const MessagePopupMenu({
     super.key,
@@ -26,6 +27,7 @@ class MessagePopupMenu extends StatefulWidget {
     this.onMessageToggle,
     this.onDismiss,
     this.isOwnMessage = false,
+    this.canEdit = true,
   });
 
   @override
@@ -81,7 +83,7 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: Colors.black.withValues(alpha: 0.65),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -99,28 +101,22 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
                   onTap: () =>
                       widget.onActionSelected?.call(MessageAction.reply),
                 ),
-                _buildMenuItem(
-                  icon: AppAssets.forward,
-                  label: 'Forward',
-                  color: Colors.white,
-                  isSelected: widget.selectedAction == MessageAction.forward,
-                  onTap: () =>
-                      widget.onActionSelected?.call(MessageAction.forward),
-                ),
+                // Only show edit for own plain-text messages
+                if (widget.isOwnMessage && widget.canEdit)
+                  _buildMenuItem(
+                    icon: AppAssets.editpro,
+                    label: 'Edit',
+                    color: Colors.white,
+                    isSelected: widget.selectedAction == MessageAction.edit,
+                    onTap: () =>
+                        widget.onActionSelected?.call(MessageAction.edit),
+                  ),
                 _buildMenuItem(
                   icon: AppAssets.pin,
                   label: 'Pin',
                   color: Colors.white,
                   isSelected: widget.selectedAction == MessageAction.pin,
                   onTap: () => widget.onActionSelected?.call(MessageAction.pin),
-                ),
-                _buildMenuItem(
-                  icon: AppAssets.repor,
-                  label: 'Report',
-                  color: const Color(0xFFF51829),
-                  isSelected: widget.selectedAction == MessageAction.report,
-                  onTap: () =>
-                      widget.onActionSelected?.call(MessageAction.report),
                 ),
                 // Only show delete for own messages
                 if (widget.isOwnMessage)

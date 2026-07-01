@@ -8,6 +8,7 @@ import 'package:gruve_app/features/story_preview/api/story_api/model/story_model
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 
 class StoryService {
   late final Dio _dio;
@@ -17,23 +18,21 @@ class StoryService {
     _dio = AppDio.getInstance();
   }
 
-  /// Returns true if the path points to a video file.
-  static bool _isVideo(String path) {
-    final lower = path.toLowerCase();
-    return lower.endsWith('.mp4') ||
-        lower.endsWith('.mov') ||
-        lower.endsWith('.avi') ||
-        lower.endsWith('.mkv');
-  }
-
   /// Builds a fresh [FormData] every call — never reuse an instance.
   /// Skips image compression for videos to avoid decode errors.
   Future<FormData> _buildFormData({
     required String caption,
     required File file,
+    String? mimeType,
   }) async {
-    final isVideo = _isVideo(file.path);
-    final fileName = file.path.replaceAll(r'\', '/').split('/').last;
+    final isVideo = await LocalMediaUtils.isVideoForUpload(
+      file.path,
+      mimeType: mimeType,
+    );
+    final fileName = LocalMediaUtils.uploadFilename(
+      file.path,
+      isVideo: isVideo,
+    );
 
     AppLogger.d('🎞️ [StoryService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName');
 
@@ -67,6 +66,7 @@ class StoryService {
   Future<CreateStoryResponse> createStory({
     required String caption,
     required String mediaPath,
+    String? mediaMimeType,
   }) async {
     try {
       AppLogger.d('\n🚀 [StoryService] ===== CREATE STORY START =====');
@@ -82,7 +82,11 @@ class StoryService {
       final token = await TokenStorage.getAccessToken();
 
       // Fresh FormData built here — never reused
-      final formData = await _buildFormData(caption: caption, file: file);
+      final formData = await _buildFormData(
+        caption: caption,
+        file: file,
+        mimeType: mediaMimeType,
+      );
 
       AppLogger.d('🌐 [StoryService] POST stories/');
 

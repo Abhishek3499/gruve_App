@@ -22,6 +22,16 @@ class HighlightController extends ChangeNotifier {
   List<HighlightModel> highlights = <HighlightModel>[];
   int totalCount = 0;
   CancelToken? _cancelToken;
+  final Map<String, HighlightModel> _highlightStoriesCache = {};
+
+  void cacheHighlightStories(HighlightModel highlight) {
+    if (highlight.id.isEmpty || highlight.stories.isEmpty) return;
+    _highlightStoriesCache[highlight.id] = highlight;
+  }
+
+  HighlightModel? cachedHighlightStories(String highlightId) {
+    return _highlightStoriesCache[highlightId];
+  }
 
   CancelToken _getCancelToken() {
     _cancelToken ??= CancelToken();
@@ -47,6 +57,7 @@ class HighlightController extends ChangeNotifier {
     isSuccess = false;
     highlights = <HighlightModel>[];
     totalCount = 0;
+    _highlightStoriesCache.clear();
     await _stateManager?.clearAllHighlightedStories();
     notifyListeners();
   }
@@ -108,19 +119,28 @@ class HighlightController extends ChangeNotifier {
         '$highlightId',
       );
 
-      // Validate highlightId before API call
       if (highlightId.isEmpty) {
         _log('[HighlightController] empty highlightId provided');
         return null;
       }
 
-      final response = await _service.fetchHighlightStories(highlightId, cancelToken: _getCancelToken());
+      final cached = _highlightStoriesCache[highlightId];
+      if (cached != null && cached.stories.isNotEmpty) {
+        _log('[HighlightController] Returning cached highlight stories');
+        return cached;
+      }
+
+      final response = await _service.fetchHighlightStories(
+        highlightId,
+        cancelToken: _getCancelToken(),
+      );
 
       if (response.success) {
         _log(
           '[HighlightController] API success - stories count: '
           '${response.data.stories.length}',
         );
+        cacheHighlightStories(response.data);
         return response.data;
       } else {
         _log('[HighlightController] API failed: ${response.message}');

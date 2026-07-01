@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/assets.dart';
-import '../../video_options/sheets/simple_report_sheet.dart';
+import '../../user_profile/utils/report_user_flow.dart';
 import 'block/block_user_widget.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -74,36 +74,53 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
   }
 
   void _showReportSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const SimpleReportSheet(),
+    final chatNavigator = widget.chatNavigator;
+    widget.onClose?.call();
+
+    ReportUserFlow.showAndSubmit(
+      context: chatNavigator.context,
+      userId: widget.userId,
     );
   }
 
   void _showBlockDialog() async {
-    final isBlockedAfterToggle = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (dialogContext) => BlockUserWidget(
-        name: widget.userName,
-        username: "@${widget.userName}",
-        userId: widget.userId,
-        isBlocked: _initialBlockState,
-      ),
-    );
-
-    if (isBlockedAfterToggle == null || !mounted) return;
-
-    if (isBlockedAfterToggle && widget.chatNavigator.mounted) {
-      widget.chatNavigator.pop(true);
-    }
-
-    await Future.delayed(const Duration(milliseconds: 50));
+    final chatNavigator = widget.chatNavigator;
+    final userName = widget.userName;
+    final userId = widget.userId;
+    final initialBlockState = _initialBlockState;
 
     widget.onClose?.call();
+
+    final isBlockedAfterToggle = await showGeneralDialog<bool>(
+      context: chatNavigator.context,
+      barrierDismissible: false,
+      barrierLabel: 'BlockUserDialog',
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return BlockUserWidget(
+          name: userName,
+          username: "@$userName",
+          userId: userId,
+          isBlocked: initialBlockState,
+        );
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: ScaleTransition(
+            scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    if (isBlockedAfterToggle == null) return;
+
+    if (isBlockedAfterToggle && chatNavigator.mounted) {
+      chatNavigator.pop(true);
+    }
   }
 
   @override
@@ -134,13 +151,12 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildMenuItem(
-                  icon: Image.asset(AppAssets.ree, width: 22, height: 22),
-                  label: 'Restrict',
-                  textColor: Colors.white,
-                  onTap: () => _handleMenuAction("Restrict user"),
-                ),
-
+                // _buildMenuItem(
+                //   icon: Image.asset(AppAssets.ree, width: 22, height: 22),
+                //   label: 'Restrict',
+                //   textColor: Colors.white,
+                //   onTap: () => _handleMenuAction("Restrict user"),
+                // ),
                 const SizedBox(height: 1),
 
                 _buildMenuItem(

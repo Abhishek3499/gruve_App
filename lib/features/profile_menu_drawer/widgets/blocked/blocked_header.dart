@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class BlockedHeader extends StatelessWidget {
   const BlockedHeader({super.key});
@@ -15,9 +14,9 @@ class BlockedHeader extends StatelessWidget {
           // Back Button
           Align(
             alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Image.asset(AppAssets.back, width: 25, height: 25),
+            child: BackButton(
+              color: Colors.white,
+              onPressed: () => Navigator.pop(context),
             ),
           ),
 

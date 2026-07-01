@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -41,7 +40,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (index >= widget.allPosts.length) return;
 
     final post = widget.allPosts[index];
-    if (post.media.toLowerCase().contains('.mp4') &&
+    if (post.isVideo &&
         _videoControllers[index] == null) {
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(post.media),
@@ -113,20 +112,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             top: 16,
             left: 16,
             child: SafeArea(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Image.asset(
-                    AppAssets.back,
-                    color: Colors.white,
-                    width: 20,
-                    height: 20,
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: BackButton(
+                  color: Colors.white,
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),
@@ -137,7 +130,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Widget _buildPostItem(Post post, int index) {
-    final isVideo = post.media.toLowerCase().contains('.mp4');
+    final isVideo = post.isVideo;
     final videoController = _videoControllers[index];
 
     return Stack(

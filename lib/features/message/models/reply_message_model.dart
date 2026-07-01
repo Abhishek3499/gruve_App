@@ -1,5 +1,4 @@
 import '../models/message_model.dart';
-
 class ReplyMessageModel {
   final MessageModel originalMessage;
   final String username;
@@ -15,8 +14,13 @@ class ReplyMessageModel {
     if (previewText != null && previewText!.isNotEmpty) {
       return previewText!;
     }
-    return originalMessage.text.isNotEmpty 
-        ? originalMessage.text 
-        : 'Image';
+    final quoted = originalMessage.effectiveReplyPreview;
+    if (quoted != null && quoted.displayText.isNotEmpty) {
+      return quoted.displayText;
+    }
+    if (originalMessage.text.isNotEmpty) return originalMessage.text;
+    if (originalMessage.isVideo) return 'Video';
+    if (originalMessage.hasMedia) return 'Photo';
+    return 'Message';
   }
 }

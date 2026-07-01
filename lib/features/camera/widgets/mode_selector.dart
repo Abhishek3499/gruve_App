@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../utils/camera_logger.dart';
 import '../services/mode_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 
 /// Simple text mode selector (Story / Gruve)
 class ModeSelector extends StatefulWidget {
@@ -57,7 +58,10 @@ class _ModeSelectorState extends State<ModeSelector> {
             MaterialPageRoute(
               builder: (_) => ChangeNotifierProvider(
                 create: (_) => StoryController(),
-                child: StoryPreviewScreen(mediaPath: pickedFile.path),
+                child: StoryPreviewScreen(
+                  mediaPath: pickedFile.path,
+                  mediaMimeType: pickedFile.mimeType,
+                ),
               ),
             ),
           );
@@ -65,8 +69,10 @@ class _ModeSelectorState extends State<ModeSelector> {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  PostPreviewScreen(mediaPath: pickedFile.path),
+              builder: (context) => PostPreviewScreen(
+                mediaPath: pickedFile.path,
+                mediaMimeType: pickedFile.mimeType,
+              ),
             ),
           );
           if (!mounted) return;
@@ -76,12 +82,14 @@ class _ModeSelectorState extends State<ModeSelector> {
             if (!mounted) return;
             final shareResult = await showSharePostOnHomeSheet(
               result.mediaPath,
+              mediaMimeType: result.mediaMimeType,
             );
             if (shareResult == 'start_processing') {
               // Detect media type from file path
-              final isVideo = result.mediaPath.toLowerCase().endsWith('.mp4') ||
-                  result.mediaPath.toLowerCase().endsWith('.mov') ||
-                  result.mediaPath.toLowerCase().endsWith('.avi');
+              final isVideo = LocalMediaUtils.isVideoPath(
+                result.mediaPath,
+                mimeType: null,
+              );
               PostShareFlowBridge.notifyShareStartProcessing(isVideo);
             }
           }

@@ -7,6 +7,7 @@ import 'package:gruve_app/features/profile/controller/profile_count_refresh_brid
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 
 class PostShareFlowBridge {
   /// Home registers: show the existing processing overlay (same as camera flow).
@@ -66,6 +67,7 @@ class PostShareFlowBridge {
   static void scheduleShareUploadAfterReturningHome({
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool audienceEveryone = true,
     bool audienceCloseFriends = false,
@@ -80,6 +82,7 @@ class PostShareFlowBridge {
       _runShareUploadChain(
         caption: caption,
         mediaPath: mediaPath,
+        mediaMimeType: mediaMimeType,
         locationName: locationName,
         audienceEveryone: audienceEveryone,
         audienceCloseFriends: audienceCloseFriends,
@@ -91,14 +94,6 @@ class PostShareFlowBridge {
         draftId: draftId,
       );
     });
-  }
-
-  static bool _isVideoPath(String path) {
-    final uri = Uri.tryParse(path);
-    final cleanPath = uri?.path.toLowerCase() ?? path.toLowerCase();
-    return cleanPath.endsWith('.mp4') ||
-        cleanPath.endsWith('.mov') ||
-        cleanPath.endsWith('.avi');
   }
 
   /// Ensures the processing overlay route is committed before [createPost] runs.
@@ -115,6 +110,7 @@ class PostShareFlowBridge {
   static Future<void> _runShareUploadChain({
     String? caption,
     String? mediaPath,
+    String? mediaMimeType,
     String? locationName,
     bool audienceEveryone = true,
     bool audienceCloseFriends = false,
@@ -126,7 +122,12 @@ class PostShareFlowBridge {
     String? draftId,
   }) async {
     try {
-      final isVideo = mediaPath != null && mediaPath.isNotEmpty ? _isVideoPath(mediaPath) : false;
+      final isVideo = mediaPath != null && mediaPath.isNotEmpty
+          ? await LocalMediaUtils.isVideoForUpload(
+              mediaPath,
+              mimeType: mediaMimeType,
+            )
+          : false;
       AppLogger.d("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
       AppLogger.d("📁 [Bridge] Path: $mediaPath");
       
@@ -136,6 +137,7 @@ class PostShareFlowBridge {
       await PostService().createPost(
         caption: caption,
         mediaPath: mediaPath,
+        mediaMimeType: mediaMimeType,
         locationName: locationName,
         audienceEveryone: audienceEveryone,
         audienceCloseFriends: audienceCloseFriends,

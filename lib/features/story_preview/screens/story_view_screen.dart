@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
@@ -180,28 +181,42 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   Future<void> _initializeMedia() async {
     if (_isDisposed) return;
 
-    if (!_isVideo) {
-      setState(() {
-        _isImageLoading = true;
-      });
-    }
-
     _videoController?.dispose();
     _videoController = null;
 
-    final mediaPath = widget.mediaPaths[currentIndex];
+    final rawPath = widget.mediaPaths[currentIndex];
+    final isLocal = File(rawPath).existsSync();
+
+    String resolvedPath = rawPath;
+    if (!isLocal && !rawPath.startsWith('http://') && !rawPath.startsWith('https://')) {
+      final baseUrl = EnvironmentConfig.baseUrl.trim();
+      if (baseUrl.isNotEmpty) {
+        final baseUri = Uri.tryParse(baseUrl);
+        if (baseUri != null) {
+          final normalizedRelativePath = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+          resolvedPath = baseUri.resolve(normalizedRelativePath).toString();
+        }
+      }
+    }
+
     _isVideo =
-        mediaPath.toLowerCase().endsWith('.mp4') ||
-        mediaPath.toLowerCase().endsWith('.mov') ||
-        mediaPath.toLowerCase().endsWith('.avi');
+        resolvedPath.toLowerCase().endsWith('.mp4') ||
+        resolvedPath.toLowerCase().endsWith('.mov') ||
+        resolvedPath.toLowerCase().endsWith('.avi');
+
+    if (!_isVideo) {
+      setState(() {
+        _isImageLoading = !isLocal;
+      });
+    }
 
     if (_isVideo) {
-      if (mediaPath.startsWith('http')) {
-        _videoController = VideoPlayerController.networkUrl(
-          Uri.parse(mediaPath),
-        );
+      if (isLocal) {
+        _videoController = VideoPlayerController.file(File(resolvedPath));
       } else {
-        _videoController = VideoPlayerController.file(File(mediaPath));
+        _videoController = VideoPlayerController.networkUrl(
+          Uri.parse(resolvedPath),
+        );
       }
 
       await _videoController!.initialize();
@@ -218,9 +233,13 @@ class _StoryViewScreenState extends State<StoryViewScreen>
       _animationController.duration = const Duration(seconds: 5);
     }
 
-    _animationController
-      ..reset()
-      ..forward();
+    _animationController.reset();
+
+    if (!_isVideo && _isImageLoading) {
+      // Don't start the animation yet! It will be started when the image loads.
+    } else {
+      _animationController.forward();
+    }
 
     if (mounted && !_isDisposed) {
       setState(() {});
@@ -229,11 +248,6 @@ class _StoryViewScreenState extends State<StoryViewScreen>
 
   void nextStory() {
     if (_isDisposed) return;
-
-    if (_isImageLoading && !_isVideo) {
-      AppLogger.d('[Playback] Cannot navigate - image still loading');
-      return;
-    }
 
     if (currentIndex < widget.mediaPaths.length - 1) {
       setState(() => currentIndex++);
@@ -249,11 +263,6 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   void previousStory() {
     if (_isDisposed) return;
 
-    if (_isImageLoading && !_isVideo) {
-      AppLogger.d('[Playback] Cannot navigate - image still loading');
-      return;
-    }
-
     if (currentIndex > 0) {
       setState(() => currentIndex--);
       _syncCurrentStory(reason: 'previousStory');
@@ -262,11 +271,6 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   }
 
   void _handleTap(TapUpDetails details) {
-    if (_isImageLoading && !_isVideo) {
-      AppLogger.d('[Playback] Cannot navigate - image still loading');
-      return;
-    }
-
     final width = MediaQuery.of(context).size.width;
 
     if (details.globalPosition.dx > width / 2) {
@@ -295,11 +299,6 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   }
 
   void _handleSwipe(DragEndDetails details) {
-    if (_isImageLoading && !_isVideo) {
-      AppLogger.d('[Playback] Cannot navigate - image still loading');
-      return;
-    }
-
     final velocity = details.primaryVelocity ?? 0;
 
     if (velocity < 0) {
@@ -335,7 +334,20 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   }
 
   Widget _buildMedia() {
-    final path = widget.mediaPaths[currentIndex];
+    final rawPath = widget.mediaPaths[currentIndex];
+    final isLocal = File(rawPath).existsSync();
+
+    String resolvedPath = rawPath;
+    if (!isLocal && !rawPath.startsWith('http://') && !rawPath.startsWith('https://')) {
+      final baseUrl = EnvironmentConfig.baseUrl.trim();
+      if (baseUrl.isNotEmpty) {
+        final baseUri = Uri.tryParse(baseUrl);
+        if (baseUri != null) {
+          final normalizedRelativePath = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+          resolvedPath = baseUri.resolve(normalizedRelativePath).toString();
+        }
+      }
+    }
 
     if (_isVideo && _videoController != null) {
       if (!_videoController!.value.isInitialized) {
@@ -352,9 +364,9 @@ class _StoryViewScreenState extends State<StoryViewScreen>
       );
     }
 
-    if (path.startsWith('http')) {
+    if (!isLocal) {
       return Image.network(
-        path,
+        resolvedPath,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) {
@@ -364,6 +376,9 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                   setState(() {
                     _isImageLoading = false;
                   });
+                  if (!_playbackController.isPaused) {
+                    _animationController.forward();
+                  }
                 }
               });
             }
@@ -378,6 +393,9 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                 setState(() {
                   _isImageLoading = false;
                 });
+                if (!_playbackController.isPaused) {
+                  _animationController.forward();
+                }
               }
             });
           }
@@ -387,42 +405,15 @@ class _StoryViewScreenState extends State<StoryViewScreen>
         },
       );
     } else {
-      final fileImage = Image.file(
-        File(path),
+      return Image.file(
+        File(resolvedPath),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          if (_isImageLoading) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _isImageLoading = false;
-                });
-              }
-            });
-          }
           return const Center(
             child: Icon(Icons.broken_image, color: Colors.grey),
           );
         },
       );
-
-      fileImage.image
-          .resolve(const ImageConfiguration())
-          .addListener(
-            ImageStreamListener((ImageInfo info, bool synchronousCall) {
-              if (_isImageLoading) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    setState(() {
-                      _isImageLoading = false;
-                    });
-                  }
-                });
-              }
-            }),
-          );
-
-      return fileImage;
     }
   }
 

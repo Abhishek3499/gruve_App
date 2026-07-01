@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';
 import '../../../features/story_preview/api/create_post_api/model/post_model.dart';
 import '../screens/real_draft_screen.dart';
@@ -304,52 +304,22 @@ class ProfileGrid extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            post.isVideo
-                ? Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Icon(
-                        Icons.play_circle_outline,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
-                  )
-                : CachedNetworkImage(
-                    imageUrl: post.media,
-                    fit: BoxFit.cover,
-                    // 🚀 MEMORY OPTIMIZATION: Limit cache size for grid images
-                    memCacheWidth: 300,
-                    memCacheHeight: 400,
-                    maxWidthDiskCache: 600,
-                    maxHeightDiskCache: 800,
-                    // 🚀 PERFORMANCE: Faster fade-in animations
-                    fadeInDuration: const Duration(milliseconds: 150),
-                    fadeOutDuration: const Duration(milliseconds: 100),
-                    // 🚀 PLACEHOLDER: Show skeleton while loading
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: AppColors.loaderDark,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // 🚀 ERROR HANDLING: Graceful fallback
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey.withValues(alpha: 0.3),
-                      child: const Icon(
-                        Icons.broken_image,
-                        color: Colors.white54,
-                        size: 30,
-                      ),
-                    ),
+            PostGridThumbnail(post: post),
+            if (post.isVideo)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
             if (selectedTab == 1 && post.likesCount > 10)
               Positioned(
                 top: 8,

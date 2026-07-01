@@ -16,29 +16,19 @@ class VerifyotpController {
 
   Future<void> verifyOtp({
     required String identifier,
-    required String phoneNumber,
-    required String email,
-    required String type,
     required String otp,
-    bool isLogin = false,
-    bool isForgot = false,
+    required String purpose,
   }) async {
     isLoading = true;
     errorMessage = null;
 
-    AppLogger.d(
-      'VerifyOtpController flow forgot=$isForgot login=$isLogin type=$type',
-    );
+    AppLogger.d('VerifyOtpController purpose=$purpose');
 
     try {
       final response = await _service.verifyOtp(
         identifier: identifier,
-        phoneNumber: phoneNumber,
-        email: email,
-        type: type,
         otp: otp,
-        isLogin: isLogin,
-        isForgot: isForgot,
+        purpose: purpose,
       );
 
       verifyOtpResponse = response;
@@ -54,7 +44,7 @@ class VerifyotpController {
       final data = response.data;
       if (data == null) return;
 
-      if (isForgot) {
+      if (purpose == OtpPurpose.resetPassword) {
         final resetToken = data.resetToken;
         if (resetToken != null && resetToken.isNotEmpty) {
           await TokenStorage.saveResetToken(resetToken);

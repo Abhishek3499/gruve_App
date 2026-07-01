@@ -11,6 +11,7 @@ import 'package:gruve_app/features/story_preview/widgets/story_music_picker.dart
 import 'package:gruve_app/features/camera/models/filter_model.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';
 import 'package:gruve_app/features/camera/controller/filter_controller.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 
 class VideoEditorResult {
   final List<StickerData> stickers;
@@ -69,40 +70,43 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     _initializeMedia();
   }
 
-  void _initializeMedia() async {
-    final file = File(widget.mediaPath);
-    _isVideo =
-        widget.mediaPath.toLowerCase().endsWith('.mp4') ||
-        widget.mediaPath.toLowerCase().endsWith('.mov') ||
-        widget.mediaPath.toLowerCase().endsWith('.avi');
+  Future<void> _initializeMedia() async {
+    try {
+      final resolved = await LocalMediaUtils.resolveForPreview(widget.mediaPath);
+      if (!mounted) return;
 
-    if (_isVideo) {
-      _videoController = VideoPlayerController.file(file);
-      try {
-        await _videoController!.initialize();
-        _videoController!.setLooping(true);
-        _videoController!.setVolume(_isMuted ? 0.0 : 1.0);
-        _videoController!.addListener(() {
-          if (mounted) {
-            setState(() {
-              _currentPosition = _videoController!.value.position;
-              _isPlaying = _videoController!.value.isPlaying;
-            });
-          }
-        });
-        setState(() {
-          _duration = _videoController!.value.duration;
-          _isInitialized = true;
-        });
-        _videoController!.play();
-      } catch (e) {
-        AppLogger.d('Error initializing video editor: $e');
+      if (resolved.kind != LocalMediaKind.video) {
+        resolved.controller?.dispose();
+        setState(() => _isInitialized = true);
+        return;
       }
-    } else {
-      setState(() {
-        _isInitialized = true;
-        _duration = const Duration(seconds: 1);
+
+      _isVideo = true;
+      final controller = resolved.controller;
+      if (controller == null) {
+        setState(() => _isInitialized = true);
+        return;
+      }
+
+      _videoController = controller;
+      _videoController!.setLooping(true);
+      _videoController!.setVolume(_isMuted ? 0.0 : 1.0);
+      _videoController!.addListener(() {
+        if (mounted) {
+          setState(() {
+            _currentPosition = _videoController!.value.position;
+            _isPlaying = _videoController!.value.isPlaying;
+          });
+        }
       });
+      setState(() {
+        _duration = _videoController!.value.duration;
+        _isInitialized = true;
+      });
+      _videoController!.play();
+    } catch (e) {
+      AppLogger.d('Error initializing video editor: $e');
+      if (mounted) setState(() => _isInitialized = true);
     }
   }
 
@@ -260,18 +264,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.arrow_back_ios_new,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
+                    const BackButton(
+                      color: Colors.white,
                     ),
                     // Next / Forward button in white circle
                     GestureDetector(

@@ -7,12 +7,16 @@ class ChatInputField extends StatefulWidget {
   final Function(String) onSendMessage;
   final Function(String) onSendImage;
   final bool isLoading;
+  final TextEditingController? controller;
+  final String? hintText;
 
   const ChatInputField({
     super.key,
     required this.onSendMessage,
     required this.onSendImage,
     required this.isLoading,
+    this.controller,
+    this.hintText,
   });
 
   @override
@@ -20,17 +24,26 @@ class ChatInputField extends StatefulWidget {
 }
 
 class _ChatInputFieldState extends State<ChatInputField> {
-  final TextEditingController _controller = TextEditingController();
+  late final TextEditingController _controller;
   final ImagePicker _imagePicker = ImagePicker();
+  bool _ownsController = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+    } else {
+      _controller = TextEditingController();
+      _ownsController = true;
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -220,18 +233,37 @@ class _ChatInputFieldState extends State<ChatInputField> {
                 maxLines: 1,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _send(),
-                decoration: const InputDecoration(
-                  hintText: 'Text Message',
-                  hintStyle: TextStyle(
+                decoration: InputDecoration(
+                  hintText: widget.hintText ?? 'Text Message',
+                  hintStyle: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight(400),
                   ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+
+            // Voice Icon
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Voice recording coming soon!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Icon(
+                Icons.mic,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
 
             // Send Button (Ab TextField ke andar hai)
             GestureDetector(

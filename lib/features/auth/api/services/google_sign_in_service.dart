@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 
@@ -12,7 +12,7 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 class GoogleAuthService {
   GoogleAuthService({GoogleSignIn? googleSignIn, Dio? dio})
     : _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
-      _dio = dio ?? AppDio.getInstance();
+      _dio = dio ?? AuthDio.getInstance();
 
   final GoogleSignIn _googleSignIn;
   final Dio _dio;

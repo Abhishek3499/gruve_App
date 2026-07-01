@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
 import 'package:gruve_app/features/video_editor/screens/video_editor_screen.dart';
@@ -19,14 +18,17 @@ import 'package:gruve_app/features/story_preview/widgets/story_music_picker.dart
 import 'package:gruve_app/features/camera/models/filter_model.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';
 import 'package:gruve_app/features/camera/controller/filter_controller.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 
 class PostPreviewScreen extends StatefulWidget {
   final String mediaPath;
+  final String? mediaMimeType;
   final List<StickerData> initialStickers;
 
   const PostPreviewScreen({
     super.key,
     required this.mediaPath,
+    this.mediaMimeType,
     this.initialStickers = const [],
   });
 
@@ -43,6 +45,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   String? _selectedStickerId;
   final GlobalKey _boundaryKey = GlobalKey();
   bool _isPickerOrEditorOpen = false;
+  bool _mediaLoadFailed = false;
   FilterModel _activeFilter = FilterModel.availableFilters.first;
 
   @override
@@ -53,29 +56,48 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
     _initializeMedia();
   }
 
-  void _initializeMedia() async {
-    final file = File(widget.mediaPath);
+  Future<void> _initializeMedia() async {
+    try {
+      final resolved = await LocalMediaUtils.resolveForPreview(
+        widget.mediaPath,
+        mimeType: widget.mediaMimeType,
+      );
 
-    _isVideo =
-        widget.mediaPath.toLowerCase().endsWith('.mp4') ||
-        widget.mediaPath.toLowerCase().endsWith('.mov') ||
-        widget.mediaPath.toLowerCase().endsWith('.avi');
+      if (!mounted) return;
 
-    if (_isVideo) {
-      _videoController = VideoPlayerController.file(file);
+      if (resolved.kind == LocalMediaKind.video) {
+        final controller = resolved.controller;
+        if (controller == null) {
+          setState(() {
+            _isVideo = true;
+            _mediaLoadFailed = true;
+            _isInitialized = true;
+          });
+          return;
+        }
 
-      await _videoController!.initialize();
+        _videoController = controller
+          ..setLooping(true)
+          ..setVolume(_isMuted ? 0.0 : 1.0)
+          ..play();
 
-      _videoController!
-        ..setLooping(true)
-        ..setVolume(_isMuted ? 0.0 : 1.0)
-        ..play();
+        setState(() {
+          _isVideo = true;
+          _isInitialized = true;
+        });
+        return;
+      }
 
+      resolved.controller?.dispose();
       setState(() {
+        _isVideo = false;
         _isInitialized = true;
       });
-    } else {
+    } catch (e) {
+      AppLogger.d('❌ [PostPreviewScreen] Media init failed: $e');
+      if (!mounted) return;
       setState(() {
+        _mediaLoadFailed = true;
         _isInitialized = true;
       });
     }
@@ -333,23 +355,14 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                     Positioned(
                       top: 45,
                       left: 16,
-                      child: GestureDetector(
-                        onTap: () async {
+                      child: BackButton(
+                        color: Colors.white,
+                        onPressed: () async {
                           final shouldDiscard = await _showDiscardDialog(context);
                           if (shouldDiscard && context.mounted) {
                             Navigator.of(context).pop(const PostPreviewBackToCamera());
                           }
                         },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          child: Image.asset(
-                            AppAssets.back,
-                            height: 22,
-                            width: 22,
-                          ),
-                        ),
                       ),
                     ),
 
@@ -520,6 +533,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                   MaterialPageRoute(
                                     builder: (context) => SharePostScreen(
                                       mediaPath: finalPath,
+                                      mediaMimeType: widget.mediaMimeType,
                                       popPostPreviewRouteAfterShare: true,
                                     ),
                                   ),
@@ -562,14 +576,26 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   }
 
   Widget _buildMediaPreview() {
+    if (_mediaLoadFailed) {
+      return const Center(
+        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: 48),
+      );
+    }
+
     Widget preview;
-    if (_isVideo && _videoController != null) {
+    if (_isVideo) {
+      final controller = _videoController;
+      if (controller == null || !controller.value.isInitialized) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        );
+      }
       preview = FittedBox(
         fit: BoxFit.cover,
         child: SizedBox(
-          width: _videoController!.value.size.width,
-          height: _videoController!.value.size.height,
-          child: VideoPlayer(_videoController!),
+          width: controller.value.size.width,
+          height: controller.value.size.height,
+          child: VideoPlayer(controller),
         ),
       );
     } else {

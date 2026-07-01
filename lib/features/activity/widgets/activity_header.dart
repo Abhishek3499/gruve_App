@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class ActivityHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
@@ -16,9 +15,9 @@ class ActivityHeader extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: onBackPressed,
-              child: Image.asset(AppAssets.back, width: 25, height: 25),
+            child: BackButton(
+              color: Colors.white,
+              onPressed: onBackPressed,
             ),
           ),
           const Text(

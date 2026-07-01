@@ -49,6 +49,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
   String? _lastLoggedInUserId;
+  bool _isExpanded = false;
 
   @override
   void initState() {
@@ -463,13 +464,83 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
             ],
           ),
           const SizedBox(height: 12),
-          if (widget.caption.isNotEmpty)
-            Text(
-              widget.caption,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          if (widget.caption.isNotEmpty) ...[
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final textSpan = TextSpan(
+                  text: widget.caption,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                );
+
+                final textPainter = TextPainter(
+                  text: textSpan,
+                  maxLines: 2,
+                  textDirection: TextDirection.ltr,
+                );
+                textPainter.layout(maxWidth: constraints.maxWidth);
+
+                final isLongText = textPainter.didExceedMaxLines;
+
+                if (isLongText && !_isExpanded) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.caption,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isExpanded = true;
+                          });
+                        },
+                        child: const Text(
+                          "more",
+                          style: TextStyle(
+                            color: Color(0xFFB86AD0),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.caption,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      if (isLongText && _isExpanded) ...[
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isExpanded = false;
+                            });
+                          },
+                          child: const Text(
+                            "less",
+                            style: TextStyle(
+                              color: Color(0xFFB86AD0),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                }
+              },
             ),
+          ],
           const SizedBox(height: 12),
           SizedBox(
             height: 38,

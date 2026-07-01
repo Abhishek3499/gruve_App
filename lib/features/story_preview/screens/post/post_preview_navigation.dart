@@ -2,8 +2,9 @@
 /// and presents [SharePostScreen] on the home stack.
 class PostPreviewOpenShare {
   final String mediaPath;
+  final String? mediaMimeType;
 
-  const PostPreviewOpenShare(this.mediaPath);
+  const PostPreviewOpenShare(this.mediaPath, {this.mediaMimeType});
 }
 
 /// Returned when user taps the preview back button after capturing from camera.

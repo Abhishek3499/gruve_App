@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class MoreHeader extends StatelessWidget {
   final VoidCallback onBack;
@@ -33,27 +32,9 @@ class MoreHeader extends StatelessWidget {
               top: 0,
               bottom: 0,
               child: Center(
-                child: InkWell(
-                  onTap: onBack,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    height: 40,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(
-                        alpha: 0.05,
-                      ), // Optional: slight circle bg
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        AppAssets.back,
-                        width: 24,
-                        color: Colors
-                            .white, // Forces the asset to be white if it's not
-                      ),
-                    ),
-                  ),
+                child: BackButton(
+                  color: Colors.white,
+                  onPressed: onBack,
                 ),
               ),
             ),

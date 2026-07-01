@@ -3,6 +3,7 @@ import 'package:gruve_app/services/socket_service.dart';
 
 import '../../../core/widgets/optimized/optimized_image.dart';
 import '../models/conversation_model.dart';
+import '../utils/shared_post_message_parser.dart';
 import '../utils/user_display_helper.dart';
 
 class MessageCard extends StatelessWidget {
@@ -49,7 +50,9 @@ class MessageCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          conversation.lastMessageContent,
+                          SharedPostMessageParser.conversationPreview(
+                            conversation.lastMessageContent,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

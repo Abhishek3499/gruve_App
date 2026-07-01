@@ -4,7 +4,6 @@ import 'package:gruve_app/features/interactions/screens/interactions_screen.dart
 import 'package:gruve_app/features/top_performance_Reel/performance_screen.dart';
 import 'package:gruve_app/features/views/screens/views_screen.dart';
 
-import '../../../../core/assets.dart';
 import '../widgets/insight_list_tile.dart';
 import '../widgets/insight_footer.dart';
 
@@ -34,30 +33,9 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                 child: Row(
                   // 👈 Stack ki jagah Row use kiya for perfect alignment
                   children: [
-                    /// Back Button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => Navigator.pop(context),
-                        splashColor: Colors.transparent, // ❌ No white splash
-                        highlightColor:
-                            Colors.transparent, // ❌ No click highlight
-                        child: Container(
-                          height: 36,
-                          width: 36,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Image.asset(
-                              AppAssets.back,
-                              width: 25,
-                              height: 25,
-                            ),
-                          ),
-                        ),
-                      ),
+                    BackButton(
+                      color: Colors.white,
+                      onPressed: () => Navigator.pop(context),
                     ),
 
                     /// 🔥 GAP (Back button aur Text ke beech)

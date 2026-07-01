@@ -110,14 +110,9 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Image.asset(
-                      AppAssets.back,
-                      width: 24,
-                      height: 24,
-                      color: Colors.white,
-                    ),
+                  BackButton(
+                    color: Colors.white,
+                    onPressed: () => Navigator.pop(context),
                   ),
 
                   const Text(

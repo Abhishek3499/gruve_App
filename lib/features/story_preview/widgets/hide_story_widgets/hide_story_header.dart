@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class HideStoryHeader extends StatelessWidget {
   final VoidCallback onBack;
@@ -19,9 +18,9 @@ class HideStoryHeader extends StatelessWidget {
             /// BACK BUTTON
             Positioned(
               left: 20,
-              child: GestureDetector(
-                onTap: onBack,
-                child: Image.asset(AppAssets.back, width: 24),
+              child: BackButton(
+                color: Colors.white,
+                onPressed: onBack,
               ),
             ),
 

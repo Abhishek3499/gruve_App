@@ -1,25 +1,25 @@
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 
-import '../models/phone_login_model.dart';
-import '../services/phone_login_services.dart';
+import '../models/login_model.dart';
+import '../services/login_services.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class PhoneSignInController {
-  final PhoneSiginServices _service = PhoneSiginServices();
+  final EmailSignInService _service = EmailSignInService();
 
   bool isLoading = false;
   String? errorMessage;
-  PhoneloginResponse? response;
+  EmailSignInResponse? response;
 
-  Future<void> signIn({required String phoneNumber}) async {
+  Future<void> requestOtp({required String phoneNumber}) async {
     isLoading = true;
     errorMessage = null;
 
     try {
-      final res = await _service.signIn(phoneNumber: phoneNumber);
+      final res = await _service.requestLoginOtp(identifier: phoneNumber);
       response = res;
 
-      AppLogger.d('Phone login success=${res.success}');
+      AppLogger.d('Phone login OTP requested success=${res.success}');
       if (!res.success) {
         errorMessage = AuthApiException.userFacingMessage(
           res.message,
@@ -31,7 +31,7 @@ class PhoneSignInController {
         e,
         fallback: 'Please enter a valid phone number.',
       );
-      AppLogger.d('Phone login controller error: $e');
+      AppLogger.d('Phone login OTP request error: $e');
     } finally {
       isLoading = false;
     }

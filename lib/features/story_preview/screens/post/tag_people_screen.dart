@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_users_screen.dart';
 
@@ -41,13 +41,9 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    InkWell(
-                      onTap: () => Navigator.pop(context),
-                      child: Image.asset(
-                        AppAssets.back,
-                        color: Colors.white,
-                        height: 24,
-                      ),
+                    BackButton(
+                      color: Colors.white,
+                      onPressed: () => Navigator.pop(context),
                     ),
                     const Text(
                       "Tag People",
@@ -188,9 +184,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       );
     } else {
       final file = File(widget.mediaPath);
-      // Check for video formats
-      if (widget.mediaPath.toLowerCase().endsWith('.mp4') ||
-          widget.mediaPath.toLowerCase().endsWith('.mov')) {
+      if (LocalMediaUtils.isVideoPath(widget.mediaPath)) {
         return Container(
           color: Colors.black,
           child: const Center(

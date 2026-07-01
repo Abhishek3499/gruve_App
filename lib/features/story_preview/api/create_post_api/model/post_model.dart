@@ -24,6 +24,7 @@ class Post {
   final String id;
   final String caption;
   final String media;
+  final String thumbnailUrl;
   final String userId;
   final String mediaType;
 
@@ -42,6 +43,7 @@ class Post {
     required this.id,
     required this.caption,
     required this.media,
+    this.thumbnailUrl = '',
     required this.userId,
     required this.likesCount,
     required this.commentsCount,
@@ -53,6 +55,19 @@ class Post {
     this.hasActiveStory = false,
     this.taggedUsers = const [],
   });
+
+  /// Poster shown while a video buffer initializes (TikTok-style instant frame).
+  String get feedPosterUrl {
+    if (thumbnailUrl.trim().isNotEmpty) return thumbnailUrl.trim();
+    return '';
+  }
+
+  /// Thumbnail for profile grids and link previews (Instagram-style).
+  String get gridPreviewUrl {
+    if (feedPosterUrl.isNotEmpty) return feedPosterUrl;
+    if (!isVideo) return media.trim();
+    return '';
+  }
 
   bool get isVideo =>
       mediaType.toLowerCase().trim() == 'video' ||
@@ -167,39 +182,130 @@ class Post {
         .map((e) => TaggedUser.fromJson(Map<String, dynamic>.from(e)))
         .toList();
 
+    final rawId = json['id']?.toString() ?? json['post_id']?.toString() ?? json['postId']?.toString() ?? "";
+    final cleanId = rawId.startsWith('pst_') ? rawId.substring(4) : rawId;
+
     return Post(
-      id: json['id']?.toString() ?? "",
-      caption: json['caption']?.toString() ?? "",
+      id: cleanId,
+      caption: json['caption']?.toString() ?? json['text']?.toString() ?? json['content']?.toString() ?? "",
       media: mediaUrl,
+      thumbnailUrl: _extractThumbnailUrl(json),
       mediaType: mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl)
           ? 'video'
           : mediaType,
       userId:
-          json['user']?['id']?.toString() ??
+          (json['user'] is Map ? json['user']['id']?.toString() : null) ??
+          (json['creator'] is Map ? json['creator']['id']?.toString() : null) ??
+          (json['author'] is Map ? json['author']['id']?.toString() : null) ??
           json['user_id']?.toString() ??
+          json['creator_id']?.toString() ??
           json['author_id']?.toString() ??
           json['userId']?.toString() ??
+          json['creatorId']?.toString() ??
           "unknown",
-      likesCount: json['likes_count'] ?? json['like_count'] ?? 0,
-      commentsCount: json['comments_count'] ?? 0,
-      isLiked: json['is_liked'] ?? json['liked'] ?? false,
+      likesCount: json['likes_count'] ?? json['like_count'] ?? json['likesCount'] ?? json['likes'] ?? 0,
+      commentsCount: json['comments_count'] ?? json['comment_count'] ?? json['commentsCount'] ?? json['comments'] ?? 0,
+      isLiked: json['is_liked'] ?? json['liked'] ?? json['isLiked'] ?? false,
       username:
-          json['user']?['username']?.toString() ??
+          (json['user'] is Map
+              ? (json['user']['username']?.toString() ??
+                  json['user']['user_name']?.toString() ??
+                  json['user']['name']?.toString() ??
+                  json['user']['fullName']?.toString() ??
+                  json['user']['full_name']?.toString())
+              : null) ??
+          (json['user'] is String ? json['user']?.toString() : null) ??
+          (json['creator'] is Map
+              ? (json['creator']['username']?.toString() ??
+                  json['creator']['user_name']?.toString() ??
+                  json['creator']['name']?.toString() ??
+                  json['creator']['fullName']?.toString() ??
+                  json['creator']['full_name']?.toString())
+              : null) ??
+          (json['creator'] is String ? json['creator']?.toString() : null) ??
+          (json['author'] is Map
+              ? (json['author']['username']?.toString() ??
+                  json['author']['user_name']?.toString() ??
+                  json['author']['name']?.toString() ??
+                  json['author']['fullName']?.toString() ??
+                  json['author']['full_name']?.toString())
+              : null) ??
+          (json['author'] is String ? json['author']?.toString() : null) ??
           json['username']?.toString() ??
+          json['user_name']?.toString() ??
+          json['creator_username']?.toString() ??
+          json['creatorUsername']?.toString() ??
           "unknown",
       isSubscribed:
-          json['user']?['is_subscribed'] ??
+          (json['user'] is Map ? json['user']['is_subscribed'] : null) ??
+          (json['creator'] is Map ? json['creator']['is_subscribed'] : null) ??
           json['is_subscribed'] ??
+          json['isSubscribed'] ??
           false,
       profilePicture: _normalizeUrl(
-        json['user']?['profile_picture'] ?? json['profile_picture'] ?? "",
+        (json['user'] is Map ? (json['user']['profile_picture'] ?? json['user']['avatar']) : null) ??
+        (json['creator'] is Map ? (json['creator']['profile_picture'] ?? json['creator']['avatar']) : null) ??
+        (json['author'] is Map ? (json['author']['profile_picture'] ?? json['author']['avatar']) : null) ??
+        json['profile_picture'] ??
+        json['profilePicture'] ??
+        json['avatar'] ??
+        "",
       ),
       hasActiveStory:
           json['user']?['has_active_story'] ??
+          json['creator']?['has_active_story'] ??
           json['has_active_story'] ??
+          json['hasActiveStory'] ??
           false,
       taggedUsers: taggedList,
     );
+  }
+
+  static String _extractThumbnailUrl(Map<String, dynamic> json) {
+    dynamic raw =
+        json['thumbnail_url'] ??
+        json['thumbnailUrl'] ??
+        json['poster_url'] ??
+        json['posterUrl'] ??
+        json['poster'] ??
+        json['cover_url'] ??
+        json['coverUrl'] ??
+        json['cover'] ??
+        json['thumb'] ??
+        json['preview_image'] ??
+        json['previewImage'] ??
+        json['preview_url'] ??
+        json['previewUrl'] ??
+        json['image_url'] ??
+        json['imageUrl'] ??
+        json['video_thumbnail'] ??
+        json['videoThumbnail'];
+
+    var normalized = _normalizeUrl(raw ?? '');
+    if (normalized.isEmpty) {
+      for (final nestedKey in ['media', 'video', 'file']) {
+        final nested = json[nestedKey];
+        if (nested is! Map) continue;
+        final m = Map<String, dynamic>.from(
+          Map<Object?, Object?>.from(nested),
+        );
+        raw = m['thumbnail_url'] ??
+            m['thumbnailUrl'] ??
+            m['thumbnail'] ??
+            m['poster'] ??
+            m['poster_url'] ??
+            m['cover'] ??
+            m['cover_url'] ??
+            m['preview'] ??
+            m['preview_image'] ??
+            m['image_url'] ??
+            m['image'];
+        normalized = _normalizeUrl(raw ?? '');
+        if (normalized.isNotEmpty) break;
+      }
+    }
+
+    return normalized;
   }
 
   /// Picks the best media URL whether the API returns a string or nested map.
@@ -210,7 +316,14 @@ class Post {
         json['file'] ??
         json['video_url'] ??
         json['videoUrl'] ??
-        json['url'];
+        json['url'] ??
+        json['image_url'] ??
+        json['imageUrl'] ??
+        json['image'] ??
+        json['thumbnail_url'] ??
+        json['thumbnailUrl'] ??
+        json['preview_url'] ??
+        json['previewUrl'];
 
     String normalized = _normalizeUrl(raw ?? '');
     if (normalized.isEmpty && json['media'] is String) {
@@ -220,7 +333,7 @@ class Post {
       final m = Map<String, dynamic>.from(
         Map<Object?, Object?>.from(json['media'] as Map),
       );
-      raw = m['url'] ?? m['src'] ?? m['file'] ?? m['media_url'];
+      raw = m['url'] ?? m['src'] ?? m['file'] ?? m['media_url'] ?? m['mediaUrl'];
       normalized = _normalizeUrl(raw ?? '');
     }
 
@@ -258,6 +371,7 @@ class Post {
       'id': id,
       'caption': caption,
       'media': media,
+      'thumbnail_url': thumbnailUrl,
       'userId': userId,
       'mediaType': mediaType,
       'likes_count': likesCount,

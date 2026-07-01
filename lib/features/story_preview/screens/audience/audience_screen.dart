@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
 
 class AudienceScreen extends StatefulWidget {
   final bool initialIsEveryone;
@@ -42,8 +41,8 @@ class _AudienceScreenState extends State<AudienceScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: Image.asset(AppAssets.back, height: 24, width: 24),
+          leading: BackButton(
+            color: Colors.white,
             onPressed: () => Navigator.pop(context, {
               'isEveryone': isEveryone,
               'isCloseFriends': isCloseFriends,

@@ -28,20 +28,9 @@ class PerformanceScreen extends StatelessWidget {
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 36,
-                          width: 36,
-                          decoration: BoxDecoration(shape: BoxShape.circle),
-                          child: Center(
-                            child: Image.asset(
-                              AppAssets.back,
-                              width: 25,
-                              height: 25,
-                            ),
-                          ),
-                        ),
+                      child: BackButton(
+                        color: Colors.white,
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ),
                     const Text(

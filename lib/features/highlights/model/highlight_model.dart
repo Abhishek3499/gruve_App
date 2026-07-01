@@ -24,7 +24,7 @@ class HighlightModel {
       storiesCount: json['stories_count'] is int
           ? json['stories_count']
           : int.tryParse(json['stories_count']?.toString() ?? '0') ?? 0,
-      coverMediaUrl: json['cover_media_url']?.toString() ?? '',
+      coverMediaUrl: _extractCoverMediaUrl(json),
       createdAt: json['created_at']?.toString() ?? '',
       stories:
           storiesList
@@ -33,6 +33,57 @@ class HighlightModel {
               .toList() ??
           const [],
     );
+  }
+
+  /// Best URL for highlight circle preview (image poster or video source).
+  String? get coverPreviewUrl {
+    if (coverMediaUrl.trim().isNotEmpty) return coverMediaUrl.trim();
+
+    for (final story in stories) {
+      final preview = story.previewUrl;
+      if (preview != null && preview.isNotEmpty) return preview;
+    }
+
+    return null;
+  }
+
+  static String _extractCoverMediaUrl(Map<String, dynamic> json) {
+    final direct =
+        json['cover_media_url'] ??
+        json['coverMediaUrl'] ??
+        json['cover_url'] ??
+        json['coverUrl'] ??
+        json['cover'] ??
+        json['thumbnail_url'] ??
+        json['thumbnailUrl'] ??
+        json['thumbnail'] ??
+        json['poster'] ??
+        json['image_url'] ??
+        json['imageUrl'] ??
+        json['image'];
+
+    final value = direct?.toString().trim() ?? '';
+    if (value.isNotEmpty && value.toLowerCase() != 'null') {
+      return value;
+    }
+
+    final nestedCover = json['cover_media'];
+    if (nestedCover is Map) {
+      final map = Map<String, dynamic>.from(
+        Map<Object?, Object?>.from(nestedCover),
+      );
+      final nested =
+          map['url'] ??
+          map['media_url'] ??
+          map['thumbnail_url'] ??
+          map['thumbnail'];
+      final nestedValue = nested?.toString().trim() ?? '';
+      if (nestedValue.isNotEmpty && nestedValue.toLowerCase() != 'null') {
+        return nestedValue;
+      }
+    }
+
+    return '';
   }
 
   static List? _extractStoriesList(Map<String, dynamic> json) {
@@ -72,8 +123,19 @@ class HighlightModel {
 class HighlightStoryRef {
   final String id;
   final String mediaUrl;
+  final String thumbnailUrl;
 
-  const HighlightStoryRef({required this.id, this.mediaUrl = ''});
+  const HighlightStoryRef({
+    required this.id,
+    this.mediaUrl = '',
+    this.thumbnailUrl = '',
+  });
+
+  String? get previewUrl {
+    if (thumbnailUrl.trim().isNotEmpty) return thumbnailUrl.trim();
+    if (mediaUrl.trim().isNotEmpty) return mediaUrl.trim();
+    return null;
+  }
 
   factory HighlightStoryRef.fromJson(dynamic json) {
     if (json is String) {
@@ -106,11 +168,16 @@ class HighlightStoryRef {
                     json['mediaUrl'] ??
                     json['cover_media_url'] ??
                     json['coverMediaUrl'] ??
+                    json['file'] ??
+                    '')
+                .toString(),
+        thumbnailUrl:
+            (json['thumbnail_url'] ??
+                    json['thumbnailUrl'] ??
+                    json['thumbnail'] ??
+                    json['poster'] ??
                     json['image'] ??
                     json['image_url'] ??
-                    json['thumbnail'] ??
-                    json['thumbnail_url'] ??
-                    json['file'] ??
                     '')
                 .toString(),
       );
@@ -120,7 +187,7 @@ class HighlightStoryRef {
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'media_url': mediaUrl};
+    return {'id': id, 'media_url': mediaUrl, 'thumbnail_url': thumbnailUrl};
   }
 }
 

@@ -1,47 +1,34 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
-import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
 import '../models/verify_otp_response.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
+class OtpPurpose {
+  static const signup = 'signup';
+  static const login = 'login';
+  static const resetPassword = 'reset_password';
+}
+
 class VerifyOtpService {
-  final Dio dio = AppDio.getInstance();
+  final Dio dio = AuthDio.getInstance();
+
   Future<VerifyOtpResponse> verifyOtp({
     required String identifier,
-    required String email,
-    required String phoneNumber,
-    required String type,
     required String otp,
-    bool isLogin = false,
-    bool isForgot = false, // ✅ ADD THIS
+    required String purpose,
   }) async {
     try {
-      AppLogger.d(
-        "Verify OTP flow: forgot=$isForgot login=$isLogin type=$type",
-      );
+      AppLogger.d('Verify OTP purpose=$purpose identifier=$identifier');
 
-      Map<String, dynamic> body;
-      String endpoint;
-
-      // Decide endpoint
-      if (isForgot) {
-        endpoint = "auth/password-reset/verify-otp/";
-        body = {"email": email, "otp": otp};
-      } else if (isLogin) {
-        endpoint = "auth/verify-phone-login-otp/";
-        body = {"phone_number": phoneNumber, "otp": otp};
-      } else {
-        endpoint = "auth/verify-otp/";
-
-        // Signup (email OR phone)
-        if (type == "phone") {
-          body = {"identifier": identifier, "otp": otp};
-        } else {
-          body = {"identifier": identifier, "otp": otp};
-        }
-      }
+      const endpoint = 'auth/verify-otp/';
+      final body = {
+        'identifier': identifier,
+        'otp': otp,
+        'purpose': purpose,
+      };
 
       AuthApiLogger.request(
         'VerifyOtp',
@@ -70,7 +57,7 @@ class VerifyOtpService {
       AuthApiLogger.error('VerifyOtp', e);
       throw AuthApiException.extractMessage(e);
     } catch (e) {
-      AppLogger.d("Verify OTP failed: $e");
+      AppLogger.d('Verify OTP failed: $e');
       rethrow;
     }
   }
@@ -81,8 +68,8 @@ class VerifyOtpService {
   }) async {
     try {
       final body = {
-        "identifier": identifier,
-        "purpose": purpose,
+        'identifier': identifier,
+        'purpose': purpose,
       };
 
       AuthApiLogger.request(
@@ -103,13 +90,13 @@ class VerifyOtpService {
 
       final isSuccess = response.data?['success'] == true;
       if (!isSuccess) {
-        throw response.data?['message']?.toString() ?? "Failed to resend OTP";
+        throw response.data?['message']?.toString() ?? 'Failed to resend OTP';
       }
     } on DioException catch (e) {
       AuthApiLogger.error('ResendOtp', e);
       throw AuthApiException.extractMessage(e);
     } catch (e) {
-      AppLogger.d("Resend OTP failed: $e");
+      AppLogger.d('Resend OTP failed: $e');
       rethrow;
     }
   }

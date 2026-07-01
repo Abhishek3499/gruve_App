@@ -1,16 +1,25 @@
 import 'dart:ui' as ui;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:video_player/video_player.dart';
 
 class HighlightViewerScreen extends StatefulWidget {
   final String highlightId;
+  final HighlightModel? initialHighlight;
 
-  const HighlightViewerScreen({super.key, required this.highlightId});
+  const HighlightViewerScreen({
+    super.key,
+    required this.highlightId,
+    this.initialHighlight,
+  });
 
   @override
   State<HighlightViewerScreen> createState() => _HighlightViewerScreenState();
@@ -23,6 +32,8 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
   String? errorMessage;
   HighlightModel? highlight;
   late final AnimationController _progressController;
+  HighlightController? _highlightController;
+  bool _bootstrapped = false;
 
   @override
   void initState() {
@@ -32,7 +43,29 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       duration: const Duration(seconds: 5),
     )..addStatusListener(_onProgressStatusChanged);
     AppLogger.d('[Viewer] Opened with highlight ID: ${widget.highlightId}');
-    _fetchHighlight();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _highlightController ??= context.read<HighlightController>();
+    if (_bootstrapped) return;
+    _bootstrapped = true;
+
+    final highlightController = _highlightController!;
+    final cached =
+        widget.initialHighlight ??
+        highlightController.cachedHighlightStories(widget.highlightId);
+
+    if (cached != null && cached.stories.isNotEmpty) {
+      highlight = cached;
+      isLoading = false;
+      highlightController.cacheHighlightStories(cached);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restartProgress());
+      _fetchHighlight(background: true);
+    } else {
+      _fetchHighlight();
+    }
   }
 
   @override
@@ -40,7 +73,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     _progressController
       ..removeStatusListener(_onProgressStatusChanged)
       ..dispose();
-    context.read<HighlightController>().cancelActiveRequests();
+    _highlightController?.cancelActiveRequests();
     super.dispose();
   }
 
@@ -57,34 +90,37 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       ..forward();
   }
 
-  Future<void> _fetchHighlight() async {
-    AppLogger.d('[Viewer] Fetch start');
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
+  Future<void> _fetchHighlight({bool background = false}) async {
+    AppLogger.d('[Viewer] Fetch start (background=$background)');
+    if (!background) {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+    }
 
     try {
-      AppLogger.d(
-        '[API] Fetching highlight stories for ID: ${widget.highlightId}',
-      );
-
-      final highlightController = context.read<HighlightController>();
+      final highlightController = _highlightController;
+      if (highlightController == null) return;
 
       final fetchedHighlight = await highlightController.fetchHighlightStories(
         widget.highlightId,
       );
 
       if (fetchedHighlight != null) {
+        if (!mounted) return;
         setState(() {
           isLoading = false;
           highlight = fetchedHighlight;
+          if (currentIndex >= highlight!.stories.length) {
+            currentIndex = 0;
+          }
           AppLogger.d(
             '[Viewer] API success - Stories count: ${highlight!.stories.length}',
           );
         });
         _restartProgress();
-      } else {
+      } else if (!background) {
         setState(() {
           isLoading = false;
           errorMessage = 'Highlight stories not found';
@@ -92,11 +128,13 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
         });
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load highlight stories: $e';
-        AppLogger.d('[Viewer] API failed: $e');
-      });
+      if (!background && mounted) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to load highlight stories: $e';
+          AppLogger.d('[Viewer] API failed: $e');
+        });
+      }
     }
   }
 
@@ -332,23 +370,12 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
   Future<void> _performDelete() async {
     if (highlight == null) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
-      builder: (context) {
-        return const Center(
-          child: _HighlightLoader(),
-        );
-      },
-    );
+    setState(() {
+      isLoading = true;
+    });
 
     final highlightController = context.read<HighlightController>();
     final success = await highlightController.deleteHighlight(widget.highlightId);
-
-    if (mounted) {
-      Navigator.pop(context);
-    }
 
     if (success) {
       if (mounted) {
@@ -359,7 +386,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
               children: [
                 const Icon(Icons.check_circle_outline, color: Colors.white),
                 const SizedBox(width: 12),
-                Text('"${highlight?.title}" deleted successfully!'),
+                Text('"${highlight?.title}" deleted successfully.'),
               ],
             ),
             backgroundColor: const Color(0xFF8B25C6),
@@ -373,6 +400,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       }
     } else {
       if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -506,43 +536,22 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
           _nextStory();
         }
       },
-      child: Center(child: _buildStoryMedia(story)),
+      child: Center(
+        child: _HighlightStoryMedia(
+          key: ValueKey(story.id),
+          story: story,
+          onVideoDurationResolved: (duration) {
+            if (!mounted || duration <= Duration.zero) return;
+            _progressController.duration = duration;
+            _restartProgress();
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildStoryMedia(HighlightStoryRef story) {
-    if (story.mediaUrl.toLowerCase().endsWith('.mp4') ||
-        story.mediaUrl.toLowerCase().endsWith('.mov')) {
-      // Video placeholder
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: Colors.black,
-        child: const Center(
-          child: Icon(Icons.play_circle_outline, color: Colors.white, size: 64),
-        ),
-      );
-    } else {
-      // Image
-      return Image.network(
-        story.mediaUrl,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const _HighlightLoader();
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(Icons.broken_image, color: Colors.white, size: 64),
-          );
-        },
-      );
-    }
-  }
-
   Widget _buildTopOverlay() {
+    if (isLoading) return const SizedBox.shrink();
     return SafeArea(
       child: Container(
         width: double.infinity,
@@ -569,16 +578,12 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
             const SizedBox(height: 10),
             Row(
               children: [
-                IconButton(
+                BackButton(
+                  color: Colors.white,
                   onPressed: () {
                     AppLogger.d('[Viewer] Back button pressed');
                     Navigator.of(context).pop();
                   },
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 24,
-                  ),
                 ),
                 if (highlight != null) ...[
                   Expanded(
@@ -669,6 +674,138 @@ class _InstagramHighlightProgress extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+class _HighlightStoryMedia extends StatefulWidget {
+  final HighlightStoryRef story;
+  final ValueChanged<Duration>? onVideoDurationResolved;
+
+  const _HighlightStoryMedia({
+    super.key,
+    required this.story,
+    this.onVideoDurationResolved,
+  });
+
+  @override
+  State<_HighlightStoryMedia> createState() => _HighlightStoryMediaState();
+}
+
+class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
+  VideoPlayerController? _videoController;
+  bool _videoFailed = false;
+
+  String get _mediaUrl {
+    final preview = widget.story.previewUrl;
+    if (preview != null && preview.isNotEmpty) return preview;
+    return widget.story.mediaUrl.trim();
+  }
+
+  bool get _isVideo => Post.mediaUrlLooksLikeVideo(_mediaUrl);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isVideo) {
+      _initVideo();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _HighlightStoryMedia oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.story.id != widget.story.id ||
+        oldWidget.story.mediaUrl != widget.story.mediaUrl) {
+      _disposeVideo();
+      _videoFailed = false;
+      if (_isVideo) {
+        _initVideo();
+      }
+    }
+  }
+
+  Future<void> _initVideo() async {
+    final url = _mediaUrl;
+    if (!MediaUrlThumbnail.isHttpUrl(url)) {
+      if (mounted) setState(() => _videoFailed = true);
+      return;
+    }
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(1);
+      await controller.play();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() => _videoController = controller);
+      widget.onVideoDurationResolved?.call(controller.value.duration);
+    } catch (_) {
+      await controller.dispose();
+      if (mounted) setState(() => _videoFailed = true);
+    }
+  }
+
+  void _disposeVideo() {
+    _videoController?.dispose();
+    _videoController = null;
+  }
+
+  @override
+  void dispose() {
+    _disposeVideo();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isVideo) {
+      if (_videoFailed) {
+        return const Center(
+          child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+        );
+      }
+
+      final controller = _videoController;
+      if (controller == null || !controller.value.isInitialized) {
+        return const _HighlightLoader();
+      }
+
+      return SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: SizedBox(
+            width: controller.value.size.width,
+            height: controller.value.size.height,
+            child: VideoPlayer(controller),
+          ),
+        ),
+      );
+    }
+
+    final imageUrl = _mediaUrl;
+    if (!MediaUrlThumbnail.isHttpUrl(imageUrl)) {
+      return const Center(
+        child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.contain,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      useOldImageOnUrlChange: true,
+      placeholder: (context, url) => const _HighlightLoader(),
+      errorWidget: (context, url, error) => const Center(
+        child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+      ),
     );
   }
 }

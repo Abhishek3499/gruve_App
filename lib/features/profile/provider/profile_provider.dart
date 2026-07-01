@@ -9,6 +9,7 @@ import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.da
 import 'package:gruve_app/features/profile/data/api_calls/model/profile_stats_model.dart';
 import 'package:gruve_app/features/highlights/api/highlight_service.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
+import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -222,53 +223,45 @@ class ProfileProvider extends ChangeNotifier {
     final futures = <Future<void>>[];
     for (final highlight in list) {
       final cover = _coverFor(highlight);
-      if (cover != null && cover.startsWith('http')) {
-        final completer = Completer<void>();
-        final provider = CachedNetworkImageProvider(cover);
-        final stream = provider.resolve(ImageConfiguration.empty);
-        late ImageStreamListener listener;
-        listener = ImageStreamListener(
-          (info, synchronousCall) {
-            if (!completer.isCompleted) {
-              completer.complete();
-            }
-            stream.removeListener(listener);
-          },
-          onError: (exception, stackTrace) {
-            if (!completer.isCompleted) {
-              completer.complete();
-            }
-            stream.removeListener(listener);
-          },
-        );
-        stream.addListener(listener);
-        futures.add(
-          completer.future.timeout(
-            const Duration(seconds: 3),
-            onTimeout: () {
-              if (!completer.isCompleted) {
-                completer.complete();
-              }
-            },
-          ),
-        );
+      if (cover == null || !cover.startsWith('http')) continue;
+
+      if (Post.mediaUrlLooksLikeVideo(cover)) {
+        futures.add(VideoFrameCache.warmup(cover));
+        continue;
       }
+
+      futures.add(_precacheNetworkImage(cover));
     }
     if (futures.isNotEmpty) {
       await Future.wait(futures);
     }
   }
 
-  String? _coverFor(HighlightModel highlight) {
-    if (highlight.coverMediaUrl.trim().isNotEmpty) {
-      return highlight.coverMediaUrl.trim();
-    }
-    if (highlight.stories.isNotEmpty &&
-        highlight.stories.first.mediaUrl.trim().isNotEmpty) {
-      return highlight.stories.first.mediaUrl.trim();
-    }
-    return null;
+  Future<void> _precacheNetworkImage(String imgUrl) async {
+    final completer = Completer<void>();
+    final provider = CachedNetworkImageProvider(imgUrl);
+    final stream = provider.resolve(ImageConfiguration.empty);
+    late ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, synchronousCall) {
+        if (!completer.isCompleted) completer.complete();
+        stream.removeListener(listener);
+      },
+      onError: (exception, stackTrace) {
+        if (!completer.isCompleted) completer.complete();
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    await completer.future.timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
   }
+
+  String? _coverFor(HighlightModel highlight) => highlight.coverPreviewUrl;
 
   Future<void> refreshProfileData({String reason = 'manual_refresh'}) {
     if (_profileFetchInFlight != null) {
@@ -277,6 +270,21 @@ class ProfileProvider extends ChangeNotifier {
       _profileFetchGeneration++;
     }
     return fetchProfileData(fetchUserReason: reason, force: true);
+  }
+
+  /// Lightweight stats refresh — no loading spinner, used after likes/subscribes.
+  Future<void> refreshCounts({String reason = 'counts_refresh'}) async {
+    try {
+      await controller.refreshCounts(reason: reason);
+      user = controller.user;
+      stats = controller.stats;
+      _lastProfileFetch = DateTime.now();
+      notifyListeners();
+      _log('[Profile] Counts refresh success');
+    } catch (error, stackTrace) {
+      _log('[Profile] Counts refresh failed: $error');
+      _log('$stackTrace');
+    }
   }
 
   Future<void> ensureTabLoaded(int tabIndex) async {
