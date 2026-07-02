@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import '../models/conversation_model.dart';
 import '../providers/message_provider.dart';
 import '../widgets/message_header.dart';
@@ -24,6 +25,7 @@ class MessageScreen extends StatefulWidget {
 class _MessageScreenState extends State<MessageScreen> {
   bool _isLoadingMoreConversations = false;
   bool _startedUserPrefetch = false;
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
   MessageProvider? _messageProvider;
   UserProvider? _userProvider;
 
@@ -64,7 +66,7 @@ class _MessageScreenState extends State<MessageScreen> {
     if (userProvider.hasInitialized || userProvider.isLoading) return;
 
     _startedUserPrefetch = true;
-    unawaited(userProvider.fetchUsers());
+    unawaited(userProvider.fetchUsers(reason: 'initial'));
   }
 
   Future<void> _handleRefresh() async {
@@ -126,7 +128,7 @@ class _MessageScreenState extends State<MessageScreen> {
       '🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}',
     );
     final success = await messageProvider.deleteConversation(conversation.id);
-    
+
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -135,7 +137,7 @@ class _MessageScreenState extends State<MessageScreen> {
         ),
       );
     }
-    
+
     return success;
   }
 
@@ -163,7 +165,7 @@ class _MessageScreenState extends State<MessageScreen> {
 
                           /// MESSAGE LIST
                           Positioned(
-                            top: 240,
+                            top: 195,
                             left: 0,
                             right: 0,
                             bottom: 0,
@@ -190,9 +192,7 @@ class _MessageScreenState extends State<MessageScreen> {
                 Container(
                   color: Colors.black.withValues(alpha: 0.5),
                   child: const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF72008D),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFF72008D)),
                   ),
                 ),
             ],
@@ -232,15 +232,17 @@ class _MessageScreenState extends State<MessageScreen> {
     // Show conversation list
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
-        // Prevent pagination spam with threshold and loading guard
-        if (!_isLoadingMoreConversations &&
-            messageProvider.hasMoreData &&
-            !messageProvider.isLoading &&
-            !messageProvider.isLoadingMore &&
-            scrollInfo.metrics.pixels >=
-                scrollInfo.metrics.maxScrollExtent - 200) {
+        if (_paginationTrigger.shouldLoadMoreFromMetrics(
+          scrollInfo.metrics,
+          isLoading:
+              _isLoadingMoreConversations ||
+              messageProvider.isLoading ||
+              messageProvider.isLoadingMore ||
+              messageProvider.isRefreshing,
+          hasMore: messageProvider.hasMoreData,
+        )) {
           _isLoadingMoreConversations = true;
-          messageProvider.loadMoreConversations().then((_) {
+          messageProvider.loadMoreConversations(reason: 'scroll').then((_) {
             if (mounted) {
               _isLoadingMoreConversations = false;
             }
@@ -377,8 +379,12 @@ class _MessageScreenState extends State<MessageScreen> {
         await _handleRefresh();
       });
     } else {
-      AppLogger.d('🔄 [MessageScreen] User returned from ChatScreen - refreshing list');
-      unawaited(context.read<MessageProvider>().fetchConversations(refresh: true));
+      AppLogger.d(
+        '🔄 [MessageScreen] User returned from ChatScreen - refreshing list',
+      );
+      unawaited(
+        context.read<MessageProvider>().fetchConversations(refresh: true),
+      );
     }
   }
 }

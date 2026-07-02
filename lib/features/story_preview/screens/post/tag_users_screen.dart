@@ -4,6 +4,7 @@ import 'package:gruve_app/features/search/data/user_search/user_search_service.d
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 
 class TagUsersScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
   bool _isSearching = false;
   String? _searchError;
   late final ScrollController _scrollController;
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
 
   @override
   void initState() {
@@ -30,7 +32,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<UserProvider>().fetchUsers();
+        context.read<UserProvider>().fetchUsers(reason: 'initial');
       }
     });
   }
@@ -50,15 +52,15 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
     if (_searchController.text.trim().isNotEmpty) return;
 
     final provider = context.read<UserProvider>();
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-    const delta = 100.0;
-
-    if (maxScroll - currentScroll <= delta) {
-      if (!provider.isFetchingMore && provider.hasNext) {
-        provider.fetchUsers(loadMore: true);
-      }
+    if (!_paginationTrigger.shouldLoadMore(
+      _scrollController,
+      isLoading: provider.isLoading || provider.isFetchingMore,
+      hasMore: provider.hasNext,
+    )) {
+      return;
     }
+
+    provider.fetchUsers(loadMore: true, reason: 'scroll');
   }
 
   void _onSearchChanged(String query) {

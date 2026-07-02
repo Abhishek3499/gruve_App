@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/message_provider.dart';
@@ -84,7 +85,7 @@ class MessageAvatar extends StatelessWidget {
         return;
       }
       
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ChatScreen(
@@ -106,7 +107,7 @@ class MessageAvatar extends StatelessWidget {
         return;
       }
       
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ChatScreen(
@@ -117,6 +118,11 @@ class MessageAvatar extends StatelessWidget {
         ),
       );
       AppLogger.d('✅ [MessageAvatar] 🎊 Immediate navigation completed');
+    }
+
+    if (context.mounted) {
+      AppLogger.d('🔄 [MessageAvatar] User returned from ChatScreen - refreshing list');
+      unawaited(messageProvider.fetchConversations(refresh: true));
     }
   }
 }

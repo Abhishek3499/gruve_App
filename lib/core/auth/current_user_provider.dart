@@ -9,10 +9,12 @@ class CurrentUserProvider extends ChangeNotifier {
   
   String? _profileImageUrl;
   String? _username;
+  int _unreadNotificationCount = 0;
   bool _isLoading = false;
   
   String? get profileImageUrl => _profileImageUrl;
   String? get username => _username;
+  int get unreadNotificationCount => _unreadNotificationCount;
   bool get isLoading => _isLoading;
   
   /// Fetches current user's profile data
@@ -35,13 +37,16 @@ class CurrentUserProvider extends ChangeNotifier {
       final parsedProfile = ProfileModel.fromJson(profileData);
       _profileImageUrl = parsedProfile.profileImage;
       _username = parsedProfile.username;
+      _unreadNotificationCount = parsedProfile.unreadNotificationCount;
       
       AppLogger.d('✅ [CurrentUserProvider] Profile fetched - Image: $_profileImageUrl');
       AppLogger.d('✅ [CurrentUserProvider] Username: $_username');
+      AppLogger.d('✅ [CurrentUserProvider] Unread Notifications Count: $_unreadNotificationCount');
     } catch (e) {
       AppLogger.d('❌ [CurrentUserProvider] Failed to fetch profile: $e');
       _profileImageUrl = null;
       _username = null;
+      _unreadNotificationCount = 0;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -52,6 +57,7 @@ class CurrentUserProvider extends ChangeNotifier {
   void clear() {
     _profileImageUrl = null;
     _username = null;
+    _unreadNotificationCount = 0;
     _isLoading = false;
     notifyListeners();
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/profile/data/api_calls/repository/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
@@ -83,6 +84,9 @@ class ProfileController {
   final ValueNotifier<int> gridRevision = ValueNotifier(0);
 
   DateTime? _lastLoadMoreRequestAt;
+
+  /// Prevents duplicate in-flight tab page requests with identical params.
+  final Map<int, String?> _lastTabFetchKeys = {};
 
   /// After gateway/timeouts, block rapid re-fetch (scroll spam).
   DateTime? _profileFetchBackoffUntil;
@@ -183,7 +187,7 @@ class ProfileController {
     AppLogger.d(
       '📍 [ProfileController] loadMore tab=$tabIndex at ${now.millisecondsSinceEpoch}',
     );
-    unawaited(loadMorePosts(tabIndex));
+    unawaited(loadMorePosts(tabIndex, reason: 'scroll'));
   }
 
   Future<void> fetchUser({
@@ -428,7 +432,10 @@ class ProfileController {
         final matchesUsername =
             handle.isNotEmpty && postHandle.isNotEmpty && postHandle == handle;
 
-        return (matchesUserId || matchesUsername) && post.media.isNotEmpty;
+        return (matchesUserId || matchesUsername) &&
+            (post.media.isNotEmpty ||
+                post.thumbnailUrl.trim().isNotEmpty ||
+                post.gridPreviewUrl.isNotEmpty);
       }).toList();
 
       AppLogger.d(
@@ -485,6 +492,8 @@ class ProfileController {
     AppLogger.d(
       '✅ [ProfileController] Seeded tab $tabIndex with ${posts.length} posts, hasNext=$hasNext, nextPage=$nextPage',
     );
+
+    PostGridThumbnail.warmupPosts(posts);
   }
 
   Future<void> _hydratePostsAfterProfileLoad(
@@ -643,9 +652,14 @@ class ProfileController {
   }
 
   /// Load posts for specific tab with pagination
-  Future<void> loadPostsForTab(int tabIndex, {bool isRefresh = false}) async {
+  Future<void> loadPostsForTab(
+    int tabIndex, {
+    bool isRefresh = false,
+    String reason = 'tab-load',
+  }) async {
     AppLogger.d(
-      '🔄 [ProfileController] loadPostsForTab called - tabIndex: $tabIndex, isRefresh: $isRefresh',
+      '📡 [ProfileController] loadPostsForTab trigger=$reason '
+      'tabIndex=$tabIndex isRefresh=$isRefresh',
     );
 
     if (_disposed) {
@@ -666,6 +680,21 @@ class ProfileController {
         '⏳ [ProfileController] Tab $tabIndex already loading, skipping request',
       );
       return;
+    }
+
+    if (!isRefresh) {
+      final requestKey =
+          'tab=$tabIndex|page=${currentState.page}|limit=${currentState.limit}';
+      if (_lastTabFetchKeys[tabIndex] == requestKey) {
+        AppLogger.d(
+          '⏸️ [ProfileController] Skipping duplicate tab fetch '
+          'reason=$reason $requestKey',
+        );
+        return;
+      }
+      _lastTabFetchKeys[tabIndex] = requestKey;
+    } else {
+      _lastTabFetchKeys[tabIndex] = null;
     }
 
     // Reset state for refresh
@@ -760,6 +789,7 @@ class ProfileController {
       );
 
       _updateTabState(tabIndex, finalState);
+      _lastTabFetchKeys[tabIndex] = null;
       AppLogger.d('✅ [ProfileController] Updated tab $tabIndex state');
 
       // Keep [postsNotifier] aligned with the "All" tab only (tab 0).
@@ -779,6 +809,7 @@ class ProfileController {
       if (e is DioException) {
         if (CancelToken.isCancel(e)) {
           AppLogger.d('[ProfileController] loadPostsForTab cancelled');
+          _lastTabFetchKeys[tabIndex] = null;
           return;
         }
         final code = e.response?.statusCode;
@@ -803,11 +834,13 @@ class ProfileController {
             hasNext: false,
           );
           _updateTabState(tabIndex, calm);
+          _lastTabFetchKeys[tabIndex] = null;
           return;
         }
       }
 
       AppLogger.d('❌ Error loading posts for tab $tabIndex: $e');
+      _lastTabFetchKeys[tabIndex] = null;
 
       String errorMessage = e.toString();
 
@@ -848,11 +881,12 @@ class ProfileController {
       );
 
       _updateTabState(tabIndex, errorState);
+      _lastTabFetchKeys[tabIndex] = null;
     }
   }
 
   /// Load more posts for current tab (infinite scroll)
-  Future<void> loadMorePosts(int tabIndex) async {
+  Future<void> loadMorePosts(int tabIndex, {String reason = 'scroll'}) async {
     final currentState = _getTabState(tabIndex);
 
     if (!currentState.canLoadMore) {
@@ -862,7 +896,7 @@ class ProfileController {
       return;
     }
 
-    await loadPostsForTab(tabIndex, isRefresh: false);
+    await loadPostsForTab(tabIndex, isRefresh: false, reason: reason);
   }
 
   /// Refresh posts for specific tab

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/widgets/shimmer/notification_shimmer.dart';
 import 'package:gruve_app/features/notification/api/models/notification_model.dart';
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/notification/providers/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
@@ -20,6 +21,7 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   final ScrollController _scrollController = ScrollController();
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
   NotificationProvider? _notificationProvider;
 
   @override
@@ -47,10 +49,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      context.read<NotificationProvider>().fetchNextPage();
+    final provider = _notificationProvider ?? context.read<NotificationProvider>();
+    if (!_paginationTrigger.shouldLoadMore(
+      _scrollController,
+      isLoading: provider.isLoading || provider.isLoadingMore,
+      hasMore: provider.hasNextPage,
+    )) {
+      return;
     }
+    provider.fetchNextPage(reason: 'scroll');
   }
 
   Widget _buildSectionHeader(String title) {

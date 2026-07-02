@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/screens/intro/intro_screen.dart';
@@ -96,21 +95,13 @@ class _SplashScreenState extends State<SplashScreen> {
         name: 'SplashScreen',
       );
 
-      // Eagerly pre-fetch current user profile details before navigating to HomeScreen
+      // Single eager profile load (posts, highlights, avatar) — avoids duplicate profile_data.
       try {
-        await context.read<CurrentUserProvider>().fetchCurrentUserProfile();
-      } catch (e) {
-        AppLogger.d('🚨 [Splash] Eager avatar pre-fetch failed: $e');
-      }
-
-      if (!mounted) return;
-
-      try {
-        // Run full profile data fetch in background so it's ready when user opens the tab
         final profileProvider = context.read<ProfileProvider>();
         if (profileProvider.user == null) {
-          // Trigger fetch but don't await to avoid blocking transition to HomeScreen
-          unawaited(profileProvider.fetchProfileData(fetchUserReason: 'splash_eager_load'));
+          unawaited(
+            profileProvider.fetchProfileData(fetchUserReason: 'splash_eager_load'),
+          );
         }
       } catch (e) {
         AppLogger.d('🚨 [Splash] Eager profile data pre-fetch failed: $e');

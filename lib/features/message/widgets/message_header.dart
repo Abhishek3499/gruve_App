@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:provider/provider.dart';
 import '../../search/models/search_navigation_type.dart';
 import '../../search/screens/search_page.dart';
+import '../providers/message_provider.dart';
 import 'message_avatar_list.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -43,11 +46,11 @@ class MessageHeader extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       AppLogger.d(
                         '🔍 [MessageHeader] Opening search from message header',
                       );
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const SearchPage(
@@ -55,6 +58,16 @@ class MessageHeader extends StatelessWidget {
                           ),
                         ),
                       );
+                      if (context.mounted) {
+                        AppLogger.d(
+                          '🔄 [MessageHeader] Returned from search page - refreshing list',
+                        );
+                        unawaited(
+                          context.read<MessageProvider>().fetchConversations(
+                            refresh: true,
+                          ),
+                        );
+                      }
                     },
                     child: Image.asset(
                       AppAssets.search2,
@@ -68,7 +81,7 @@ class MessageHeader extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 45),
+          const SizedBox(height: 15),
 
           /// ===== AVATAR LIST =====
           SizedBox(height: 90, child: const MessageAvatarList()),

@@ -8,6 +8,7 @@ import '../models/conversation_model.dart';
 import '../services/message_service.dart';
 import 'dart:developer' as developer;
 import 'package:gruve_app/core/utils/app_logger.dart';
+import '../../../core/parsing/safe_parsing_helpers.dart';
 
 /// Provider for managing conversation state
 ///
@@ -102,8 +103,57 @@ class MessageProvider extends ChangeNotifier {
     final payload = nested is Map
         ? Map<String, dynamic>.from(nested)
         : data;
-    final content = payload['content'] ?? payload['text'] ?? payload['message'];
-    if (content == null || content.toString().trim().isEmpty) return;
+
+    // Extract text cleanly, supporting nested maps or simple strings
+    String contentStr = '';
+    final rawContent = payload['content'];
+    if (rawContent is Map) {
+      final contentMap = Map<String, dynamic>.from(rawContent);
+      contentStr = SafeParsingHelpers.safeString(
+        contentMap,
+        const ['text', 'message', 'value'],
+        fallback: '',
+      );
+    } else {
+      contentStr = SafeParsingHelpers.safeString(
+        payload,
+        const ['content', 'text', 'message'],
+        fallback: '',
+      );
+    }
+
+    // Extract message kind cleanly
+    String? messageKind;
+    if (rawContent is Map) {
+      messageKind = SafeParsingHelpers.safeNullableString(
+        Map<String, dynamic>.from(rawContent),
+        const ['type'],
+      );
+    }
+    messageKind ??= SafeParsingHelpers.safeNullableString(
+      payload,
+      const ['message_kind', 'messageKind'],
+    );
+
+    final attachments = payload['attachments'];
+    if (messageKind == null && attachments is List && attachments.isNotEmpty) {
+      final first = attachments.first;
+      if (first is Map) {
+        messageKind = Map<String, dynamic>.from(first)['media_kind']?.toString();
+      }
+    }
+
+    final media = payload['media'];
+    if (messageKind == null && media is Map) {
+      messageKind = Map<String, dynamic>.from(media)['media_kind']?.toString();
+    }
+
+    // Default preview text for audio messages if no caption is provided
+    if (messageKind?.toLowerCase() == 'audio' && contentStr.trim().isEmpty) {
+      contentStr = 'Voice message';
+    }
+
+    if (contentStr.trim().isEmpty) return;
 
     final index = _conversations.indexWhere((c) => c.id == conversationId);
     if (index == -1) return;
@@ -112,8 +162,9 @@ class MessageProvider extends ChangeNotifier {
     final conversation = _conversations[index];
     final updated = conversation.copyWith(
       lastMessage: LastMessage(
-        content: content.toString(),
+        content: contentStr,
         createdAt: now,
+        messageKind: messageKind,
       ),
       hasLastMessage: true,
       updatedAt: now,
@@ -305,7 +356,11 @@ class MessageProvider extends ChangeNotifier {
   ///
   /// [refresh] - If true, will clear existing data and fetch fresh data
   /// [page] - Page number for pagination (default: 1)
-  Future<void> fetchConversations({bool refresh = false, int? page}) async {
+  Future<void> fetchConversations({
+    bool refresh = false,
+    int? page,
+    String reason = 'initial',
+  }) async {
     final requestedPage = page ?? 1;
     final isFirstPage = requestedPage <= 1;
 
@@ -332,6 +387,7 @@ class MessageProvider extends ChangeNotifier {
     final future = _runFetchConversations(
       refresh: refresh,
       requestedPage: requestedPage,
+      reason: reason,
     );
     _inFlightFetches[fetchKey] = future;
     try {
@@ -344,9 +400,15 @@ class MessageProvider extends ChangeNotifier {
   Future<void> _runFetchConversations({
     required bool refresh,
     required int requestedPage,
+    required String reason,
   }) async {
     final fetchStart = DateTime.now();
     final isPagination = !refresh && requestedPage > 1;
+
+    AppLogger.d(
+      '📡 [MessageProvider] fetchConversations trigger=$reason '
+      'page=$requestedPage refresh=$refresh',
+    );
 
     if (refresh) {
       _currentPage = 1;
@@ -462,16 +524,20 @@ class MessageProvider extends ChangeNotifier {
   }
 
   /// Load more conversations (pagination)
-  Future<void> loadMoreConversations() async {
+  Future<void> loadMoreConversations({String reason = 'scroll'}) async {
     if (_isLoading || _isLoadingMore || _isRefreshing || !_hasMoreData) {
       AppLogger.d(
-        '⏸️ [MessageProvider] Skipping load more - Loading: $_isLoading, LoadingMore: $_isLoadingMore, Refreshing: $_isRefreshing, HasMore: $_hasMoreData',
+        '⏸️ [MessageProvider] Skipping load more reason=$reason - '
+        'Loading: $_isLoading, LoadingMore: $_isLoadingMore, '
+        'Refreshing: $_isRefreshing, HasMore: $_hasMoreData',
       );
       return;
     }
 
-    AppLogger.d('⬇️ [MessageProvider] Loading more conversations...');
-    await fetchConversations(refresh: false, page: _currentPage);
+    AppLogger.d(
+      '📡 [MessageProvider] loadMoreConversations trigger=$reason page=$_currentPage',
+    );
+    await fetchConversations(refresh: false, page: _currentPage, reason: reason);
   }
 
   /// Mark a conversation as read

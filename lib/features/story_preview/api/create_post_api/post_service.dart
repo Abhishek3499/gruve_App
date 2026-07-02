@@ -19,6 +19,8 @@ class PostService {
   bool _isLoading = false;
   String? _lastRequestKey;
   final Map<String, Future<PaginatedPostsResponse>> _inFlightPageRequests = {};
+  final Map<String, Future<Post>> _inFlightFetchById = {};
+  final Map<String, Future<Post?>> _inFlightProfilePostLookup = {};
 
   PostService() {
     _dio = AppDio.getInstance();
@@ -73,7 +75,8 @@ class PostService {
     throw lastError ?? StateError('GET request failed for $path');
   }
 
-  Future<({bool isVideo, File uploadFile, String fileName})> _prepareUploadFile({
+  Future<({bool isVideo, File uploadFile, String fileName})>
+  _prepareUploadFile({
     required File file,
     required String mediaPath,
     String? mimeType,
@@ -277,7 +280,9 @@ class PostService {
       if (compressedTemp != null && compressedTemp.existsSync()) {
         try {
           await compressedTemp.delete();
-          AppLogger.d('🧹 [PostService] Temporary compressed video file deleted');
+          AppLogger.d(
+            '🧹 [PostService] Temporary compressed video file deleted',
+          );
         } catch (e) {
           AppLogger.d('⚠️ [PostService] Failed to delete compressed file: $e');
         }
@@ -554,7 +559,9 @@ class PostService {
     _lastRequestKey = requestKey;
 
     try {
-      AppLogger.d('📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit for feed: ${feed ?? "default"}');
+      AppLogger.d(
+        '📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit for feed: ${feed ?? "default"}',
+      );
 
       final token = await TokenStorage.getAccessToken();
       final queryParams = <String, dynamic>{
@@ -736,13 +743,12 @@ class PostService {
   }) async {
     final token = await TokenStorage.getAccessToken();
     try {
-      AppLogger.d('🚀 [PostService] sharePost START postId=$postId, recipients=$recipientUserIds');
+      AppLogger.d(
+        '🚀 [PostService] sharePost START postId=$postId, recipients=$recipientUserIds',
+      );
       final res = await _dio.post(
         "posts/share/",
-        data: {
-          "post_id": postId,
-          "recipient_user_ids": recipientUserIds,
-        },
+        data: {"post_id": postId, "recipient_user_ids": recipientUserIds},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
@@ -872,13 +878,52 @@ class PostService {
     }
   }
 
-  Future<Post> fetchPostById(String postId) async {
-    final cleanPostId = postId.startsWith('pst_') ? postId.substring(4) : postId;
+  Future<Post> fetchPostById(
+    String postId, {
+    String? authorUserId,
+    bool allowProfileFallback = true,
+  }) async {
+    final cleanPostId = postId.startsWith('pst_')
+        ? postId.substring(4)
+        : postId;
+    final authorId = authorUserId?.trim() ?? '';
+    final cacheKey = '$cleanPostId|$authorId|p=$allowProfileFallback';
+    final inFlight = _inFlightFetchById[cacheKey];
+    if (inFlight != null) {
+      AppLogger.d(
+        '🔄 [PostService] Joining duplicate fetchPostById for $cleanPostId',
+      );
+      return inFlight;
+    }
+
+    final future = _fetchPostByIdImpl(
+      cleanPostId,
+      authorId,
+      allowProfileFallback: allowProfileFallback,
+    );
+    _inFlightFetchById[cacheKey] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightFetchById.remove(cacheKey);
+    }
+  }
+
+  Future<Post> _fetchPostByIdImpl(
+    String cleanPostId,
+    String authorId, {
+    required bool allowProfileFallback,
+  }) async {
     final token = await TokenStorage.getAccessToken();
     final opts = Options(headers: {"Authorization": "Bearer $token"});
 
+    Post? resolved;
+
+    // Backend only supports GET posts/get-post/?post_id= (GET posts/{id}/ → 405).
     try {
-      AppLogger.d('🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId');
+      AppLogger.d(
+        '🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId',
+      );
       final res = await _dio.get(
         "posts/get-post/",
         queryParameters: {"post_id": cleanPostId},
@@ -886,74 +931,293 @@ class PostService {
       );
 
       if (res.statusCode == 200 && res.data != null) {
-        final dynamic responseData = res.data['data'] ?? res.data;
-        if (responseData != null) {
-          return _postFromResponseData(responseData, cleanPostId);
-        }
+        final responseData = res.data['data'] ?? res.data;
+        resolved = _tryParsePostResponse(responseData, cleanPostId);
       }
-      throw Exception('Post not found or invalid format');
     } catch (e) {
       AppLogger.d(
-        '⚠️ [PostService] posts/get-post/?post_id=$cleanPostId failed: $e. Trying posts/$cleanPostId/',
+        '⚠️ [PostService] posts/get-post/?post_id=$cleanPostId failed: $e',
       );
-      try {
-        final res = await _dio.get("posts/$cleanPostId/", options: opts);
-        if (res.statusCode == 200 && res.data != null) {
-          final dynamic responseData = res.data['data'] ?? res.data;
-          return _postFromResponseData(responseData, cleanPostId);
-        }
-      } catch (innerErr) {
-        AppLogger.d(
-          '❌ [PostService] Both fetch post by ID endpoints failed: $innerErr',
-        );
+    }
+
+    if (_isCompleteFetchedPost(resolved, cleanPostId)) {
+      return _finalizeFetchedPostAsync(
+        resolved!,
+        cleanPostId,
+        authorId,
+        allowProfileFallback: allowProfileFallback,
+        profileAlreadyChecked: false,
+      );
+    }
+
+    var profileAlreadyChecked = false;
+    if (!_isCompleteFetchedPost(resolved, cleanPostId) &&
+        allowProfileFallback &&
+        authorId.isNotEmpty) {
+      profileAlreadyChecked = true;
+      final profilePost = await _findPostInUserProfile(
+        cleanPostId,
+        authorId,
+        opts,
+      );
+      if (profilePost != null) {
+        resolved = resolved == null
+            ? profilePost
+            : profilePost.mergedWith(other: resolved);
       }
-      rethrow;
+    }
+
+    if (resolved == null) {
+      throw Exception('Post not found or invalid format: $cleanPostId');
+    }
+
+    return _finalizeFetchedPostAsync(
+      resolved,
+      cleanPostId,
+      authorId,
+      allowProfileFallback: allowProfileFallback,
+      profileAlreadyChecked: profileAlreadyChecked,
+    );
+  }
+
+  Future<Post> _finalizeFetchedPostAsync(
+    Post resolved,
+    String cleanPostId,
+    String authorId, {
+    required bool allowProfileFallback,
+    required bool profileAlreadyChecked,
+  }) async {
+    var post = resolved;
+
+    if (post.id.isEmpty) {
+      post = post.mergedWith(
+        other: Post(
+          id: cleanPostId,
+          caption: '',
+          media: '',
+          userId: authorId.isNotEmpty ? authorId : 'unknown',
+          likesCount: 0,
+          commentsCount: 0,
+          isLiked: false,
+          username: 'unknown',
+          isSubscribed: false,
+          profilePicture: '',
+        ),
+      );
+    }
+
+    if (_needsProfileMetadataEnrichment(post) &&
+        allowProfileFallback &&
+        !profileAlreadyChecked &&
+        authorId.isNotEmpty) {
+      final token = await TokenStorage.getAccessToken();
+      final profilePost = await _findPostInUserProfile(
+        cleanPostId,
+        authorId,
+        Options(headers: {"Authorization": "Bearer $token"}),
+      );
+      if (profilePost != null) {
+        post = profilePost.mergedWith(other: post);
+      }
+    }
+
+    if (!_isCompleteFetchedPost(post, cleanPostId)) {
+      throw Exception('Post media not available: $cleanPostId');
+    }
+
+    AppLogger.d(
+      '✅ [PostService] fetchPostById $cleanPostId → id=${post.id}, media=${post.media.length > 80 ? '${post.media.substring(0, 80)}…' : post.media}, likes=${post.likesCount}, comments=${post.commentsCount}, avatar=${post.profilePicture.isNotEmpty}',
+    );
+    return post;
+  }
+
+  bool _needsProfileMetadataEnrichment(Post post) {
+    return post.profilePicture.trim().isEmpty ||
+        post.username.trim().isEmpty ||
+        post.username == 'unknown';
+  }
+
+  Future<Post?> _findPostInUserProfile(
+    String postId,
+    String userId,
+    Options opts,
+  ) async {
+    final lookupKey = '$userId|$postId';
+    final inFlight = _inFlightProfilePostLookup[lookupKey];
+    if (inFlight != null) return inFlight;
+
+    final future = _findPostInUserProfileOnce(postId, userId, opts);
+    _inFlightProfilePostLookup[lookupKey] = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightProfilePostLookup.remove(lookupKey);
     }
   }
 
-  /// Resolves the requested [postId] from API payloads that may be a single post
-  /// or a paginated list (never blindly use `list.first`).
-  Post _postFromResponseData(dynamic responseData, String postId) {
-    if (responseData is Map) {
-      final map = Map<String, dynamic>.from(responseData);
-      final directId = _readPostId(map['id'] ?? map['post_id'] ?? map['postId']);
-      if (directId == postId) {
-        return Post.fromJson(map);
-      }
+  Future<Post?> _findPostInUserProfileOnce(
+    String postId,
+    String userId,
+    Options opts,
+  ) async {
+    try {
+      final res = await _dio.get(
+        'user/profile/$userId/',
+        queryParameters: const {'all_page': 1, 'all_limit': 20},
+        options: opts,
+      );
+      if (res.statusCode != 200 || res.data == null) return null;
+      return _extractPostFromProfilePayload(res.data, postId);
+    } on DioException catch (e) {
+      AppLogger.d(
+        '⚠️ [PostService] profile lookup for post $postId user $userId: ${e.response?.statusCode}',
+      );
+    } catch (e) {
+      AppLogger.d(
+        '⚠️ [PostService] profile lookup for post $postId user $userId failed: $e',
+      );
+    }
+    return null;
+  }
 
-      final singlePost = map['post'];
-      if (singlePost is Map) {
-        return Post.fromJson(Map<String, dynamic>.from(singlePost));
-      }
+  Post? _extractPostFromProfilePayload(dynamic payload, String postId) {
+    final root = payload is Map ? (payload['data'] ?? payload) : null;
+    if (root is! Map) return null;
 
-      for (final listKey in ['posts', 'results', 'items']) {
-        final list = map[listKey];
-        if (list is! List || list.isEmpty) continue;
+    final rootMap = Map<String, dynamic>.from(root);
+    final postsRoot = rootMap['posts'];
+    if (postsRoot is! Map) return null;
 
-        for (final item in list) {
-          if (item is! Map) continue;
-          final itemMap = Map<String, dynamic>.from(item);
-          final itemId =
-              _readPostId(itemMap['id'] ?? itemMap['post_id'] ?? itemMap['postId']);
-          if (itemId == postId) {
-            return Post.fromJson(itemMap);
+    final postsMap = Map<String, dynamic>.from(postsRoot);
+    for (final tabKey in ['all', 'trending', 'liked', 'likes']) {
+      final tab = postsMap[tabKey];
+      if (tab is! Map) continue;
+      final tabMap = Map<String, dynamic>.from(tab);
+      final results = tabMap['results'];
+      if (results is! List) continue;
+
+      for (final item in results) {
+        if (item is! Map) continue;
+        final itemMap = Map<String, dynamic>.from(item);
+        final itemId = _readPostId(
+          itemMap['id'] ?? itemMap['post_id'] ?? itemMap['postId'],
+        );
+        if (itemId != null && _idsMatch(itemId, postId)) {
+          if (rootMap['user'] is Map) {
+            final userMap = Map<String, dynamic>.from(rootMap['user'] as Map);
+            if (itemMap['profile_picture'] == null &&
+                itemMap['profilePicture'] == null) {
+              final avatar = userMap['profile_picture'] ?? userMap['avatar'];
+              if (avatar != null && avatar.toString().trim().isNotEmpty) {
+                itemMap['profile_picture'] = avatar;
+              }
+            }
+            if (itemMap['username'] == null ||
+                itemMap['username'].toString().trim().isEmpty) {
+              final username = userMap['username']?.toString();
+              if (username != null && username.isNotEmpty) {
+                itemMap['username'] = username;
+              }
+            }
+            if (itemMap['user'] == null && userMap.isNotEmpty) {
+              itemMap['user'] = userMap;
+            }
           }
-        }
 
-        if (list.length == 1 && list.first is Map) {
-          return Post.fromJson(Map<String, dynamic>.from(list.first as Map));
+          return Post.fromJson(itemMap);
         }
       }
+    }
+    return null;
+  }
 
-      return Post.fromJson(map);
+  Post? _tryParsePostResponse(dynamic responseData, String postId) {
+    try {
+      return _postFromResponseData(responseData, postId);
+    } catch (e) {
+      AppLogger.d('⚠️ [PostService] Could not parse post $postId: $e');
+      return null;
+    }
+  }
+
+  bool _isCompleteFetchedPost(Post? post, String expectedId) {
+    if (post == null) return false;
+    if (post.id.isNotEmpty && !_idsMatch(post.id, expectedId)) return false;
+    if (post.isVideo) {
+      final media = post.media.trim();
+      return media.isNotEmpty &&
+          (media.startsWith('http://') || media.startsWith('https://'));
+    }
+    return post.hasPlayableMedia;
+  }
+
+  /// Resolves the requested [postId] from API payloads that may be a single post
+  /// or a paginated list (never parse feed wrappers as posts).
+  Post _postFromResponseData(dynamic responseData, String postId) {
+    if (responseData is! Map) {
+      throw Exception('Post not found or invalid format');
     }
 
-    throw Exception('Post not found or invalid format');
+    final map = Map<String, dynamic>.from(responseData);
+
+    if (_mapLooksLikePost(map)) {
+      final directId = _readPostId(
+        map['id'] ?? map['post_id'] ?? map['postId'],
+      );
+      if (directId == null || _idsMatch(directId, postId)) {
+        return Post.fromJson(map);
+      }
+    }
+
+    final singlePost = map['post'];
+    if (singlePost is Map) {
+      return Post.fromJson(Map<String, dynamic>.from(singlePost));
+    }
+
+    for (final listKey in ['posts', 'results', 'items']) {
+      final list = map[listKey];
+      if (list is! List || list.isEmpty) continue;
+
+      for (final item in list) {
+        if (item is! Map) continue;
+        final itemMap = Map<String, dynamic>.from(item);
+        final itemId = _readPostId(
+          itemMap['id'] ?? itemMap['post_id'] ?? itemMap['postId'],
+        );
+        if (itemId != null && _idsMatch(itemId, postId)) {
+          return Post.fromJson(itemMap);
+        }
+      }
+
+      if (list.length == 1 && list.first is Map) {
+        return Post.fromJson(Map<String, dynamic>.from(list.first as Map));
+      }
+    }
+
+    throw Exception('Post $postId not found in response');
+  }
+
+  bool _mapLooksLikePost(Map<String, dynamic> map) {
+    return map.containsKey('id') ||
+        map.containsKey('post_id') ||
+        map.containsKey('postId') ||
+        map.containsKey('media_url') ||
+        map.containsKey('mediaUrl') ||
+        map.containsKey('media') ||
+        map.containsKey('file') ||
+        map.containsKey('video_url');
+  }
+
+  bool _idsMatch(String a, String b) {
+    final na = a.startsWith('pst_') ? a.substring(4) : a;
+    final nb = b.startsWith('pst_') ? b.substring(4) : b;
+    return na == nb;
   }
 
   String? _readPostId(dynamic raw) {
     final value = raw?.toString().trim();
     if (value == null || value.isEmpty) return null;
+    if (value.startsWith('pst_')) return value.substring(4);
     return value;
   }
 }

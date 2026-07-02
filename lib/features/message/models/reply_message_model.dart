@@ -20,6 +20,7 @@ class ReplyMessageModel {
     }
     if (originalMessage.text.isNotEmpty) return originalMessage.text;
     if (originalMessage.isVideo) return 'Video';
+    if (originalMessage.isAudio) return 'Voice message';
     if (originalMessage.hasMedia) return 'Photo';
     return 'Message';
   }

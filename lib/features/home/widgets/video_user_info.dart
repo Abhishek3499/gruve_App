@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/assets.dart';
@@ -50,12 +51,29 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   bool _isResolvingIdentity = true;
   String? _lastLoggedInUserId;
   bool _isExpanded = false;
+  late TapGestureRecognizer _moreGestureRecognizer;
+  late TapGestureRecognizer _lessGestureRecognizer;
 
   @override
   void initState() {
     super.initState();
     _isResolvingIdentity = true;
     _resolveProfileIdentity();
+    _moreGestureRecognizer = TapGestureRecognizer()..onTap = _toggleExpand;
+    _lessGestureRecognizer = TapGestureRecognizer()..onTap = _toggleExpand;
+  }
+
+  @override
+  void dispose() {
+    _moreGestureRecognizer.dispose();
+    _lessGestureRecognizer.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpand() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
   }
 
   @override
@@ -482,60 +500,75 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                 final isLongText = textPainter.didExceedMaxLines;
 
                 if (isLongText && !_isExpanded) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.caption,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isExpanded = true;
-                          });
-                        },
-                        child: const Text(
-                          "more",
-                          style: TextStyle(
+                  final position = textPainter.getPositionForOffset(
+                    Offset(constraints.maxWidth, textPainter.height),
+                  );
+                  int endIndex = position.offset.clamp(0, widget.caption.length);
+
+                  const linkText = '... more';
+                  // Decrement endIndex until the combined text fits in 2 lines
+                  while (endIndex > 0) {
+                    final testSpan = TextSpan(
+                      children: [
+                        TextSpan(
+                          text: widget.caption.substring(0, endIndex),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                        const TextSpan(text: linkText, style: TextStyle(fontSize: 13)),
+                      ],
+                    );
+
+                    final testPainter = TextPainter(
+                      text: testSpan,
+                      maxLines: 2,
+                      textDirection: TextDirection.ltr,
+                    );
+                    testPainter.layout(maxWidth: constraints.maxWidth);
+
+                    if (!testPainter.didExceedMaxLines) {
+                      break;
+                    }
+                    endIndex--;
+                  }
+
+                  return RichText(
+                    text: TextSpan(
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: widget.caption.substring(0, endIndex),
+                        ),
+                        TextSpan(
+                          text: linkText,
+                          style: const TextStyle(
                             color: Color(0xFFB86AD0),
-                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.caption,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                      if (isLongText && _isExpanded) ...[
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isExpanded = false;
-                            });
-                          },
-                          child: const Text(
-                            "less",
-                            style: TextStyle(
-                              color: Color(0xFFB86AD0),
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          recognizer: _moreGestureRecognizer,
                         ),
                       ],
-                    ],
+                    ),
+                  );
+                } else {
+                  return RichText(
+                    text: TextSpan(
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: widget.caption,
+                        ),
+                        if (isLongText && _isExpanded) ...[
+                          TextSpan(
+                            text: ' less',
+                            style: const TextStyle(
+                              color: Color(0xFFB86AD0),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            recognizer: _lessGestureRecognizer,
+                          ),
+                        ],
+                      ],
+                    ),
                   );
                 }
               },

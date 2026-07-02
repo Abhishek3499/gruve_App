@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/features/search/controllers/explore_reels_controller.dart';
+import 'package:gruve_app/features/search/widgets/explore_reels_grid.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
 
 import 'search_page.dart';
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  late final ExploreReelsController _exploreController;
+
+  @override
+  void initState() {
+    super.initState();
+    _exploreController = ExploreReelsController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _exploreController.loadInitial();
+    });
+  }
+
+  @override
+  void dispose() {
+    _exploreController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,96 +44,29 @@ class SearchScreen extends StatelessWidget {
         ),
         child: SafeArea(
           bottom: false,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-
-                /// SEARCH BAR
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: CustomSearchBar(
-                    readOnly: true,
-                    onTap: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SearchPage(),
-                        ),
-                      );
-                    },
-                  ),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CustomSearchBar(
+                  readOnly: true,
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchPage(),
+                      ),
+                    );
+                  },
                 ),
-
-                const SizedBox(height: 20),
-
-                // /// BANNER
-                // Padding(
-                //   padding: const EdgeInsets.symmetric(horizontal: 16),
-                //   child: RepaintBoundary(
-                //     child: ClipRRect(
-                //       borderRadius: BorderRadius.circular(16),
-                //       child: Image.asset(
-                //         AppAssets.baner,
-                //         height: 180,
-                //         width: double.infinity,
-                //         fit: BoxFit.cover,
-                //       ),
-                //     ),
-                //   ),
-                // ),
-
-                // const SizedBox(height: 20),
-
-                // /// FIRST PROFILE
-                // const RepaintBoundary(
-                //   child: ProfileSection(
-                //     username: "MindChargedBody",
-                //     subtitle: "Challenge",
-                //     stats: "1.5 B",
-                //     profileImage: AppAssets.profile,
-                //   ),
-                // ),
-
-                // const SizedBox(height: 16),
-
-                // RepaintBoundary(
-                //   child: HorizontalImageList(
-                //     imageList: [
-                //       AppAssets.frame1,
-                //       AppAssets.frame2,
-                //       AppAssets.frame3,
-                //     ],
-                //   ),
-                // ),
-
-                // const SizedBox(height: 24),
-
-                // /// SECOND PROFILE
-                // const RepaintBoundary(
-                //   child: ProfileSection(
-                //     username: "Fitnessguru",
-                //     subtitle: "Challenge",
-                //     stats: "2.3 B",
-                //     profileImage: AppAssets.profile,
-                //   ),
-                // ),
-
-                // const SizedBox(height: 16),
-
-                // RepaintBoundary(
-                //   child: HorizontalImageList(
-                //     imageList: [
-                //       AppAssets.frame1,
-                //       AppAssets.frame1,
-                //       AppAssets.frame3,
-                //     ],
-                //   ),
-                // ),
-                const SizedBox(height: 100),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ExploreReelsGrid(controller: _exploreController),
+              ),
+            ],
           ),
         ),
       ),

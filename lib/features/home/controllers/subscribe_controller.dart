@@ -52,7 +52,11 @@ class SubscribeController extends ChangeNotifier {
     final existing = _users[user.userId];
     final localStatus = existing?.isSubscribed;
     final cachedStatus = _subscribeService.isUserSubscribed(user.userId);
-    final resolvedStatus = localStatus ?? (cachedStatus || user.isSubscribed);
+    // Trust subscribed=true from API / Subscribed tab. Never downgrade an
+    // explicit local unsubscribe when incoming is false.
+    final resolvedStatus = user.isSubscribed
+        ? true
+        : (localStatus ?? cachedStatus);
 
     _log(
       '🧠 resolved state userId=${user.userId} local=$localStatus cached=$cachedStatus incoming=${user.isSubscribed} final=$resolvedStatus',

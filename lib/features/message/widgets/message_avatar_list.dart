@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import '../widgets/message_avatar.dart';
 import '../presentation/provider/user_provider.dart';
 import '../utils/user_display_helper.dart';
@@ -18,6 +19,7 @@ class MessageAvatarList extends StatefulWidget {
 class _MessageAvatarListState extends State<MessageAvatarList> {
   final SocketService _socketService = SocketService();
   late final ScrollController _scrollController;
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
 
   @override
   void initState() {
@@ -43,42 +45,16 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
     if (!_scrollController.hasClients) return;
 
     final provider = context.read<UserProvider>();
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-
-    const delta = 100.0;
-
-    if (maxScroll - currentScroll <= delta) {
-      AppLogger.d('📜 [MessageAvatarList] Near end reached → load more users');
-
-      if (!provider.isFetchingMore && provider.hasNext) {
-        _loadMoreUsers();
-      }
-    }
-  }
-
-  Future<void> _loadMoreUsers() async {
-    final provider = context.read<UserProvider>();
-
-    if (provider.isFetchingMore || !provider.hasNext) {
-      AppLogger.d(
-        '⏸️ [MessageAvatarList] LoadMore skipped | '
-        'isFetchingMore: ${provider.isFetchingMore} | '
-        'hasNext: ${provider.hasNext}',
-      );
+    if (!_paginationTrigger.shouldLoadMore(
+      _scrollController,
+      isLoading: provider.isLoading || provider.isFetchingMore,
+      hasMore: provider.hasNext,
+    )) {
       return;
     }
 
-    try {
-      AppLogger.d('🚀 [MessageAvatarList] Loading more users...');
-
-      await provider.fetchUsers(loadMore: true);
-
-      AppLogger.d('✅ [MessageAvatarList] Load more completed');
-    } catch (e) {
-      AppLogger.d('💥 [MessageAvatarList] Load more failed: $e');
-    }
+    AppLogger.d('📜 [MessageAvatarList] Near end reached → load more users');
+    provider.fetchUsers(loadMore: true, reason: 'scroll');
   }
 
   @override

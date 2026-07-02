@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/media/video_frame_cache.dart';
+import 'package:gruve_app/core/media/video_playback_guard.dart';
+import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -16,6 +21,10 @@ class ProfilePostDetailScreen extends StatefulWidget {
   final int initialIndex;
   final bool isOwnProfile;
   final ProfileController? profileController;
+  final String? fallbackDisplayName;
+  final String? fallbackMediaUrl;
+  final String? fallbackProfilePicture;
+  final Future<Post?> Function()? onResolveMedia;
 
   const ProfilePostDetailScreen({
     super.key,
@@ -24,6 +33,10 @@ class ProfilePostDetailScreen extends StatefulWidget {
     required this.initialIndex,
     this.isOwnProfile = false,
     this.profileController,
+    this.fallbackDisplayName,
+    this.fallbackMediaUrl,
+    this.fallbackProfilePicture,
+    this.onResolveMedia,
   });
 
   @override
@@ -34,58 +47,161 @@ class ProfilePostDetailScreen extends StatefulWidget {
 class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   late PageController _pageController;
   late int _currentIndex;
-  late Map<int, VideoPlayerController?> _videoControllers;
-  late Map<String, bool> _isLiked;
+  late List<Post> _posts;
+  final Map<int, VideoPlayerController?> _videoControllers = {};
+  final Set<String> _acquiredUrls = <String>{};
+  final Map<String, bool> _isLiked = {};
+  bool _isResolvingMedia = false;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _posts = List<Post>.from(widget.allPosts);
     _pageController = PageController(initialPage: _currentIndex);
-    _videoControllers = {};
-    _isLiked = {};
-    _initializeVideo(_currentIndex);
+    unawaited(VideoPlaybackGuard.stopAll());
+    _bootstrapPlayback();
   }
 
-  void _initializeVideo(int index) {
-    if (index >= widget.allPosts.length) return;
+  Future<void> _bootstrapPlayback() async {
+    await _ensureMediaResolved(_currentIndex);
 
-    final post = widget.allPosts[index];
-    if (post.isVideo &&
-        _videoControllers[index] == null) {
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(post.media),
-      );
-      controller
-          .initialize()
-          .then((_) {
-            if (mounted) {
-              controller.play();
-              setState(() {
-                _videoControllers[index] = controller;
-              });
-            }
-          })
-          .catchError((e) {
-            AppLogger.d('Video init error: $e');
-          });
+    if (!mounted) return;
+    _initializeVideo(_currentIndex);
+    if (_currentIndex + 1 < _posts.length) {
+      unawaited(_ensureMediaResolved(_currentIndex + 1));
+      _initializeVideo(_currentIndex + 1);
     }
+  }
+
+  Future<void> _ensureMediaResolved(int index) async {
+    if (index < 0 || index >= _posts.length) return;
+
+    final post = _posts[index];
+    if (!_needsMediaResolve(post)) return;
+
+    final showLoader = index == _currentIndex;
+    if (showLoader && mounted) setState(() => _isResolvingMedia = true);
+
+    try {
+      Post? resolved;
+      if (widget.onResolveMedia != null && index == widget.initialIndex) {
+        resolved = await widget.onResolveMedia!();
+      } else {
+        resolved = await _fetchPostById(post);
+      }
+
+      if (!mounted || resolved == null) return;
+
+      final merged = post.mergedWith(other: resolved);
+      if (_needsMediaResolve(merged) && !_hasPlayableVideo(merged)) return;
+
+      _posts[index] = merged;
+    } catch (e) {
+      AppLogger.d('Media resolve error: $e');
+    } finally {
+      if (mounted && showLoader) setState(() => _isResolvingMedia = false);
+    }
+  }
+
+  Future<Post?> _fetchPostById(Post post) async {
+    if (post.id.isEmpty) return null;
+    try {
+      return await PostService().fetchPostById(post.id);
+    } catch (e) {
+      AppLogger.d('fetchPostById error: $e');
+      return null;
+    }
+  }
+
+  bool _needsMediaResolve(Post post) {
+    if (post.isVideo) return !_hasPlayableVideo(post);
+    return post.media.trim().isEmpty && post.id.isNotEmpty;
+  }
+
+  bool _hasPlayableVideo(Post post) {
+    final media = post.media.trim();
+    return post.isVideo &&
+        media.isNotEmpty &&
+        (media.startsWith('http://') || media.startsWith('https://'));
+  }
+
+  Future<void> _initializeVideo(int index) async {
+    if (index < 0 || index >= _posts.length) return;
+
+    final post = _posts[index];
+    final mediaUrl = _mediaUrlFor(post);
+    if (!post.isVideo ||
+        mediaUrl.isEmpty ||
+        _videoControllers.containsKey(index)) {
+      return;
+    }
+
+    final controller = await VideoFrameCache.acquire(mediaUrl);
+    if (!mounted) {
+      if (controller != null) VideoFrameCache.release(mediaUrl);
+      return;
+    }
+    if (controller == null) return;
+
+    _acquiredUrls.add(mediaUrl);
+
+    if (index != _currentIndex) {
+      try {
+        if (controller.value.isPlaying) {
+          await controller.pause();
+        }
+        await controller.setVolume(0);
+      } catch (e) {
+        AppLogger.d('Video preload pause error: $e');
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _videoControllers[index] = controller);
+
+    if (index == _currentIndex) {
+      await _activateVideoAt(index);
+    }
+  }
+
+  Future<void> _activateVideoAt(int index) async {
+    if (index < 0 || index >= _posts.length) return;
+
+    final mediaUrl = _mediaUrlFor(_posts[index]);
+    if (mediaUrl.isEmpty) return;
+
+    await VideoPlaybackGuard.activateCacheVideo(mediaUrl);
+
+    final controller = _videoControllers[index];
+    if (controller == null || !controller.value.isInitialized) return;
+
+    try {
+      await controller.setVolume(1.0);
+      if (!controller.value.isPlaying) {
+        await controller.play();
+      }
+    } catch (e) {
+      AppLogger.d('Video play error: $e');
+    }
+
+    if (mounted) setState(() {});
   }
 
   void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    setState(() => _currentIndex = index);
 
-    if (_videoControllers[index - 1] != null) {
-      _videoControllers[index - 1]?.pause();
-    }
-
-    _initializeVideo(index);
-
-    if (index + 1 < widget.allPosts.length) {
-      _initializeVideo(index + 1);
-    }
+    unawaited(() async {
+      await _ensureMediaResolved(index);
+      if (!mounted || _currentIndex != index) return;
+      _initializeVideo(index);
+      if (index + 1 < _posts.length) {
+        unawaited(_ensureMediaResolved(index + 1));
+        _initializeVideo(index + 1);
+      }
+      if (index - 1 >= 0) _initializeVideo(index - 1);
+      await _activateVideoAt(index);
+    }());
   }
 
   void _toggleLike(String postId) {
@@ -96,7 +212,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   }
 
   void _showOptionsSheet(BuildContext context) async {
-    final post = widget.allPosts[_currentIndex];
+    final post = _posts[_currentIndex];
     final result = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -180,8 +296,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     final success = await PostService().deletePost(post.id);
 
     if (!mounted) return;
-    
-    // Dismiss the loader spinner
+
     Navigator.pop(context);
 
     if (success) {
@@ -224,9 +339,12 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    for (var controller in _videoControllers.values) {
-      controller?.dispose();
+    unawaited(VideoPlaybackGuard.stopAll());
+    for (final url in _acquiredUrls) {
+      VideoFrameCache.release(url);
     }
+    _acquiredUrls.clear();
+    _videoControllers.clear();
     super.dispose();
   }
 
@@ -240,9 +358,9 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             controller: _pageController,
             scrollDirection: Axis.vertical,
             onPageChanged: _onPageChanged,
-            itemCount: widget.allPosts.length,
+            itemCount: _posts.length,
             itemBuilder: (context, index) {
-              final post = widget.allPosts[index];
+              final post = _posts[index];
               return _buildPostItem(post, index);
             },
           ),
@@ -289,29 +407,40 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   }
 
   Widget _buildPostItem(Post post, int index) {
-    final isVideo = post.isVideo;
+    final mediaUrl = _mediaUrlFor(post);
+    final isVideo = post.isVideo && mediaUrl.isNotEmpty;
     final videoController = _videoControllers[index];
     final liked = _isLiked[post.id] ?? post.isLiked;
+    final displayName =
+        post.resolveUsername(fallback: widget.fallbackDisplayName);
+    final avatarUrl = post.resolveProfilePicture(
+      fallback: widget.fallbackProfilePicture,
+    );
+    final showResolving = index == _currentIndex && _isResolvingMedia;
 
     return Stack(
       children: [
         GestureDetector(
           onTap: () {
             if (isVideo && videoController != null) {
-              setState(() {
-                if (videoController.value.isPlaying) {
-                  videoController.pause();
-                } else {
-                  videoController.play();
-                }
-              });
+              if (videoController.value.isPlaying) {
+                videoController.pause();
+                setState(() {});
+              } else {
+                unawaited(_activateVideoAt(index));
+              }
             }
           },
           child: Container(
             color: Colors.black,
             child: isVideo
-                ? _buildVideoPlayer(videoController)
-                : _buildImagePlayer(post.media),
+                ? _DetailVideoPlayer(
+                    controller: showResolving ? null : videoController,
+                    posterUrl: post.gridPreviewUrl,
+                  )
+                : showResolving
+                    ? const _PostMediaSkeleton()
+                    : _buildImagePlayer(mediaUrl),
           ),
         ),
         Positioned(
@@ -340,11 +469,20 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundImage: post.profilePicture.isNotEmpty
-                          ? CachedNetworkImageProvider(post.profilePicture)
+                      backgroundColor: const Color(0xFF6A008A),
+                      backgroundImage: avatarUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(avatarUrl)
                           : null,
-                      child: post.profilePicture.isEmpty
-                          ? const Icon(Icons.person, color: Colors.white)
+                      child: avatarUrl.isEmpty
+                          ? Text(
+                              displayName.isNotEmpty
+                                  ? displayName[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
                           : null,
                     ),
                     const SizedBox(width: 12),
@@ -353,7 +491,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            post.username,
+                            displayName,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -446,34 +584,32 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     );
   }
 
-  Widget _buildVideoPlayer(VideoPlayerController? controller) {
-    if (controller == null || !controller.value.isInitialized) {
-      return const _PostMediaLoader();
+  String _mediaUrlFor(Post post) {
+    if (post.isVideo) {
+      final video = post.media.trim();
+      if (video.isNotEmpty) return video;
+      return widget.fallbackMediaUrl?.trim() ?? '';
     }
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: controller.value.size.width,
-          height: controller.value.size.height,
-          child: VideoPlayer(controller),
-        ),
-      ),
-    );
+
+    final primary = post.media.trim();
+    if (primary.isNotEmpty) return primary;
+    final poster = post.gridPreviewUrl.trim();
+    if (poster.isNotEmpty) return poster;
+    return widget.fallbackMediaUrl?.trim() ?? '';
   }
 
   Widget _buildImagePlayer(String imageUrl) {
     if (imageUrl.isEmpty) {
-      return const Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
-      );
+      return const _PostMediaSkeleton();
     }
     return CachedNetworkImage(
       imageUrl: imageUrl,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      placeholder: (context, url) => const _PostMediaLoader(),
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholder: (context, url) => const _PostMediaSkeleton(),
       errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
       ),
@@ -506,19 +642,137 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   }
 }
 
-class _PostMediaLoader extends StatelessWidget {
-  const _PostMediaLoader();
+/// Poster-first video player — reuses grid cache, fades in when first frame renders.
+class _DetailVideoPlayer extends StatefulWidget {
+  final VideoPlayerController? controller;
+  final String posterUrl;
+
+  const _DetailVideoPlayer({
+    required this.controller,
+    required this.posterUrl,
+  });
+
+  @override
+  State<_DetailVideoPlayer> createState() => _DetailVideoPlayerState();
+}
+
+class _DetailVideoPlayerState extends State<_DetailVideoPlayer> {
+  bool _hasRenderedFrame = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller?.addListener(_onControllerUpdate);
+    _syncFrameState();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DetailVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller?.removeListener(_onControllerUpdate);
+      widget.controller?.addListener(_onControllerUpdate);
+      _syncFrameState();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller?.removeListener(_onControllerUpdate);
+    super.dispose();
+  }
+
+  bool _computeHasRenderedFrame(VideoPlayerValue value) {
+    return value.isInitialized &&
+        value.size.width > 0 &&
+        value.size.height > 0 &&
+        (value.position > Duration.zero || !value.isBuffering);
+  }
+
+  void _syncFrameState() {
+    final ctrl = widget.controller;
+    _hasRenderedFrame =
+        ctrl != null && _computeHasRenderedFrame(ctrl.value);
+  }
+
+  void _onControllerUpdate() {
+    final ctrl = widget.controller;
+    if (ctrl == null) return;
+    final nowHasFrame = _computeHasRenderedFrame(ctrl.value);
+    if (nowHasFrame != _hasRenderedFrame) {
+      setState(() => _hasRenderedFrame = nowHasFrame);
+    }
+  }
+
+  Widget _buildPoster() {
+    final poster = widget.posterUrl.trim();
+    if (poster.isEmpty || !poster.startsWith('http')) {
+      return const _PostMediaSkeleton();
+    }
+
+    final mediaSize = MediaQuery.sizeOf(context);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = (mediaSize.width * dpr * 0.8).round().clamp(320, 1080);
+    final cacheHeight = (mediaSize.height * dpr * 0.8).round().clamp(640, 1920);
+
+    return CachedNetworkImage(
+      imageUrl: poster,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      memCacheWidth: cacheWidth,
+      memCacheHeight: cacheHeight,
+      maxWidthDiskCache: cacheWidth,
+      maxHeightDiskCache: cacheHeight,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      useOldImageOnUrlChange: true,
+      placeholder: (context, url) => const _PostMediaSkeleton(),
+      errorWidget: (context, url, error) => const _PostMediaSkeleton(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: SizedBox(
-        width: 28,
-        height: 28,
-        child: CircularProgressIndicator(
-          color: AppColors.loaderDark,
-          strokeWidth: 2.6,
-        ),
+    final controller = widget.controller;
+    final showVideo =
+        controller != null && controller.value.isInitialized;
+    final hidePoster = showVideo && _hasRenderedFrame;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (!hidePoster) _buildPoster(),
+        if (showVideo)
+          AnimatedOpacity(
+            opacity: _hasRenderedFrame ? 1 : 0,
+            duration: const Duration(milliseconds: 120),
+            child: SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: controller.value.size.width,
+                  height: controller.value.size.height,
+                  child: VideoPlayer(controller),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PostMediaSkeleton extends StatelessWidget {
+  const _PostMediaSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppShimmer(
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: AppColors.skeletonPlaceholder,
       ),
     );
   }

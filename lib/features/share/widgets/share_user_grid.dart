@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
@@ -17,6 +18,7 @@ class ShareUserGrid extends StatefulWidget {
 class _ShareUserGridState extends State<ShareUserGrid> {
   final TextEditingController _searchController = TextEditingController();
   late final ScrollController _scrollController;
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
 
   @override
   void initState() {
@@ -25,7 +27,7 @@ class _ShareUserGridState extends State<ShareUserGrid> {
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<UserProvider>().fetchUsers();
+        context.read<UserProvider>().fetchUsers(reason: 'initial');
       }
     });
   }
@@ -43,15 +45,15 @@ class _ShareUserGridState extends State<ShareUserGrid> {
     if (_searchController.text.trim().isNotEmpty) return;
 
     final provider = context.read<UserProvider>();
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-    const delta = 100.0;
-
-    if (maxScroll - currentScroll <= delta) {
-      if (!provider.isFetchingMore && provider.hasNext) {
-        provider.fetchUsers(loadMore: true);
-      }
+    if (!_paginationTrigger.shouldLoadMore(
+      _scrollController,
+      isLoading: provider.isLoading || provider.isFetchingMore,
+      hasMore: provider.hasNext,
+    )) {
+      return;
     }
+
+    provider.fetchUsers(loadMore: true, reason: 'scroll');
   }
 
   void _onSearchChanged(String query) {

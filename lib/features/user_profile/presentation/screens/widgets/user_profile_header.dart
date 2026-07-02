@@ -114,10 +114,10 @@ class UserProfileHeader extends StatelessWidget {
                             subscribeController: subscribeController,
                             initialIsSubscribed: initialIsSubscribed,
                           ),
-                          const SizedBox(width: 21),
+                          const SizedBox(width: 8),
                         ] else if (reserveSubscribeSpace) ...[
-                          const SizedBox(width: 120, height: 36),
-                          const SizedBox(width: 21),
+                          const SizedBox(width: 130, height: 38),
+                          const SizedBox(width: 8),
                         ],
                         GiftButton(
                           onTap: () {

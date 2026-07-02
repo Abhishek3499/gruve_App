@@ -7,12 +7,15 @@ import 'package:video_player/video_player.dart';
 class VideoFrameCache {
   VideoFrameCache._();
 
-  static const int _maxEntries = 24;
+  static const int _maxEntries = 64;
+  static const int _maxConcurrentInit = 12;
 
   static final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   static final Queue<String> _lru = Queue<String>();
   static final Map<String, Future<VideoPlayerController?>> _inFlight =
       <String, Future<VideoPlayerController?>>{};
+  static int _activeInits = 0;
+  static final Queue<Completer<void>> _initWaitQueue = Queue<Completer<void>>();
 
   static VideoPlayerController? peekReady(String url) {
     final key = url.trim();
@@ -83,21 +86,91 @@ class VideoFrameCache {
     }
   }
 
-  static Future<VideoPlayerController?> _createController(String key) async {
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(key),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-    );
+  /// Preload many video first-frames in parallel (grids + feed posters).
+  static Future<void> warmupMany(
+    Iterable<String> urls, {
+    int concurrency = _maxConcurrentInit,
+  }) async {
+    final pending = <String>{};
+    for (final raw in urls) {
+      final key = raw.trim();
+      if (key.isEmpty) continue;
+      if (peekReady(key) != null) continue;
+      pending.add(key);
+    }
+    if (pending.isEmpty) return;
 
+    final list = pending.toList();
+    final safeConcurrency = concurrency.clamp(1, _maxConcurrentInit);
+    for (var i = 0; i < list.length; i += safeConcurrency) {
+      final batch = list.skip(i).take(safeConcurrency);
+      await Future.wait(batch.map(warmup));
+    }
+  }
+
+  /// Pauses every cached controller so only one clip can output audio at a time.
+  static Future<void> pauseAll({String? activeUrl, double activeVolume = 1.0}) async {
+    final activeKey = activeUrl?.trim() ?? '';
+
+    for (final entry in _cache.entries) {
+      final controller = entry.value.controller;
+      if (!controller.value.isInitialized) continue;
+
+      try {
+        if (activeKey.isNotEmpty && entry.key == activeKey) {
+          await controller.setVolume(activeVolume);
+        } else {
+          if (controller.value.isPlaying) {
+            await controller.pause();
+          }
+          await controller.setVolume(0);
+        }
+      } catch (_) {}
+    }
+  }
+
+  static Future<VideoPlayerController?> _createController(String key) async {
+    await _acquireInitSlot();
     try {
-      await controller.initialize();
-      await controller.setVolume(0);
-      await controller.pause();
-      await controller.seekTo(Duration.zero);
-      return controller;
-    } catch (_) {
-      await controller.dispose();
-      return null;
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(key),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+
+      try {
+        await controller.initialize().timeout(const Duration(seconds: 12));
+        await controller.setVolume(0);
+        await controller.pause();
+        await controller.seekTo(Duration.zero);
+        return controller;
+      } catch (_) {
+        await controller.dispose();
+        return null;
+      }
+    } finally {
+      _releaseInitSlot();
+    }
+  }
+
+  static Future<void> _acquireInitSlot() async {
+    if (_activeInits < _maxConcurrentInit) {
+      _activeInits++;
+      return;
+    }
+
+    final waiter = Completer<void>();
+    _initWaitQueue.add(waiter);
+    await waiter.future;
+    _activeInits++;
+  }
+
+  static void _releaseInitSlot() {
+    _activeInits--;
+    if (_initWaitQueue.isEmpty) return;
+
+    final next = _initWaitQueue.removeFirst();
+    if (!next.isCompleted) {
+      next.complete();
     }
   }
 

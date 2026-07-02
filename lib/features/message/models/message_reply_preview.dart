@@ -37,8 +37,20 @@ class MessageReplyPreview {
       senderName: senderName ?? message.senderName ?? 'User',
       contentPreview: message.text.isNotEmpty
           ? message.text
-          : (message.isVideo ? 'Video' : message.hasMedia ? 'Photo' : ''),
-      messageKind: message.isVideo ? 'video' : (message.hasMedia ? 'image' : 'text'),
+          : (message.isVideo
+              ? 'Video'
+              : message.isAudio
+                  ? 'Voice message'
+                  : message.hasMedia
+                      ? 'Photo'
+                      : ''),
+      messageKind: message.isVideo
+          ? 'video'
+          : (message.isAudio
+              ? 'audio'
+              : message.hasMedia
+                  ? 'image'
+                  : 'text'),
       mediaUrl: message.hasMedia && !message.isLocalMedia ? message.imagePath : null,
     );
   }
@@ -50,6 +62,8 @@ class MessageReplyPreview {
         return 'Video';
       case 'image':
         return 'Photo';
+      case 'audio':
+        return 'Voice message';
       default:
         return '';
     }

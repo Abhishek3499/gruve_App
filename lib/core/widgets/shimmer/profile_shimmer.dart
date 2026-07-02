@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/widgets/profile_grid_style.dart';
 import 'app_shimmer.dart';
 
 class ProfileShimmer extends StatelessWidget {
@@ -217,6 +218,31 @@ class ProfileTabsShimmer extends StatelessWidget {
   }
 }
 
+class ExploreGridShimmer extends StatelessWidget {
+  final int itemCount;
+
+  const ExploreGridShimmer({super.key, this.itemCount = 12});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppShimmer(
+      child: GridView.builder(
+        padding: ProfileGridStyle.gridPadding.copyWith(bottom: 100),
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: ProfileGridStyle.gridDelegate,
+        itemCount: itemCount,
+        itemBuilder: (_, _) {
+          return const ShimmerBox(
+            height: double.infinity,
+            width: double.infinity,
+            borderRadius: ProfileGridStyle.tileRadius,
+          );
+        },
+      ),
+    );
+  }
+}
+
 class ProfileGridShimmer extends StatelessWidget {
   final int itemCount;
 
@@ -227,19 +253,14 @@ class ProfileGridShimmer extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      padding: ProfileGridStyle.gridPadding,
       itemCount: itemCount,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.75,
-      ),
+      gridDelegate: ProfileGridStyle.gridDelegate,
       itemBuilder: (_, _) {
         return const ShimmerBox(
           height: double.infinity,
           width: double.infinity,
-          borderRadius: 18,
+          borderRadius: ProfileGridStyle.tileRadius,
         );
       },
     );

@@ -41,6 +41,8 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>This app requires access to the microphone to record voice messages.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
@@ -49,5 +51,9 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>This app requires camera access to capture photos for sending in chat.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>This app requires photo library access to choose images to send in chat.</string>
 	</dict>
 </plist>

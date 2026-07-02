@@ -15,10 +15,11 @@ import 'optimized_video_overlay.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'video_top_bar.dart';
 import '../../../core/widgets/shimmer/feed_shimmer.dart';
+import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class VideoFeed extends StatefulWidget {
-  final int selectedIndex;
+  final ValueNotifier<int> selectedIndex;
   final Function(int) onTabChanged;
   final Function(VideoFeedController)? onControllerReady;
 
@@ -107,14 +108,19 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
 
   @override
   void didPushNext() {
-    AppLogger.d('🚦 [VideoFeed] User navigated away - pausing video');
-    _controller.pauseCurrentVideo();
+    AppLogger.d('🚦 [VideoFeed] User navigated away - releasing video controllers to free decoders');
+    _controller.releaseAllControllers();
   }
 
   @override
   void didPopNext() {
-    AppLogger.d('🚦 [VideoFeed] User returned - resuming video');
-    _controller.playVideo(_controller.currentIndex.value);
+    AppLogger.d('🚦 [VideoFeed] User returned - didPopNext triggered');
+    if (widget.selectedIndex.value == 0) {
+      AppLogger.d('🚦 [VideoFeed] Currently on Home tab, resuming video');
+      _controller.playVideo(_controller.currentIndex.value);
+    } else {
+      AppLogger.d('🚦 [VideoFeed] Not on Home tab (selectedIndex: ${widget.selectedIndex.value}), keeping video paused');
+    }
   }
 
   void _onPageChanged(int page) {
@@ -132,7 +138,7 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
         !_controller.isLoadingMore &&
         !_controller.isRefreshing) {
       _lastPaginationTriggerItemCount = itemCount;
-      _controller.loadMorePosts();
+      _controller.loadMorePosts(reason: 'scroll');
     }
   }
 
@@ -592,6 +598,100 @@ class FeedPosterImage extends StatelessWidget {
   }
 }
 
+/// Shows a prefetched first video frame while the feed player initializes.
+class FeedCachedVideoPoster extends StatefulWidget {
+  final String videoUrl;
+
+  const FeedCachedVideoPoster({super.key, required this.videoUrl});
+
+  @override
+  State<FeedCachedVideoPoster> createState() => _FeedCachedVideoPosterState();
+}
+
+class _FeedCachedVideoPosterState extends State<FeedCachedVideoPoster> {
+  VideoPlayerController? _controller;
+  bool _disposed = false;
+  late String _boundUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _boundUrl = widget.videoUrl.trim();
+    final cached = VideoFrameCache.peekReady(_boundUrl);
+    if (cached != null) {
+      _controller = cached;
+      unawaited(_attach());
+    } else {
+      unawaited(_load());
+    }
+  }
+
+  Future<void> _attach() async {
+    final controller = await VideoFrameCache.acquire(_boundUrl);
+    if (!mounted || _disposed) {
+      if (controller != null) VideoFrameCache.release(_boundUrl);
+      return;
+    }
+    setState(() => _controller = controller);
+  }
+
+  Future<void> _load() async {
+    final controller = await VideoFrameCache.acquire(_boundUrl);
+    if (!mounted || _disposed) {
+      if (controller != null) VideoFrameCache.release(_boundUrl);
+      return;
+    }
+    setState(() => _controller = controller);
+  }
+
+  @override
+  void didUpdateWidget(covariant FeedCachedVideoPoster oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl.trim() != widget.videoUrl.trim()) {
+      if (_controller != null) VideoFrameCache.release(_boundUrl);
+      _boundUrl = widget.videoUrl.trim();
+      _controller = VideoFrameCache.peekReady(_boundUrl);
+      if (_controller != null) {
+        unawaited(_attach());
+      } else {
+        unawaited(_load());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    VideoFrameCache.release(_boundUrl);
+    _controller = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    final ready = controller != null &&
+        controller.value.isInitialized &&
+        controller.value.size.width > 0 &&
+        controller.value.size.height > 0;
+
+    if (!ready) {
+      return const FeedPosterShimmer();
+    }
+
+    final size = controller.value.size;
+    return FittedBox(
+      fit: BoxFit.cover,
+      clipBehavior: Clip.hardEdge,
+      child: SizedBox(
+        width: size.width,
+        height: size.height,
+        child: VideoPlayer(controller),
+      ),
+    );
+  }
+}
+
 class FeedMediaContent extends StatelessWidget {
   final int index;
   final VideoFeedController controller;
@@ -755,28 +855,54 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     }
   }
 
-  Widget _brokenMediaIcon() {
-    return const Center(
-      child: Icon(Icons.broken_image, color: Colors.white, size: 50),
-    );
-  }
-
   Widget _buildPoster(BuildContext context) {
     final poster = widget.posterUrl.trim();
-    if (poster.isEmpty || !poster.startsWith('http')) {
-      return const FeedPosterShimmer();
+    if (poster.isNotEmpty &&
+        poster.startsWith('http') &&
+        !Post.mediaUrlLooksLikeVideo(poster)) {
+      return FeedPosterImage(url: poster);
     }
 
-    return FeedPosterImage(url: poster);
+    final mediaUrl = widget.url.trim();
+    if (Post.mediaUrlLooksLikeVideo(mediaUrl)) {
+      return FeedCachedVideoPoster(videoUrl: mediaUrl);
+    }
+
+    return const FeedPosterShimmer();
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.controller.hasVideoLoadFailed(widget.index)) {
-      AppLogger.d(
-        '❌ video filtered/skipped — player failed: ${widget.url}',
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildPoster(context),
+          Center(
+            child: GestureDetector(
+              onTap: widget.controller.togglePlayPause,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tap to retry',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       );
-      return _brokenMediaIcon();
     }
 
     final videoController = _boundController;

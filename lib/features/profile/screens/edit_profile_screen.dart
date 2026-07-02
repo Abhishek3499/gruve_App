@@ -55,8 +55,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _scrollToOffset(0);
     } else if (_usernameFocusNode.hasFocus) {
       _scrollToOffset(120);
-    } else if (_bioFocusNode.hasFocus) {
-      _scrollToOffset(350);
     }
   }
 
@@ -75,8 +73,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _scrollToOffset(0);
     } else if (_usernameFocusNode.hasFocus) {
       _scrollToOffset(120);
-    } else if (_bioFocusNode.hasFocus) {
-      _scrollToOffset(350);
     }
   }
 
@@ -218,6 +214,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_controller.errorMessage == null &&
         _controller.profileResponse != null) {
       _populateFormFields();
+      _showSnackBar('Profile updated successfully', Colors.green);
       Navigator.of(context).pop(_controller.profileResponse);
       return;
     }
@@ -297,7 +294,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 return SingleChildScrollView(
                   controller: _scrollController,
                   physics: isKeyboardOpen
-                      ? const ClampingScrollPhysics()
+                      ? const NeverScrollableScrollPhysics()
                       : const BouncingScrollPhysics(),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(

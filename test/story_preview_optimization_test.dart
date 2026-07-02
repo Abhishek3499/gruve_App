@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
 
@@ -10,6 +12,15 @@ import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.da
 /// 3. Avatar only fetch skips highlights
 /// 4. Pre-caching doesn't block main thread
 void main() {
+  setUpAll(() async {
+    dotenv.testLoad(fileInput: '''
+BASE_URL=https://gruve-api.hardkore.tech/api/v1/
+WS_URL=wss://gruve-api.hardkore.tech/ws
+GOOGLE_WEB_CLIENT_ID=911374841840-vldpe65qb65ohi6bfnll6ulh09m0qpgn.apps.googleusercontent.com
+''');
+    await EnvironmentConfig.initialize();
+  });
+
   group('ProfileProvider Cache Optimizations', () {
     test('hasFreshProfile returns false when user is null', () {
       final provider = ProfileProvider();

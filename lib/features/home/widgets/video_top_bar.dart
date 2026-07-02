@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/notification/screens/notification_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:gruve_app/features/notification/providers/notification_provider.dart';
 
 class VideoTopBar extends StatelessWidget {
   final String selectedTab;
@@ -55,33 +57,79 @@ class VideoTopBar extends StatelessWidget {
                   Positioned(
                     right: 16,
                     top: 0,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationScreen(),
+                    child: Consumer<NotificationProvider>(
+                      builder: (context, provider, _) {
+                        final count = provider.unreadCount;
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NotificationScreen(),
+                              ),
+                            );
+                          },
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                                child: Center(
+                                  child: SizedBox(
+                                    height: 25,
+                                    width: 25,
+                                    child: Image.asset(
+                                      AppAssets.notification1,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (count > 0)
+                                Positioned(
+                                  right: -2,
+                                  top: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF3B30), // Premium vibrant iOS red
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.black, width: 1.5),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.3),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      count > 99 ? '99+' : '$count',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w900,
+                                        fontFamily: 'Outfit',
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         );
                       },
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                        child: Center(
-                          child: SizedBox(
-                            height: 25,
-                            width: 25,
-                            child: Image.asset(
-                              AppAssets.notification1,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ],

@@ -74,6 +74,48 @@ void main() {
         );
         expect(SharedPostMessageParser.extractPostIdFromText(''), isNull);
       });
+
+      test('returns null when tagged phrase has no post id in text', () {
+        expect(
+          SharedPostMessageParser.extractPostIdFromText(
+            'Abhishek tagged you in a post.',
+          ),
+          isNull,
+        );
+      });
+    });
+
+    group('extractPostId from payload', () {
+      test('reads post_id from root when text has no id', () {
+        expect(
+          SharedPostMessageParser.extractPostId(
+            {
+              'message_type': 'post_tag',
+              'post_id': 'pst_60ad4f7b9b7c',
+              'content': 'Abhishek tagged you in a post.',
+            },
+            'Abhishek tagged you in a post.',
+          ),
+          equals('60ad4f7b9b7c'),
+        );
+      });
+    });
+
+    group('extractPreviewUrl', () {
+      test('reads media_url from tagged_post payload', () {
+        expect(
+          SharedPostMessageParser.extractPreviewUrl(
+            {
+              'tagged_post': {
+                'id': '60ad4f7b9b7c',
+                'media_url': 'https://example.com/post.jpg',
+              },
+            },
+            postId: '60ad4f7b9b7c',
+          ),
+          equals('https://example.com/post.jpg'),
+        );
+      });
     });
 
     group('isTaggedPostMessage', () {
@@ -174,6 +216,29 @@ void main() {
         expect(
           message.sharedPost!.profilePicture,
           equals('https://example.com/pic.jpg'),
+        );
+      });
+
+      test('keeps tagged_post with media even when username is unknown', () {
+        final payload = {
+          'id': 'msg_tag_1',
+          'content': 'Abhishek tagged you in a post.',
+          'message_type': 'post_tag',
+          'post_id': '60ad4f7b9b7c',
+          'tagged_post': {
+            'id': '60ad4f7b9b7c',
+            'media_url': 'https://example.com/tagged.jpg',
+            'thumbnail_url': 'https://example.com/tagged-thumb.jpg',
+          },
+        };
+
+        final message = MessageModel.fromJson(payload);
+        expect(message.sharedPostId, equals('60ad4f7b9b7c'));
+        expect(message.sharedPost, isNotNull);
+        expect(message.sharedPost!.media, equals('https://example.com/tagged.jpg'));
+        expect(
+          message.sharedPostPreviewUrl,
+          equals('https://example.com/tagged-thumb.jpg'),
         );
       });
     });

@@ -9,6 +9,7 @@ import '../../../services/socket_service.dart';
 import '../../../features/auth/token_storage.dart';
 
 import '../controllers/message_controller.dart';
+import '../providers/message_provider.dart';
 import '../models/conversation_model.dart';
 import '../models/message_media_model.dart';
 import '../models/message_reply_preview.dart';
@@ -23,6 +24,7 @@ import '../widgets/block/block_user_widget.dart';
 import '../widgets/pinned_message_banner.dart';
 import '../widgets/reply_preview_bar.dart';
 import '../../../core/widgets/shimmer/chat_shimmer.dart';
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -54,6 +56,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   late final MessageController _messageController;
   final ScrollController _scrollController = ScrollController();
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
   final TextEditingController _inputController = TextEditingController();
   final SocketService _socketService = SocketService();
 
@@ -145,7 +148,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String? get _userAvatar {
     // Priority 1: Explicit profile image parameter
-    if (_useExplicitData && widget.profileImage != null) {
+    if (widget.profileImage != null && widget.profileImage!.isNotEmpty) {
       return widget.profileImage;
     }
 
@@ -215,23 +218,30 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _onMessageScroll() {
     if (!_scrollController.hasClients ||
-        _isLoadingOlderMessages ||
-        _messageController.isLoadingMore ||
-        !_messageController.hasMoreData ||
         _messageController.isInitialLoading) {
       return;
     }
 
-    // With reverse: true, scrolling UP increases pixels towards maxScrollExtent.
-    // Fetch older messages when we are within 200 pixels of the top (maxScrollExtent).
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      _loadOlderMessages();
+    if (!_paginationTrigger.shouldLoadMore(
+      _scrollController,
+      isLoading:
+          _isLoadingOlderMessages ||
+          _messageController.isLoadingMore,
+      hasMore: _messageController.hasMoreData,
+    )) {
+      return;
     }
+
+    _loadOlderMessages();
   }
 
   Future<void> _loadOlderMessages() async {
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients ||
+        _isLoadingOlderMessages ||
+        _messageController.isLoadingMore ||
+        !_messageController.hasMoreData) {
+      return;
+    }
 
     _isLoadingOlderMessages = true;
 
@@ -263,6 +273,53 @@ class _ChatScreenState extends State<ChatScreen> {
         !_hasCompletedInitialScroll) {
       _hasCompletedInitialScroll = true;
       _scrollToBottom(animated: true);
+    }
+
+    // Optimistically update conversation details in MessageProvider for instant refresh on back navigation
+    if (!_messageController.isInitialLoading &&
+        !_messageController.hasError &&
+        _messageController.hasMessages) {
+      final conversationId = _messageController.conversationId;
+      if (conversationId.isNotEmpty) {
+        final lastMsg = _messageController.messagesNewestFirst.first;
+        final messageProvider = context.read<MessageProvider>();
+        final existingConversation = messageProvider.getConversationById(conversationId);
+        
+        if (existingConversation != null) {
+          final updated = existingConversation.copyWith(
+            lastMessage: LastMessage(
+              content: lastMsg.text.isEmpty && lastMsg.hasMedia
+                  ? (lastMsg.mediaKind == 'audio' ? 'Voice message' : lastMsg.mediaKind ?? 'Media')
+                  : lastMsg.text,
+              createdAt: lastMsg.timestamp,
+              messageKind: lastMsg.mediaKind,
+            ),
+            hasLastMessage: true,
+            updatedAt: lastMsg.timestamp,
+          );
+          messageProvider.updateConversation(updated);
+        } else {
+          final newConversation = ConversationModel(
+            id: conversationId,
+            otherUser: OtherUser(
+              id: _userId,
+              name: _userName,
+              avatar: _userAvatar,
+            ),
+            lastMessage: LastMessage(
+              content: lastMsg.text.isEmpty && lastMsg.hasMedia
+                  ? (lastMsg.mediaKind == 'audio' ? 'Voice message' : lastMsg.mediaKind ?? 'Media')
+                  : lastMsg.text,
+              createdAt: lastMsg.timestamp,
+              messageKind: lastMsg.mediaKind,
+            ),
+            hasLastMessage: true,
+            updatedAt: lastMsg.timestamp,
+            unreadCount: 0,
+          );
+          messageProvider.updateConversation(newConversation);
+        }
+      }
     }
   }
 
@@ -856,6 +913,79 @@ class _ChatScreenState extends State<ChatScreen> {
     unawaited(_sendMedia(mediaPath));
   }
 
+  void _sendVoice(String audioPath) {
+    unawaited(_sendVoiceMessage(audioPath));
+  }
+
+  Future<void> _sendVoiceMessage(String audioPath) async {
+    if (_isUploadingMedia) return;
+
+    final replyMessage = _activeReply?.originalMessage;
+    final replyToMessageId = replyMessage?.id;
+
+    if (!mounted) return;
+    setState(() => _isUploadingMedia = true);
+
+    if (_activeReply != null) {
+      setState(() => _activeReply = null);
+    }
+
+    final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final newMessage = MessageModel(
+      id: localId,
+      text: '',
+      timestamp: DateTime.now(),
+      isSent: true,
+      senderId: _currentUserId ?? 'me',
+      imagePath: audioPath,
+      mediaKind: 'audio',
+      replyTo: replyMessage,
+      replyPreview: replyMessage != null
+          ? MessageReplyPreview.fromMessage(
+              replyMessage,
+              senderName: replyMessage.isSent ? 'You' : _userName,
+            )
+          : null,
+      status: MessageStatus.sent,
+    );
+
+    _messageController.appendLocalMessage(newMessage);
+    _scrollToBottom();
+
+    try {
+      final uploaded = await _messageController.uploadMessageMedia(audioPath);
+      await _deliverMessage(
+        localId: localId,
+        content: '',
+        replyToMessageId: replyToMessageId,
+        media: uploaded,
+      );
+    } catch (e) {
+      _messageController.markMessageAsFailed(localId);
+      if (mounted) {
+        setState(() => _isUploadingMedia = false);
+        
+        String errorMsg = e.toString();
+        if (errorMsg.contains('413')) {
+          errorMsg = 'File too large (> 10 MB)';
+        } else if (errorMsg.contains('400')) {
+          errorMsg = 'Unsupported audio format';
+        } else if (errorMsg.contains('403')) {
+          errorMsg = 'Not a conversation participant';
+        } else {
+          errorMsg = 'Failed to upload voice message: $e';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _sendMedia(String mediaPath) async {
     if (_isUploadingMedia) return;
 
@@ -1257,6 +1387,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         : null,
                                     onSendMessage: _sendMessage,
                                     onSendImage: _sendImage,
+                                    onSendVoice: _sendVoice,
                                     isLoading: _isUploadingMedia,
                                   ),
                               ],

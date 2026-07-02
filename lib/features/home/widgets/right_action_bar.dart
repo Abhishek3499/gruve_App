@@ -15,8 +15,8 @@ class RightActionBar extends StatelessWidget {
   const RightActionBar({
     super.key,
     this.likeCount = 0,
-    this.commentCount = 8200,
-    this.shareCount = 2100,
+    this.commentCount = 0,
+    this.shareCount = 0,
     this.isLiked = false, // ✅ correct
     this.onGift,
     this.onLike,
@@ -60,7 +60,11 @@ class RightActionBar extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            _ActionIcon(iconPath: AppAssets.share, onTap: onShare),
+            _ActionIcon(
+              iconPath: AppAssets.share,
+              count: _formatCount(shareCount),
+              onTap: onShare,
+            ),
 
             const SizedBox(height: 12),
 

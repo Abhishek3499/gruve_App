@@ -316,7 +316,28 @@ class MessageService {
     return id;
   }
 
-  /// Upload image/video before sending via POST .../messages/.
+  DioMediaType? _getMediaType(String filePath) {
+    final lower = filePath.toLowerCase();
+    if (lower.endsWith('.mp4')) return DioMediaType('video', 'mp4');
+    if (lower.endsWith('.mov')) return DioMediaType('video', 'quicktime');
+    if (lower.endsWith('.webm')) return DioMediaType('video', 'webm');
+    if (lower.endsWith('.m4v')) return DioMediaType('video', 'x-m4v');
+    if (lower.endsWith('.3gp')) return DioMediaType('video', '3gpp');
+    
+    if (lower.endsWith('.png')) return DioMediaType('image', 'png');
+    if (lower.endsWith('.gif')) return DioMediaType('image', 'gif');
+    if (lower.endsWith('.webp')) return DioMediaType('image', 'webp');
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return DioMediaType('image', 'jpeg');
+    
+    if (lower.endsWith('.m4a')) return DioMediaType('audio', 'mp4');
+    if (lower.endsWith('.aac')) return DioMediaType('audio', 'aac');
+    if (lower.endsWith('.mp3')) return DioMediaType('audio', 'mpeg');
+    if (lower.endsWith('.wav')) return DioMediaType('audio', 'wav');
+    
+    return DioMediaType('image', 'jpeg'); // Safe fallback
+  }
+
+  /// Upload image/video/audio before sending via POST .../messages/.
   Future<MessageMediaPayload> uploadMessageMedia({
     required String conversationId,
     required String filePath,
@@ -332,12 +353,17 @@ class MessageService {
     }
 
     final endpoint = '/conversations/$conversationId/messages/media/';
-    final fileName = filePath.split(Platform.pathSeparator).last;
+    final fileName = filePath.split('/').last.split('\\').last;
 
     try {
       AppLogger.d('[MessageService] 📤 POST multipart $endpoint');
+      final mediaType = _getMediaType(filePath);
       final formData = FormData.fromMap({
-        'media': await MultipartFile.fromFile(filePath, filename: fileName),
+        'media': await MultipartFile.fromFile(
+          filePath,
+          filename: fileName,
+          contentType: mediaType,
+        ),
       });
 
       final response = await _dio.post<dynamic>(

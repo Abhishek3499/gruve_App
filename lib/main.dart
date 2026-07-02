@@ -160,9 +160,12 @@ class MyApp extends StatelessWidget {
             UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
           ),
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<CurrentUserProvider, NotificationProvider>(
           lazy: false,
           create: (_) => NotificationProvider(),
+          update: (_, currentUserProvider, notificationProvider) =>
+              (notificationProvider ?? NotificationProvider())
+                ..updateFromCurrentUser(currentUserProvider),
         ),
         ChangeNotifierProvider(
           create: (_) => DraftsProvider(),

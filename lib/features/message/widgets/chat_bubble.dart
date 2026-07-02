@@ -7,6 +7,8 @@ import '../models/message_model.dart';
 import '../utils/shared_post_message_parser.dart';
 import 'message_popup_menu.dart';
 import 'shared_post_preview_card.dart';
+import 'voice_message_player.dart';
+import '../screen/fullscreen_media_viewer.dart';
 
 class ChatBubble extends MessageBubble {
   const ChatBubble({
@@ -65,6 +67,18 @@ class MessageBubble extends StatelessWidget {
 
   /// ✅ RECEIVED (LEFT - FIXED WITH AVATAR)
   Widget _buildReceivedBubble(BuildContext context) {
+    if (message.isAudio) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _SenderAvatar(avatarUrl: message.senderAvatar, name: message.senderName),
+          const SizedBox(width: 8),
+          _buildAudioBubble(context, isSent: false),
+        ],
+      );
+    }
+
     if (message.hasMedia && !message.isSharedPost) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -113,6 +127,16 @@ class MessageBubble extends StatelessWidget {
 
   /// ✅ SENT (RIGHT - NO AVATAR)
   Widget _buildSentBubble(BuildContext context) {
+    if (message.isAudio) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _buildAudioBubble(context, isSent: true),
+        ],
+      );
+    }
+
     if (message.hasMedia && !message.isSharedPost) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -155,6 +179,41 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  Widget _buildAudioBubble(BuildContext context, {required bool isSent}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final mediaWidth = screenWidth * 0.72;
+
+    return CustomPaint(
+      painter: ChatBubblePainter(
+        isSent: isSent,
+        bubbleColor: isSent ? const Color(0xFF4A148C) : const Color(0xFF6A008A),
+      ),
+      child: Container(
+        constraints: BoxConstraints(maxWidth: mediaWidth + 12),
+        padding: EdgeInsets.fromLTRB(
+          isSent ? 15 : 20,
+          10,
+          isSent ? 20 : 15,
+          10,
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (message.hasReply) _buildReplyQuote(),
+            VoiceMessagePlayer(
+              audioUrl: message.imagePath ?? '',
+              isSent: isSent,
+            ),
+            const SizedBox(height: 4),
+            _buildStatusRow(isReceived: !isSent),
+          ],
+        ),
+      ),
+    );
+  }
+
   bool _hasVisibleCaption() {
     if (_shouldHideMediaCaption()) return false;
     return message.text.trim().isNotEmpty;
@@ -189,12 +248,15 @@ class MessageBubble extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: mediaWidth,
-                    height: mediaHeight,
-                    child: _buildMediaWidget(mediaWidth, mediaHeight),
+                GestureDetector(
+                  onTap: () => _openFullscreenMedia(context),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: mediaWidth,
+                      height: mediaHeight,
+                      child: _buildMediaWidget(mediaWidth, mediaHeight),
+                    ),
                   ),
                 ),
                 if (!hasCaption)
@@ -340,6 +402,9 @@ class MessageBubble extends StatelessWidget {
               message.text,
             ),
             preloadedPost: message.sharedPost,
+            senderDisplayName: message.senderName,
+            senderAvatar: message.senderAvatar,
+            senderUserId: message.senderId,
           ),
         ],
       );
@@ -488,12 +553,27 @@ class MessageBubble extends StatelessWidget {
     final mediaHeight = mediaWidth * 0.72;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
-          width: mediaWidth,
-          height: mediaHeight,
-          child: _buildMediaWidget(mediaWidth, mediaHeight),
+      child: GestureDetector(
+        onTap: () => _openFullscreenMedia(context),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            width: mediaWidth,
+            height: mediaHeight,
+            child: _buildMediaWidget(mediaWidth, mediaHeight),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openFullscreenMedia(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenMediaViewer(
+          mediaPath: message.imagePath ?? '',
+          isVideo: message.isVideo,
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/conversation_controller.dart';
@@ -81,7 +82,7 @@ class ConversationUtils {
 
       if (existingConversation != null) {
         AppLogger.d('🧭 [ConversationUtils] Navigating to existing conversation: ${existingConversation.id}');
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ChatScreen(
@@ -95,7 +96,7 @@ class ConversationUtils {
         );
       } else {
         AppLogger.d('🧭 [ConversationUtils] Navigating to new chat screen immediately (async resolve)');
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ChatScreen(
@@ -106,6 +107,11 @@ class ConversationUtils {
           ),
         );
       }
+
+      if (context.mounted) {
+        AppLogger.d('🔄 [ConversationUtils] Returned from ChatScreen, refreshing list');
+        unawaited(context.read<MessageProvider>().fetchConversations(refresh: true));
+      }
     } catch (e) {
       ConversationErrorHandler.logResult(
         operation: 'Conversation navigation',
@@ -113,11 +119,13 @@ class ConversationUtils {
         source: source,
       );
       
-      ConversationErrorHandler.handleConversationError(
-        error: e,
-        context: context,
-        source: source,
-      );
+      if (context.mounted) {
+        ConversationErrorHandler.handleConversationError(
+          error: e,
+          context: context,
+          source: source,
+        );
+      }
     }
   }
 

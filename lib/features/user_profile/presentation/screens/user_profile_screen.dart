@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
@@ -41,6 +42,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _didSeedSubscribeState = false;
   bool _isRefreshing = false;
   final ScrollController _scrollController = ScrollController();
+  final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger(
+    threshold: 360,
+  );
 
   @override
   void initState() {
@@ -48,15 +52,32 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _profileController = UserProfileController(userId: widget.profileUserId);
     _subscribeController = SubscribeController();
     _profileController.contentListenable.addListener(_syncSubscribeState);
+    _scrollController.addListener(_onProfileScroll);
     _resolveIdentity();
     _profileController.fetchUser();
+  }
+
+  void _onProfileScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final tabIndex = _selectedTab == 0 ? 0 : 2;
+    if (!_paginationTrigger.shouldLoadMore(
+      _scrollController,
+      isLoading: _profileController.isLoadingTab(tabIndex),
+      hasMore: _profileController.canLoadMoreForTab(tabIndex),
+    )) {
+      return;
+    }
+
+    _profileController.requestLoadMoreThrottled(tabIndex);
   }
 
   @override
   void dispose() {
     _profileController.contentListenable.removeListener(_syncSubscribeState);
-    _profileController.dispose();
+    _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
+    _profileController.dispose();
     super.dispose();
   }
 
@@ -201,107 +222,127 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       onRefresh: _handleRefresh,
       color: Colors.white,
       backgroundColor: const Color(0xFF42174C),
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Stack(
-            children: [
-              if (showProfileShimmer)
-                _buildUserProfileShimmer(constraints)
-              else ...[
-                Padding(
-                  padding: const EdgeInsets.only(top: 130),
-                  child: Stack(
-                    children: [
-                      _buildProfilePanelBackground(constraints),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (showProfileShimmer)
+            CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildUserProfileShimmer(constraints),
+                ),
+              ],
+            )
+          else
+            AnimatedBuilder(
+              animation: _profileController.contentListenable,
+              builder: (context, _) {
+                final profile = _profileController.user;
+                final resolvedUserId = (profile?.id.isNotEmpty ?? false)
+                    ? profile!.id
+                    : widget.profileUserId;
+                final resolvedUsername = (profile?.username.isNotEmpty ?? false)
+                    ? profile!.username
+                    : _normalizedUsername;
+                final initialIsSubscribed =
+                    _subscribeController
+                        .getUserSubscribeModel(resolvedUserId)
+                        ?.isSubscribed ??
+                    profile?.isFollowing ??
+                    false;
+                final grid = UserProfileGrid(
+                  controller: _profileController,
+                  selectedTab: _selectedTab,
+                );
+
+                return CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Stack(
+                        clipBehavior: Clip.none,
                         children: [
-                          const SizedBox(height: 120),
-                          ValueListenableBuilder(
-                            valueListenable: _profileController.statsNotifier,
-                            builder: (context, stats, child) {
-                              return UserStatsRow(stats: stats);
-                            },
+                          Padding(
+                            padding: const EdgeInsets.only(top: 130),
+                            child: Stack(
+                              children: [
+                                _buildProfilePanelBackground(constraints),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 120),
+                                    ValueListenableBuilder(
+                                      valueListenable:
+                                          _profileController.statsNotifier,
+                                      builder: (context, stats, child) {
+                                        return UserStatsRow(stats: stats);
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+                                    ValueListenableBuilder(
+                                      valueListenable:
+                                          _profileController.highlightList,
+                                      builder: (context, highlights, child) {
+                                        return UserHighlightsList(
+                                          highlights: highlights,
+                                          isOwnProfile: false,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+                                    UserFilterTabs(
+                                      selectedIndex: _selectedTab,
+                                      onTabSelected: (index) {
+                                        setState(() {
+                                          _selectedTab = index;
+                                        });
+                                        if (_scrollController.hasClients) {
+                                          _scrollController.jumpTo(0);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 20),
-                          ValueListenableBuilder(
-                            valueListenable: _profileController.highlightList,
-                            builder: (context, highlights, child) {
-                              AppLogger.d(
-                                '[UserProfileScreen] Highlights count: ${highlights.length}',
-                              );
-                              return UserHighlightsList(
-                                highlights: highlights,
-                                isOwnProfile: false,
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          UserFilterTabs(
-                            selectedIndex: _selectedTab,
-                            onTabSelected: (index) {
-                              setState(() {
-                                _selectedTab = index;
-                              });
-                            },
-                          ),
-                          UserProfileGrid(
-                            controller: _profileController,
-                            selectedTab: _selectedTab,
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(height: 20),
+                              UserProfileHeader(
+                                displayName: widget.userName,
+                                username: resolvedUsername,
+                                profileUserId: resolvedUserId,
+                                profileImageUrl:
+                                    (profile?.profileImage.isNotEmpty ?? false)
+                                    ? profile!.profileImage
+                                    : widget.profileImageUrl,
+                                hasActiveStory:
+                                    profile?.hasActiveStory ??
+                                    widget.initialHasActiveStory,
+                                showSubscribeButton: showSubscribeButton,
+                                reserveSubscribeSpace: _isResolvingIdentity,
+                                subscribeController: _subscribeController,
+                                initialIsSubscribed: initialIsSubscribed,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                AnimatedBuilder(
-                  animation: _profileController.contentListenable,
-                  builder: (context, child) {
-                    final profile = _profileController.user;
-                    final resolvedUserId = (profile?.id.isNotEmpty ?? false)
-                        ? profile!.id
-                        : widget.profileUserId;
-                    final resolvedUsername =
-                        (profile?.username.isNotEmpty ?? false)
-                        ? profile!.username
-                        : _normalizedUsername;
-                    final initialIsSubscribed =
-                        _subscribeController
-                            .getUserSubscribeModel(resolvedUserId)
-                            ?.isSubscribed ??
-                        profile?.isFollowing ??
-                        false;
-
-                    return Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        UserProfileHeader(
-                          displayName: widget.userName,
-                          username: resolvedUsername,
-                          profileUserId: resolvedUserId,
-                          profileImageUrl:
-                              (profile?.profileImage.isNotEmpty ?? false)
-                              ? profile!.profileImage
-                              : widget.profileImageUrl,
-                          hasActiveStory:
-                              profile?.hasActiveStory ??
-                              widget.initialHasActiveStory,
-                          showSubscribeButton: showSubscribeButton,
-                          reserveSubscribeSpace: _isResolvingIdentity,
-                          subscribeController: _subscribeController,
-                          initialIsSubscribed: initialIsSubscribed,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
+                    ),
+                    ...grid.buildSlivers(context),
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  ],
+                );
+              },
+            ),
+        ],
       ),
     );
   }

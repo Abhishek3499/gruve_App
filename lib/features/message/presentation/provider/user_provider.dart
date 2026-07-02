@@ -102,6 +102,8 @@ class UserProvider extends ChangeNotifier {
   bool _hasInitialized = false;
   DateTime? _lastFetchTime;
   Future<void>? _fetchInFlight;
+  Future<void>? _loadMoreInFlight;
+  String? _lastLoadMoreKey;
   static const _cacheValidDuration = Duration(minutes: 2);
 
   // Getters
@@ -113,24 +115,61 @@ class UserProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get hasInitialized => _hasInitialized;
 
-  Future<void> fetchUsers({bool loadMore = false}) async {
-    if (_fetchInFlight != null && !loadMore) {
+  Future<void> fetchUsers({bool loadMore = false, String reason = 'initial'}) async {
+    if (loadMore) {
+      if (_loadMoreInFlight != null) {
+        AppLogger.d('⏳ [UserProvider] Joining in-flight loadMore (reason=$reason)');
+        return _loadMoreInFlight!;
+      }
+      if (_isFetchingMore || !_hasNext) {
+        AppLogger.d(
+          '⏸️ [UserProvider] loadMore skipped reason=$reason '
+          'isFetchingMore=$_isFetchingMore hasNext=$_hasNext',
+        );
+        return;
+      }
+
+      final requestKey = 'page=$_currentPage';
+      if (_lastLoadMoreKey == requestKey) {
+        AppLogger.d(
+          '⏸️ [UserProvider] loadMore skipped duplicate params '
+          'reason=$reason $requestKey',
+        );
+        return;
+      }
+      _lastLoadMoreKey = requestKey;
+
+      final future = _runFetchUsers(loadMore: true, reason: reason);
+      _loadMoreInFlight = future;
+      try {
+        return await future;
+      } finally {
+        if (identical(_loadMoreInFlight, future)) {
+          _loadMoreInFlight = null;
+        }
+      }
+    }
+
+    if (_fetchInFlight != null) {
       AppLogger.d('⏳ [UserProvider] Joining in-flight user fetch');
       return _fetchInFlight!;
     }
 
-    final future = _runFetchUsers(loadMore: loadMore);
-    if (!loadMore) _fetchInFlight = future;
+    final future = _runFetchUsers(loadMore: false, reason: reason);
+    _fetchInFlight = future;
     try {
       return await future;
     } finally {
-      if (!loadMore && identical(_fetchInFlight, future)) {
+      if (identical(_fetchInFlight, future)) {
         _fetchInFlight = null;
       }
     }
   }
 
-  Future<void> _runFetchUsers({bool loadMore = false}) async {
+  Future<void> _runFetchUsers({
+    required bool loadMore,
+    required String reason,
+  }) async {
     // 🚀 Cache-then-Network: Load from Hive offline storage first if we don't have users in memory
     if (!loadMore && _users.isEmpty) {
       final cachedData = HiveService().getCachedData(
@@ -176,16 +215,17 @@ class UserProvider extends ChangeNotifier {
     }
 
     AppLogger.d(
-      '🚀 [UserProvider] Fetching page: $_currentPage (loadMore: $loadMore)',
+      '📡 [UserProvider] fetch trigger=$reason page=$_currentPage loadMore=$loadMore',
     );
 
-    // Set loading states
+    // Set loading states immediately so scroll spam cannot slip through.
     if (loadMore) {
       _isFetchingMore = true;
     } else {
       _isLoading = true;
-      _currentPage = 1; // Reset page for initial load
+      _currentPage = 1;
       _hasNext = true;
+      _lastLoadMoreKey = null;
     }
     _errorMessage = null;
     notifyListeners();
@@ -247,6 +287,7 @@ class UserProvider extends ChangeNotifier {
       if (response.hasNext) {
         _currentPage = response.page + 1;
       }
+      _lastLoadMoreKey = null;
 
       AppLogger.d(
         '✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage',
@@ -256,6 +297,7 @@ class UserProvider extends ChangeNotifier {
         AppLogger.d('🚫 [UserProvider] Request cancelled');
         return;
       }
+      _lastLoadMoreKey = null;
       _errorMessage = e.toString();
       AppLogger.d('❌ [UserProvider] Error: $e');
     } finally {
@@ -314,6 +356,8 @@ class UserProvider extends ChangeNotifier {
     _hasInitialized = false;
     _lastFetchTime = null;
     _fetchInFlight = null;
+    _loadMoreInFlight = null;
+    _lastLoadMoreKey = null;
     AppLogger.d('🔄 [UserProvider] Provider state reset');
     notifyListeners();
   }

@@ -5,6 +5,7 @@ import 'package:gruve_app/features/notification/api/models/notification_model.da
 import 'package:gruve_app/features/notification/api/services/notification_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/core/auth/current_user_provider.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationService _service = NotificationService();
@@ -49,10 +50,12 @@ class NotificationProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   int _unreadCount = 0;
+  int _lastCurrentUserUnreadCount = -1;
   int _currentPage = 1;
   bool _hasNextPage = false;
   String _errorMessage = '';
   bool _unreadOnly = false;
+  String? _lastPaginationKey;
 
   List<AppNotification> get notifications => _notifications;
   bool get isLoading => _isLoading;
@@ -72,6 +75,24 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  /// Manually set the unread notifications count.
+  void setUnreadCount(int count) {
+    if (_unreadCount != count) {
+      _unreadCount = count;
+      notifyListeners();
+    }
+  }
+
+  /// Syncs unread count from the CurrentUserProvider without overwriting newer client updates.
+  void updateFromCurrentUser(CurrentUserProvider currentUserProvider) {
+    final count = currentUserProvider.unreadNotificationCount;
+    if (_lastCurrentUserUnreadCount != count) {
+      _lastCurrentUserUnreadCount = count;
+      _unreadCount = count;
+      notifyListeners();
+    }
+  }
+
   /// Get the current unread notifications count from backend.
   Future<void> fetchUnreadCount() async {
     try {
@@ -88,6 +109,12 @@ class NotificationProvider extends ChangeNotifier {
 
   /// Fetch initial list of notifications.
   Future<void> fetchInitialNotifications({bool showLoading = true}) async {
+    AppLogger.d(
+      '📡 [NotificationProvider] fetchInitial trigger=${showLoading ? 'initial' : 'refresh'} '
+      'page=1 unreadOnly=$_unreadOnly',
+    );
+
+    _lastPaginationKey = null;
     if (showLoading) {
       _isLoading = true;
       _errorMessage = '';
@@ -122,14 +149,28 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   /// Load next page for pagination/infinite scroll.
-  Future<void> fetchNextPage() async {
-    if (_isLoadingMore || !_hasNextPage) return;
+  Future<void> fetchNextPage({String reason = 'scroll'}) async {
+    if (_isLoadingMore || !_hasNextPage || _isLoading) return;
+
+    final nextPage = _currentPage + 1;
+    final requestKey = 'page=$nextPage|unreadOnly=$_unreadOnly';
+    if (_lastPaginationKey == requestKey) {
+      AppLogger.d(
+        '⏸️ [NotificationProvider] fetchNextPage skipped duplicate '
+        'reason=$reason $requestKey',
+      );
+      return;
+    }
+    _lastPaginationKey = requestKey;
+
+    AppLogger.d(
+      '📡 [NotificationProvider] fetchNextPage trigger=$reason $requestKey',
+    );
 
     _isLoadingMore = true;
     notifyListeners();
 
     try {
-      final nextPage = _currentPage + 1;
       final response = await _service.fetchNotifications(
         page: nextPage,
         unreadOnly: _unreadOnly,
@@ -141,12 +182,14 @@ class NotificationProvider extends ChangeNotifier {
         _unreadCount = response.data!.unreadCount;
         _currentPage = response.data!.page;
         _hasNextPage = response.data!.hasNext;
+        _lastPaginationKey = null;
       }
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
         AppLogger.d('[NotificationProvider] fetchNextPage cancelled');
         return;
       }
+      _lastPaginationKey = null;
       AppLogger.d('❌ Error loading next page: $e');
     } finally {
       _isLoadingMore = false;
@@ -286,6 +329,7 @@ class NotificationProvider extends ChangeNotifier {
     _isLoading = false;
     _isLoadingMore = false;
     _unreadCount = 0;
+    _lastCurrentUserUnreadCount = -1;
     _currentPage = 1;
     _hasNextPage = false;
     _errorMessage = '';

@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:video_player/video_player.dart';
@@ -36,7 +36,7 @@ class MediaUrlThumbnail extends StatelessWidget {
     return trimmed.startsWith('http://') || trimmed.startsWith('https://');
   }
 
-  /// Preload thumbnails for smoother profile/highlight UI.
+  /// Preload thumbnails for smoother profile/highlight/explore grids.
   static Future<void> warmup(String url, {BuildContext? context}) async {
     final mediaUrl = url.trim();
     if (!isHttpUrl(mediaUrl)) return;
@@ -46,10 +46,36 @@ class MediaUrlThumbnail extends StatelessWidget {
       return;
     }
 
-    if (context != null && context.mounted) {
-      try {
+    try {
+      if (context != null && context.mounted) {
         await precacheImage(CachedNetworkImageProvider(mediaUrl), context);
-      } catch (_) {}
+      } else {
+        await _precacheImageUrl(mediaUrl);
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> _precacheImageUrl(String url) async {
+    final provider = CachedNetworkImageProvider(url);
+    final stream = provider.resolve(const ImageConfiguration());
+    final completer = Completer<void>();
+    late ImageStreamListener listener;
+
+    listener = ImageStreamListener(
+      (_, _) {
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (_, _) {
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+
+    stream.addListener(listener);
+    try {
+      await completer.future.timeout(const Duration(seconds: 10));
+    } catch (_) {
+    } finally {
+      stream.removeListener(listener);
     }
   }
 
@@ -89,25 +115,195 @@ class MediaUrlThumbnail extends StatelessWidget {
   }
 }
 
-/// Instagram-style profile grid thumbnail: API poster first, video frame fallback.
+/// Instagram-style profile grid thumbnail: poster image → video frame → retry.
 class PostGridThumbnail extends StatelessWidget {
   final Post post;
 
   const PostGridThumbnail({super.key, required this.post});
 
+  static Future<void> warmupPost(Post post) async {
+    final images = <String>{};
+    final videos = <String>{};
+    _collectWarmupUrls(post, images, videos);
+
+    await Future.wait([
+      if (images.isNotEmpty) _warmupImagesParallel(images.toList()),
+      if (videos.isNotEmpty) VideoFrameCache.warmupMany(videos),
+    ]);
+  }
+
+  static void warmupPosts(Iterable<Post> posts, {int max = 60}) {
+    unawaited(warmupPostsAwait(posts, max: max));
+  }
+
+  static Future<void> warmupPostsAwait(
+    Iterable<Post> posts, {
+    int max = 60,
+    int concurrency = 12,
+  }) async {
+    final images = <String>{};
+    final videos = <String>{};
+
+    for (final post in posts.take(max)) {
+      _collectWarmupUrls(post, images, videos);
+    }
+
+    if (images.isEmpty && videos.isEmpty) return;
+
+    await Future.wait([
+      if (images.isNotEmpty)
+        _warmupImagesParallel(images.toList(), concurrency: concurrency),
+      if (videos.isNotEmpty)
+        VideoFrameCache.warmupMany(videos, concurrency: concurrency),
+    ]);
+  }
+
+  static void _collectWarmupUrls(
+    Post post,
+    Set<String> images,
+    Set<String> videos,
+  ) {
+    final preview = post.gridPreviewUrl.trim();
+    if (preview.isNotEmpty &&
+        MediaUrlThumbnail.isHttpUrl(preview) &&
+        !Post.mediaUrlLooksLikeVideo(preview)) {
+      images.add(preview);
+    }
+
+    if (!post.isVideo) return;
+
+    final videoUrl = _videoUrlForPost(post);
+    if (videoUrl.isNotEmpty) {
+      videos.add(videoUrl);
+    }
+  }
+
+  static String _videoUrlForPost(Post post) {
+    final media = post.media.trim();
+    if (MediaUrlThumbnail.isHttpUrl(media)) return media;
+
+    final preview = post.gridPreviewUrl.trim();
+    if (Post.mediaUrlLooksLikeVideo(preview) &&
+        MediaUrlThumbnail.isHttpUrl(preview)) {
+      return preview;
+    }
+    return '';
+  }
+
+  static Future<void> _warmupImagesParallel(
+    List<String> urls, {
+    int concurrency = 12,
+  }) async {
+    final safeConcurrency = concurrency.clamp(1, 16);
+    for (var i = 0; i < urls.length; i += safeConcurrency) {
+      final batch = urls.skip(i).take(safeConcurrency);
+      await Future.wait(batch.map(MediaUrlThumbnail.warmup));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final imageUrl = post.gridPreviewUrl;
-    if (imageUrl.isNotEmpty && MediaUrlThumbnail.isHttpUrl(imageUrl)) {
-      return MediaUrlThumbnail(
-        url: imageUrl,
-        memCacheWidth: 300,
-        memCacheHeight: 400,
+    return _PostGridThumbnailBody(post: post);
+  }
+}
+
+class _PostGridThumbnailBody extends StatefulWidget {
+  final Post post;
+
+  const _PostGridThumbnailBody({required this.post});
+
+  @override
+  State<_PostGridThumbnailBody> createState() => _PostGridThumbnailBodyState();
+}
+
+enum _GridThumbSource { image, video, unavailable }
+
+class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
+  late _GridThumbSource _source;
+
+  @override
+  void initState() {
+    super.initState();
+    _source = _initialSource();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PostGridThumbnailBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id ||
+        oldWidget.post.gridPreviewUrl != widget.post.gridPreviewUrl ||
+        oldWidget.post.media != widget.post.media) {
+      _source = _initialSource();
+    }
+  }
+
+  _GridThumbSource _initialSource() {
+    final thumb = widget.post.gridPreviewUrl.trim();
+    if (thumb.isNotEmpty &&
+        MediaUrlThumbnail.isHttpUrl(thumb) &&
+        !Post.mediaUrlLooksLikeVideo(thumb)) {
+      return _GridThumbSource.image;
+    }
+    if (widget.post.isVideo &&
+        MediaUrlThumbnail.isHttpUrl(_videoUrlFor(widget.post))) {
+      return _GridThumbSource.video;
+    }
+    return _GridThumbSource.unavailable;
+  }
+
+  String _videoUrlFor(Post post) {
+    final media = post.media.trim();
+    if (MediaUrlThumbnail.isHttpUrl(media)) return media;
+
+    final preview = post.gridPreviewUrl.trim();
+    if (Post.mediaUrlLooksLikeVideo(preview) &&
+        MediaUrlThumbnail.isHttpUrl(preview)) {
+      return preview;
+    }
+    return '';
+  }
+
+  void _fallbackToVideo() {
+    if (!mounted) return;
+    if (widget.post.isVideo &&
+        MediaUrlThumbnail.isHttpUrl(_videoUrlFor(widget.post))) {
+      setState(() => _source = _GridThumbSource.video);
+    } else {
+      setState(() => _source = _GridThumbSource.unavailable);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final post = widget.post;
+
+    if (_source == _GridThumbSource.image) {
+      final imageUrl = post.gridPreviewUrl.trim();
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        memCacheWidth: 280,
+        memCacheHeight: 420,
+        maxWidthDiskCache: 600,
+        maxHeightDiskCache: 800,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        useOldImageOnUrlChange: true,
+        placeholder: (context, _) => _defaultPlaceholder(),
+        errorWidget: (context, url, error) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _fallbackToVideo();
+          });
+          return _defaultPlaceholder();
+        },
       );
     }
 
-    if (post.isVideo && MediaUrlThumbnail.isHttpUrl(post.media)) {
-      return MediaUrlThumbnail(url: post.media.trim());
+    final videoUrl = _videoUrlFor(post);
+    if (post.isVideo && MediaUrlThumbnail.isHttpUrl(videoUrl)) {
+      return _VideoFrameThumbnail(videoUrl: videoUrl);
     }
 
     return const _ThumbnailFallback();
@@ -140,7 +336,10 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
   bool _failed = false;
   bool _disposed = false;
   int _loadToken = 0;
+  int _retryCount = 0;
   late String _boundUrl;
+
+  static const int _maxRetries = 2;
 
   @override
   void initState() {
@@ -148,11 +347,22 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
     _boundUrl = widget.videoUrl.trim();
     final cached = VideoFrameCache.peekReady(_boundUrl);
     if (cached != null) {
-      _controller = cached;
+      _bindController(cached);
       unawaited(_attachFromCache());
     } else {
       _startLoad();
     }
+  }
+
+  void _bindController(VideoPlayerController? controller) {
+    _controller?.removeListener(_onControllerUpdate);
+    _controller = controller;
+    _controller?.addListener(_onControllerUpdate);
+  }
+
+  void _onControllerUpdate() {
+    if (!mounted || _disposed) return;
+    setState(() {});
   }
 
   Future<void> _attachFromCache() async {
@@ -161,7 +371,8 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
       if (controller != null) VideoFrameCache.release(_boundUrl);
       return;
     }
-    setState(() => _controller = controller);
+    _bindController(controller);
+    setState(() {});
   }
 
   @override
@@ -170,13 +381,13 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
     if (oldWidget.videoUrl.trim() != widget.videoUrl.trim()) {
       VideoFrameCache.release(_boundUrl);
       _boundUrl = widget.videoUrl.trim();
-      _controller = null;
       _failed = false;
       final cached = VideoFrameCache.peekReady(_boundUrl);
       if (cached != null) {
-        _controller = cached;
+        _bindController(cached);
         unawaited(_attachFromCache());
       } else {
+        _bindController(null);
         _startLoad();
       }
     }
@@ -185,54 +396,63 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
   Future<void> _startLoad() async {
     final token = ++_loadToken;
 
-    await _VideoInitLimiter.run(() async {
-      if (_disposed || token != _loadToken) return;
+    final controller = await VideoFrameCache.acquire(_boundUrl);
+    if (_disposed || token != _loadToken) {
+      if (controller != null) VideoFrameCache.release(_boundUrl);
+      return;
+    }
 
-      final controller = await VideoFrameCache.acquire(_boundUrl);
-      if (_disposed || token != _loadToken) {
-        if (controller != null) VideoFrameCache.release(_boundUrl);
-        return;
+    if (controller == null) {
+      if (_retryCount < _maxRetries) {
+        _retryCount++;
+        final retryDelay = Duration(milliseconds: 200 * _retryCount);
+        Future<void>.delayed(retryDelay, () {
+          if (_disposed || token != _loadToken || !mounted) return;
+          _startLoad();
+        });
+      } else if (mounted) {
+        setState(() => _failed = true);
       }
+      return;
+    }
 
-      if (controller == null) {
-        if (mounted) setState(() => _failed = true);
-        return;
-      }
+    if (!mounted) {
+      VideoFrameCache.release(_boundUrl);
+      return;
+    }
 
-      if (!mounted) {
-        VideoFrameCache.release(_boundUrl);
-        return;
-      }
-
-      setState(() => _controller = controller);
-    });
+    _bindController(controller);
+    setState(() {});
   }
 
   @override
   void dispose() {
     _disposed = true;
     _loadToken++;
+    _controller?.removeListener(_onControllerUpdate);
     VideoFrameCache.release(_boundUrl);
     _controller = null;
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_failed) {
-      return widget.fallback ?? const _ThumbnailFallback();
-    }
+  void _retryFromScratch() {
+    if (_disposed) return;
+    setState(() {
+      _failed = false;
+      _retryCount = 0;
+    });
+    _startLoad();
+  }
 
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) {
-      return widget.placeholder ?? _defaultPlaceholder();
-    }
-
+  bool _isFrameReady(VideoPlayerController controller) {
     final size = controller.value.size;
-    if (size.width <= 0 || size.height <= 0) {
-      return widget.fallback ?? const _ThumbnailFallback();
-    }
+    return controller.value.isInitialized &&
+        size.width > 0 &&
+        size.height > 0;
+  }
 
+  Widget _buildFrame(VideoPlayerController controller) {
+    final size = controller.value.size;
     final frame = FittedBox(
       fit: widget.fit,
       clipBehavior: Clip.hardEdge,
@@ -253,58 +473,38 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
 
     return SizedBox.expand(child: frame);
   }
-}
 
-/// Caps concurrent video thumbnail initializations to avoid decoder spikes.
-class _VideoInitLimiter {
-  static const int _maxConcurrent = 4;
-  static int _active = 0;
-  static final Queue<Completer<void>> _waitQueue = Queue<Completer<void>>();
-
-  static Future<T> run<T>(Future<T> Function() task) async {
-    await _acquire();
-    try {
-      return await task();
-    } finally {
-      _release();
-    }
-  }
-
-  static Future<void> _acquire() async {
-    if (_active < _maxConcurrent) {
-      _active++;
-      return;
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return GestureDetector(
+        onTap: _retryFromScratch,
+        child: widget.fallback ?? const _ThumbnailFallback(),
+      );
     }
 
-    final waiter = Completer<void>();
-    _waitQueue.add(waiter);
-    await waiter.future;
-    _active++;
-  }
+    final controller = _controller;
+    final isReady = controller != null && _isFrameReady(controller);
 
-  static void _release() {
-    _active--;
-    if (_waitQueue.isEmpty) return;
-
-    final next = _waitQueue.removeFirst();
-    if (!next.isCompleted) {
-      next.complete();
-    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: widget.placeholder ?? _defaultPlaceholder(),
+        ),
+        if (isReady)
+          Positioned.fill(
+            child: _buildFrame(controller),
+          ),
+      ],
+    );
   }
 }
 
 Widget _defaultPlaceholder() {
-  return Container(
-    color: Colors.grey.withValues(alpha: 0.2),
-    child: const Center(
-      child: SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          color: AppColors.loaderDark,
-          strokeWidth: 2,
-        ),
-      ),
+  return AppShimmer(
+    child: Container(
+      color: AppColors.skeletonPlaceholder,
     ),
   );
 }
@@ -314,13 +514,15 @@ class _ThumbnailFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Icon(
-          Icons.play_circle_outline,
-          color: Colors.white54,
-          size: 40,
+    return AppShimmer(
+      child: Container(
+        color: AppColors.skeletonPlaceholder,
+        child: const Center(
+          child: Icon(
+            Icons.play_circle_outline,
+            color: Colors.white54,
+            size: 36,
+          ),
         ),
       ),
     );

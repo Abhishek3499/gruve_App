@@ -197,7 +197,12 @@ class _SearchPageState extends State<SearchPage> {
                 userOrConversation: existingConversation,
               ),
             ),
-          ).then((_) => _loadRecentSearches());
+          ).then((_) {
+            _loadRecentSearches();
+            if (mounted) {
+              context.read<MessageProvider>().fetchConversations(refresh: true);
+            }
+          });
         } else {
           AppLogger.d(
             '🆕 [SearchPage] Opening ChatScreen immediately for user: ${user.name}',
@@ -213,7 +218,12 @@ class _SearchPageState extends State<SearchPage> {
                 profileImage: user.avatar.isNotEmpty ? user.avatar : null,
               ),
             ),
-          ).then((_) => _loadRecentSearches());
+          ).then((_) {
+            _loadRecentSearches();
+            if (mounted) {
+              context.read<MessageProvider>().fetchConversations(refresh: true);
+            }
+          });
         }
       }
     } finally {

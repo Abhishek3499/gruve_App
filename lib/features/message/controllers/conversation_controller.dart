@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/conversation_model.dart';
@@ -202,7 +203,7 @@ class ConversationController extends ChangeNotifier {
       AppLogger.d('🖼️ [ConversationController] 📸 Profile image: ${receiverProfileImage ?? "none"}');
       
       // Navigate to ChatScreen with explicit user data
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ChatScreen(
@@ -215,6 +216,11 @@ class ConversationController extends ChangeNotifier {
         ),
       );
       
+      if (context.mounted) {
+        AppLogger.d('🔄 [ConversationController] Returned from ChatScreen, refreshing list');
+        unawaited(context.read<MessageProvider>().fetchConversations(refresh: true));
+      }
+      
       AppLogger.d('✅ [ConversationController] 🎉 Navigation completed successfully');
       return conversation;
     } catch (e) {
@@ -222,11 +228,13 @@ class ConversationController extends ChangeNotifier {
       AppLogger.d('🔥 [ConversationController] 📋 Error: $e');
       
       // Use centralized error handling
-      ConversationErrorHandler.handleConversationError(
-        error: e,
-        context: context,
-        source: 'ConversationController.navigateToChat',
-      );
+      if (context.mounted) {
+        ConversationErrorHandler.handleConversationError(
+          error: e,
+          context: context,
+          source: 'ConversationController.navigateToChat',
+        );
+      }
       
       rethrow;
     }

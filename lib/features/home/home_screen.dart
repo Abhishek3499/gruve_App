@@ -9,6 +9,7 @@ import 'package:gruve_app/features/camera/controller/camera_controller_service.d
 import 'package:gruve_app/core/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:gruve_app/core/media/video_playback_guard.dart';
 import 'package:gruve_app/features/home/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/widgets/video_feed.dart';
@@ -59,17 +60,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     AppLogger.d("🏠 Home Screen initState called");
 
-    // Fetch current user profile for bottom nav avatar and eager-load profile data
+    // Splash already eager-loads profile — only sync nav avatar or backfill if missing.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<CurrentUserProvider>().fetchCurrentUserProfile();
-        
-        // Eagerly load the profile data on app start so the Profile tab is ready instantly!
-        context.read<ProfileProvider>().fetchProfileData(fetchUserReason: 'app_start_eager_load');
-        
-        // 🚀 OPTIMIZATION: Pre-warm camera for instant opening
-        CameraControllerService.prewarmCamera();
+      if (!mounted) return;
+      final profileProvider = context.read<ProfileProvider>();
+      final currentUser = context.read<CurrentUserProvider>();
+      final cachedUser = profileProvider.user;
+      if (cachedUser != null) {
+        currentUser.updateProfileData(
+          username: cachedUser.username,
+          imageUrl: cachedUser.profileImage,
+        );
+      } else if (!profileProvider.isLoading) {
+        profileProvider.fetchProfileData(
+          fetchUserReason: 'app_start_eager_load',
+        );
+      } else {
+        currentUser.fetchCurrentUserProfile();
       }
+
+      CameraControllerService.prewarmCamera();
     });
 
     // ✅ Initialize screens ONCE
@@ -124,7 +134,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     };
 
     PostShareFlowBridge.onShowSuccessSnackbar = (isVideo) {
-      // Disabled as per user request to remove success snackbar
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isVideo ? 'Video uploaded successfully' : 'Image uploaded successfully',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF9544A7),
+          behavior: SnackBarBehavior.floating,
+          elevation: 6,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     };
 
     PostShareFlowBridge.onRequestShowHomeFeed = _ensureHomeFeedTab;
@@ -138,12 +176,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     switch (index) {
       case 0:
         return VideoFeed(
-          selectedIndex: _currentIndex.value,
+          selectedIndex: _currentIndex,
           onTabChanged: _onItemTapped,
           onControllerReady: (controller) {
             AppLogger.d("🏠 Home Screen: VideoFeed onControllerReady called!");
 
             _videoController = controller;
+            VideoPlaybackGuard.pauseHomeFeed = () {
+              _videoController?.pauseCurrentVideo();
+            };
             PostShareFlowBridge.setVideoController(controller);
             AppLogger.d(
               "🏠 Home Screen: Video controller ready and set to bridge",
@@ -380,6 +421,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     } else if (_previousIndex.value == 0) {
       _pauseVideo('Tab changed from Home');
+      _videoController?.releaseAllControllers();
     }
   }
 
@@ -508,6 +550,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     AppLogger.d("🏠 Home Screen: Total rebuilds: $_rebuildCount");
 
     PostShareFlowBridge.clearCallbacks();
+    VideoPlaybackGuard.pauseHomeFeed = null;
     _isDisposed = true;
     _currentVideoService?.dispose();
 

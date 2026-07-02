@@ -25,8 +25,9 @@ class CustomBottomNavigationBar extends StatefulWidget {
 class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
   @override
   Widget build(BuildContext context) {
+    final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
     return SizedBox(
-      height: 100,
+      height: 100 + bottomPadding,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
@@ -39,11 +40,12 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
             child: CustomPaint(
               painter: NavBarPainter(),
               child: SizedBox(
-                height: 80,
+                height: 80 + bottomPadding,
                 child: Padding(
-                  padding: const EdgeInsets.only(
+                  padding: EdgeInsets.only(
                     top: 28,
-                  ), // icons neeche push karo
+                    bottom: bottomPadding,
+                  ), // icons neeche push karo, bottom padding handles gesture bar
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [

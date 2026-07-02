@@ -112,10 +112,12 @@ Map<String, dynamic> _flattenUserJson(Map<String, dynamic> json) {
 class LastMessage {
   final String content;
   final DateTime createdAt;
+  final String? messageKind;
 
   const LastMessage({
     required this.content,
     required this.createdAt,
+    this.messageKind,
   });
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
@@ -128,6 +130,7 @@ class LastMessage {
       createdAt: _parseDateTime(
         safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
       ),
+      messageKind: SafeParsingHelpers.safeNullableString(safeJson, const ['message_kind', 'messageKind']),
     );
   }
 
@@ -135,6 +138,7 @@ class LastMessage {
     return {
       'content': content,
       'created_at': createdAt.toIso8601String(),
+      if (messageKind != null) 'message_kind': messageKind,
     };
   }
 
@@ -170,10 +174,12 @@ class LastMessage {
   LastMessage copyWith({
     String? content,
     DateTime? createdAt,
+    String? messageKind,
   }) {
     return LastMessage(
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
+      messageKind: messageKind ?? this.messageKind,
     );
   }
 
@@ -182,14 +188,15 @@ class LastMessage {
     if (identical(this, other)) return true;
     return other is LastMessage &&
         other.content == content &&
-        other.createdAt == createdAt;
+        other.createdAt == createdAt &&
+        other.messageKind == messageKind;
   }
 
   @override
-  int get hashCode => content.hashCode ^ createdAt.hashCode;
+  int get hashCode => content.hashCode ^ createdAt.hashCode ^ messageKind.hashCode;
 
   @override
-  String toString() => 'LastMessage(content: $content, createdAt: $createdAt)';
+  String toString() => 'LastMessage(content: $content, createdAt: $createdAt, messageKind: $messageKind)';
 }
 
 /// Model representing a conversation

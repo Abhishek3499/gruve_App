@@ -133,7 +133,7 @@ class MessageModel {
       }
       try {
         final parsed = Post.fromJson(postMap);
-        if (parsed.username != 'unknown') {
+        if (_isUsableEmbeddedPost(parsed)) {
           sharedPost = parsed;
         }
       } catch (e) {
@@ -187,6 +187,8 @@ class MessageModel {
   bool get isVideo =>
       mediaKind?.toLowerCase() == 'video' ||
       (hasMedia && !isLocalMedia && _urlLooksLikeVideo(imagePath!));
+
+  bool get isAudio => mediaKind?.toLowerCase() == 'audio';
 
   static bool _urlLooksLikeVideo(String url) {
     final lower = url.toLowerCase().split('?').first;
@@ -466,6 +468,14 @@ class MessageModel {
       }
     }
     return DateTime.now();
+  }
+
+  static bool _isUsableEmbeddedPost(Post post) {
+    if (post.username != 'unknown') return true;
+    if (post.gridPreviewUrl.isNotEmpty) return true;
+    final media = post.media.trim();
+    return media.isNotEmpty &&
+        (media.startsWith('http://') || media.startsWith('https://'));
   }
 }
 

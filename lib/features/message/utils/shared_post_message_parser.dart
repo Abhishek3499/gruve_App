@@ -26,6 +26,9 @@ class SharedPostMessageParser {
     'thumb',
     'poster',
     'cover',
+    'media_url',
+    'mediaUrl',
+    'url',
   ];
 
   static final RegExp _textPostIdRegex = RegExp(
@@ -54,7 +57,12 @@ class SharedPostMessageParser {
     if (fromText != null) return fromText;
 
     final messageType = _messageType(json);
-    if (_postMessageTypes.contains(messageType)) {
+    final trimmedText = messageText.trim();
+    final isPostPayload = _postMessageTypes.contains(messageType) ||
+        isTaggedPostMessage(trimmedText) ||
+        _textPostIdRegex.hasMatch(trimmedText);
+
+    if (isPostPayload) {
       final directId = _readPostId(json['post_id'] ?? json['postId']);
       if (directId != null) return directId;
     }
@@ -102,6 +110,14 @@ class SharedPostMessageParser {
         directPostId == postId) {
       final direct = _readPreviewUrl(json);
       if (direct != null) return direct;
+    }
+
+    // Tagged/share payloads often expose thumbnail on the root object.
+    if (postId != null && directPostId == postId) {
+      final mediaUrl = json['media_url'] ?? json['mediaUrl'];
+      if (mediaUrl is String && _looksLikeUrl(mediaUrl.trim())) {
+        return mediaUrl.trim();
+      }
     }
 
     for (final key in ['shared_post', 'tagged_post', 'post', 'attachment']) {
@@ -214,6 +230,11 @@ class SharedPostMessageParser {
 
     for (final nestedKey in ['media', 'video', 'file']) {
       final nested = map[nestedKey];
+      if (nested is String) {
+        final value = nested.trim();
+        if (value.isNotEmpty && _looksLikeUrl(value)) return value;
+        continue;
+      }
       if (nested is! Map) continue;
       final nestedMap = Map<String, dynamic>.from(nested);
       for (final key in _previewUrlKeys) {
@@ -221,6 +242,10 @@ class SharedPostMessageParser {
         if (value != null && value.isNotEmpty && _looksLikeUrl(value)) {
           return value;
         }
+      }
+      final nestedUrl = nestedMap['url'] ?? nestedMap['src'];
+      if (nestedUrl is String && _looksLikeUrl(nestedUrl.trim())) {
+        return nestedUrl.trim();
       }
     }
 

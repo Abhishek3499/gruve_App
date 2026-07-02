@@ -6,6 +6,7 @@ import 'flash_sale_section.dart';
 import 'gift_item.dart';
 import 'gift_search_bar.dart';
 import '../../../../core/assets.dart';
+import '../../../../core/utils/app_logger.dart';
 
 class GiftPanel extends StatefulWidget {
   const GiftPanel({super.key});
@@ -31,8 +32,22 @@ class _GiftPanelState extends State<GiftPanel> {
     {'image': AppAssets.gost2, 'cost': 8, 'isSpecial': false},
   ];
 
+  OverlayEntry? _giftOverlayEntry;
+
+  void _removeGiftOverlay() {
+    if (_giftOverlayEntry != null) {
+      try {
+        _giftOverlayEntry!.remove();
+      } catch (e) {
+        AppLogger.d('⚠️ Error removing gift overlay: $e');
+      }
+      _giftOverlayEntry = null;
+    }
+  }
+
   @override
   void dispose() {
+    _removeGiftOverlay();
     _searchController.dispose();
     super.dispose();
   }
@@ -45,10 +60,10 @@ class _GiftPanelState extends State<GiftPanel> {
   }
 
   void _showGiftSnackBar(String message, BuildContext context) {
-    OverlayEntry? overlayEntry;
+    _removeGiftOverlay();
 
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
+    _giftOverlayEntry = OverlayEntry(
+      builder: (overlayContext) => Positioned(
         bottom: 100, // Position above the panel
         left: 20,
         right: 20,
@@ -82,11 +97,7 @@ class _GiftPanelState extends State<GiftPanel> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    if (overlayEntry != null) {
-                      overlayEntry.remove();
-                    }
-                  },
+                  onTap: _removeGiftOverlay,
                   child: const Icon(Icons.close, color: Colors.black, size: 18),
                 ),
               ],
@@ -97,12 +108,12 @@ class _GiftPanelState extends State<GiftPanel> {
     );
 
     final overlay = Overlay.of(context);
-    overlay.insert(overlayEntry);
+    overlay.insert(_giftOverlayEntry!);
 
     // Auto-remove after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
-      if (overlayEntry != null) {
-        overlayEntry.remove();
+      if (mounted) {
+        _removeGiftOverlay();
       }
     });
   }

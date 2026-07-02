@@ -27,7 +27,7 @@ class SharedPostPreviewCache {
     return _inFlight.putIfAbsent(postId, () async {
       try {
         final post = await PostService().fetchPostById(postId);
-        if (post.id == postId) {
+        if (post.id == postId || post.hasPlayableMedia) {
           _posts[postId] = post;
         }
         return post;
@@ -47,6 +47,9 @@ class SharedPostPreviewCard extends StatefulWidget {
   final String? initialPreviewUrl;
   final bool isTaggedPost;
   final Post? preloadedPost;
+  final String? senderDisplayName;
+  final String? senderAvatar;
+  final String? senderUserId;
 
   const SharedPostPreviewCard({
     super.key,
@@ -55,6 +58,9 @@ class SharedPostPreviewCard extends StatefulWidget {
     this.initialPreviewUrl,
     this.isTaggedPost = false,
     this.preloadedPost,
+    this.senderDisplayName,
+    this.senderAvatar,
+    this.senderUserId,
   });
 
   @override
@@ -64,44 +70,120 @@ class SharedPostPreviewCard extends StatefulWidget {
 class _SharedPostPreviewCardState extends State<SharedPostPreviewCard> {
   late Future<Post> _postFuture;
 
+  bool _hasUsablePreloadedPost(Post? post) {
+    if (post == null) return false;
+    if (post.username != 'unknown') return true;
+    if (post.gridPreviewUrl.isNotEmpty) return true;
+    final media = post.media.trim();
+    return media.isNotEmpty && MediaUrlThumbnail.isHttpUrl(media);
+  }
+
+  Future<Post> _resolvePostFuture() {
+    if (_hasUsablePreloadedPost(widget.preloadedPost)) {
+      final post = widget.preloadedPost!;
+      SharedPostPreviewCache.set(widget.postId, post);
+      return Future.value(post);
+    }
+    return SharedPostPreviewCache.load(widget.postId);
+  }
+
   @override
   void initState() {
     super.initState();
-    if (widget.preloadedPost != null && widget.preloadedPost!.username != 'unknown') {
-      _postFuture = Future.value(widget.preloadedPost);
-      SharedPostPreviewCache.set(widget.postId, widget.preloadedPost!);
-    } else {
-      _postFuture = SharedPostPreviewCache.load(widget.postId);
-    }
+    _postFuture = _resolvePostFuture();
   }
 
   @override
   void didUpdateWidget(covariant SharedPostPreviewCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.postId != widget.postId || oldWidget.preloadedPost != widget.preloadedPost) {
-      if (widget.preloadedPost != null && widget.preloadedPost!.username != 'unknown') {
-        _postFuture = Future.value(widget.preloadedPost);
-        SharedPostPreviewCache.set(widget.postId, widget.preloadedPost!);
-      } else {
-        _postFuture = SharedPostPreviewCache.load(widget.postId);
-      }
+    if (oldWidget.postId != widget.postId ||
+        oldWidget.preloadedPost != widget.preloadedPost) {
+      _postFuture = _resolvePostFuture();
     }
   }
 
   Future<void> _openPost(Post post) async {
     if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: Colors.white54,
+          ),
+        ),
+      ),
+    );
+
+    Post resolved = post.mergedWith(
+      other: widget.preloadedPost,
+      previewUrl: widget.initialPreviewUrl,
+      displayName: widget.senderDisplayName,
+      fallbackProfilePicture: widget.senderAvatar,
+    );
+
+    try {
+      final fetched = await PostService().fetchPostById(
+        widget.postId,
+        authorUserId: widget.senderUserId,
+      );
+      resolved = fetched.mergedWith(
+        other: resolved,
+        previewUrl: widget.initialPreviewUrl,
+        displayName: widget.senderDisplayName,
+        fallbackProfilePicture: widget.senderAvatar,
+      );
+      SharedPostPreviewCache.set(widget.postId, resolved);
+    } catch (e) {
+      AppLogger.d('❌ [SharedPostPreviewCard] Refetch before open failed: $e');
+    }
+
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+
+    if (!mounted) return;
+
+    if (!resolved.hasPlayableMedia) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not load this post right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ProfilePostDetailScreen(
-          post: post,
-          allPosts: [post],
+          post: resolved,
+          allPosts: [resolved],
           initialIndex: 0,
           isOwnProfile: false,
+          fallbackDisplayName: widget.senderDisplayName,
+          fallbackMediaUrl: widget.initialPreviewUrl,
+          fallbackProfilePicture: widget.senderAvatar,
         ),
       ),
     );
   }
+
+  String _displayUsername(Post post) {
+    final username = post.username.trim();
+    if (username.isNotEmpty && username != 'unknown') return username;
+    final sender = widget.senderDisplayName?.trim() ?? '';
+    if (sender.isNotEmpty) return sender;
+    return isTaggedPost ? 'Tagged post' : 'Shared post';
+  }
+
+  bool get isTaggedPost => widget.isTaggedPost;
 
   @override
   Widget build(BuildContext context) {
@@ -134,13 +216,20 @@ class _SharedPostPreviewCardState extends State<SharedPostPreviewCard> {
           );
         }
 
-        final post = snapshot.data!;
+        final post = snapshot.data!.mergedWith(
+          other: widget.preloadedPost,
+          previewUrl: widget.initialPreviewUrl,
+          displayName: widget.senderDisplayName,
+          fallbackProfilePicture: widget.senderAvatar,
+        );
         AppLogger.d('✅ [SharedPostPreviewCard] Loaded post: ${post.id}, media: ${post.media}, isVideo: ${post.isVideo}, gridPreviewUrl: ${post.gridPreviewUrl}');
         return _PostCard(
           post: post,
           maxWidth: maxWidth,
           fallbackPreviewUrl: widget.initialPreviewUrl,
           isTaggedPost: widget.isTaggedPost,
+          displayUsername: _displayUsername(post),
+          avatarUrl: post.resolveProfilePicture(fallback: widget.senderAvatar),
           onTap: () => _openPost(post),
         );
       },
@@ -154,6 +243,8 @@ class _PostCard extends StatelessWidget {
   final VoidCallback onTap;
   final String? fallbackPreviewUrl;
   final bool isTaggedPost;
+  final String displayUsername;
+  final String avatarUrl;
 
   const _PostCard({
     required this.post,
@@ -161,6 +252,8 @@ class _PostCard extends StatelessWidget {
     required this.onTap,
     this.fallbackPreviewUrl,
     this.isTaggedPost = false,
+    required this.displayUsername,
+    required this.avatarUrl,
   });
 
   @override
@@ -224,11 +317,11 @@ class _PostCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        _Avatar(url: post.profilePicture, name: post.username),
+                        _Avatar(url: avatarUrl, name: displayUsername),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            post.username,
+                            displayUsername,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -317,14 +410,20 @@ class _PreviewImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppLogger.d('🎨 [_PreviewImage] post.id: ${post.id}, isVideo: ${post.isVideo}, media: ${post.media}, gridPreviewUrl: ${post.gridPreviewUrl}, fallbackUrl: $fallbackUrl');
+
+    final fallback = fallbackUrl?.trim() ?? '';
+    if (fallback.isNotEmpty && MediaUrlThumbnail.isHttpUrl(fallback)) {
+      return MediaUrlThumbnail(url: fallback);
+    }
+
     if (post.gridPreviewUrl.isNotEmpty ||
         (post.isVideo && MediaUrlThumbnail.isHttpUrl(post.media))) {
       return PostGridThumbnail(post: post);
     }
 
-    final url = fallbackUrl?.trim() ?? '';
-    if (url.isNotEmpty && MediaUrlThumbnail.isHttpUrl(url)) {
-      return MediaUrlThumbnail(url: url);
+    final media = post.media.trim();
+    if (media.isNotEmpty && MediaUrlThumbnail.isHttpUrl(media)) {
+      return MediaUrlThumbnail(url: media);
     }
 
     return const ColoredBox(

@@ -130,7 +130,7 @@ class _VideoOverlayState extends State<VideoOverlay> {
                     likeCount: likeProvider.likesCount(post),
                     isLiked: likeProvider.isLiked(post),
                     commentCount: post.commentsCount,
-                    shareCount: 2100,
+                    shareCount: post.sharesCount,
 
                     /// 🎁
                     onGift: () {

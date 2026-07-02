@@ -126,7 +126,7 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
                 likeCount: likeCount,
                 isLiked: isLiked,
                 commentCount: post.commentsCount,
-                shareCount: 2100,
+                shareCount: post.sharesCount,
                 onGift: () {
                   showModalBottomSheet(
                     context: context,

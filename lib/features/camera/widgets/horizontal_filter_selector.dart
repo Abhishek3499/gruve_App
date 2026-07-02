@@ -115,8 +115,16 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     _filterController.setFilter(FilterModel.availableFilters[index]);
   }
 
-  Future<void> _captureFilteredImage() async {
-    if (_isRecordingVideo || _cameraService.isRecordingVideo || ModeService().isCountdownRunning) return;
+  Future<void> _onCaptureTap() async {
+    if (ModeService().isCountdownRunning) return;
+
+    // Tap again while recording stops and saves the clip.
+    if (_cameraService.isRecordingVideo) {
+      await _stopVideoRecording();
+      return;
+    }
+
+    if (_isRecordingVideo || _cameraService.isCapturing) return;
 
     if (ModeService().shootDuration > 0) {
       ModeService().startCountdown(() {
@@ -125,34 +133,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       return;
     }
 
-    CameraLogger.logUserAction('Capturing filtered image');
-
-    try {
-      final rawImage = await _cameraService.captureImage();
-      if (rawImage != null && mounted) {
-        final mode = ModeService().selectedMode;
-
-        if (mode == CameraMode.story || mode == CameraMode.groove) {
-          Navigator.of(
-            context,
-          ).pop(CameraCaptureResult(
-            mediaPath: rawImage.path,
-            mode: mode,
-            stickers: List.from(ModeService().stickers),
-          ));
-        }
-      }
-    } catch (e) {
-      CameraLogger.log('Failed to capture filtered image: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to capture image'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    CameraLogger.logUserAction('Video recording started from capture tap');
+    await _beginVideoRecording();
   }
 
   Future<void> _startTimedRecording() async {
@@ -199,17 +181,16 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     });
   }
 
-  Future<void> _startVideoRecording(LongPressStartDetails details) async {
+  Future<void> _beginVideoRecording({double? dragStartY}) async {
     if (_isRecordingVideo || _cameraService.isCapturing) return;
 
-    CameraLogger.logUserAction('Video recording started from capture button');
     HapticFeedback.mediumImpact();
 
     setState(() {
       _recordingSeconds = 0;
     });
 
-    _lastDragY = details.globalPosition.dy;
+    _lastDragY = dragStartY ?? 0.0;
     _targetZoom = _cameraService.displayZoom;
     _currentZoom = _cameraService.displayZoom;
 
@@ -232,6 +213,13 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       if (!mounted) return;
       setState(() => _recordingSeconds++);
     });
+  }
+
+  Future<void> _startVideoRecording(LongPressStartDetails details) async {
+    if (_isRecordingVideo || _cameraService.isCapturing) return;
+
+    CameraLogger.logUserAction('Video recording started from capture button');
+    await _beginVideoRecording(dragStartY: details.globalPosition.dy);
   }
 
   Future<void> _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) async {
@@ -409,7 +397,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
           Positioned(
             bottom: 35, // Positioned above the filter circles
             child: GestureDetector(
-              onTap: _captureFilteredImage,
+              onTap: _onCaptureTap,
               onLongPressStart: _startVideoRecording,
               onLongPressMoveUpdate: _onLongPressMoveUpdate,
               onLongPressEnd: (_) => _stopVideoRecording(),

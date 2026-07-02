@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
+import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -134,7 +135,7 @@ class PostShareFlowBridge {
       notifyShareStartProcessing(isVideo);
       await _waitForProcessingOverlayFrame();
       
-      await PostService().createPost(
+      final response = await PostService().createPost(
         caption: caption,
         mediaPath: mediaPath,
         mediaMimeType: mediaMimeType,
@@ -155,7 +156,7 @@ class PostShareFlowBridge {
         await PostService().deleteDraft(draftId);
       }
       
-      await notifyPostCreated(isVideo: isVideo);
+      await notifyPostCreated(isVideo: isVideo, newPost: response.data);
       
       AppLogger.d("🔔 [Bridge] Post created notification finished");
       
@@ -181,35 +182,42 @@ class PostShareFlowBridge {
     }
   }
 
-  static Future<void> notifyPostCreated({required bool isVideo}) async {
-    AppLogger.d("🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo)");
+  static Future<void> notifyPostCreated({required bool isVideo, Post? newPost}) async {
+    AppLogger.d("🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo, newPost=${newPost != null})");
     
 
     if (_videoControllerRef != null) {
-      AppLogger.d("🔄 [Bridge] Refreshing feed to show new post...");
-      
-      final result = await _videoControllerRef!.initVideos(refresh: true);
-      if (kDebugMode) {
-        if (result == true) {
-          AppLogger.d("✅ [Bridge] Feed refreshed - new post should be visible");
-        } else if (result == false) {
-          AppLogger.d("❌ [Bridge] Feed refresh failed");
-        } else {
-          AppLogger.d("🔔 [Bridge] Feed refresh superseded by newer load");
-        }
-      }
-      if (result == true) {
-        _needsRefresh = false;
+      if (newPost != null) {
+        AppLogger.d("🔄 [Bridge] Instantly prepending new post ${newPost.id} to feed...");
+        _videoControllerRef!.prependPost(newPost);
         _videoControllerRef!.playVideo(0);
         _videoControllerRef!.onScrollToTop?.call();
-      } else if (result == false) {
-        _needsRefresh = true;
+        _needsRefresh = false;
+      } else {
+        AppLogger.d("🔄 [Bridge] Refreshing feed to show new post (fallback)...");
+        final result = await _videoControllerRef!.initVideos(refresh: true);
+        if (kDebugMode) {
+          if (result == true) {
+            AppLogger.d("✅ [Bridge] Feed refreshed - new post should be visible");
+          } else if (result == false) {
+            AppLogger.d("❌ [Bridge] Feed refresh failed");
+          } else {
+            AppLogger.d("🔔 [Bridge] Feed refresh superseded by newer load");
+          }
+        }
+        if (result == true) {
+          _needsRefresh = false;
+          _videoControllerRef!.playVideo(0);
+          _videoControllerRef!.onScrollToTop?.call();
+        } else if (result == false) {
+          _needsRefresh = true;
+        }
       }
     } else {
       AppLogger.d("❌ [Bridge] No controller available, setting refresh flag");
-        AppLogger.d(
-          "🔄 [Bridge] Will refresh when home tab is accessed",
-        );
+      AppLogger.d(
+        "🔄 [Bridge] Will refresh when home tab is accessed",
+      );
       
       _needsRefresh = true;
     }

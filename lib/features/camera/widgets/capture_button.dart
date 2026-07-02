@@ -88,33 +88,28 @@ class _CaptureButtonState extends State<CaptureButton>
   }
 
   Future<void> _onCapturePressed() async {
-    if (_isCapturing || _isRecordingVideo) return;
+    if (_isCapturing) return;
 
-    CameraLogger.logUserAction('Capture button pressed (short press)');
-
-    final image = await _cameraService.captureImage();
-
-    if (image != null && mounted) {
-      final mode = ModeService().selectedMode;
-      // Route intent must match ModeSelector: story → StoryPreview, groove → PostPreview (via CameraHandler).
-      if (mode == CameraMode.story) {
-        Navigator.of(context).pop(
-          CameraCaptureResult(
-            mediaPath: image.path,
-            mode: CameraMode.story,
-            stickers: List.from(ModeService().stickers),
-          ),
-        );
-      } else if (mode == CameraMode.groove) {
-        Navigator.of(context).pop(
-          CameraCaptureResult(
-            mediaPath: image.path,
-            mode: CameraMode.groove,
-            stickers: List.from(ModeService().stickers),
-          ),
-        );
-      }
+    // Story and Gruve are video-only: tap toggles recording on/off.
+    if (_isRecordingVideo) {
+      await _stopRecordingAndNavigate();
+      return;
     }
+
+    CameraLogger.logUserAction('Video recording started (tap)');
+
+    _dragStartY = 0.0;
+    _baseZoom = _currentZoom;
+    await _cameraService.startVideoRecording();
+
+    _recordingSeconds = 0;
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _recordingSeconds++;
+        });
+      }
+    });
   }
 
   Future<void> _onLongPressStart(LongPressStartDetails details) async {
@@ -164,16 +159,14 @@ class _CaptureButtonState extends State<CaptureButton>
     }
   }
 
-  Future<void> _onLongPressEnd(LongPressEndDetails details) async {
+  Future<void> _stopRecordingAndNavigate() async {
     if (!_isRecordingVideo) return;
 
-    CameraLogger.logUserAction('Video recording stopped (long press released)');
+    CameraLogger.logUserAction('Video recording stopped');
 
-    // Stop timer
     _recordingTimer?.cancel();
     _recordingTimer = null;
 
-    // Reset zoom to base level
     final controller = _cameraService.controller;
     if (controller != null && controller.value.isInitialized) {
       await _cameraService.setZoomLevel(_minZoom);
@@ -181,29 +174,22 @@ class _CaptureButtonState extends State<CaptureButton>
       _baseZoom = _minZoom;
     }
 
-    // Stop video recording and get the video file
     final video = await _cameraService.stopVideoRecording();
 
     if (video != null && mounted) {
       final mode = ModeService().selectedMode;
-      if (mode == CameraMode.story) {
-        Navigator.of(context).pop(
-          CameraCaptureResult(
-            mediaPath: video.path,
-            mode: CameraMode.story,
-            stickers: List.from(ModeService().stickers),
-          ),
-        );
-      } else if (mode == CameraMode.groove) {
-        Navigator.of(context).pop(
-          CameraCaptureResult(
-            mediaPath: video.path,
-            mode: CameraMode.groove,
-            stickers: List.from(ModeService().stickers),
-          ),
-        );
-      }
+      Navigator.of(context).pop(
+        CameraCaptureResult(
+          mediaPath: video.path,
+          mode: mode,
+          stickers: List.from(ModeService().stickers),
+        ),
+      );
     }
+  }
+
+  Future<void> _onLongPressEnd(LongPressEndDetails details) async {
+    await _stopRecordingAndNavigate();
   }
 
   @override

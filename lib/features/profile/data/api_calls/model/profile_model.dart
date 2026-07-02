@@ -9,6 +9,7 @@ class ProfileModel {
   final bool isFollowing;
   final bool hasActiveStory;
   final int storyCount;
+  final int unreadNotificationCount;
 
   ProfileModel({
     required this.id,
@@ -18,6 +19,7 @@ class ProfileModel {
     this.isFollowing = false,
     this.hasActiveStory = false,
     this.storyCount = 0,
+    this.unreadNotificationCount = 0,
   });
 
   /// Overlays nested `data` / `user` / `profile` fields so top-level keys resolve.
@@ -126,6 +128,11 @@ class ProfileModel {
       'storiesCount',
     ], fallback: 0);
 
+    final unreadNotificationCount = SafeParsingHelpers.safeInt(flat, const [
+      'unread_notification_count',
+      'unread_notifications_count',
+    ], fallback: 0);
+
     final hasActiveStory = parsedHasActiveStory;
 
     AppLogger.d(
@@ -139,6 +146,7 @@ class ProfileModel {
     );
     AppLogger.d("[ProfileModel] Final hasActiveStory: $hasActiveStory");
     AppLogger.d("[ProfileModel] Parsed storyCount: $storyCount");
+    AppLogger.d("[ProfileModel] Parsed unreadNotificationCount: $unreadNotificationCount");
 
     final model = ProfileModel(
       id: id,
@@ -148,10 +156,11 @@ class ProfileModel {
       isFollowing: isFollowing,
       hasActiveStory: hasActiveStory,
       storyCount: storyCount,
+      unreadNotificationCount: unreadNotificationCount,
     );
 
     AppLogger.d(
-      "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}, isFollowing: ${model.isFollowing}, hasActiveStory: ${model.hasActiveStory}, storyCount: ${model.storyCount}",
+      "[ProfileModel] created -> id: ${model.id}, fullName: ${model.fullName}, username: ${model.username}, profileImage: ${model.profileImage}, isFollowing: ${model.isFollowing}, hasActiveStory: ${model.hasActiveStory}, storyCount: ${model.storyCount}, unreadNotificationCount: ${model.unreadNotificationCount}",
     );
 
     return model;
