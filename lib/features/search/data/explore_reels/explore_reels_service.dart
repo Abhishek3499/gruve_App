@@ -34,6 +34,51 @@ class ExploreReelsService {
     return _postCache[reel.id] ?? reel.toPreviewPost();
   }
 
+  /// Post for the Instagram-style viewer — always carries explore user metadata.
+  Post viewerPostFor(ExploreReel reel) {
+    return displayPostFor(reel).mergedWith(
+      other: reel.toPreviewPost(),
+      displayName: reel.user.username,
+      fallbackProfilePicture: reel.user.profilePicture,
+    );
+  }
+
+  /// Hydrates caption, counts, and author avatar for the full-screen viewer.
+  Future<Post?> resolveReelForViewer(ExploreReel reel) async {
+    final baseline = viewerPostFor(reel);
+
+    final cached = _postCache[reel.id];
+    if (cached != null &&
+        cached.profilePicture.trim().isNotEmpty &&
+        _hasPlayableVideo(cached)) {
+      return cached.mergedWith(
+        other: baseline,
+        displayName: reel.user.username,
+        fallbackProfilePicture: reel.user.profilePicture,
+      );
+    }
+
+    final inFlight = _resolveInFlight['viewer:${reel.id}'];
+    if (inFlight != null) return inFlight;
+
+    final future = _resolveReelPostInternal(
+      reel,
+      baseline,
+      enrichProfile: true,
+    );
+    _resolveInFlight['viewer:${reel.id}'] = future;
+    try {
+      final resolved = await future;
+      if (resolved != null) {
+        _cacheIfBetter(reel.id, resolved);
+        _notifyHydrated();
+      }
+      return resolved;
+    } finally {
+      _resolveInFlight.remove('viewer:${reel.id}');
+    }
+  }
+
   void prefetchReels(List<ExploreReel> reels, {int? maxItems}) {
     final slice = maxItems == null ? reels : reels.take(maxItems);
     final batch = <ExploreReel>[];
@@ -51,6 +96,13 @@ class ExploreReelsService {
 
   Future<void> _prefetchReelsBatch(List<ExploreReel> reels) async {
     try {
+      final unresolved = reels
+          .where((reel) => !reel.hasPlayableMedia && reel.id.isNotEmpty)
+          .toList();
+      if (unresolved.isNotEmpty) {
+        await Future.wait(unresolved.map(resolveReelPost), eagerError: false);
+      }
+
       final posts = reels.map((reel) => displayPostFor(reel)).toList();
       await PostGridThumbnail.warmupPostsAwait(posts, max: posts.length);
       _notifyHydrated();
@@ -61,7 +113,7 @@ class ExploreReelsService {
 
   Future<ExploreReelsPage> fetchReels({
     int page = 1,
-    int limit = 20,
+    int limit = 10,
     String sort = 'trending',
   }) async {
     final token = await TokenStorage.getAccessToken();
@@ -70,11 +122,7 @@ class ExploreReelsService {
 
     final response = await _dio.get(
       'explore/reels/',
-      queryParameters: {
-        'page': page,
-        'limit': safeLimit,
-        'sort': safeSort,
-      },
+      queryParameters: {'page': page, 'limit': safeLimit, 'sort': safeSort},
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
 
@@ -111,7 +159,11 @@ class ExploreReelsService {
     }
   }
 
-  Future<Post?> _resolveReelPostInternal(ExploreReel reel, Post preview) async {
+  Future<Post?> _resolveReelPostInternal(
+    ExploreReel reel,
+    Post preview, {
+    bool enrichProfile = false,
+  }) async {
     try {
       final post = await _postService
           .fetchPostById(
@@ -120,7 +172,35 @@ class ExploreReelsService {
             allowProfileFallback: true,
           )
           .timeout(_resolveTimeout);
-      final merged = post.mergedWith(other: preview);
+      var merged = post.mergedWith(
+        other: preview,
+        displayName: reel.user.username,
+        fallbackProfilePicture: reel.user.profilePicture,
+      );
+
+      if (enrichProfile &&
+          merged.profilePicture.trim().isEmpty &&
+          reel.user.id.isNotEmpty) {
+        final avatar = await _fetchUserAvatar(reel.user.id);
+        if (avatar != null && avatar.isNotEmpty) {
+          merged = merged.mergedWith(
+            other: Post(
+              id: '',
+              caption: '',
+              media: '',
+              userId: reel.user.id,
+              likesCount: 0,
+              commentsCount: 0,
+              sharesCount: 0,
+              isLiked: false,
+              username: reel.user.username,
+              isSubscribed: false,
+              profilePicture: avatar,
+            ),
+          );
+        }
+      }
+
       if (_hasPlayableVideo(merged) || merged.gridPreviewUrl.isNotEmpty) {
         return merged;
       }
@@ -129,6 +209,47 @@ class ExploreReelsService {
       AppLogger.d('⚠️ [ExploreReelsService] resolve ${reel.id} failed: $e');
       return null;
     }
+  }
+
+  Future<String?> _fetchUserAvatar(String userId) async {
+    final id = userId.trim();
+    if (id.isEmpty) return null;
+
+    try {
+      final token = await TokenStorage.getAccessToken();
+      final response = await _dio.get(
+        'user/profile/$id/',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final root = response.data;
+      if (root is! Map) return null;
+
+      final data = root['data'] ?? root;
+      if (data is! Map) return null;
+
+      final user = data['user'];
+      if (user is! Map) return null;
+
+      final userMap = Map<String, dynamic>.from(user);
+      for (final key in const [
+        'profile_picture',
+        'profilePicture',
+        'profile_image',
+        'profileImage',
+        'avatar',
+        'avatar_url',
+        'photo',
+        'image',
+      ]) {
+        final value = userMap[key]?.toString().trim() ?? '';
+        if (value.isNotEmpty && value.toLowerCase() != 'null') {
+          return Post.normalizeMediaUrl(value);
+        }
+      }
+    } catch (e) {
+      AppLogger.d('⚠️ [ExploreReelsService] avatar lookup $userId failed: $e');
+    }
+    return null;
   }
 
   void _cacheIfBetter(String reelId, Post candidate) {
@@ -148,6 +269,7 @@ class ExploreReelsService {
   int _postQualityScore(Post post) {
     var score = 0;
     if (post.gridPreviewUrl.isNotEmpty) score += 2;
+    if (post.profilePicture.isNotEmpty) score += 3;
     if (_hasPlayableVideo(post)) score += 4;
     if (post.caption.isNotEmpty) score += 1;
     return score;

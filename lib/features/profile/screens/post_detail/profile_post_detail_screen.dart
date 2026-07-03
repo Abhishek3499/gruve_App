@@ -107,7 +107,11 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   Future<Post?> _fetchPostById(Post post) async {
     if (post.id.isEmpty) return null;
     try {
-      return await PostService().fetchPostById(post.id);
+      return await PostService().fetchPostById(
+        post.id,
+        authorUserId: post.userId,
+        allowProfileFallback: true,
+      );
     } catch (e) {
       AppLogger.d('fetchPostById error: $e');
       return null;
@@ -115,7 +119,12 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   }
 
   bool _needsMediaResolve(Post post) {
-    if (post.isVideo) return !_hasPlayableVideo(post);
+    if (post.isVideo) {
+      if (!_hasPlayableVideo(post)) return true;
+      return post.profilePicture.trim().isEmpty &&
+          post.userId.trim().isNotEmpty &&
+          post.userId != 'unknown';
+    }
     return post.media.trim().isEmpty && post.id.isNotEmpty;
   }
 

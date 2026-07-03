@@ -46,6 +46,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     threshold: 360,
   );
 
+  static Color get _panelBackgroundColor =>
+      const Color(0xFF7D63D1).withValues(alpha: 0.12);
+
   @override
   void initState() {
     super.initState();
@@ -267,10 +270,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(top: 130),
-                            child: Stack(
-                              children: [
-                                _buildProfilePanelBackground(constraints),
-                                Column(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(110),
+                                topRight: Radius.circular(30),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _panelBackgroundColor,
+                                ),
+                                child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
@@ -308,7 +317,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                           Column(
@@ -336,40 +345,25 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ],
                       ),
                     ),
-                    ...grid.buildSlivers(context),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      sliver: DecoratedSliver(
+                        decoration: BoxDecoration(color: _panelBackgroundColor),
+                        sliver: SliverMainAxisGroup(
+                          slivers: grid.buildSlivers(context),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: ColoredBox(
+                        color: _panelBackgroundColor,
+                        child: const SizedBox(height: 100),
+                      ),
+                    ),
                   ],
                 );
               },
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfilePanelBackground(BoxConstraints constraints) {
-    return Container(
-      height: constraints.maxHeight,
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      padding: const EdgeInsets.only(top: 250, bottom: 120),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x267D63D1), Color(0x26212235)],
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(110),
-          topRight: Radius.circular(30),
-          bottomLeft: Radius.circular(80),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7D63D1).withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
         ],
       ),
     );
@@ -380,7 +374,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 130),
-          child: _buildProfilePanelBackground(constraints),
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: _panelBackgroundColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(110),
+                topRight: Radius.circular(30),
+              ),
+            ),
+            child: const SizedBox(height: 720),
+          ),
         ),
         const UserProfileShimmer(),
       ],

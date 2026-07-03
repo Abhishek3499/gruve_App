@@ -134,6 +134,7 @@ class TokenStorage {
     try {
       _prefs ??= await SharedPreferences.getInstance();
       await _prefs?.remove(_currentUserIdKey);
+      await _prefs?.remove('unread_counts_map');
     } catch (e) {
       _log('Failed to clear current user ID from SharedPreferences: $e');
     }
@@ -153,6 +154,35 @@ class TokenStorage {
   static Future<void> clearResetToken() async {
     _log('Clearing reset token');
     await _deleteSecure(_resetTokenKey);
+  }
+
+  static Map<String, int> getUnreadCounts() {
+    final String? jsonStr = _prefs?.getString('unread_counts_map');
+    if (jsonStr == null || jsonStr.isEmpty) return {};
+    try {
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      return map.map((key, value) => MapEntry(key, int.tryParse(value.toString()) ?? 0));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<void> saveUnreadCounts(Map<String, int> counts) async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs?.setString('unread_counts_map', jsonEncode(counts));
+    } catch (_) {}
+  }
+
+  static int getUnreadCount(String conversationId) {
+    final counts = getUnreadCounts();
+    return counts[conversationId] ?? 0;
+  }
+
+  static Future<void> setUnreadCount(String conversationId, int count) async {
+    final counts = getUnreadCounts();
+    counts[conversationId] = count;
+    await saveUnreadCounts(counts);
   }
 
   static bool _isValidTokenFormat(String token) {

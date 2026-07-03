@@ -90,26 +90,25 @@ class _CaptureButtonState extends State<CaptureButton>
   Future<void> _onCapturePressed() async {
     if (_isCapturing) return;
 
-    // Story and Gruve are video-only: tap toggles recording on/off.
     if (_isRecordingVideo) {
       await _stopRecordingAndNavigate();
       return;
     }
 
-    CameraLogger.logUserAction('Video recording started (tap)');
+    CameraLogger.logUserAction('Image capture started (tap)');
 
-    _dragStartY = 0.0;
-    _baseZoom = _currentZoom;
-    await _cameraService.startVideoRecording();
+    final image = await _cameraService.captureImage();
 
-    _recordingSeconds = 0;
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _recordingSeconds++;
-        });
-      }
-    });
+    if (image != null && mounted) {
+      final mode = ModeService().selectedMode;
+      Navigator.of(context).pop(
+        CameraCaptureResult(
+          mediaPath: image.path,
+          mode: mode,
+          stickers: List.from(ModeService().stickers),
+        ),
+      );
+    }
   }
 
   Future<void> _onLongPressStart(LongPressStartDetails details) async {

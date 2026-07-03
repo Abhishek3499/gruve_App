@@ -312,6 +312,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _onItemTapped(int index) async {
     if (_isDisposed) return;
 
+    // Trigger vibrate haptic feedback (same as like toggle)
+    try {
+      HapticFeedback.vibrate();
+    } catch (e) {
+      AppLogger.d('⚠️ Haptic feedback error: $e');
+    }
+
     // Handle Home tab logic
     if (index == 0) {
       if (_currentIndex.value == 0) {

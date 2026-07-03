@@ -54,11 +54,14 @@ class VideoFeedController {
   final List<String> _recentlyViewedUrls = <String>[];
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
-  final ValueNotifier<int> _feedRevision = ValueNotifier(0);
+  final ValueNotifier<int> _feedStructureRevision = ValueNotifier(0);
+  final ValueNotifier<bool> _isInitialFeedLoadingNotifier = ValueNotifier(true);
+  final Map<String, ValueNotifier<int>> _itemRevisions = {};
   /// Bumped when video controllers are added/removed — avoids rebuilding the
   /// entire feed when only a single slot becomes ready.
   final ValueNotifier<int> _videoControllersRevision = ValueNotifier(0);
   final ValueNotifier<bool> _isLoadingMoreNotifier = ValueNotifier(false);
+  final ValueNotifier<String?> _loadErrorNotifier = ValueNotifier(null);
   String _currentFeed = 'for_you';
   String get currentFeed => _currentFeed;
 
@@ -67,6 +70,7 @@ class VideoFeedController {
   static const int maxInitRetries = 2;
   static const Duration initTimeout = Duration(seconds: 15);
   static const int maxRecentlyViewed = 8;
+  static const int maxConsecutiveEmptyLoadMorePages = 3;
 
   bool _isInitialLoading = false;
   bool _isRefreshing = false;
@@ -74,28 +78,71 @@ class VideoFeedController {
   bool _hasMore = true;
   String? _loadError;
   CursorModel? _nextCursor;
+  bool _isInitialFeedLoading = true;
+  int _consecutiveEmptyLoadMorePages = 0;
 
   // Separate loading states for better UX
   bool get isInitialLoading => _isInitialLoading;
   bool get isRefreshing => _isRefreshing;
   bool get isLoadingMore => _isLoadingMore;
+  bool get isInitialFeedLoading => _isInitialFeedLoading;
 
   ValueNotifier<int> get currentIndex => _currentIndex;
   bool get hasMore => _hasMore;
   String? get loadError => _loadError;
-  ValueNotifier<int> get feedRevision => _feedRevision;
+  ValueNotifier<int> get feedStructureRevision => _feedStructureRevision;
+  ValueNotifier<bool> get isInitialFeedLoadingListenable =>
+      _isInitialFeedLoadingNotifier;
   ValueNotifier<bool> get isLoadingMoreListenable => _isLoadingMoreNotifier;
+  ValueNotifier<String?> get loadErrorListenable => _loadErrorNotifier;
   ValueNotifier<int> get videoControllersRevision => _videoControllersRevision;
+  ValueNotifier<int> itemRevisionListenable(String itemKey) {
+    return _itemRevisions.putIfAbsent(itemKey, () => ValueNotifier(0));
+  }
+
   int get gen => _feedLoadGeneration;
 
-  void _notifyFeedChanged() {
-    _feedRevision.value++;
+  void _notifyFeedStructureChanged() {
+    _feedStructureRevision.value++;
+  }
+
+  void _notifyFeedItemChanged(String itemKey) {
+    if (itemKey.isEmpty) return;
+    final notifier = _itemRevisions[itemKey];
+    if (notifier != null) {
+      notifier.value++;
+    }
+  }
+
+  void _setInitialFeedLoading(bool value) {
+    if (_isInitialFeedLoading == value) return;
+    _isInitialFeedLoading = value;
+    _isInitialFeedLoadingNotifier.value = value;
+  }
+
+  void _disposeItemRevisions() {
+    for (final notifier in _itemRevisions.values) {
+      notifier.dispose();
+    }
+    _itemRevisions.clear();
+  }
+
+  String _itemRevisionKey(Post post, {String? mediaUrl}) {
+    if (post.id.isNotEmpty) return post.id;
+    final url = mediaUrl ?? _feedMediaUrlFor(post);
+    return url.trim();
   }
 
   void _setLoadingMore(bool value) {
     if (_isLoadingMore == value) return;
     _isLoadingMore = value;
     _isLoadingMoreNotifier.value = value;
+  }
+
+  void _setLoadError(String? error) {
+    if (_loadError == error) return;
+    _loadError = error;
+    _loadErrorNotifier.value = error;
   }
 
   void _notifyVideoControllersChanged() {
@@ -205,76 +252,108 @@ class VideoFeedController {
     );
 
     final requestId = _feedLoadGeneration;
-    final requestedCursor = _nextCursor;
-    _isLoadingMore = true;
     _isAnyOperationInProgress = true;
-    _loadError = null;
+    _setLoadError(null);
     _setLoadingMore(true);
 
     try {
       AppLogger.d("⏬ Load More Triggered");
 
-      final response = await _postService.getPaginatedPosts(
-        cursor: _nextCursor,
-        feed: _currentFeed,
-      );
+      var fetchCursor = _nextCursor;
 
-      if (requestId != _feedLoadGeneration) {
-        AppLogger.d(
+      while (true) {
+        final response = await _postService.getPaginatedPosts(
+          cursor: fetchCursor,
+          feed: _currentFeed,
+        );
+
+        if (requestId != _feedLoadGeneration) {
+          AppLogger.d(
             'Load more request $requestId cancelled due to newer request',
           );
-        
-        return null;
-      }
-
-      AppLogger.d('📡 feed API load-more: ${response.posts.length} raw posts');
-
-      final posts = _filterPostsWithSupportedMedia(response.posts);
-      final uniquePosts = _uniquePosts(
-        posts,
-        existingIds: _posts.map((post) => post.id).toSet(),
-      );
-      final canLoadMore = _canLoadAfterCursor(
-        requestedCursor: requestedCursor,
-        nextCursor: response.nextCursor,
-        apiHasMore: response.hasMore,
-      );
-
-      final videoCount = uniquePosts
-          .where(
-            (post) => post.isVideo || Post.mediaUrlLooksLikeVideo(post.media),
-          )
-          .length;
-      final imageCount = uniquePosts.length - videoCount;
-      AppLogger.d(
-        '🎥 video detected (kept): $videoCount | 🖼 image detected (kept): $imageCount',
-      );
-
-      if (uniquePosts.isNotEmpty) {
-        if (_currentFeed == 'subscribed') {
-          _seedSubscribedAuthors(uniquePosts);
+          return null;
         }
-        _posts.addAll(uniquePosts);
-        _mediaUrls.addAll(uniquePosts.map(_feedMediaUrlFor));
-        _nextCursor = response.nextCursor;
-        _hasMore = canLoadMore;
-        _notifyFeedChanged();
-        unawaited(_precacheFeedImages(uniquePosts));
-        unawaited(
-          _ensureControllersAroundIndex(_currentIndex.value, requestId),
-        );
-        AppLogger.d('✅ [VideoFeed] Total Posts: ${_posts.length}');
-        
-      } else {
-        _nextCursor = response.nextCursor;
-        _hasMore = canLoadMore;
-      }
 
-      AppLogger.d('✅ Loaded ${uniquePosts.length} more posts');
-      return true;
+        AppLogger.d(
+          '📡 feed API load-more: ${response.posts.length} raw posts',
+        );
+
+        final posts = _filterPostsWithSupportedMedia(response.posts);
+        final uniquePosts = _uniquePosts(
+          posts,
+          existingIds: _posts.map((post) => post.id).toSet(),
+        );
+        final canLoadMore = _canLoadAfterCursor(
+          requestedCursor: fetchCursor,
+          nextCursor: response.nextCursor,
+          apiHasMore: response.hasMore,
+        );
+
+        _nextCursor = response.nextCursor;
+
+        if (uniquePosts.isNotEmpty) {
+          _consecutiveEmptyLoadMorePages = 0;
+
+          final videoCount = uniquePosts
+              .where(
+                (post) =>
+                    post.isVideo || Post.mediaUrlLooksLikeVideo(post.media),
+              )
+              .length;
+          final imageCount = uniquePosts.length - videoCount;
+          AppLogger.d(
+            '🎥 video detected (kept): $videoCount | 🖼 image detected (kept): $imageCount',
+          );
+
+          if (_currentFeed == 'subscribed') {
+            _seedSubscribedAuthors(uniquePosts);
+          }
+          _posts.addAll(uniquePosts);
+          _mediaUrls.addAll(uniquePosts.map(_feedMediaUrlFor));
+          _hasMore = canLoadMore;
+          _notifyFeedStructureChanged();
+          unawaited(_precacheFeedImages(uniquePosts));
+          unawaited(
+            _ensureControllersAroundIndex(_currentIndex.value, requestId),
+          );
+          AppLogger.d('✅ [VideoFeed] Total Posts: ${_posts.length}');
+          AppLogger.d('✅ Loaded ${uniquePosts.length} more posts');
+          return true;
+        }
+
+        // Duplicate-only page: advance cursor and retry up to the safety cap.
+        _consecutiveEmptyLoadMorePages++;
+        AppLogger.d(
+          '📡 [VideoFeed] Duplicate-only page '
+          '($_consecutiveEmptyLoadMorePages/$maxConsecutiveEmptyLoadMorePages) '
+          '— cursor advanced',
+        );
+
+        if (!canLoadMore) {
+          _hasMore = false;
+          return true;
+        }
+
+        if (_consecutiveEmptyLoadMorePages >= maxConsecutiveEmptyLoadMorePages) {
+          AppLogger.d(
+            '⚠️ [VideoFeed] Stopping pagination after '
+            '$maxConsecutiveEmptyLoadMorePages consecutive duplicate-only pages',
+          );
+          _hasMore = false;
+          return true;
+        }
+
+        final nextCursor = response.nextCursor;
+        if (nextCursor == null || !nextCursor.isValid) {
+          _hasMore = false;
+          return true;
+        }
+
+        fetchCursor = nextCursor;
+      }
     } catch (e) {
       AppLogger.d("❌ LOAD MORE ERROR: $e");
-      _loadError = 'Failed to load more posts';
+      _setLoadError('Failed to load more posts');
       return null;
     } finally {
       _setLoadingMore(false);
@@ -310,8 +389,7 @@ class VideoFeedController {
 
     final requestId = ++_feedLoadGeneration;
     _isAnyOperationInProgress = true;
-    _loadError = null;
-    _notifyFeedChanged();
+    _setLoadError(null);
 
     // 🚀 Cache-then-Network: Load from Hive offline storage first if we don't have posts in memory
     if (!refresh && _posts.isEmpty) {
@@ -328,7 +406,18 @@ class VideoFeedController {
           _mediaUrls = _posts.map(_feedMediaUrlFor).toList();
           _currentIndex.value = 0;
           _isPlaying.value = false;
-          _notifyFeedChanged();
+          _notifyFeedStructureChanged();
+          _checkInitialFeedLoadingStatus();
+
+          if (_isInitialFeedLoading) {
+            Future.delayed(const Duration(milliseconds: 1200), () {
+              if (_isInitialFeedLoading && !_disposed && requestId == _feedLoadGeneration) {
+                _setInitialFeedLoading(false);
+                AppLogger.d('⏰ [VideoFeedController] Shimmer dismissed via cache fallback timer');
+              }
+            });
+          }
+
           unawaited(_precacheFeedImages(_posts));
           
           // Preload first cached video
@@ -352,7 +441,8 @@ class VideoFeedController {
       if (refresh) {
         _nextCursor = null;
         _hasMore = true;
-        _isLoadingMore = false;
+        _setLoadingMore(false);
+        _consecutiveEmptyLoadMorePages = 0;
         _postService.resetPagination();
       }
 
@@ -389,7 +479,7 @@ class VideoFeedController {
           _mediaUrls = [];
         }
         _hasMore = false;
-        _notifyFeedChanged();
+        _notifyFeedStructureChanged();
       } else if (uniquePosts.isEmpty) {
         AppLogger.d("❌ Posts received, but media URLs were empty or invalid");
         
@@ -399,7 +489,7 @@ class VideoFeedController {
         }
         _hasMore = canLoadMore;
         _nextCursor = response.nextCursor;
-        _notifyFeedChanged();
+        _notifyFeedStructureChanged();
       } else {
         if (refresh) {
           _mergeRefreshedPosts(uniquePosts);
@@ -429,7 +519,17 @@ class VideoFeedController {
         }
         _nextCursor = response.nextCursor;
         _hasMore = canLoadMore;
-        _notifyFeedChanged();
+        _notifyFeedStructureChanged();
+        _checkInitialFeedLoadingStatus();
+
+        if (_isInitialFeedLoading) {
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (_isInitialFeedLoading && !_disposed && requestId == _feedLoadGeneration) {
+              _setInitialFeedLoading(false);
+              AppLogger.d('⏰ [VideoFeedController] Shimmer dismissed via fallback timer');
+            }
+          });
+        }
 
         AppLogger.d('✅ [VideoFeed] Total Posts: ${_posts.length}');
         
@@ -489,13 +589,13 @@ class VideoFeedController {
       return true;
     } catch (e) {
       AppLogger.d("❌ Video load error: $e");
-      _loadError = 'Failed to load feed';
+      _setLoadError('Failed to load feed');
       return false;
     } finally {
       _isInitialLoading = false;
       _isRefreshing = false;
       _isAnyOperationInProgress = false;
-      _notifyFeedChanged();
+      _checkInitialFeedLoadingStatus();
     }
   }
 
@@ -620,8 +720,11 @@ class VideoFeedController {
 
     _currentIndex.dispose();
     _isPlaying.dispose();
-    _feedRevision.dispose();
+    _feedStructureRevision.dispose();
+    _isInitialFeedLoadingNotifier.dispose();
+    _disposeItemRevisions();
     _isLoadingMoreNotifier.dispose();
+    _loadErrorNotifier.dispose();
     _videoControllersRevision.dispose();
 
     AppLogger.d('✅ VideoFeedController fully disposed (memory freed)');
@@ -657,13 +760,16 @@ class VideoFeedController {
     _feedLoadGeneration++;
     _isInitialLoading = false;
     _isRefreshing = false;
-    _isLoadingMore = false;
+    _setLoadingMore(false);
     _hasMore = true;
-    _loadError = null;
+    _setLoadError(null);
     _nextCursor = null;
+    _consecutiveEmptyLoadMorePages = 0;
     _isAnyOperationInProgress = false;
+    _setInitialFeedLoading(true);
+    _disposeItemRevisions();
 
-    _notifyFeedChanged();
+    _notifyFeedStructureChanged();
     AppLogger.d('✅ [VideoFeedController] State reset complete');
   }
 
@@ -684,7 +790,7 @@ class VideoFeedController {
 
     _currentIndex.value = 0;
     _isPlaying.value = false;
-    _notifyFeedChanged();
+    _notifyFeedStructureChanged();
 
     unawaited(_precacheFeedImages([post]));
     unawaited(_ensureControllersAroundIndex(0, _feedLoadGeneration));
@@ -748,14 +854,17 @@ class VideoFeedController {
     _isPlaying.value = false;
     _nextCursor = null;
     _hasMore = true;
-    _loadError = null;
+    _setLoadError(null);
+    _consecutiveEmptyLoadMorePages = 0;
 
     // Reset loading states and increment generation to cancel any in-flight requests
     _isInitialLoading = false;
     _isRefreshing = false;
-    _isLoadingMore = false;
+    _setLoadingMore(false);
     _isAnyOperationInProgress = false;
+    _setInitialFeedLoading(true);
     _feedLoadGeneration++;
+    _disposeItemRevisions();
 
     if (feedTab == 'Subscribed') {
       _currentFeed = 'subscribed';
@@ -763,7 +872,7 @@ class VideoFeedController {
       _currentFeed = 'for_you';
     }
 
-    _notifyFeedChanged();
+    _notifyFeedStructureChanged();
     AppLogger.d('✅ [VideoFeedController] Feed successfully changed to $_currentFeed (gen: $_feedLoadGeneration)');
   }
 
@@ -827,6 +936,36 @@ class VideoFeedController {
     return post.isVideo || Post.mediaUrlLooksLikeVideo(post.media);
   }
 
+  bool _hasRenderedFrame(VideoPlayerController controller) {
+    final value = controller.value;
+    return value.isInitialized &&
+        value.size.width > 0 &&
+        value.size.height > 0 &&
+        (value.position > Duration.zero || !value.isBuffering);
+  }
+
+  void _checkInitialFeedLoadingStatus() {
+    if (!_isInitialFeedLoading) return;
+
+    if (_posts.isEmpty) {
+      if (!_isInitialLoading && !_isRefreshing && !_isAnyOperationInProgress) {
+        _setInitialFeedLoading(false);
+      }
+      return;
+    }
+
+    final firstPost = _posts[0];
+    final posterAvailable = firstPost.feedPosterUrl.isNotEmpty;
+    final firstController = controllerForMediaIndex(0);
+    final firstControllerReady = firstController != null && firstController.value.isInitialized;
+    final firstControllerFailed = hasVideoLoadFailed(0);
+
+    if (posterAvailable || firstControllerReady || firstControllerFailed) {
+      _setInitialFeedLoading(false);
+      AppLogger.d('✨ [VideoFeedController] Initial feed loading finished. Poster: $posterAvailable, Controller: $firstControllerReady, Failed: $firstControllerFailed');
+    }
+  }
+
   Future<void> _ensureControllersAroundIndex(int index, int generation) async {
     if (_disposed || index < 0 || index >= _posts.length) return;
 
@@ -860,8 +999,9 @@ class VideoFeedController {
       await _initializeVideoAt(index, generation);
     }
 
-    // 2. Initialize the neighboring/preload videos in the background with a slight delay.
-    // This prevents them from competing with the current video's initial buffering.
+    // 2. Initialize the neighboring/preload videos in the background.
+    // Eagerly wait for the current video controller to initialize and render its first frame
+    // before initializing neighboring preloads, to prioritize active video bandwidth.
     final orderedTargets = _orderedPreloadIndexes(index, targetIndexes);
     for (final mediaIndex in orderedTargets) {
       if (mediaIndex == index) continue; // Already handled above
@@ -872,12 +1012,31 @@ class VideoFeedController {
         continue;
       }
       
-      // Start preload after a short delay so the current clip buffers first.
-      unawaited(Future.delayed(const Duration(milliseconds: 400), () {
+      unawaited(() async {
+        // Wait for current video to render its first frame, up to a safety timeout.
+        final startTime = DateTime.now();
+        while (!_disposed && generation == _feedLoadGeneration) {
+          final currentCtrl = _controllersByUrl[currentUrl];
+          if (currentCtrl != null && _hasRenderedFrame(currentCtrl)) {
+            break;
+          }
+          // Timeout after 3 seconds to avoid blocking preload indefinitely
+          if (DateTime.now().difference(startTime).inSeconds >= 3) {
+            break;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+
         if (_disposed || generation != _feedLoadGeneration) return;
         if (!_isUrlInPreloadWindow(url, index)) return;
-        _initializeVideoAt(mediaIndex, generation);
-      }));
+
+        // Additional small buffer delay for stable playback kickoff
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (_disposed || generation != _feedLoadGeneration) return;
+        if (!_isUrlInPreloadWindow(url, index)) return;
+
+        await _initializeVideoAt(mediaIndex, generation);
+      }());
     }
 
     if (kDebugMode && _controllersByUrl.length > maxCachedControllers) {
@@ -975,7 +1134,7 @@ class VideoFeedController {
       if (mediaIndex < _mediaUrls.length) {
         _mediaUrls[mediaIndex] = resolvedUrl;
       }
-      _notifyFeedChanged();
+      _notifyFeedItemChanged(_itemRevisionKey(merged, mediaUrl: resolvedUrl));
       AppLogger.d(
         '✅ [VideoFeed] Resolved stream URL for post ${post.id}',
       );
@@ -1054,8 +1213,9 @@ class VideoFeedController {
         ),
       );
 
-      await _FeedVideoInitLimiter.run(() async {
-        await controller!.initialize().timeout(
+      final localController = controller;
+      if (isCurrentVideo) {
+        await localController.initialize().timeout(
           initTimeout,
           onTimeout: () {
             throw TimeoutException(
@@ -1064,7 +1224,19 @@ class VideoFeedController {
             );
           },
         );
-      });
+      } else {
+        await _FeedVideoInitLimiter.run(() async {
+          await localController.initialize().timeout(
+            initTimeout,
+            onTimeout: () {
+              throw TimeoutException(
+                'Video initialization timeout',
+                initTimeout,
+              );
+            },
+          );
+        });
+      }
     } catch (e) {
       await controller?.dispose();
       if (_initTokensByUrl[url] != initToken) return;
@@ -1086,6 +1258,7 @@ class VideoFeedController {
       if (isCurrentVideo) {
         _failedUrls.add(url);
         _notifyVideoControllersChanged();
+        _checkInitialFeedLoadingStatus();
       }
       _initTokensByUrl.remove(url);
       AppLogger.d('❌ [VideoFeed] Video init failed at $mediaIndex: $e');
@@ -1117,6 +1290,7 @@ class VideoFeedController {
     _failedUrls.remove(url);
     _controllersByUrl[url] = controller;
     _notifyVideoControllersChanged();
+    _checkInitialFeedLoadingStatus();
 
     try {
       if (shouldPlay) {
@@ -1179,7 +1353,20 @@ class VideoFeedController {
       if (post.isVideo || Post.mediaUrlLooksLikeVideo(post.media)) {
         final media = post.feedMediaUrl.trim();
         if (media.isNotEmpty && media.startsWith('http')) {
-          videoUrls.add(media);
+          // Warm up video only if it's within 2 steps of the current index.
+          // This keeps background downloads from stealing bandwidth from the active video.
+          final postIndex = _posts.indexOf(post);
+          if (postIndex != -1) {
+            final diff = (postIndex - _currentIndex.value).abs();
+            if (diff <= 2) {
+              videoUrls.add(media);
+            }
+          } else {
+            // Fallback for new posts before list index assignment
+            if (videoUrls.length < 2) {
+              videoUrls.add(media);
+            }
+          }
         }
       }
     }
@@ -1187,7 +1374,7 @@ class VideoFeedController {
     final tasks = <Future<void>>[
       if (imageFutures.isNotEmpty) _precacheImagesBatched(imageFutures),
       if (videoUrls.isNotEmpty)
-        VideoFrameCache.warmupMany(videoUrls, concurrency: 10),
+        VideoFrameCache.warmupMany(videoUrls, concurrency: 2),
     ];
 
     if (tasks.isEmpty) return;
@@ -1277,6 +1464,10 @@ class VideoFeedController {
     for (final post in _posts) {
       final url = _feedMediaUrlFor(post);
       if (userIds.contains(post.userId)) {
+        final itemKey = _itemRevisionKey(post, mediaUrl: url);
+        final itemNotifier = _itemRevisions.remove(itemKey);
+        itemNotifier?.dispose();
+
         final controller = _controllersByUrl.remove(url);
         if (controller != null) {
           Future.microtask(() async {
@@ -1314,7 +1505,7 @@ class VideoFeedController {
       _currentIndex.value = (_posts.length - 1).clamp(0, double.infinity).toInt();
     }
 
-    _notifyFeedChanged();
+    _notifyFeedStructureChanged();
 
     // Smoothly auto-play the next video in line at the current index if the feed is not empty
     if (_posts.isNotEmpty) {

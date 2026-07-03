@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/features/auth/token_storage.dart';
 
 import '../models/conversation_model.dart';
 import '../services/message_service.dart';
@@ -158,6 +159,16 @@ class MessageProvider extends ChangeNotifier {
     final index = _conversations.indexWhere((c) => c.id == conversationId);
     if (index == -1) return;
 
+    final currentUserId = TokenStorage.getCurrentUserIdSync();
+    final senderId = SafeParsingHelpers.safeString(
+      payload,
+      const ['sender_id', 'senderId'],
+      fallback: '',
+    );
+    final isOutgoing = currentUserId != null &&
+        senderId.isNotEmpty &&
+        currentUserId.trim() == senderId.trim();
+
     final now = DateTime.now();
     final conversation = _conversations[index];
     final updated = conversation.copyWith(
@@ -168,10 +179,11 @@ class MessageProvider extends ChangeNotifier {
       ),
       hasLastMessage: true,
       updatedAt: now,
-      unreadCount: conversation.unreadCount + 1,
+      unreadCount: isOutgoing ? conversation.unreadCount : conversation.unreadCount + 1,
     );
 
     _conversations[index] = updated;
+    unawaited(TokenStorage.setUnreadCount(conversationId, updated.unreadCount));
     _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     notifyListeners();
   }
@@ -179,7 +191,7 @@ class MessageProvider extends ChangeNotifier {
   void _scheduleBackgroundRefresh() {
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(const Duration(milliseconds: 800), () {
-      fetchConversations(refresh: true);
+      fetchConversations(refresh: true, reason: 'background_refresh');
     });
   }
 
@@ -455,15 +467,20 @@ class MessageProvider extends ChangeNotifier {
         AppLogger.d('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
       }
 
+      final preserveLocalUnread = reason == 'background_refresh' || !refresh;
+
       if (refresh || !isPagination) {
-        _conversations = _cleanConversations(conversations);
+        _conversations = _cleanConversations(conversations, preserveLocalUnread: preserveLocalUnread);
         _lastFetchTime = DateTime.now();
       } else {
         final beforeCount = _conversations.length;
-        _conversations = _cleanConversations([
-          ..._conversations,
-          ...conversations,
-        ]);
+        _conversations = _cleanConversations(
+          [
+            ..._conversations,
+            ...conversations,
+          ],
+          preserveLocalUnread: preserveLocalUnread,
+        );
         final addedCount = _conversations.length - beforeCount;
         AppLogger.d(
           '📊 [MessageProvider] Added $addedCount new conversations (${conversations.length - addedCount} duplicates/invalid skipped)',
@@ -520,7 +537,7 @@ class MessageProvider extends ChangeNotifier {
   /// Pull-to-refresh functionality
   Future<void> refreshConversations() async {
     AppLogger.d('🔄 [MessageProvider] Refresh conversations requested');
-    await fetchConversations(refresh: true);
+    await fetchConversations(refresh: true, reason: 'manual_refresh');
   }
 
   /// Load more conversations (pagination)
@@ -562,6 +579,7 @@ class MessageProvider extends ChangeNotifier {
             unreadCount: 0,
           );
           _conversations[index] = updatedConversation;
+          unawaited(TokenStorage.setUnreadCount(conversationId, 0));
           notifyListeners();
           AppLogger.d(
             '✅ [MessageProvider] Successfully marked conversation as read locally',
@@ -634,7 +652,9 @@ class MessageProvider extends ChangeNotifier {
         );
       }
 
-      _conversations = _cleanConversations(_conversations);
+      unawaited(TokenStorage.setUnreadCount(conversation.id, conversation.unreadCount));
+
+      _conversations = _cleanConversations(_conversations, preserveLocalUnread: true);
 
       // Sort to maintain order
       _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
@@ -680,18 +700,40 @@ class MessageProvider extends ChangeNotifier {
   }
 
   List<ConversationModel> _cleanConversations(
-    Iterable<ConversationModel> conversations,
-  ) {
+    Iterable<ConversationModel> conversations, {
+    bool preserveLocalUnread = false,
+  }) {
     final deduped = <String, ConversationModel>{};
 
     for (final conversation in conversations) {
       if (!_isRenderableConversation(conversation)) continue;
 
       final key = _conversationKey(conversation);
+      var updatedConversation = conversation;
+
+      final persistedCount = TokenStorage.getUnreadCount(conversation.id);
+      final localConv = getConversationById(conversation.id);
+      final currentInMemoryCount = localConv?.unreadCount ?? 0;
+
+      int targetUnreadCount = conversation.unreadCount;
+      if (persistedCount > targetUnreadCount) {
+        targetUnreadCount = persistedCount;
+      }
+      if (preserveLocalUnread && currentInMemoryCount > targetUnreadCount) {
+        targetUnreadCount = currentInMemoryCount;
+      }
+
+      if (targetUnreadCount != conversation.unreadCount) {
+        updatedConversation = conversation.copyWith(
+          unreadCount: targetUnreadCount,
+        );
+        unawaited(TokenStorage.setUnreadCount(conversation.id, targetUnreadCount));
+      }
+
       final existing = deduped[key];
       if (existing == null ||
-          conversation.updatedAt.isAfter(existing.updatedAt)) {
-        deduped[key] = conversation;
+          updatedConversation.updatedAt.isAfter(existing.updatedAt)) {
+        deduped[key] = updatedConversation;
       }
     }
 

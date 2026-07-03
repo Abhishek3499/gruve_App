@@ -163,14 +163,22 @@ class PostGridThumbnail extends StatelessWidget {
     Set<String> images,
     Set<String> videos,
   ) {
-    final preview = post.gridPreviewUrl.trim();
-    if (preview.isNotEmpty &&
-        MediaUrlThumbnail.isHttpUrl(preview) &&
-        !Post.mediaUrlLooksLikeVideo(preview)) {
-      images.add(preview);
+    void addImage(String raw) {
+      final value = raw.trim();
+      if (value.isNotEmpty &&
+          MediaUrlThumbnail.isHttpUrl(value) &&
+          !Post.mediaUrlLooksLikeVideo(value)) {
+        images.add(value);
+      }
     }
 
-    if (!post.isVideo) return;
+    addImage(post.gridPreviewUrl);
+    addImage(post.thumbnailUrl);
+
+    if (!post.isVideo) {
+      addImage(post.media);
+      return;
+    }
 
     final videoUrl = _videoUrlForPost(post);
     if (videoUrl.isNotEmpty) {
@@ -179,15 +187,7 @@ class PostGridThumbnail extends StatelessWidget {
   }
 
   static String _videoUrlForPost(Post post) {
-    final media = post.media.trim();
-    if (MediaUrlThumbnail.isHttpUrl(media)) return media;
-
-    final preview = post.gridPreviewUrl.trim();
-    if (Post.mediaUrlLooksLikeVideo(preview) &&
-        MediaUrlThumbnail.isHttpUrl(preview)) {
-      return preview;
-    }
-    return '';
+    return _PostGridThumbnailBodyState.videoUrlFor(post);
   }
 
   static Future<void> _warmupImagesParallel(
@@ -221,6 +221,30 @@ enum _GridThumbSource { image, video, unavailable }
 class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
   late _GridThumbSource _source;
 
+  static bool isPlayableVideoPost(Post post) {
+    if (post.isVideo) return true;
+    return Post.mediaUrlLooksLikeVideo(post.media) ||
+        Post.mediaUrlLooksLikeVideo(post.gridPreviewUrl);
+  }
+
+  static String videoUrlFor(Post post) {
+    final media = post.media.trim();
+    if (MediaUrlThumbnail.isHttpUrl(media)) return media;
+
+    final preview = post.gridPreviewUrl.trim();
+    if (Post.mediaUrlLooksLikeVideo(preview) &&
+        MediaUrlThumbnail.isHttpUrl(preview)) {
+      return preview;
+    }
+
+    final thumb = post.thumbnailUrl.trim();
+    if (Post.mediaUrlLooksLikeVideo(thumb) &&
+        MediaUrlThumbnail.isHttpUrl(thumb)) {
+      return thumb;
+    }
+    return '';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -232,7 +256,8 @@ class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.post.id != widget.post.id ||
         oldWidget.post.gridPreviewUrl != widget.post.gridPreviewUrl ||
-        oldWidget.post.media != widget.post.media) {
+        oldWidget.post.media != widget.post.media ||
+        oldWidget.post.thumbnailUrl != widget.post.thumbnailUrl) {
       _source = _initialSource();
     }
   }
@@ -244,29 +269,39 @@ class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
         !Post.mediaUrlLooksLikeVideo(thumb)) {
       return _GridThumbSource.image;
     }
-    if (widget.post.isVideo &&
-        MediaUrlThumbnail.isHttpUrl(_videoUrlFor(widget.post))) {
+
+    if (!isPlayableVideoPost(widget.post) &&
+        MediaUrlThumbnail.isHttpUrl(widget.post.media.trim())) {
+      return _GridThumbSource.image;
+    }
+
+    if (isPlayableVideoPost(widget.post) &&
+        MediaUrlThumbnail.isHttpUrl(videoUrlFor(widget.post))) {
       return _GridThumbSource.video;
     }
     return _GridThumbSource.unavailable;
   }
 
-  String _videoUrlFor(Post post) {
-    final media = post.media.trim();
-    if (MediaUrlThumbnail.isHttpUrl(media)) return media;
-
-    final preview = post.gridPreviewUrl.trim();
-    if (Post.mediaUrlLooksLikeVideo(preview) &&
-        MediaUrlThumbnail.isHttpUrl(preview)) {
-      return preview;
+  String _imageFallbackFor(Post post) {
+    for (final candidate in [
+      post.thumbnailUrl,
+      post.gridPreviewUrl,
+      if (!post.isVideo) post.media,
+    ]) {
+      final value = candidate.trim();
+      if (value.isNotEmpty &&
+          MediaUrlThumbnail.isHttpUrl(value) &&
+          !Post.mediaUrlLooksLikeVideo(value)) {
+        return value;
+      }
     }
     return '';
   }
 
   void _fallbackToVideo() {
     if (!mounted) return;
-    if (widget.post.isVideo &&
-        MediaUrlThumbnail.isHttpUrl(_videoUrlFor(widget.post))) {
+    if (isPlayableVideoPost(widget.post) &&
+        MediaUrlThumbnail.isHttpUrl(videoUrlFor(widget.post))) {
       setState(() => _source = _GridThumbSource.video);
     } else {
       setState(() => _source = _GridThumbSource.unavailable);
@@ -278,7 +313,11 @@ class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
     final post = widget.post;
 
     if (_source == _GridThumbSource.image) {
-      final imageUrl = post.gridPreviewUrl.trim();
+      final imageUrl = post.isVideo
+          ? post.gridPreviewUrl.trim()
+          : (post.gridPreviewUrl.trim().isNotEmpty
+              ? post.gridPreviewUrl.trim()
+              : post.media.trim());
       return CachedNetworkImage(
         imageUrl: imageUrl,
         fit: BoxFit.cover,
@@ -301,9 +340,31 @@ class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
       );
     }
 
-    final videoUrl = _videoUrlFor(post);
-    if (post.isVideo && MediaUrlThumbnail.isHttpUrl(videoUrl)) {
-      return _VideoFrameThumbnail(videoUrl: videoUrl);
+    final videoUrl = videoUrlFor(post);
+    if (isPlayableVideoPost(post) && MediaUrlThumbnail.isHttpUrl(videoUrl)) {
+      return _VideoFrameThumbnail(
+        videoUrl: videoUrl,
+        imageFallbackUrl: _imageFallbackFor(post),
+      );
+    }
+
+    final imageFallback = _imageFallbackFor(post);
+    if (imageFallback.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: imageFallback,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        memCacheWidth: 280,
+        memCacheHeight: 420,
+        maxWidthDiskCache: 600,
+        maxHeightDiskCache: 800,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        useOldImageOnUrlChange: true,
+        placeholder: (context, _) => _defaultPlaceholder(),
+        errorWidget: (context, url, error) => const _ThumbnailFallback(),
+      );
     }
 
     return const _ThumbnailFallback();
@@ -312,6 +373,7 @@ class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
 
 class _VideoFrameThumbnail extends StatefulWidget {
   final String videoUrl;
+  final String imageFallbackUrl;
   final BoxFit fit;
   final double? width;
   final double? height;
@@ -320,6 +382,7 @@ class _VideoFrameThumbnail extends StatefulWidget {
 
   const _VideoFrameThumbnail({
     required this.videoUrl,
+    this.imageFallbackUrl = '',
     this.fit = BoxFit.cover,
     this.width,
     this.height,
@@ -339,19 +402,13 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
   int _retryCount = 0;
   late String _boundUrl;
 
-  static const int _maxRetries = 2;
+  static const int _maxRetries = 10;
 
   @override
   void initState() {
     super.initState();
     _boundUrl = widget.videoUrl.trim();
-    final cached = VideoFrameCache.peekReady(_boundUrl);
-    if (cached != null) {
-      _bindController(cached);
-      unawaited(_attachFromCache());
-    } else {
-      _startLoad();
-    }
+    _startLoad();
   }
 
   void _bindController(VideoPlayerController? controller) {
@@ -365,16 +422,6 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
     setState(() {});
   }
 
-  Future<void> _attachFromCache() async {
-    final controller = await VideoFrameCache.acquire(_boundUrl);
-    if (!mounted || _disposed) {
-      if (controller != null) VideoFrameCache.release(_boundUrl);
-      return;
-    }
-    _bindController(controller);
-    setState(() {});
-  }
-
   @override
   void didUpdateWidget(covariant _VideoFrameThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -382,14 +429,9 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
       VideoFrameCache.release(_boundUrl);
       _boundUrl = widget.videoUrl.trim();
       _failed = false;
-      final cached = VideoFrameCache.peekReady(_boundUrl);
-      if (cached != null) {
-        _bindController(cached);
-        unawaited(_attachFromCache());
-      } else {
-        _bindController(null);
-        _startLoad();
-      }
+      _retryCount = 0;
+      _bindController(null);
+      _startLoad();
     }
   }
 
@@ -405,7 +447,7 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
     if (controller == null) {
       if (_retryCount < _maxRetries) {
         _retryCount++;
-        final retryDelay = Duration(milliseconds: 200 * _retryCount);
+        final retryDelay = Duration(milliseconds: 350 * _retryCount);
         Future<void>.delayed(retryDelay, () {
           if (_disposed || token != _loadToken || !mounted) return;
           _startLoad();
@@ -445,23 +487,39 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
   }
 
   bool _isFrameReady(VideoPlayerController controller) {
+    if (!controller.value.isInitialized) return false;
     final size = controller.value.size;
-    return controller.value.isInitialized &&
-        size.width > 0 &&
-        size.height > 0;
+    if (size.width > 0 && size.height > 0) return true;
+    return controller.value.aspectRatio > 0;
   }
 
   Widget _buildFrame(VideoPlayerController controller) {
     final size = controller.value.size;
-    final frame = FittedBox(
-      fit: widget.fit,
-      clipBehavior: Clip.hardEdge,
-      child: SizedBox(
-        width: size.width,
-        height: size.height,
-        child: VideoPlayer(controller),
-      ),
-    );
+    final hasSize = size.width > 0 && size.height > 0;
+    final aspectRatio = hasSize
+        ? size.width / size.height
+        : (controller.value.aspectRatio > 0
+            ? controller.value.aspectRatio
+            : 9 / 16);
+
+    final frame = hasSize
+        ? FittedBox(
+            fit: widget.fit,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: VideoPlayer(controller),
+            ),
+          )
+        : FittedBox(
+            fit: widget.fit,
+            clipBehavior: Clip.hardEdge,
+            child: AspectRatio(
+              aspectRatio: aspectRatio,
+              child: VideoPlayer(controller),
+            ),
+          );
 
     if (widget.width != null || widget.height != null) {
       return SizedBox(
@@ -477,6 +535,26 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
   @override
   Widget build(BuildContext context) {
     if (_failed) {
+      final fallbackImage = widget.imageFallbackUrl.trim();
+      if (fallbackImage.isNotEmpty &&
+          MediaUrlThumbnail.isHttpUrl(fallbackImage) &&
+          !Post.mediaUrlLooksLikeVideo(fallbackImage)) {
+        return CachedNetworkImage(
+          imageUrl: fallbackImage,
+          fit: widget.fit,
+          width: widget.width ?? double.infinity,
+          height: widget.height ?? double.infinity,
+          memCacheWidth: 280,
+          memCacheHeight: 420,
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+          placeholder: (context, _) =>
+              widget.placeholder ?? _defaultPlaceholder(),
+          errorWidget: (context, url, error) =>
+              widget.fallback ?? const _ThumbnailFallback(),
+        );
+      }
+
       return GestureDetector(
         onTap: _retryFromScratch,
         child: widget.fallback ?? const _ThumbnailFallback(),

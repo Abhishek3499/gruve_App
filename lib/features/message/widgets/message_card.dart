@@ -77,47 +77,52 @@ class MessageCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  SizedBox(
-                    width: 75,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          conversation.lastMessageTimeAgo,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 12),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        maxWidth: 100,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            conversation.lastMessageTimeAgo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        SizedBox(
-                          height: 22,
-                          child: conversation.hasUnreadMessages
-                              ? Container(
-                                  width: 22,
-                                  height: 22,
-                                  alignment: Alignment.center,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFFF4D4F),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    conversation.unreadCount > 99
-                                        ? '99+'
-                                        : conversation.unreadCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            height: 22,
+                            child: conversation.hasUnreadMessages
+                                ? Container(
+                                    width: 22,
+                                    height: 22,
+                                    alignment: Alignment.center,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFFF4D4F),
+                                      shape: BoxShape.circle,
                                     ),
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
+                                    child: Text(
+                                      conversation.unreadCount > 99
+                                          ? '99+'
+                                          : conversation.unreadCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

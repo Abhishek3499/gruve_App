@@ -45,22 +45,28 @@ class _ModeSelectorState extends State<ModeSelector> {
     try {
       CameraLogger.logUserAction('Gallery opened');
 
-      // Story and Gruve are video-only — gallery shows videos only.
-      final XFile? pickedFile = await _imagePicker.pickVideo(
-        source: ImageSource.gallery,
+      // Story and Gruve can be either video or image — gallery shows both.
+      final XFile? pickedFile = await _imagePicker.pickMedia(
+        imageQuality: 85,
       );
 
       if (pickedFile != null) {
         AppLogger.d('Selected gallery file path: ${pickedFile.path}');
 
-        if (!LocalMediaUtils.isVideoPath(
+        final isVideo = LocalMediaUtils.isVideoPath(
           pickedFile.path,
           mimeType: pickedFile.mimeType,
-        )) {
+        );
+        final isImage = LocalMediaUtils.isImagePath(
+          pickedFile.path,
+          mimeType: pickedFile.mimeType,
+        );
+
+        if (!isVideo && !isImage) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Please select a video only'),
+                content: Text('Please select a valid image or video'),
                 backgroundColor: Colors.red,
               ),
             );

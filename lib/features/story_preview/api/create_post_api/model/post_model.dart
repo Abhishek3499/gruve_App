@@ -62,7 +62,8 @@ class Post {
 
   /// Poster shown while a video buffer initializes (TikTok-style instant frame).
   String get feedPosterUrl {
-    if (thumbnailUrl.trim().isNotEmpty) return thumbnailUrl.trim();
+    final thumb = thumbnailUrl.trim();
+    if (thumb.isNotEmpty && !mediaUrlLooksLikeVideo(thumb)) return thumb;
     return '';
   }
 
@@ -311,19 +312,35 @@ class Post {
           false,
       profilePicture: _normalizeUrl(
         (json['user'] is Map
-                ? (json['user']['profile_picture'] ?? json['user']['avatar'])
+                ? (json['user']['profile_picture'] ??
+                      json['user']['profilePicture'] ??
+                      json['user']['profile_image'] ??
+                      json['user']['profileImage'] ??
+                      json['user']['avatar'] ??
+                      json['user']['avatar_url'])
                 : null) ??
             (json['creator'] is Map
                 ? (json['creator']['profile_picture'] ??
-                      json['creator']['avatar'])
+                      json['creator']['profilePicture'] ??
+                      json['creator']['profile_image'] ??
+                      json['creator']['profileImage'] ??
+                      json['creator']['avatar'] ??
+                      json['creator']['avatar_url'])
                 : null) ??
             (json['author'] is Map
                 ? (json['author']['profile_picture'] ??
-                      json['author']['avatar'])
+                      json['author']['profilePicture'] ??
+                      json['author']['profile_image'] ??
+                      json['author']['profileImage'] ??
+                      json['author']['avatar'] ??
+                      json['author']['avatar_url'])
                 : null) ??
             json['profile_picture'] ??
             json['profilePicture'] ??
+            json['profile_image'] ??
+            json['profileImage'] ??
             json['avatar'] ??
+            json['avatar_url'] ??
             "",
       ),
       hasActiveStory:
@@ -381,6 +398,7 @@ class Post {
       }
     }
 
+    if (mediaUrlLooksLikeVideo(normalized)) return '';
     return normalized;
   }
 

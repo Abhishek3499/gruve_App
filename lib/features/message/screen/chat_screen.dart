@@ -191,6 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       _currentUserId = await TokenStorage.getCurrentUserId();
+      if (!mounted) return;
       final blockProvider = context.read<BlockProvider>();
       try {
         await blockProvider.fetchBlockedUsers();
@@ -296,6 +297,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             hasLastMessage: true,
             updatedAt: lastMsg.timestamp,
+            unreadCount: 0,
           );
           messageProvider.updateConversation(updated);
         } else {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../features/home/home_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/notification/screens/notification_screen.dart';
@@ -14,6 +15,9 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
   void _onItemTapped(int index) {
+    try {
+      HapticFeedback.vibrate();
+    } catch (_) {}
     setState(() {
       _currentIndex = index;
     });

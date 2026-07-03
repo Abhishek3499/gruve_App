@@ -1,3 +1,4 @@
+import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 
 class ExploreReelUser {
@@ -13,15 +14,23 @@ class ExploreReelUser {
 
   factory ExploreReelUser.fromJson(Map<String, dynamic> json) {
     return ExploreReelUser(
-      id: json['id']?.toString() ?? '',
-      username: json['username']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['user_id']?.toString() ?? '',
+      username: json['username']?.toString() ??
+          json['user_name']?.toString() ??
+          json['name']?.toString() ??
+          '',
       profilePicture: Post.normalizeMediaUrl(_pickString(json, const [
         'profile_picture',
         'profilePicture',
         'profile_image',
         'profileImage',
+        'profile_pic',
+        'profilePic',
         'avatar',
+        'avatar_url',
+        'avatarUrl',
         'photo',
+        'picture',
         'image',
       ])),
     );
@@ -66,6 +75,9 @@ class ExploreReel {
     return media.isNotEmpty;
   }
 
+  /// Best network URL for grid thumbnails and playback.
+  String get displayMediaUrl => _resolvedMediaUrl();
+
   String _resolvedMediaUrl() {
     final media = mediaUrl.trim();
     if (media.isNotEmpty &&
@@ -91,6 +103,46 @@ class ExploreReel {
     return '';
   }
 
+  /// Debug: print every URL field used for grid / playback.
+  void logUrls({String prefix = ''}) {
+    final preview = toPreviewPost();
+    final tag = prefix.isEmpty ? 'ExploreReel' : 'ExploreReel/$prefix';
+
+    AppLogger.d('────────── reel id=$id user=${user.username} ──────────', tag: tag);
+    AppLogger.d('raw.thumbnail     = ${_orEmpty(thumbnail)}', tag: tag);
+    AppLogger.d('raw.mediaUrl      = ${_orEmpty(mediaUrl)}', tag: tag);
+    AppLogger.d('resolved.media    = ${_orEmpty(_resolvedMediaUrl())}', tag: tag);
+    AppLogger.d('resolved.thumb    = ${_orEmpty(_resolvedThumbnailUrl())}', tag: tag);
+    AppLogger.d('preview.media     = ${_orEmpty(preview.media)}', tag: tag);
+    AppLogger.d('preview.thumbUrl  = ${_orEmpty(preview.thumbnailUrl)}', tag: tag);
+    AppLogger.d('preview.gridUrl   = ${_orEmpty(preview.gridPreviewUrl)}', tag: tag);
+    AppLogger.d('preview.mediaType = ${preview.mediaType}', tag: tag);
+    AppLogger.d('user.profilePic   = ${_orEmpty(user.profilePicture)}', tag: tag);
+    AppLogger.d('hasPlayableMedia  = $hasPlayableMedia', tag: tag);
+  }
+
+  static void logAllUrls(
+    Iterable<ExploreReel> reels, {
+    String prefix = '',
+  }) {
+    final list = reels.toList();
+    if (list.isEmpty) {
+      AppLogger.d('(no reels)', tag: 'ExploreReel');
+      return;
+    }
+
+    AppLogger.d('══════ EXPLORE REEL URLS (${list.length}) ══════', tag: 'ExploreReel');
+    for (var i = 0; i < list.length; i++) {
+      list[i].logUrls(prefix: prefix.isEmpty ? '#$i' : '$prefix#$i');
+    }
+    AppLogger.d('══════ END EXPLORE REEL URLS ══════', tag: 'ExploreReel');
+  }
+
+  static String _orEmpty(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? '(empty)' : trimmed;
+  }
+
   factory ExploreReel.fromJson(Map<String, dynamic> json) {
     final rawId = json['id']?.toString() ?? '';
     final cleanId = rawId.startsWith('pst_') ? rawId.substring(4) : rawId;
@@ -102,10 +154,15 @@ class ExploreReel {
       postHint = null;
     }
 
-    final userJson = json['user'];
+    final userJson = json['user'] ?? json['creator'] ?? json['author'];
     final user = userJson is Map
         ? ExploreReelUser.fromJson(Map<String, dynamic>.from(userJson))
-        : const ExploreReelUser(id: '', username: '');
+        : ExploreReelUser(
+            id: json['user_id']?.toString() ?? json['creator_id']?.toString() ?? '',
+            username: userJson is String
+                ? userJson
+                : (json['username']?.toString() ?? ''),
+          );
 
     DateTime? createdAt;
     final createdRaw = json['created_at']?.toString();
@@ -234,11 +291,16 @@ class ExploreReel {
 
   /// Lightweight [Post] for grid thumbnails and playback when media is known.
   Post toPreviewPost() {
+    final media = _resolvedMediaUrl();
+    final imageThumb = _resolvedThumbnailUrl();
+    final isVideoMedia =
+        media.isNotEmpty && Post.mediaUrlLooksLikeVideo(media);
+
     return Post(
       id: id,
       caption: '',
-      media: _resolvedMediaUrl(),
-      thumbnailUrl: _resolvedThumbnailUrl(),
+      media: isVideoMedia ? media : (imageThumb.isNotEmpty ? imageThumb : media),
+      thumbnailUrl: imageThumb,
       userId: user.id,
       likesCount: likes,
       commentsCount: 0,
@@ -247,7 +309,7 @@ class ExploreReel {
       username: user.username,
       isSubscribed: false,
       profilePicture: user.profilePicture,
-      mediaType: 'video',
+      mediaType: isVideoMedia ? 'video' : 'image',
     );
   }
 }

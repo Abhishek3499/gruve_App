@@ -8,7 +8,7 @@ class VideoFrameCache {
   VideoFrameCache._();
 
   static const int _maxEntries = 64;
-  static const int _maxConcurrentInit = 12;
+  static const int _maxConcurrentInit = 16;
 
   static final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   static final Queue<String> _lru = Queue<String>();
@@ -37,6 +37,7 @@ class VideoFrameCache {
     if (cached != null) {
       cached.refs++;
       _touchLru(key);
+      _protect(key);
       return cached.controller;
     }
 
@@ -45,13 +46,16 @@ class VideoFrameCache {
       final controller = await pending;
       if (controller == null) return null;
 
-      final entry = _cache[key];
-      if (entry != null) {
-        entry.refs++;
+      var entry = _cache[key];
+      if (entry == null) {
+        _cache[key] = _CacheEntry(controller: controller);
         _touchLru(key);
-        return entry.controller;
+        entry = _cache[key];
       }
-      return controller;
+      entry!.refs++;
+      _touchLru(key);
+      _protect(key);
+      return entry.controller;
     }
 
     final future = _createController(key);
@@ -62,6 +66,7 @@ class VideoFrameCache {
 
       _cache[key] = _CacheEntry(controller: controller, refs: 1);
       _touchLru(key);
+      _protect(key);
       _evictIfNeeded();
       return controller;
     } finally {
@@ -82,6 +87,7 @@ class VideoFrameCache {
   static Future<void> warmup(String url) async {
     final controller = await acquire(url);
     if (controller != null) {
+      _protect(url.trim());
       release(url);
     }
   }
@@ -174,13 +180,21 @@ class VideoFrameCache {
     }
   }
 
+  static void _protect(String key) {
+    final entry = _cache[key];
+    if (entry == null) return;
+    entry.protectedUntil = DateTime.now().add(const Duration(minutes: 3));
+  }
+
   static void _touchLru(String key) {
     _lru.remove(key);
     _lru.addLast(key);
   }
 
   static void _evictIfNeeded() {
-    while (_cache.length > _maxEntries && _lru.isNotEmpty) {
+    var guard = 0;
+    while (_cache.length > _maxEntries && _lru.isNotEmpty && guard < _cache.length + 4) {
+      guard++;
       final oldest = _lru.first;
       final entry = _cache[oldest];
       if (entry == null) {
@@ -188,10 +202,12 @@ class VideoFrameCache {
         continue;
       }
 
-      if (entry.refs > 0) {
+      final isProtected = entry.refs > 0 ||
+          entry.protectedUntil.isAfter(DateTime.now());
+      if (isProtected) {
         _lru.removeFirst();
         _lru.addLast(oldest);
-        break;
+        continue;
       }
 
       entry.controller.dispose();
@@ -204,6 +220,12 @@ class VideoFrameCache {
 class _CacheEntry {
   final VideoPlayerController controller;
   int refs;
+  DateTime protectedUntil;
 
-  _CacheEntry({required this.controller, this.refs = 0});
+  _CacheEntry({
+    required this.controller,
+    this.refs = 0,
+    DateTime? protectedUntil,
+  }) : protectedUntil =
+            protectedUntil ?? DateTime.fromMillisecondsSinceEpoch(0);
 }

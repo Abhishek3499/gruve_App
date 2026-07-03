@@ -168,7 +168,7 @@ class _MessageScreenState extends State<MessageScreen> {
                             top: 195,
                             left: 0,
                             right: 0,
-                            bottom: 0,
+                            bottom: 60,
                             child: Container(
                               decoration: const BoxDecoration(
                                 color: Color(0xFF1C0B21),
@@ -252,7 +252,7 @@ class _MessageScreenState extends State<MessageScreen> {
       },
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+          parent: BouncingScrollPhysics(),        
         ),
         padding: const EdgeInsets.all(16),
         cacheExtent: 1000,

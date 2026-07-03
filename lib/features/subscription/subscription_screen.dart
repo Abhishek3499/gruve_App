@@ -33,7 +33,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             // Subscription cards
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
                   // Basic Plan
                   SubscriptionCard(

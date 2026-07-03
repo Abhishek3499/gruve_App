@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 import '../models/message_model.dart';
 import '../utils/shared_post_message_parser.dart';
 import 'message_popup_menu.dart';
@@ -305,33 +307,15 @@ class MessageBubble extends StatelessWidget {
         fit: StackFit.expand,
         alignment: Alignment.center,
         children: [
-          if (!message.isLocalMedia)
-            CachedNetworkImage(
-              imageUrl: path,
-              fit: BoxFit.cover,
-              width: width,
-              height: height,
-              placeholder: (_, _) => _mediaPlaceholder(width, height),
-              errorWidget: (_, _, _) => _mediaError(width, height),
-            )
-          else
-            ColoredBox(
-              color: Colors.black26,
-              child: Image.file(
-                File(path),
-                fit: BoxFit.cover,
-                width: width,
-                height: height,
-                errorBuilder: (_, _, _) => _mediaError(width, height),
-              ),
-            ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(12),
-            child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
+          VideoThumbnailWidget(
+            videoPath: path,
+            width: width,
+            height: height,
+          ),
+          const Icon(
+            Icons.play_arrow,
+            color: Colors.white,
+            size: 48,
           ),
         ],
       );
@@ -590,6 +574,119 @@ class MessageBubble extends StatelessWidget {
     if (action != null && onActionSelected != null) {
       onActionSelected!(action);
     }
+  }
+}
+
+class VideoThumbnailWidget extends StatefulWidget {
+  final String videoPath;
+  final double width;
+  final double height;
+
+  const VideoThumbnailWidget({
+    super.key,
+    required this.videoPath,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  State<VideoThumbnailWidget> createState() => _VideoThumbnailWidgetState();
+}
+
+class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initController();
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoThumbnailWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoPath != widget.videoPath) {
+      _controller?.dispose();
+      _isInitialized = false;
+      _hasError = false;
+      _initController();
+    }
+  }
+
+  void _initController() async {
+    final path = widget.videoPath.trim();
+    if (path.isEmpty) {
+      setState(() => _hasError = true);
+      return;
+    }
+
+    final isLocal = !path.startsWith('http://') && !path.startsWith('https://');
+    try {
+      if (isLocal) {
+        _controller = VideoPlayerController.file(File(path));
+      } else {
+        _controller = VideoPlayerController.networkUrl(Uri.parse(path));
+      }
+
+      await _controller!.initialize();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      AppLogger.d('💥 [VideoThumbnailWidget] Error initializing video thumbnail: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        color: Colors.white12,
+        child: const Icon(Icons.broken_image, color: Colors.white54, size: 40),
+      );
+    }
+
+    if (!_isInitialized || _controller == null) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        color: Colors.white12,
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: FittedBox(
+        fit: BoxFit.cover,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
+          width: _controller!.value.size.width > 0 ? _controller!.value.size.width : widget.width,
+          height: _controller!.value.size.height > 0 ? _controller!.value.size.height : widget.height,
+          child: VideoPlayer(_controller!),
+        ),
+      ),
+    );
   }
 }
 

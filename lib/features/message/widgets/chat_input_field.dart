@@ -67,6 +67,43 @@ class _ChatInputFieldState extends State<ChatInputField> {
     _controller.clear();
   }
 
+  Widget _buildMediaOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF72008D),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: Colors.white,
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showMediaBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -98,81 +135,49 @@ class _ChatInputFieldState extends State<ChatInputField> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
-            // Options
+            // Options Grid
             Row(
               children: [
-                // Camera
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImageFromCamera();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF72008D),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Column(
-                        children: [
-                          Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Camera',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                _buildMediaOption(
+                  icon: Icons.camera_alt,
+                  label: 'Take Photo',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImageFromCamera();
+                  },
                 ),
-
                 const SizedBox(width: 16),
-
-                // Gallery
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImageFromGallery();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF72008D),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.photo_library,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Gallery',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                _buildMediaOption(
+                  icon: Icons.videocam,
+                  label: 'Record Video',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickVideoFromCamera();
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildMediaOption(
+                  icon: Icons.photo_library,
+                  label: 'Choose Photo',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImageFromGallery();
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildMediaOption(
+                  icon: Icons.video_library,
+                  label: 'Choose Video',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickVideoFromGallery();
+                  },
                 ),
               ],
             ),
@@ -229,6 +234,20 @@ class _ChatInputFieldState extends State<ChatInputField> {
     }
   }
 
+  Future<void> _pickVideoFromCamera() async {
+    try {
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.camera,
+      );
+
+      if (video != null) {
+        widget.onSendImage(video.path);
+      }
+    } catch (e) {
+      AppLogger.d('Error picking video from camera: $e');
+    }
+  }
+
   Future<void> _pickImageFromGallery() async {
     try {
       final XFile? image = await _imagePicker.pickImage(
@@ -244,6 +263,20 @@ class _ChatInputFieldState extends State<ChatInputField> {
       }
     } catch (e) {
       AppLogger.d('Error picking image from gallery: $e');
+    }
+  }
+
+  Future<void> _pickVideoFromGallery() async {
+    try {
+      final XFile? video = await _imagePicker.pickVideo(
+        source: ImageSource.gallery,
+      );
+
+      if (video != null) {
+        widget.onSendImage(video.path);
+      }
+    } catch (e) {
+      AppLogger.d('Error picking video from gallery: $e');
     }
   }
 
@@ -426,11 +459,15 @@ class _ChatInputFieldState extends State<ChatInputField> {
 
   Widget _buildNormalRow() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         // Camera Icon
-        GestureDetector(
-          onTap: _showMediaBottomSheet,
-          child: Image.asset(AppAssets.camera, height: 24, width: 24),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: GestureDetector(
+            onTap: _showMediaBottomSheet,
+            child: Image.asset(AppAssets.camera, height: 24, width: 24),
+          ),
         ),
         const SizedBox(width: 12),
 
@@ -439,9 +476,9 @@ class _ChatInputFieldState extends State<ChatInputField> {
           child: TextField(
             controller: _controller,
             style: const TextStyle(color: Colors.white, fontSize: 16),
-            maxLines: 1,
-            textInputAction: TextInputAction.send,
-            onSubmitted: (_) => _send(),
+            keyboardType: TextInputType.multiline,
+            minLines: 1,
+            maxLines: 5,
             decoration: InputDecoration(
               hintText: widget.hintText ?? 'Text Message',
               hintStyle: const TextStyle(
@@ -457,12 +494,15 @@ class _ChatInputFieldState extends State<ChatInputField> {
         const SizedBox(width: 8),
 
         // Voice Icon
-        GestureDetector(
-          onTap: _toggleRecording,
-          child: const Icon(
-            Icons.mic,
-            color: Colors.white,
-            size: 24,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: GestureDetector(
+            onTap: _toggleRecording,
+            child: const Icon(
+              Icons.mic,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -516,10 +556,11 @@ class _ChatInputFieldState extends State<ChatInputField> {
       color: Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Container(
-        height: 58,
         padding: const EdgeInsets.only(
           left: 16,
           right: 18,
+          top: 6,
+          bottom: 6,
         ),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 171, 20, 209), // Solid purple

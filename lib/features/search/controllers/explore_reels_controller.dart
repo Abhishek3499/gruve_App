@@ -79,6 +79,8 @@ class ExploreReelsController extends ChangeNotifier {
       _hasMore = page.hasMore;
       _page = page.nextPage ?? (page.hasMore ? 2 : 1);
       _error = null;
+      ExploreReel.logAllUrls(page.results, prefix: 'initial/$_sort');
+      _logDisplayPostUrls(page.results, prefix: 'initial/$_sort');
       _service.prefetchReels(_reels);
     } catch (e) {
       if (generation != _loadGeneration) return;
@@ -120,12 +122,15 @@ class ExploreReelsController extends ChangeNotifier {
 
       final existingIds = _reels.map((reel) => reel.id).toSet();
       final unique = page.results.where((reel) => !existingIds.contains(reel.id));
-      _reels.addAll(unique);
+      final uniqueList = unique.toList();
+      _reels.addAll(uniqueList);
       _hasMore = page.hasMore;
       _page = page.nextPage ?? (_page + 1);
       _totalCount = page.count;
       _lastLoadMoreKey = null;
-      _service.prefetchReels(unique.toList());
+      ExploreReel.logAllUrls(uniqueList, prefix: 'loadMore/$_sort');
+      _logDisplayPostUrls(uniqueList, prefix: 'loadMore/$_sort');
+      _service.prefetchReels(uniqueList);
     } catch (e) {
       if (generation != _loadGeneration) return;
       _lastLoadMoreKey = null;
@@ -151,4 +156,17 @@ class ExploreReelsController extends ChangeNotifier {
   }
 
   Future<void> refresh() => loadInitial(refresh: true);
+
+  void _logDisplayPostUrls(Iterable<ExploreReel> reels, {required String prefix}) {
+    for (final reel in reels) {
+      final post = _service.displayPostFor(reel);
+      AppLogger.d(
+        '[displayPost/$prefix] id=${reel.id} '
+        'media=${post.media.isEmpty ? '(empty)' : post.media} | '
+        'thumb=${post.thumbnailUrl.isEmpty ? '(empty)' : post.thumbnailUrl} | '
+        'grid=${post.gridPreviewUrl.isEmpty ? '(empty)' : post.gridPreviewUrl}',
+        tag: 'ExploreReel',
+      );
+    }
+  }
 }

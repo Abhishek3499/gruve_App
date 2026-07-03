@@ -133,8 +133,30 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       return;
     }
 
-    CameraLogger.logUserAction('Video recording started from capture tap');
-    await _beginVideoRecording();
+    CameraLogger.logUserAction('Image capture started from capture tap');
+    HapticFeedback.lightImpact();
+
+    try {
+      final image = await _cameraService.captureImage();
+      if (image != null && mounted) {
+        final mode = ModeService().selectedMode;
+        Navigator.of(context).pop(CameraCaptureResult(
+          mediaPath: image.path,
+          mode: mode,
+          stickers: List.from(ModeService().stickers),
+        ));
+      }
+    } catch (e) {
+      CameraLogger.log('Failed to capture image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to capture image'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _startTimedRecording() async {

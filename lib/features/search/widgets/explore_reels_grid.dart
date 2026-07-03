@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
+import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/widgets/profile_grid_style.dart';
 import 'package:gruve_app/core/widgets/shimmer/app_shimmer.dart';
 import 'package:gruve_app/core/widgets/shimmer/profile_shimmer.dart';
@@ -62,11 +63,17 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
   void _warmupReelAssets(List<ExploreReel> reels, {required int fromIndex}) {
     if (!mounted || fromIndex >= reels.length) return;
 
-    final posts = reels
-        .skip(fromIndex)
-        .map(widget.controller.displayPost)
-        .toList();
+    final slice = reels.skip(fromIndex).toList();
+    final posts = slice.map(widget.controller.displayPost).toList();
     PostGridThumbnail.warmupPosts(posts, max: posts.length);
+
+    final videoUrls = slice
+        .map((reel) => reel.displayMediaUrl)
+        .where((url) => url.isNotEmpty)
+        .toSet();
+    if (videoUrls.isNotEmpty) {
+      unawaited(VideoFrameCache.warmupMany(videoUrls, concurrency: 8));
+    }
   }
 
   void _onScroll() {
@@ -222,14 +229,18 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
     final tappedIndex = reels.indexWhere((item) => item.id == reel.id);
     final initialIndex = tappedIndex >= 0 ? tappedIndex : 0;
 
-    final allPosts = reels.map(service.displayPostFor).toList();
+    final allPosts = reels.map(service.viewerPostFor).toList();
     var post = allPosts[initialIndex];
 
-    if (!_hasPlayableVideo(post)) {
-      final resolved = await service.resolveReelPost(reels[initialIndex]);
-      if (resolved != null) {
-        post = resolved;
-        allPosts[initialIndex] = resolved;
+    final resolved = await service.resolveReelForViewer(reels[initialIndex]);
+    if (resolved != null) {
+      post = resolved;
+      allPosts[initialIndex] = resolved;
+    } else if (!_hasPlayableVideo(post)) {
+      final fallback = await service.resolveReelPost(reels[initialIndex]);
+      if (fallback != null) {
+        post = fallback;
+        allPosts[initialIndex] = fallback;
       }
     }
 
@@ -255,7 +266,7 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
             isOwnProfile: false,
             fallbackDisplayName: tappedReel.user.username,
             fallbackProfilePicture: tappedReel.user.profilePicture,
-            onResolveMedia: () => service.resolveReelPost(tappedReel),
+            onResolveMedia: () => service.resolveReelForViewer(tappedReel),
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -270,6 +281,42 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
     return post.isVideo &&
         media.isNotEmpty &&
         (media.startsWith('http://') || media.startsWith('https://'));
+  }
+}
+
+/// Explore reels often ship only `.mp4` URLs (no JPEG poster). Prefer the
+/// resolved reel media URL so video-first-frame thumbnails always have a source.
+class _ExploreReelThumbnail extends StatelessWidget {
+  final ExploreReel reel;
+  final Post post;
+
+  const _ExploreReelThumbnail({
+    super.key,
+    required this.reel,
+    required this.post,
+  });
+
+  String get _mediaUrl {
+    final fromPost = post.media.trim();
+    if (fromPost.isNotEmpty) return fromPost;
+    return reel.displayMediaUrl;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaUrl = _mediaUrl;
+    final imagePoster = post.gridPreviewUrl.trim();
+
+    if (imagePoster.isNotEmpty &&
+        !Post.mediaUrlLooksLikeVideo(imagePoster)) {
+      return MediaUrlThumbnail(url: imagePoster);
+    }
+
+    if (mediaUrl.isNotEmpty) {
+      return MediaUrlThumbnail(url: mediaUrl);
+    }
+
+    return PostGridThumbnail(post: post);
   }
 }
 
@@ -292,8 +339,9 @@ class _ExploreReelTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            PostGridThumbnail(
-              key: ValueKey('${reel.id}:${post.gridPreviewUrl}:${post.media}'),
+            _ExploreReelThumbnail(
+              key: ValueKey('explore-reel-${reel.id}'),
+              reel: reel,
               post: post,
             ),
             Positioned(
