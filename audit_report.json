@@ -1,0 +1,2475 @@
+{
+  "lib\\screens\\splash_screen.dart": [
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 38,
+      "desc": "Variable 'asset' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_controller = VideoPlayerController.asset(AppAssets.splashVideo);"
+    }
+  ],
+  "lib\\features\\camera\\camera_handler.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'camera' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/models/message_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/post_preview_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/share_post_sheet.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';"
+    }
+  ],
+  "lib\\features\\home\\home_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'home' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/screen/message_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'home' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/screens/profile_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'home' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/screens/search_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/post/processing_dialog.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'home' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/controller/camera_controller_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 18,
+      "desc": "Feature 'home' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 19,
+      "desc": "Feature 'home' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/camera_handler.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 22,
+      "desc": "Feature 'home' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/provider/profile_provider.dart';"
+    }
+  ],
+  "lib\\features\\home\\post_share_flow_bridge.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'home' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/post/api/video_service.dart';"
+    }
+  ],
+  "lib\\features\\video_options\\sheets\\simple_not_interested_sheet.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 69,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\video_options\\sheets\\simple_report_sheet.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'video_options' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/data/report_user_reasons.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 61,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\video_options\\widgets\\video_options_sheet.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'video_options' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'video_options' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'video_options' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';"
+    }
+  ],
+  "lib\\features\\video_editor\\screens\\video_editor_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'video_editor' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/models/sticker_data.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'video_editor' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/widgets/sticker_overlay.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'video_editor' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/widgets/story_text_editor.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'video_editor' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/widgets/story_music_picker.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'video_editor' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/models/filter_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 12,
+      "desc": "Feature 'video_editor' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 13,
+      "desc": "Feature 'video_editor' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/controller/filter_controller.dart';"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 166,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 47,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    }
+  ],
+  "lib\\features\\user_profiles\\widgets\\screens\\user_profile_screen2.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'user_profiles' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\api\\block_api_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'user_profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\api\\report_user_api_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'user_profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\utils\\report_user_flow.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'user_profile' directly imports feature 'video_options'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/video_options/sheets/simple_report_sheet.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\user_profile_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'user_profile' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'user_profile' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/models/subscribe_model.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\widgets\\subscribe_button.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'user_profile' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'user_profile' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/models/subscribe_model.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\widgets\\user_highlights_list.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'user_profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'user_profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'user_profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 40,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\widgets\\user_profile_grid.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'user_profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'user_profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\widgets\\user_profile_header.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'user_profile' directly imports feature 'gifts'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/gifts/widgets/gift_panel.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'user_profile' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/widgets/story_avatar_indicator.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'user_profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/utils/story_utils.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\widgets\\user_stats_row.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/data/api_calls/model/profile_stats_model.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\presentation\\screens\\widgets\\user_story_list.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 23,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 41,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\user_profile\\data\\controller\\user_profile_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 1,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/data/api_calls/controller/profile_controller.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\data\\repository\\user_profile_repository.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/data/api_calls/repository/profile_repository.dart';"
+    }
+  ],
+  "lib\\features\\user_profile\\data\\services\\user_profile_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'user_profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'user_profile' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/data/models/user_profile_model.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\providers\\post_like_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'story_preview' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\providers\\share_post_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/models/message_model.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 6,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 22,
+      "desc": "Variable 'get' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? get videoController => _videoController;"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\close_friend_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/widgets/search_bar.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\hide_story_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/widgets/search_bar.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\story_preview_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'story_preview' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/provider/profile_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'story_preview' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/post_share_flow_bridge.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'story_preview' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 17,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/models/sticker_data.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 18,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/widgets/sticker_overlay.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 22,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/models/filter_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 24,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/controller/filter_controller.dart';"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 596,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 44,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\story_view_screen.dart": [
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 49,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\story_filter_picker.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 137,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\story_music_picker.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 288,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\story_text_editor.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 292,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 334,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\close_friend\\close_friend_user_list.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\close_friend\\close_friend_user_tile.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\hide_story_widgets\\user_list.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 23,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\more_widgets\\more_card.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/constants/post/more_constants.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\more_widgets\\more_toggle.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/constants/post/more_constants.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\story_view_topbar\\highlight_sheet.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights_create'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'story_preview' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/post_share_flow_bridge.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 285,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\story_view_topbar\\story_selector_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights_create'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights_create/controller/highlight_create_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'story_preview' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/post_share_flow_bridge.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\widgets\\story_view_topbar\\story_view_bottom.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\post\\more_option_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'story_preview' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/constants/post/more_constants.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/models/post/more_model.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\post\\post_preview_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'story_preview' directly imports feature 'video_editor'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/video_editor/screens/video_editor_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/models/sticker_data.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 15,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/widgets/sticker_overlay.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 18,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/models/filter_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 20,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/controller/filter_controller.dart';"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 416,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 40,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\post\\share_post_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'story_preview' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/post_share_flow_bridge.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'story_preview' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/models/message_model.dart';"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 553,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 61,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 82,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "captionController = TextEditingController(text: widget.initialCaption);"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\post\\tag_people_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'story_preview' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/models/message_model.dart';"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 146,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    }
+  ],
+  "lib\\features\\story_preview\\screens\\post\\tag_users_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'story_preview' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/models/message_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'story_preview' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/widgets/search_bar.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'story_preview' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 203,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 278,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    }
+  ],
+  "lib\\features\\story_preview\\api\\create_post_api\\post_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'story_preview' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\api\\story_api\\controller\\story_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'story_preview' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';"
+    }
+  ],
+  "lib\\features\\story_preview\\api\\story_api\\service\\story_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'story_preview' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'story_preview' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';"
+    }
+  ],
+  "lib\\features\\share\\providers\\post_share_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'share' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'share' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    }
+  ],
+  "lib\\features\\share\\widgets\\share_user_grid.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'share' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'share' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'share' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/widgets/search_bar.dart';"
+    }
+  ],
+  "lib\\features\\share\\widgets\\share_user_item.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'share' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';"
+    }
+  ],
+  "lib\\features\\search\\controllers\\explore_reels_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'search' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    }
+  ],
+  "lib\\features\\search\\models\\explore_reel_model.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'search' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    }
+  ],
+  "lib\\features\\search\\widgets\\explore_reels_grid.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'search' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'search' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 26,
+      "desc": "Variable '_scrollController' of type 'ScrollController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "final ScrollController _scrollController = ScrollController();"
+    }
+  ],
+  "lib\\features\\search\\widgets\\horizontal_image_list.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 22,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\search\\data\\explore_reels\\explore_reels_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'search' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'search' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'search' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    }
+  ],
+  "lib\\features\\profile_menu_drawer\\screens\\post_detail_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'profile_menu_drawer' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'profile_menu_drawer' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 28,
+      "desc": "Variable '_videoControllers' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "late Map<int, VideoPlayerController?> _videoControllers;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 34,
+      "desc": "Variable 'initialPage' of type 'PageController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_pageController = PageController(initialPage: _currentIndex);"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 45,
+      "desc": "Variable 'networkUrl' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "final controller = VideoPlayerController.networkUrl("
+    }
+  ],
+  "lib\\features\\profile_menu_drawer\\screens\\saved_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'profile_menu_drawer' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';"
+    }
+  ],
+  "lib\\features\\profile_menu_drawer\\widgets\\language_list.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 12,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\profile_menu_drawer\\widgets\\Helpcenter\\faq_search_bar.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'profile_menu_drawer' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/widgets/search_bar.dart';"
+    }
+  ],
+  "lib\\features\\profile_menu_drawer\\screens\\blocked_screen\\blocked_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'profile_menu_drawer' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 57,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    }
+  ],
+  "lib\\features\\profile\\provider\\profile_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/api/highlight_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 13,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';"
+    }
+  ],
+  "lib\\features\\profile\\screens\\profile_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';"
+    }
+  ],
+  "lib\\features\\profile\\screens\\real_draft_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_draft_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 234,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    }
+  ],
+  "lib\\features\\profile\\widgets\\draft_tile.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_draft_model.dart';"
+    }
+  ],
+  "lib\\features\\profile\\widgets\\edit_profile_button.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';"
+    }
+  ],
+  "lib\\features\\profile\\widgets\\profile_header.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/api/models/edit_profile_response.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/utils/story_utils.dart';"
+    }
+  ],
+  "lib\\features\\profile\\widgets\\profile_menu_drawer.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/logout/logout_widget.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/logout/logout_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/archive_screen/archive_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/blocked_screen/blocked_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/helpcenter_screen/help_center_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/saved_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/terms_and_conditions_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/wallet_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 12,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/language_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 13,
+      "desc": "Feature 'profile' directly imports feature 'profile_menu_drawer'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile_menu_drawer/screens/account_privacy_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'profile' directly imports feature 'subscription'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/subscription/subscription_screen.dart';"
+    }
+  ],
+  "lib\\features\\profile\\widgets\\story_list.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'profile' directly imports feature 'camera'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/camera/camera_handler.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'profile' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/post_share_flow_bridge.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 35,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\profile\\screens\\post_detail\\profile_post_detail_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 12,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 197,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "if (mounted) setState(() {});"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 217,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 51,
+      "desc": "Variable '_videoControllers' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "final Map<int, VideoPlayerController?> _videoControllers = {};"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 61,
+      "desc": "Variable 'initialPage' of type 'PageController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_pageController = PageController(initialPage: _currentIndex);"
+    }
+  ],
+  "lib\\features\\profile\\screens\\post_detail\\widgets\\comments_sheet.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 81,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\profile\\screens\\post_detail\\widgets\\post_action_sheet.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'profile' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'profile' directly imports feature 'video_options'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/video_options/sheets/simple_report_sheet.dart';"
+    }
+  ],
+  "lib\\features\\profile\\presentation\\providers\\user_profile_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'profile' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/data/services/user_profile_service.dart';"
+    }
+  ],
+  "lib\\features\\profile\\data\\api_calls\\controller\\profile_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 7,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'profile' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'profile' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    }
+  ],
+  "lib\\features\\profile\\data\\api_calls\\services\\profile_services.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'profile' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\notification\\screens\\notification_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'notification' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'notification' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';"
+    }
+  ],
+  "lib\\features\\notification\\widgets\\follow_tile.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'notification' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';"
+    }
+  ],
+  "lib\\features\\notification\\widgets\\notification_tile.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'notification' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';"
+    }
+  ],
+  "lib\\features\\message\\controllers\\message_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'message' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\message\\models\\message_model.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 1,
+      "desc": "Feature 'message' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    }
+  ],
+  "lib\\features\\message\\providers\\message_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'message' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\message\\screen\\chat_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'message' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    }
+  ],
+  "lib\\features\\message\\screen\\fullscreen_media_viewer.dart": [
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 22,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 40,
+      "desc": "Variable 'file' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_videoController = VideoPlayerController.file(File(path));"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 42,
+      "desc": "Variable 'networkUrl' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_videoController = VideoPlayerController.networkUrl(Uri.parse(path));"
+    }
+  ],
+  "lib\\features\\message\\widgets\\chat_bubble.dart": [
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 597,
+      "desc": "Variable '_controller' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _controller;"
+    }
+  ],
+  "lib\\features\\message\\widgets\\chat_header.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'message' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'message' directly imports feature 'user_profiles'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profiles/widgets/screens/user_profile_screen2.dart';"
+    }
+  ],
+  "lib\\features\\message\\widgets\\chat_input_field.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 356,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 371,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    }
+  ],
+  "lib\\features\\message\\widgets\\shared_post_preview_card.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'message' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/screens/post_detail/profile_post_detail_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'message' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'message' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    }
+  ],
+  "lib\\features\\message\\widgets\\voice_message_player.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 240,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 21,
+      "desc": "Variable '_activePlayer' of type 'AudioPlayer' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "static AudioPlayer? _activePlayer;"
+    }
+  ],
+  "lib\\features\\message\\widgets\\block\\block_user_widget.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'message' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    }
+  ],
+  "lib\\features\\message\\presentation\\provider\\user_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'message' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';"
+    }
+  ],
+  "lib\\features\\insight\\screens\\professional_dashboard_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'insight' directly imports feature 'activity'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/activity/screens/activity_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'insight' directly imports feature 'interactions'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/interactions/screens/interactions_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'insight' directly imports feature 'top_performance_Reel'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/top_performance_Reel/performance_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'insight' directly imports feature 'views'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/views/screens/views_screen.dart';"
+    }
+  ],
+  "lib\\features\\home\\api\\subscribe_api_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'home' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\home\\controllers\\subscribe_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'home' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';"
+    }
+  ],
+  "lib\\features\\home\\controllers\\video_feed_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';"
+    }
+  ],
+  "lib\\features\\home\\widgets\\optimized_video_overlay.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'home' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\home\\widgets\\video_feed.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 15,
+      "desc": "Feature 'home' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 420,
+      "desc": "Variable '_animController' of type 'AnimationController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "late AnimationController _animController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 861,
+      "desc": "Variable '_boundController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _boundController;"
+    }
+  ],
+  "lib\\features\\home\\widgets\\video_overlay.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';"
+    }
+  ],
+  "lib\\features\\home\\widgets\\video_top_bar.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'home' directly imports feature 'notification'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/notification/screens/notification_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'home' directly imports feature 'notification'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/notification/providers/notification_provider.dart';"
+    }
+  ],
+  "lib\\features\\home\\widgets\\video_user_info.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'home' directly imports feature 'music_screen'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/music_screen/music_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'home' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 13,
+      "desc": "Feature 'home' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    }
+  ],
+  "lib\\features\\highlights_create\\api\\highlight_create_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'highlights_create' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\highlights_create\\controller\\highlight_create_controller.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'highlights_create' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'highlights_create' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/controller/highlight_state_manager.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'highlights_create' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/model/highlight_model.dart';"
+    }
+  ],
+  "lib\\features\\highlights\\api\\highlight_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'highlights' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\highlights\\screens\\highlight_viewer_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'highlights' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'highlights' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/provider/profile_provider.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 34,
+      "desc": "Variable '_progressController' of type 'AnimationController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "late final AnimationController _progressController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 696,
+      "desc": "Variable '_videoController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _videoController;"
+    }
+  ],
+  "lib\\features\\gifts\\widgets\\gift_search_bar.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'gifts' directly imports feature 'search'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/search/widgets/search_bar.dart';"
+    }
+  ],
+  "lib\\features\\comments\\api\\comment_service.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'comments' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/token_storage.dart';"
+    }
+  ],
+  "lib\\features\\comments\\widgets\\comment_sheet.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 49,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() => _isLoading = true);"
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 233,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": ": ListView.builder("
+    }
+  ],
+  "lib\\features\\camera\\screen\\camera_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/widgets/story_music_picker.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 339,
+      "desc": "Variable '_zoomAnimationController' of type 'AnimationController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "late final AnimationController _zoomAnimationController;"
+    }
+  ],
+  "lib\\features\\camera\\widgets\\bottom_gallery_strip.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 53,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\features\\camera\\widgets\\capture_button.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 157,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {});"
+    }
+  ],
+  "lib\\features\\camera\\widgets\\horizontal_filter_selector.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 268,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "setState(() {});"
+    }
+  ],
+  "lib\\features\\camera\\widgets\\mode_selector.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 2,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 3,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/post_preview_navigation.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/post_preview_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/post/share_post_sheet.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'camera' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/post_share_flow_bridge.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'camera' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/screens/story_preview_screen.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'camera' directly imports feature 'ideas'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/ideas/screen/ideas_screen.dart';"
+    }
+  ],
+  "lib\\features\\auth\\core\\auth_session_helper.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'auth' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/provider/profile_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'auth' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';"
+    }
+  ],
+  "lib\\features\\auth\\logout\\logout_provider.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 8,
+      "desc": "Feature 'auth' directly imports feature 'highlights'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/highlights/provider/highlight_flow_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 9,
+      "desc": "Feature 'auth' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/controllers/conversation_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'auth' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'auth' directly imports feature 'message'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/message/providers/message_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 12,
+      "desc": "Feature 'auth' directly imports feature 'notification'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/notification/providers/notification_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 13,
+      "desc": "Feature 'auth' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/provider/profile_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 14,
+      "desc": "Feature 'auth' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 15,
+      "desc": "Feature 'auth' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 16,
+      "desc": "Feature 'auth' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 17,
+      "desc": "Feature 'auth' directly imports feature 'story_preview'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 18,
+      "desc": "Feature 'auth' directly imports feature 'share'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/share/providers/post_share_provider.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 19,
+      "desc": "Feature 'auth' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 20,
+      "desc": "Feature 'auth' directly imports feature 'user_profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/user_profile/providers/block_provider.dart';"
+    }
+  ],
+  "lib\\features\\auth\\screens\\complete_profile_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 10,
+      "desc": "Feature 'auth' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/home_screen.dart';"
+    }
+  ],
+  "lib\\features\\auth\\screens\\email_login_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 6,
+      "desc": "Feature 'auth' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/home_screen.dart';"
+    }
+  ],
+  "lib\\features\\auth\\screens\\otp_screen.dart": [
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 81,
+      "desc": "Variable '_controllers' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "final List<TextEditingController> _controllers = List.generate("
+    }
+  ],
+  "lib\\features\\auth\\screens\\phone_number_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 11,
+      "desc": "Feature 'auth' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/home_screen.dart';"
+    }
+  ],
+  "lib\\features\\auth\\screens\\sign_in_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 13,
+      "desc": "Feature 'auth' directly imports feature 'home'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/home/home_screen.dart';"
+    }
+  ],
+  "lib\\features\\Account\\screens\\account_screen.dart": [
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 4,
+      "desc": "Feature 'Account' directly imports feature 'profile'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/profile/models/profile_model.dart';"
+    },
+    {
+      "type": "Architecture Violation",
+      "severity": "Medium",
+      "line": 5,
+      "desc": "Feature 'Account' directly imports feature 'auth'. Highly coupled features limit scalability.",
+      "code": "import 'package:gruve_app/features/auth/api/controllers/edit_profile_controller.dart';"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 41,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_nameController = TextEditingController(text: '');"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 42,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_phoneController = TextEditingController(text: '');"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 43,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_emailController = TextEditingController(text: '');"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 44,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_usernameController = TextEditingController(text: '');"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 45,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_genderController = TextEditingController(text: '');"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 46,
+      "desc": "Variable 'text' of type 'TextEditingController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_bioController = TextEditingController(text: '');"
+    }
+  ],
+  "lib\\core\\socket\\socket_log_viewer.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 217,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 321,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\core\\socket\\socket_reconnect_manager.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 197,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "_setState(SocketState.disconnected);"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 291,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "_setState(SocketState.failed);"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 367,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "_setState(SocketState.connected);"
+    },
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 778,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "_setState(SocketState.disconnected);"
+    }
+  ],
+  "lib\\core\\widgets\\also_share_sheet.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 161,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "return ListView.builder("
+    }
+  ],
+  "lib\\core\\widgets\\post_grid_thumbnail.dart": [
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 398,
+      "desc": "Variable '_controller' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "VideoPlayerController? _controller;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 414,
+      "desc": "Variable 'controller' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "void _bindController(VideoPlayerController? controller) {"
+    }
+  ],
+  "lib\\core\\widgets\\video_background.dart": [
+    {
+      "type": "Memory Leak / Crash Risk",
+      "severity": "High",
+      "line": 55,
+      "desc": "setState() called after await without checking if the widget is still mounted.",
+      "code": "if (mounted) setState(() {});"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 22,
+      "desc": "Variable '_sharedController' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "static VideoPlayerController? _sharedController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 28,
+      "desc": "Variable 'get' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "static VideoPlayerController? get sharedController => _sharedController;"
+    },
+    {
+      "type": "Memory Leak",
+      "severity": "Critical",
+      "line": 44,
+      "desc": "Variable 'asset' of type 'VideoPlayerController' is declared in a State/ChangeNotifier class but not disposed in dispose().",
+      "code": "_sharedController = VideoPlayerController.asset(widget.videoPath);"
+    }
+  ],
+  "lib\\core\\widgets\\shimmer\\chat_shimmer.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 19,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 83,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\core\\widgets\\shimmer\\comment_shimmer.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 25,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    }
+  ],
+  "lib\\core\\widgets\\shimmer\\notification_shimmer.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 32,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "ListView.builder("
+    }
+  ],
+  "lib\\core\\widgets\\shimmer\\search_shimmer.dart": [
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 24,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "child: ListView.builder("
+    },
+    {
+      "type": "Performance",
+      "severity": "Medium",
+      "line": 83,
+      "desc": "ListView.builder without itemExtent or prototypeItem. Can cause performance issues for large lists.",
+      "code": "ListView.builder("
+    }
+  ]
+}

@@ -38,15 +38,18 @@ class AuthStateManager extends ChangeNotifier {
       if (syncUserId != null && syncUserId.isNotEmpty) {
         _currentUserId = syncUserId;
         ProfileIdentityService.instance.primeLoggedInUserId(syncUserId);
-        AppLogger.d('🔐 [AuthState] Eagerly loaded userId synchronously: $_currentUserId');
+        AppLogger.d(
+          '🔐 [AuthState] Eagerly loaded userId synchronously: $_currentUserId',
+        );
       }
 
       final accessToken = await TokenStorage.getAccessToken();
       final userId = await TokenStorage.getCurrentUserId();
 
       final expired = await TokenStorage.isTokenExpired();
-      _isAuthenticated = accessToken != null && accessToken.isNotEmpty && !expired;
-      
+      _isAuthenticated =
+          accessToken != null && accessToken.isNotEmpty && !expired;
+
       if (userId != null) {
         _currentUserId = userId;
         ProfileIdentityService.instance.primeLoggedInUserId(userId);
@@ -93,7 +96,9 @@ class AuthStateManager extends ChangeNotifier {
 
   /// Called when authentication fails (logout, token refresh failure)
   Future<void> onAuthFailure() async {
-    AppLogger.d('🚨 [AuthState] Authentication failed - initiating logout flow');
+    AppLogger.d(
+      '🚨 [AuthState] Authentication failed - initiating logout flow',
+    );
 
     _isLoggingOut = true;
     notifyListeners();

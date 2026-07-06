@@ -278,7 +278,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+                final isKeyboardOpen =
+                    MediaQuery.of(context).viewInsets.bottom > 0;
 
                 if (_wasKeyboardOpen != isKeyboardOpen) {
                   _wasKeyboardOpen = isKeyboardOpen;
@@ -309,16 +310,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           left: 0,
                           right: 0,
                           height: 620, // 500px buffer + 120px normal height
-                          child: Container(
-                            color: const Color(0xFF7A2C8F),
-                          ),
+                          child: Container(color: const Color(0xFF7A2C8F)),
                         ),
                         // The bottom body background
                         Positioned.fill(
                           top: 120,
-                          child: Container(
-                            color: const Color(0xFF1B182D),
-                          ),
+                          child: Container(color: const Color(0xFF1B182D)),
                         ),
                         // The dark form container
                         Container(
@@ -348,7 +345,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           right: 0,
                           child: Center(
                             child: _controller.isLoading
-                                ? const AppShimmer(child: ShimmerCircle(radius: 61))
+                                ? const AppShimmer(
+                                    child: ShimmerCircle(radius: 61),
+                                  )
                                 : ProfileImagePicker(
                                     currentImagePath: _profileImagePath,
                                     onImageChanged: _onImageChanged,

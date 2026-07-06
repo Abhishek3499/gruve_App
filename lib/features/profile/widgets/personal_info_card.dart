@@ -61,7 +61,11 @@ class PersonalInfoCard extends StatelessWidget {
               _buildHeader(),
               const SizedBox(height: 24),
 
-              _buildField("Full Name", nameController, focusNode: nameFocusNode),
+              _buildField(
+                "Full Name",
+                nameController,
+                focusNode: nameFocusNode,
+              ),
               _divider(),
 
               // Show phone field only if showPhone is true
@@ -76,13 +80,22 @@ class PersonalInfoCard extends StatelessWidget {
                 _divider(),
               ],
 
-              _buildField("Username", usernameController, focusNode: usernameFocusNode),
+              _buildField(
+                "Username",
+                usernameController,
+                focusNode: usernameFocusNode,
+              ),
               _divider(),
 
               _buildField("Gender", genderController, forceReadOnly: true),
               _divider(),
 
-              _buildField("Bio", bioController, isBio: true, focusNode: bioFocusNode),
+              _buildField(
+                "Bio",
+                bioController,
+                isBio: true,
+                focusNode: bioFocusNode,
+              ),
 
               // Show update button only if showUpdateButton is true
               if (showUpdateButton) ...[
@@ -198,7 +211,9 @@ class PersonalInfoCard extends StatelessWidget {
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFBB86FC)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFBB86FC),
+                      ),
                     ),
                   )
                 : const Text(
