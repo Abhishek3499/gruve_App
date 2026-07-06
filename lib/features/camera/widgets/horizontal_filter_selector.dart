@@ -265,6 +265,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     if ((_targetZoom - _cameraService.displayZoom).abs() > 0.01) {
       _currentZoom = _targetZoom;
       await _cameraService.setZoomLevel(_targetZoom);
+      if (!mounted) return;
       setState(() {});
     }
   }

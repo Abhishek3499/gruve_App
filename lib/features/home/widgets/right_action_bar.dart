@@ -126,7 +126,11 @@ class _ActionIconState extends State<_ActionIcon>
   }
 
   void _handleTap() {
-    _animController.forward().then((_) => _animController.reverse());
+    _animController.forward().then((_) {
+      if (mounted) {
+        _animController.reverse();
+      }
+    });
     widget.onTap?.call();
   }
 

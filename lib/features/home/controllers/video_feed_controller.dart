@@ -1285,7 +1285,9 @@ class VideoFeedController {
 
     controller.setLooping(true);
 
-    final shouldPlay = mediaIndex == _currentIndex.value && !_disposed;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final isAppResumed = lifecycle == null || lifecycle == AppLifecycleState.resumed;
+    final shouldPlay = mediaIndex == _currentIndex.value && !_disposed && isAppResumed;
 
     _failedUrls.remove(url);
     _controllersByUrl[url] = controller;

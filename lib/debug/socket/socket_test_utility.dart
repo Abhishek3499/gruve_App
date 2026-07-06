@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-import 'socket_reconnect_manager.dart';
-import 'socket_logger.dart';
+import 'package:gruve_app/core/socket/socket_reconnect_manager.dart';
+import 'package:gruve_app/core/socket/socket_logger.dart';
 
 /// Comprehensive Socket Testing Utility
 /// 

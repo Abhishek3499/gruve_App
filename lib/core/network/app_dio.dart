@@ -4,8 +4,7 @@ import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
-import 'package:gruve_app/core/network/pending_request_queue.dart';
-import 'package:gruve_app/core/network/token_refresh_service.dart';
+
 import 'package:gruve_app/core/network/request_deduplication_manager.dart';
 import 'package:gruve_app/core/cache/cache_interceptor.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
@@ -14,22 +13,15 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 
 class AppDio {
   static CancelToken? _logoutCancelToken;
-  static PendingRequestQueue? _pendingQueue;
   static Dio? _instance;
 
   static CancelToken get _cancelToken => _logoutCancelToken ??= CancelToken();
-
-  static PendingRequestQueue get _queue =>
-      _pendingQueue ??= PendingRequestQueue(TokenRefreshService());
 
   static void cancelAllRequests([String? reason]) {
     if (_logoutCancelToken != null && !_logoutCancelToken!.isCancelled) {
       _logoutCancelToken!.cancel(reason ?? 'Logout request cancellation');
     }
     _logoutCancelToken = CancelToken();
-
-    // Also cancel pending queued requests
-    _queue.cancelAll(reason);
 
     // Cancel all in-flight deduplicated requests
     RequestDeduplicationManager().cancelAll(reason);

@@ -154,6 +154,7 @@ class _CaptureButtonState extends State<CaptureButton>
     if ((newZoom - _currentZoom).abs() > 0.01) {
       _currentZoom = newZoom;
       await _cameraService.setZoomLevel(_currentZoom);
+      if (!mounted) return;
       setState(() {});
     }
   }

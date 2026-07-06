@@ -13,6 +13,7 @@ import '../utils/camera_logger.dart';
 import '../services/mode_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
+import 'package:gruve_app/core/app_navigator.dart';
 
 /// Simple text mode selector (Story / Gruve)
 class ModeSelector extends StatefulWidget {
@@ -100,20 +101,23 @@ class _ModeSelectorState extends State<ModeSelector> {
           );
           if (!mounted) return;
           if (result is PostPreviewOpenShare) {
+            final mediaPath = result.mediaPath;
+            final mediaMimeType = result.mediaMimeType;
             Navigator.of(context).pop();
             await Future<void>.delayed(Duration.zero);
-            if (!mounted) return;
-            final shareResult = await showSharePostOnHomeSheet(
-              result.mediaPath,
-              mediaMimeType: result.mediaMimeType,
-            );
-            if (shareResult == 'start_processing') {
-              // Detect media type from file path
-              final isVideo = LocalMediaUtils.isVideoPath(
-                result.mediaPath,
-                mimeType: null,
+            if (rootNavigatorKey.currentContext != null) {
+              final shareResult = await showSharePostOnHomeSheet(
+                mediaPath,
+                mediaMimeType: mediaMimeType,
               );
-              PostShareFlowBridge.notifyShareStartProcessing(isVideo);
+              if (shareResult == 'start_processing') {
+                // Detect media type from file path
+                final isVideo = LocalMediaUtils.isVideoPath(
+                  mediaPath,
+                  mimeType: null,
+                );
+                PostShareFlowBridge.notifyShareStartProcessing(isVideo);
+              }
             }
           }
         }

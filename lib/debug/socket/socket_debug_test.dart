@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'socket_logger.dart';
+import 'package:gruve_app/core/socket/socket_logger.dart';
 import 'socket_log_viewer.dart';
 
 /// Simple debug test widget to verify socket logging

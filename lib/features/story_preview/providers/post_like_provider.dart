@@ -10,13 +10,14 @@ import '../api/create_post_api/post_service.dart';
 
 class PostLikeProvider extends ChangeNotifier {
   final PostService _postService = PostService();
-  final Map<String, bool> _likedPosts = {};
-  final Map<String, int> _likesCount = {};
+  final Map<String, Post> _posts = {};
   final Set<String> _inFlight = {};
 
-  bool isLiked(Post post) => _likedPosts[post.id] ?? post.isLiked;
+  bool isLiked(Post post) => _posts[post.id]?.isLiked ?? post.isLiked;
 
-  int likesCount(Post post) => _likesCount[post.id] ?? post.likesCount;
+  int likesCount(Post post) => _posts[post.id]?.likesCount ?? post.likesCount;
+
+  Post getPost(Post post) => _posts[post.id] ?? post;
 
   Future<void> toggleLike(Post post) async {
     final postId = post.id;
@@ -29,8 +30,10 @@ class PostLikeProvider extends ChangeNotifier {
     final nextCount = nextLiked ? currentCount + 1 : currentCount - 1;
 
     _inFlight.add(postId);
-    _likedPosts[postId] = nextLiked;
-    _likesCount[postId] = nextCount;
+    _posts[postId] = post.copyWith(
+      isLiked: nextLiked,
+      likesCount: nextCount,
+    );
     notifyListeners();
 
     if (nextLiked) {
@@ -44,30 +47,29 @@ class PostLikeProvider extends ChangeNotifier {
     try {
       final success = await _postService.likePost(postId);
       if (success) {
-        post.isLiked = nextLiked;
-        post.likesCount = nextCount;
-
         unawaited(
           ProfileCountRefreshBridge.notifyCountsChanged(
             reason: 'post_like_toggled',
           ),
         );
       } else {
-        _rollbackLike(postId, currentLiked, currentCount);
+        _rollbackLike(postId, post, currentLiked, currentCount);
         _showErrorSnackBar();
       }
     } catch (e) {
       AppLogger.d('❌ [PostLikeProvider] error toggling like: $e');
-      _rollbackLike(postId, currentLiked, currentCount);
+      _rollbackLike(postId, post, currentLiked, currentCount);
       _showErrorSnackBar();
     } finally {
       _inFlight.remove(postId);
     }
   }
 
-  void _rollbackLike(String postId, bool liked, int count) {
-    _likedPosts[postId] = liked;
-    _likesCount[postId] = count;
+  void _rollbackLike(String postId, Post originalPost, bool liked, int count) {
+    _posts[postId] = originalPost.copyWith(
+      isLiked: liked,
+      likesCount: count,
+    );
     notifyListeners();
   }
 
@@ -83,8 +85,7 @@ class PostLikeProvider extends ChangeNotifier {
 
   void reset() {
     AppLogger.d('🔄 [PostLikeProvider] Resetting like data...');
-    _likedPosts.clear();
-    _likesCount.clear();
+    _posts.clear();
     _inFlight.clear();
     notifyListeners();
     AppLogger.d('✅ [PostLikeProvider] Like data reset complete');

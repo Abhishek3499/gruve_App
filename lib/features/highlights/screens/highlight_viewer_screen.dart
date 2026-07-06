@@ -107,8 +107,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
         widget.highlightId,
       );
 
+      if (!mounted) return;
+
       if (fetchedHighlight != null) {
-        if (!mounted) return;
         setState(() {
           isLoading = false;
           highlight = fetchedHighlight;

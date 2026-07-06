@@ -237,6 +237,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                     },
                     onChangeEnd: _duration == Duration.zero ? null : (value) async {
                       await _audioPlayer.seek(Duration(milliseconds: value.toInt()));
+                      if (!mounted) return;
                       setState(() {
                         _isDragging = false;
                       });

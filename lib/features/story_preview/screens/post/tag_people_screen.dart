@@ -142,6 +142,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                           ),
                         );
 
+                        if (!mounted) return;
                         if (users != null && users is List) {
                           setState(() {
                             selectedUsers = List<ChatUser>.from(users);

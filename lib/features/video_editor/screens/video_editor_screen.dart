@@ -163,9 +163,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         context,
         initialFilter: _activeFilter,
         onFilterChanged: (filter) {
-          setState(() {
-            _activeFilter = filter;
-          });
+          if (mounted) {
+            setState(() {
+              _activeFilter = filter;
+            });
+          }
         },
       );
     } finally {

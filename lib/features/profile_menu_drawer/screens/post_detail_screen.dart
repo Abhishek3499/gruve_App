@@ -53,10 +53,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               setState(() {
                 _videoControllers[index] = controller;
               });
+            } else {
+              controller.dispose();
             }
           })
           .catchError((e) {
             AppLogger.d('❌ Video init error: $e');
+            controller.dispose();
           });
     }
   }

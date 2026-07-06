@@ -3,7 +3,7 @@ import 'package:gruve_app/core/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/message/models/conversation_model.dart';
 import 'package:gruve_app/features/message/widgets/chat_header_menu.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
-import 'package:gruve_app/features/user_profiles/widgets/screens/user_profile_screen2.dart';
+import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../utils/user_display_helper.dart';
 
@@ -103,8 +103,8 @@ class ChatHeader extends StatelessWidget {
         transitionDuration: const Duration(milliseconds: 280),
         reverseTransitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            UserProfileScreen2(
-              userId: _userId,
+            UserProfileScreen(
+              profileUserId: _userId,
               userName: _userName,
               profileImageUrl: _userAvatar,
             ),

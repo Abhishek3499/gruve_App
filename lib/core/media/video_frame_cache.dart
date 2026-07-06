@@ -7,8 +7,8 @@ import 'package:video_player/video_player.dart';
 class VideoFrameCache {
   VideoFrameCache._();
 
-  static const int _maxEntries = 64;
-  static const int _maxConcurrentInit = 16;
+  static const int _maxEntries = 6;
+  static const int _maxConcurrentInit = 3;
 
   static final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   static final Queue<String> _lru = Queue<String>();
@@ -82,6 +82,15 @@ class VideoFrameCache {
     if (entry.refs > 0) {
       entry.refs--;
     }
+  }
+
+  static Future<void> disposeAll() async {
+    for (final entry in _cache.values) {
+      await entry.controller.dispose();
+    }
+    _cache.clear();
+    _lru.clear();
+    _inFlight.clear();
   }
 
   static Future<void> warmup(String url) async {

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'socket_logger.dart';
+import 'package:gruve_app/core/socket/socket_logger.dart';
 import 'socket_test_utility.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -113,16 +113,15 @@ class _SocketLogViewerState extends State<SocketLogViewer> {
     }
     
     await SocketTestUtility.startTest();
+    if (!mounted) return;
     _refreshLogs();
     
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Socket test completed!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Socket test completed!'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
   
   Color _getLogColor(String log) {

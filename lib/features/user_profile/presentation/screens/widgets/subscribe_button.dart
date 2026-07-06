@@ -271,7 +271,13 @@ class _SubscribeButtonState extends State<SubscribeButton>
                 duration: const Duration(milliseconds: 150),
                 width: thumbSize,
                 height: thumbSize,
-                transform: Matrix4.identity()..scale(_isDragging ? 1.08 : 1.0),
+                transform: Matrix4.identity()
+                  ..scaleByDouble(
+                    _isDragging ? 1.08 : 1.0,
+                    _isDragging ? 1.08 : 1.0,
+                    1.0,
+                    1.0,
+                  ),
                 transformAlignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white,

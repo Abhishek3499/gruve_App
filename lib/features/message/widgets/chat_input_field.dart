@@ -353,6 +353,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
           await file.delete();
         }
       }
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
         _recordingSeconds = 0;
@@ -368,6 +369,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
       _recordingTimer?.cancel();
       _recordingTimer = null;
       final path = await _audioRecorder.stop();
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
         _recordingSeconds = 0;

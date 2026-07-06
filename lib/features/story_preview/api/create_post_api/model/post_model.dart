@@ -30,10 +30,10 @@ class Post {
   final String userId;
   final String mediaType;
 
-  int likesCount;
+  final int likesCount;
   int commentsCount;
   int sharesCount;
-  bool isLiked;
+  final bool isLiked;
 
   String username;
   bool isSubscribed;
@@ -645,6 +645,42 @@ class Post {
       'has_active_story': hasActiveStory,
       'tagged_users': taggedUsers.map((e) => e.toJson()).toList(),
     };
+  }
+
+  Post copyWith({
+    String? id,
+    String? caption,
+    String? media,
+    String? thumbnailUrl,
+    String? userId,
+    int? likesCount,
+    int? commentsCount,
+    int? sharesCount,
+    bool? isLiked,
+    String? username,
+    bool? isSubscribed,
+    String? profilePicture,
+    String? mediaType,
+    bool? hasActiveStory,
+    List<TaggedUser>? taggedUsers,
+  }) {
+    return Post(
+      id: id ?? this.id,
+      caption: caption ?? this.caption,
+      media: media ?? this.media,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      userId: userId ?? this.userId,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      sharesCount: sharesCount ?? this.sharesCount,
+      isLiked: isLiked ?? this.isLiked,
+      username: username ?? this.username,
+      isSubscribed: isSubscribed ?? this.isSubscribed,
+      profilePicture: profilePicture ?? this.profilePicture,
+      mediaType: mediaType ?? this.mediaType,
+      hasActiveStory: hasActiveStory ?? this.hasActiveStory,
+      taggedUsers: taggedUsers ?? this.taggedUsers,
+    );
   }
 }
 

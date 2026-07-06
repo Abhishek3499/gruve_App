@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/network/auth_dio.dart';
 
 /// Production-level token refresh service with race condition protection
 class TokenRefreshService {
@@ -15,8 +15,7 @@ class TokenRefreshService {
   /// Prevents multiple simultaneous refresh requests
   Completer<Map<String, String>?>? _refreshCompleter;
 
-  /// Queue of pending requests waiting for token refresh
-  final List<Completer<void>> _pendingRequests = [];
+
 
   /// Whether a refresh is currently in progress
   bool get isRefreshing => _refreshCompleter != null;
@@ -49,15 +48,7 @@ class TokenRefreshService {
         return null;
       }
 
-      // Create a fresh Dio instance without interceptors to avoid loops
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 15),
-          sendTimeout: const Duration(seconds: 15),
-        ),
-      );
+      final dio = AuthDio.getInstance();
 
       AppLogger.d('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
 
@@ -124,39 +115,13 @@ class TokenRefreshService {
       _refreshCompleter!.complete(null);
       return null;
     } finally {
-      // Clear the completer and process pending requests
+      // Clear the completer
       _refreshCompleter = null;
-      _processPendingRequests();
     }
-  }
-
-  /// Queues a request to wait for token refresh completion
-  Future<void> queueRequestUntilRefresh() {
-    final completer = Completer<void>();
-    _pendingRequests.add(completer);
-
-    // If no refresh is in progress, complete immediately
-    if (_refreshCompleter == null) {
-      completer.complete();
-      _pendingRequests.remove(completer);
-    }
-
-    return completer.future;
-  }
-
-  /// Processes all pending requests after refresh completes
-  void _processPendingRequests() {
-    for (final completer in _pendingRequests) {
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    }
-    _pendingRequests.clear();
   }
 
   /// Resets the service state (useful for testing or forced reset)
   void reset() {
     _refreshCompleter = null;
-    _pendingRequests.clear();
   }
 }

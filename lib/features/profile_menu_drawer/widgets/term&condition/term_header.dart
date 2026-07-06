@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/app_colors.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class TermHeader extends StatelessWidget {
   const TermHeader({super.key});

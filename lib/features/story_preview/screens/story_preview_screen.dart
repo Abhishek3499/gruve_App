@@ -129,16 +129,17 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         );
       }
     } catch (e) {
-      setState(() {
-        _isYourStorySharing = false;
-      });
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to share story: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _isYourStorySharing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share story: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

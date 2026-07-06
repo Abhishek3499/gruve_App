@@ -20,10 +20,9 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
   @override
   void dispose() {
     // Clean up the provider selection when the bottom sheet is closed
+    final shareProvider = Provider.of<PostShareProvider>(context, listen: false);
     Future.microtask(() {
-      if (mounted) {
-        Provider.of<PostShareProvider>(context, listen: false).clearSelection();
-      }
+      shareProvider.clearSelection();
     });
     super.dispose();
   }

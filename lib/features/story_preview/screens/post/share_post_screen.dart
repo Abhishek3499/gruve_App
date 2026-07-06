@@ -549,6 +549,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                               ),
                             ),
                           );
+                          if (!mounted) return;
                           if (result != null && result is Map<String, bool>) {
                             setState(() {
                               isEveryone = result['isEveryone'] ?? true;
@@ -582,6 +583,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                               ),
                             ),
                           );
+                          if (!mounted) return;
                           if (result != null &&
                               result is Map<String, dynamic>) {
                             setState(() {

@@ -5,6 +5,7 @@ import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
+import 'package:gruve_app/core/media/video_frame_cache.dart';
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation
@@ -117,6 +118,10 @@ class AuthStateManager extends ChangeNotifier {
       final cacheManager = CacheManager();
       await cacheManager.clear();
       AppLogger.d('✅ [AuthState] All caches cleared');
+
+      // Dispose all cached video controllers
+      await VideoFrameCache.disposeAll();
+      AppLogger.d('✅ [AuthState] Video frame cache disposed');
 
       // Reset state
       _isAuthenticated = false;

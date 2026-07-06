@@ -415,7 +415,9 @@ class _CameraZoomSelectorState extends State<_CameraZoomSelector>
     try {
       await _zoomAnimationController.forward();
     } finally {
-      _zoomAnimationController.removeListener(listener);
+      if (mounted) {
+        _zoomAnimationController.removeListener(listener);
+      }
     }
   }
 
