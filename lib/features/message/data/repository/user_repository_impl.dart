@@ -21,10 +21,18 @@ class UserRepositoryImpl implements UserRepository {
     }
   }
 
-  Future<PaginatedUserResponse> fetchUsersPaginated({int page = 1, CancelToken? cancelToken}) async {
+  Future<PaginatedUserResponse> fetchUsersPaginated({
+    int page = 1,
+    CancelToken? cancelToken,
+    bool skipCache = false,
+  }) async {
     try {
       AppLogger.d('🧠 [UserRepositoryImpl] Fetching page $page');
-      final response = await dataSource.fetchUsers(page: page, cancelToken: cancelToken);
+      final response = await dataSource.fetchUsers(
+        page: page,
+        cancelToken: cancelToken,
+        skipCache: skipCache,
+      );
       AppLogger.d('✅ [UserRepositoryImpl] Page $page fetched: ${response.users.length} users');
       return response;
     } catch (e) {

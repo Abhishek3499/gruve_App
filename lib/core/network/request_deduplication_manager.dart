@@ -173,9 +173,22 @@ class _InFlightRequest<T> {
   _InFlightRequest(this.completer, this.options) : createdAt = DateTime.now();
 }
 
-/// Dio interceptor for request deduplication
+/// Dio interceptor for request deduplication.
+///
+/// Accepts the app's [Dio] instance so that the actual HTTP call goes through
+/// all configured interceptors (auth-header injection, [RefreshTokenInterceptor],
+/// [CacheInterceptor], [RetryInterceptor]). The inner call marks itself with
+/// `extra['skipDeduplication'] = true` so it cannot recurse back into this
+/// interceptor.
 class RequestDeduplicationInterceptor extends Interceptor {
   final RequestDeduplicationManager _manager = RequestDeduplicationManager();
+
+  /// The fully-configured app Dio used to issue the real network request.
+  /// Must be the same instance that has [RefreshTokenInterceptor] and
+  /// [RetryInterceptor] attached so those behaviours apply to deduplicated GETs.
+  final Dio _dio;
+
+  RequestDeduplicationInterceptor(this._dio);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -207,17 +220,19 @@ class RequestDeduplicationInterceptor extends Interceptor {
     }
   }
 
-  /// Performs the actual request using a fresh Dio instance
+  /// Issues the actual HTTP request through the app's Dio instance so that
+  /// [RefreshTokenInterceptor], [RetryInterceptor], and [CacheInterceptor]
+  /// remain active for deduplicated GETs.
+  ///
+  /// Sets `skipDeduplication: true` in the cloned [RequestOptions.extra] map
+  /// so this interceptor's [onRequest] gate skips the inner call and avoids
+  /// infinite recursion.
   Future<Response> _performRequest(RequestOptions options) async {
-    final dio = Dio(BaseOptions(
-      baseUrl: options.baseUrl,
-      connectTimeout: options.connectTimeout,
-      receiveTimeout: options.receiveTimeout,
-      sendTimeout: options.sendTimeout,
-      headers: options.headers,
-    ));
-
-    return dio.fetch(options);
+    final innerOptions = options.copyWith(
+      extra: Map<String, dynamic>.from(options.extra)
+        ..['skipDeduplication'] = true,
+    );
+    return _dio.fetch(innerOptions);
   }
 
   /// Determines if a request should skip deduplication

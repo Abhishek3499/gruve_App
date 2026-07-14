@@ -100,9 +100,10 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
       final finalPath = await _captureFlattenedImage();
 
       await storyController.createStory(
-        caption: '',
-        mediaPath: finalPath,
-      );
+         caption: '',
+         mediaPath: finalPath,
+         isMuted: _isMuted,
+       );
 
       if (!mounted) return;
 
@@ -758,8 +759,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                       listen: false,
                                     ),
                                     child: StoryShareSheet(
-                                      mediaPath: finalPath,
-                                    ),
+                                       mediaPath: finalPath,
+                                       isMuted: _isMuted,
+                                     ),
                                   );
                                 },
                               );

@@ -58,6 +58,20 @@ class HiveService {
     }
   }
 
+  /// Remove a single cached entry from a box
+  Future<void> evictCachedData(String boxName, String key) async {
+    try {
+      if (!Hive.isBoxOpen(boxName)) {
+        return;
+      }
+      final box = Hive.box(boxName);
+      await box.delete(key);
+      AppLogger.d('🧹 [HiveService] Evicted cache key "$key" from box "$boxName"');
+    } catch (e) {
+      AppLogger.d('🚨 [HiveService] Failed to evict key "$key" from box "$boxName": $e');
+    }
+  }
+
   /// Evict/clear cache inside a specific box
   Future<void> clearCache(String boxName) async {
     try {

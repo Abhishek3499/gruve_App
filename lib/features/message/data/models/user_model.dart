@@ -7,13 +7,23 @@ class UserModel {
   final String username;
   final String fullName;
   final String? profilePicture;
+  final bool isSubscribed;
 
   UserModel({
     required this.userId,
     required this.username,
     required this.fullName,
     this.profilePicture,
+    this.isSubscribed = true,
   });
+
+  static bool readIsSubscribedFromJson(Map<String, dynamic> json) {
+    final raw = json['is_subscribed'] ??
+        json['is_subscrribed'] ??
+        json['isSubscribed'];
+    if (raw is bool) return raw;
+    return true;
+  }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     AppLogger.d('👤 [UserModel] 🔍 Starting user parsing');
@@ -30,6 +40,7 @@ class UserModel {
       username: finalUsername,
       fullName: fullName,
       profilePicture: SafeParsingHelpers.safeNullableString(safeJson, const ['profile_picture', 'profileImage', 'avatar', 'photo']),
+      isSubscribed: readIsSubscribedFromJson(safeJson),
     );
   }
 
@@ -79,8 +90,12 @@ class PaginatedUserResponse {
         final userJson = SafeParsingHelpers.safeMapParse(resultsList[i], context: '📦 PaginatedUserResponse[$i]');
         if (userJson.isNotEmpty) {
           final user = UserModel.fromJson(userJson);
-          users.add(user);
-          AppLogger.d('✅ [PaginatedUserResponse] ✨ Successfully parsed user at index $i');
+          if (user.isSubscribed) {
+            users.add(user);
+            AppLogger.d('✅ [PaginatedUserResponse] ✨ Successfully parsed user at index $i');
+          } else {
+            AppLogger.d('⏭️ [PaginatedUserResponse] Skipped unsubscribed user at index $i');
+          }
         }
       } catch (e) {
         AppLogger.d('💥 [PaginatedUserResponse] ❌ Failed to parse user at index $i: $e');

@@ -78,6 +78,19 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
       }
     };
 
+    _controller.onPostsRemoved = () {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_pageController.hasClients) return;
+        if (_controller.mediaUrls.isEmpty) return;
+        final target = _controller.currentIndex.value
+            .clamp(0, _controller.mediaUrls.length - 1);
+        final currentPage = _pageController.page?.round();
+        if (currentPage != target) {
+          _pageController.jumpToPage(target);
+        }
+      });
+    };
+
     _controller.initVideos();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -177,9 +190,30 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   }
 
   void _onPageChanged(int page) {
-    _controller.playVideo(page);
+    AppLogger.d('📄 [VideoFeed] onPageChanged page=$page');
+    _controller.playVideo(page, deferPreload: true);
+    _controller.warmupVideoAt(page + 1);
     HapticFeedback.selectionClick();
     unawaited(_maybeLoadMorePages(page));
+  }
+
+  void _onFeedScroll(ScrollNotification notification) {
+    if (!_pageController.hasClients) return;
+
+    if (notification is ScrollUpdateNotification && notification.depth == 0) {
+      final page = _pageController.page;
+      if (page == null) return;
+
+      final nextIndex = page.ceil();
+      if (nextIndex > page && nextIndex < _controller.mediaUrls.length) {
+        _controller.warmupVideoAt(nextIndex);
+      }
+      return;
+    }
+
+    if (notification is ScrollEndNotification && notification.depth == 0) {
+      _controller.commitPendingEnsureControllersAroundIndex();
+    }
   }
 
   /// Loads the next page when the user is near the end of the feed.
@@ -355,39 +389,45 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
           child: ValueListenableBuilder<int>(
             valueListenable: _controller.feedStructureRevision,
             builder: (context, revision, _) {
-              return RefreshIndicator(
-                notificationPredicate: (notification) =>
-                    notification.depth == 0 &&
-                    _controller.currentIndex.value == 0,
-                onRefresh: _refreshFeed,
-                color: Colors.white,
-                backgroundColor: Colors.grey[800],
-                child: PageView.builder(
-                  key: ValueKey(_controller.currentFeed),
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  allowImplicitScrolling: true,
-                  onPageChanged: _onPageChanged,
-                  itemCount: _controller.mediaUrls.length,
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: PageScrollPhysics(
-                      parent: ClampingScrollPhysics(),
-                    ),
-                  ),
-                  itemBuilder: (context, index) {
-                    final post = _controller.posts[index];
-                    final url = _controller.mediaUrls[index].trim();
-                    return FeedItemWidget(
-                      key: ValueKey(
-                        post.id.isNotEmpty ? 'feed_${post.id}' : 'feed_$url',
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  _onFeedScroll(notification);
+                  return false;
+                },
+                child: RefreshIndicator(
+                  notificationPredicate: (notification) =>
+                      notification.depth == 0 &&
+                      _controller.currentIndex.value == 0,
+                  onRefresh: _refreshFeed,
+                  color: Colors.white,
+                  backgroundColor: Colors.grey[800],
+                  child: PageView.builder(
+                    key: ValueKey(_controller.currentFeed),
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    allowImplicitScrolling: true,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _controller.mediaUrls.length,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: PageScrollPhysics(
+                        parent: ClampingScrollPhysics(),
                       ),
-                      index: index,
-                      controller: _controller,
-                      selectedTab: selectedContentTab,
-                      onTabChanged: _onTabChanged,
-                      onOwnProfileTap: () => widget.onTabChanged(4),
-                    );
-                  },
+                    ),
+                    itemBuilder: (context, index) {
+                      final post = _controller.posts[index];
+                      final url = _controller.mediaUrls[index].trim();
+                      return FeedItemWidget(
+                        key: ValueKey(
+                          post.id.isNotEmpty ? 'feed_${post.id}' : 'feed_$url',
+                        ),
+                        index: index,
+                        controller: _controller,
+                        selectedTab: selectedContentTab,
+                        onTabChanged: _onTabChanged,
+                        onOwnProfileTap: () => widget.onTabChanged(4),
+                      );
+                    },
+                  ),
                 ),
               );
             },
@@ -860,7 +900,9 @@ class FeedVideoPlayer extends StatefulWidget {
 class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   VideoPlayerController? _boundController;
   bool _initialized = false;
-  bool _hasRenderedFrame = false;
+  /// Sticky — once the first frame is shown, never fall back to shimmer on
+  /// transient buffering or decoder surface recovery (Exynos freeAllBuffers).
+  bool _hasEverRenderedFrame = false;
   bool _showPlaybackBufferSpinner = false;
   Timer? _bufferingShowTimer;
 
@@ -869,11 +911,10 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   bool get _isCurrentItem =>
       widget.controller.currentIndex.value == widget.index;
 
-  bool _computeHasRenderedFrame(VideoPlayerValue value) {
+  bool _hasVisibleFrame(VideoPlayerValue value) {
     return value.isInitialized &&
         value.size.width > 0 &&
-        value.size.height > 0 &&
-        (value.position > Duration.zero || !value.isBuffering);
+        value.size.height > 0;
   }
 
   void _cancelBufferingShowTimer() {
@@ -891,7 +932,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     }
 
     final awaitingFirstFrame =
-        !value.isInitialized || !_computeHasRenderedFrame(value);
+        !value.isInitialized || !_hasEverRenderedFrame;
     if (awaitingFirstFrame) {
       _cancelBufferingShowTimer();
       if (_showPlaybackBufferSpinner) {
@@ -911,7 +952,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
         if (ctrl == null || !_isCurrentItem) return;
         final latest = ctrl.value;
         if (!latest.isBuffering) return;
-        if (!latest.isInitialized || !_computeHasRenderedFrame(latest)) return;
+        if (!latest.isInitialized || !_hasEverRenderedFrame) return;
         setState(() => _showPlaybackBufferSpinner = true);
       });
       return;
@@ -977,7 +1018,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     _boundController?.removeListener(_onControllerUpdate);
     _boundController = null;
     _initialized = false;
-    _hasRenderedFrame = false;
+    _hasEverRenderedFrame = false;
   }
 
   void _syncController() {
@@ -995,8 +1036,9 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     _boundController?.removeListener(_onControllerUpdate);
     _boundController = next;
     _initialized = next?.value.isInitialized ?? false;
-    _hasRenderedFrame =
-        next != null && _computeHasRenderedFrame(next.value);
+    if (next != null && _hasVisibleFrame(next.value)) {
+      _hasEverRenderedFrame = true;
+    }
     _boundController?.addListener(_onControllerUpdate);
     if (next != null) {
       _syncPlaybackBufferSpinner(next.value);
@@ -1009,16 +1051,19 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     if (ctrl == null) return;
 
     final nowInitialized = ctrl.value.isInitialized;
-    final nowHasFrame = _computeHasRenderedFrame(ctrl.value);
+    final nowHasFrame = _hasVisibleFrame(ctrl.value);
     _syncPlaybackBufferSpinner(ctrl.value);
-    if (nowInitialized != _initialized || nowHasFrame != _hasRenderedFrame) {
+    final gainedFirstFrame = nowHasFrame && !_hasEverRenderedFrame;
+    if (gainedFirstFrame) {
+      _hasEverRenderedFrame = true;
+    }
+    if (nowInitialized != _initialized || gainedFirstFrame) {
       _initialized = nowInitialized;
-      _hasRenderedFrame = nowHasFrame;
       setState(() {});
     }
   }
 
-  Widget _buildPoster(BuildContext context) {
+  Widget _buildPoster(BuildContext context, {bool allowShimmer = true}) {
     final poster = widget.posterUrl.trim();
     if (poster.isNotEmpty &&
         poster.startsWith('http') &&
@@ -1026,21 +1071,32 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       return FeedPosterImage(url: poster);
     }
 
-    final mediaUrl = widget.url.trim();
-    if (Post.mediaUrlLooksLikeVideo(mediaUrl)) {
-      return FeedCachedVideoPoster(videoUrl: mediaUrl);
-    }
+    return allowShimmer ? const FeedPosterShimmer() : const SizedBox.shrink();
+  }
 
-    return const FeedPosterShimmer();
+  bool get _awaitingFirstFrame {
+    if (!_isCurrentItem || widget.controller.isInitialFeedLoading) {
+      return false;
+    }
+    return !widget.controller.hasVideoLoadFailed(widget.index) &&
+        (widget.controller.isVideoInitializing(widget.index) ||
+            !_hasEverRenderedFrame);
   }
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: widget.controller.videoControllersRevision,
+      builder: (context, _, child) => _buildVideoContent(context),
+    );
+  }
+
+  Widget _buildVideoContent(BuildContext context) {
     if (widget.controller.hasVideoLoadFailed(widget.index)) {
       return Stack(
         fit: StackFit.expand,
         children: [
-          _buildPoster(context),
+          _buildPoster(context, allowShimmer: true),
           Center(
             child: GestureDetector(
               onTap: widget.controller.togglePlayPause,
@@ -1070,17 +1126,11 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
     final videoController = _boundController;
     final showVideo = videoController != null && _initialized;
-    final hidePoster = showVideo && _hasRenderedFrame;
+    final hidePoster = showVideo && _hasEverRenderedFrame;
 
     if (!showVideo) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          _buildPoster(context),
-          if (_isCurrentItem && !widget.controller.isInitialFeedLoading)
-            const VideoBufferSpinner(),
-        ],
-      );
+      // TikTok-style: poster thumbnail or shimmer only — no text, no double loader.
+      return _buildPoster(context, allowShimmer: _awaitingFirstFrame);
     }
 
     final size = videoController.value.size;
@@ -1091,7 +1141,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _buildPoster(context),
+          _buildPoster(context, allowShimmer: false),
           SizedBox.expand(
             child: FittedBox(
               fit: BoxFit.cover,
@@ -1112,12 +1162,15 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                   ? Duration.zero
                   : const Duration(milliseconds: 120),
               curve: Curves.easeOut,
-              child: _buildPoster(context),
+              child: _buildPoster(
+                context,
+                allowShimmer: _awaitingFirstFrame,
+              ),
             ),
           ),
           if (_isCurrentItem &&
-              !widget.controller.isInitialFeedLoading &&
-              (!_hasRenderedFrame || _showPlaybackBufferSpinner))
+              _hasEverRenderedFrame &&
+              _showPlaybackBufferSpinner)
             const VideoBufferSpinner(),
         ],
       ),

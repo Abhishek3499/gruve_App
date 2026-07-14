@@ -60,10 +60,12 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _prefetchUsersForAvatarRow() {
-    if (_startedUserPrefetch || !mounted) return;
+    if (!mounted) return;
 
     final userProvider = context.read<UserProvider>();
-    if (userProvider.hasInitialized || userProvider.isLoading) return;
+    if (userProvider.isLoading) return;
+
+    if (_startedUserPrefetch || userProvider.hasInitialized) return;
 
     _startedUserPrefetch = true;
     unawaited(userProvider.fetchUsers(reason: 'initial'));

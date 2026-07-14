@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
@@ -129,9 +131,6 @@ class AppDio {
       ),
     );
 
-    // Retry interceptor to handle failed requests up to 2 times
-    dio.interceptors.add(RetryInterceptor(dio: dio));
-
     // Refresh runs after auth attaches the current token.
     dio.interceptors.add(RefreshTokenInterceptor(dio));
 
@@ -140,20 +139,47 @@ class AppDio {
     dio.interceptors.add(CacheInterceptor());
 
     // Coalesce duplicate in-flight GET requests.
-    dio.interceptors.add(RequestDeduplicationInterceptor());
+    // Passes [dio] so that the actual network call goes through all configured
+    // interceptors (auth, refresh, retry) rather than a bare Dio instance.
+    dio.interceptors.add(RequestDeduplicationInterceptor(dio));
+
+    // Retry interceptor — added LAST so it is the FIRST interceptor to see
+    // errors in the reverse-order error chain (i.e. closest to the network).
+    // When it retries via dio.fetch(), the new attempt traverses the full chain
+    // from the top; RequestDeduplicationInterceptor handles it as a fresh
+    // request because the failed entry was already cleared from _inFlightRequests
+    // before the error propagated back here. Extra['retry_attempts'] is
+    // propagated by the inner call so retries stay bounded across both layers.
+    dio.interceptors.add(RetryInterceptor(dio: dio));
 
     return dio;
   }
 }
 
-/// 🚀 Dio Interceptor that retries failed requests up to 2 times with a 1s delay
+/// 🚀 Configurable Dio Interceptor that retries failed requests with a 1s delay
 class RetryInterceptor extends Interceptor {
   final Dio dio;
-  RetryInterceptor({required this.dio});
+  final int maxRetries;
+  final Set<int> retriableStatuses;
+
+  RetryInterceptor({
+    required this.dio,
+    this.maxRetries = 2,
+    this.retriableStatuses = const {408, 429, 502, 503, 504},
+  });
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    AppLogger.d('DEBUG: RetryInterceptor.onError CALLED for ${err.requestOptions.method} ${err.requestOptions.path} with type ${err.type}');
+
     final requestOptions = err.requestOptions;
+    
+    // Check if request is explicitly marked for no retries
+    final noRetry = requestOptions.extra['noRetry'] == true;
+    if (noRetry) {
+      AppLogger.d('⏭️ [RetryInterceptor] Skipping retry as noRetry is set for ${requestOptions.method} ${requestOptions.path}');
+      return super.onError(err, handler);
+    }
     
     // Prevent infinite retry loops by checking current retry count
     final attempts = requestOptions.extra['retry_attempts'] as int? ?? 0;
@@ -163,13 +189,16 @@ class RetryInterceptor extends Interceptor {
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.connectionError ||
+        err.error is SocketException ||
         (err.response?.statusCode != null &&
-            {408, 429, 502, 503, 504}.contains(err.response!.statusCode));
+            retriableStatuses.contains(err.response!.statusCode));
 
-    if (isTransient && attempts < 2) {
+    if (isTransient && attempts < maxRetries) {
       requestOptions.extra['retry_attempts'] = attempts + 1;
       
-      AppLogger.d('🔄 [RetryInterceptor] Failed with ${err.type} (Status: ${err.response?.statusCode}). Retrying ${requestOptions.method} ${requestOptions.path} (Attempt ${attempts + 1}/2) in 1s...');
+      if (kDebugMode) {
+        AppLogger.d('🔄 [RetryInterceptor] Failed with ${err.type} (Status: ${err.response?.statusCode}). Retrying ${requestOptions.method} ${requestOptions.path} (Attempt ${attempts + 1}/$maxRetries) in 1s...');
+      }
       
       // Delay 1 second before retry
       await Future<void>.delayed(const Duration(seconds: 1));

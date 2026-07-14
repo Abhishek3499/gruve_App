@@ -89,6 +89,9 @@ class ProfileIdentityService {
     _hasResolvedLoggedInUser = false;
   }
 
+  /// Synchronous read of the last resolved logged-in user id.
+  String? get cachedLoggedInUserId => _cachedLoggedInUserId;
+
   String? _extractUserIdFromToken(String? token) {
     if (token == null || token.trim().isEmpty) {
       return null;

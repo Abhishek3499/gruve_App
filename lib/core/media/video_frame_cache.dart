@@ -8,7 +8,7 @@ class VideoFrameCache {
   VideoFrameCache._();
 
   static const int _maxEntries = 6;
-  static const int _maxConcurrentInit = 3;
+  static const int _maxConcurrentInit = 1;
 
   static final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   static final Queue<String> _lru = Queue<String>();
@@ -25,6 +25,31 @@ class VideoFrameCache {
     final controller = entry?.controller;
     if (controller != null && controller.value.isInitialized) {
       return controller;
+    }
+    return null;
+  }
+
+  /// Transfers a warmed controller to the feed player pool (no shared refs).
+  static Future<VideoPlayerController?> takeForFeed(String url) async {
+    final key = url.trim();
+    if (key.isEmpty) return null;
+
+    final pending = _inFlight[key];
+    if (pending != null) {
+      await pending;
+    }
+
+    final entry = _cache.remove(key);
+    _lru.remove(key);
+    _inFlight.remove(key);
+
+    final controller = entry?.controller;
+    if (controller != null && controller.value.isInitialized) {
+      return controller;
+    }
+
+    if (controller != null) {
+      await controller.dispose();
     }
     return null;
   }

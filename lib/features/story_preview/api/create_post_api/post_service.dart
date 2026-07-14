@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/paginated_response_model.dart';
@@ -80,6 +81,7 @@ class PostService {
     required File file,
     required String mediaPath,
     String? mimeType,
+    bool isMuted = false,
     void Function(File compressedVideo)? onCompressedVideo,
   }) async {
     final isVideo = await LocalMediaUtils.isVideoForUpload(
@@ -115,7 +117,7 @@ class PostService {
           file.path,
           quality: VideoQuality.DefaultQuality,
           deleteOrigin: false,
-          includeAudio: true,
+          includeAudio: !isMuted,
         );
         if (mediaInfo != null && mediaInfo.path != null) {
           final compressedFile = File(mediaInfo.path!);
@@ -149,6 +151,7 @@ class PostService {
     bool hideLikeCount = false,
     bool hideShareCount = false,
     List<String>? taggedUserIds,
+    bool isMuted = false,
   }) async {
     File? tempDownloadedFile;
     File? tempCompressedVideo;
@@ -220,6 +223,7 @@ class PostService {
             file: file,
             mediaPath: mediaPath,
             mimeType: mediaMimeType,
+            isMuted: isMuted,
             onCompressedVideo: (compressed) => tempCompressedVideo = compressed,
           );
           formData.files.add(
@@ -255,7 +259,11 @@ class PostService {
       AppLogger.d('✅ [PostService] Status: ${res.statusCode}');
       AppLogger.d('🏁 [PostService] ===== POST SUCCESS =====\n');
 
-      return CreatePostResponse.fromJson(res.data);
+      final response = CreatePostResponse.fromJson(res.data);
+      if (response.success) {
+        await CacheInvalidationService().onPostCreated(response.data?.id ?? '');
+      }
+      return response;
     } on DioException catch (e) {
       AppLogger.d('\n❌ [PostService] DIO ERROR');
       AppLogger.d('⚠️ [PostService] type: ${e.type}');

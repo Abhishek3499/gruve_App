@@ -7,11 +7,16 @@ class UserRemoteDataSource {
   final ApiClient apiClient;
   UserRemoteDataSource(this.apiClient);
 
-  Future<PaginatedUserResponse> fetchUsers({int page = 1, CancelToken? cancelToken}) async {
+  Future<PaginatedUserResponse> fetchUsers({
+    int page = 1,
+    CancelToken? cancelToken,
+    bool skipCache = false,
+  }) async {
     try {
       final rawResponse = await apiClient.get(
-        'user/users/?page=$page',
+        'user/users/?page=$page&limit=20',
         cancelToken: cancelToken,
+        skipCache: skipCache,
       );
       
       final response = PaginatedUserResponse.fromJson(rawResponse);

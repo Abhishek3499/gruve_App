@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/network/app_dio.dart';
 
 /// Lightweight Dio client for auth endpoints — no cache, retry, or dedup overhead.
 class AuthDio {
@@ -33,6 +34,18 @@ class AuthDio {
           'Content-Type': 'application/json',
         },
         responseType: ResponseType.json,
+      ),
+    );
+
+    // Reuse existing RetryInterceptor configured to:
+    // - Retry ONLY 1 time
+    // - Retry ONLY on 502, 503, 504 (and connection/timeout/socket exceptions check inside)
+    // - Never retry on 400, 401, 403, 404, 409, 422, etc.
+    dio.interceptors.add(
+      RetryInterceptor(
+        dio: dio,
+        maxRetries: 1,
+        retriableStatuses: const {502, 503, 504},
       ),
     );
 

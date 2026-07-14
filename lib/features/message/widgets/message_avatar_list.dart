@@ -71,7 +71,7 @@ class _MessageAvatarListState extends State<MessageAvatarList> {
               'fetchingMore: ${p.isFetchingMore}',
             );
 
-            // Initial Loading or Refreshing
+            // Initial loading or refreshing subscribed list from API
             if ((p.isLoading || !p.hasInitialized) && p.users.isEmpty) {
               AppLogger.d('⏳ [MessageAvatarList] Showing skeleton loader');
 

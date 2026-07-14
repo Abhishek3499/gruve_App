@@ -17,6 +17,7 @@ class SharePostScreen extends StatefulWidget {
   final String mediaPath;
   final String? mediaMimeType;
   final List<ChatUser>? taggedUsers;
+  final bool isMuted;
 
   /// When [SharePostScreen] was pushed from [PostPreviewScreen], pop that route
   /// after share so the user returns to the home feed (camera flow is already gone).
@@ -39,6 +40,7 @@ class SharePostScreen extends StatefulWidget {
     this.mediaMimeType,
     this.taggedUsers,
     this.popPostPreviewRouteAfterShare = false,
+    this.isMuted = false,
     this.draftId,
     this.initialCaption,
     this.initialLocation,
@@ -302,6 +304,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
       hideShareCount: hideShareCount,
       taggedUserIds: taggedUserIds,
       draftId: widget.draftId,
+      isMuted: widget.isMuted,
     );
   }
 

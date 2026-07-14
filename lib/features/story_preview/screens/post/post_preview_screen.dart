@@ -42,6 +42,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   bool _isInitialized = false;
   bool _isMuted = false;
   late final List<StickerData> _stickers;
+  late String _mediaPath;
   String? _selectedStickerId;
   final GlobalKey _boundaryKey = GlobalKey();
   bool _isPickerOrEditorOpen = false;
@@ -51,6 +52,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   @override
   void initState() {
     super.initState();
+    _mediaPath = widget.mediaPath;
     _activeFilter = FilterController().selectedFilter;
     _stickers = List.from(widget.initialStickers);
     _initializeMedia();
@@ -59,7 +61,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   Future<void> _initializeMedia() async {
     try {
       final resolved = await LocalMediaUtils.resolveForPreview(
-        widget.mediaPath,
+        _mediaPath,
         mimeType: widget.mediaMimeType,
       );
 
@@ -117,7 +119,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   }
 
   Future<String> _captureFlattenedImage() async {
-    if (_isVideo) return widget.mediaPath;
+    if (_isVideo) return _mediaPath;
 
     try {
       // Clear selection border before capturing
@@ -128,11 +130,11 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       final boundary = _boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return widget.mediaPath;
+      if (boundary == null) return _mediaPath;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) return widget.mediaPath;
+      if (byteData == null) return _mediaPath;
 
       final bytes = byteData.buffer.asUint8List();
       final tempDir = Directory.systemTemp;
@@ -142,7 +144,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
       return file.path;
     } catch (e) {
       AppLogger.d('❌ [PostPreviewScreen] Error flattening canvas: $e');
-      return widget.mediaPath;
+      return _mediaPath;
     }
   }
 
@@ -461,7 +463,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => VideoEditorScreen(
-                                      mediaPath: widget.mediaPath,
+                                      mediaPath: _mediaPath,
                                       initialStickers: _stickers,
                                       initialFilter: _activeFilter,
                                       initialMuted: _isMuted,
@@ -470,14 +472,15 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 );
                                 if (result != null && mounted) {
                                   setState(() {
+                                    _mediaPath = result.trimmedPath ?? _mediaPath;
                                     _stickers.clear();
                                     _stickers.addAll(result.stickers);
                                     _activeFilter = result.filter;
                                     _isMuted = result.isMuted;
-                                    if (_videoController != null) {
-                                      _videoController!.setVolume(_isMuted ? 0.0 : 1.0);
-                                    }
                                   });
+                                  _videoController?.dispose();
+                                  _videoController = null;
+                                  _initializeMedia();
                                 }
                               } catch (e) {
                                 AppLogger.d('Error navigating to video editor: $e');
@@ -535,6 +538,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                       mediaPath: finalPath,
                                       mediaMimeType: widget.mediaMimeType,
                                       popPostPreviewRouteAfterShare: true,
+                                      isMuted: _isMuted,
                                     ),
                                   ),
                                 );
@@ -600,7 +604,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
       );
     } else {
       preview = Image.file(
-        File(widget.mediaPath),
+        File(_mediaPath),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           return const Center(

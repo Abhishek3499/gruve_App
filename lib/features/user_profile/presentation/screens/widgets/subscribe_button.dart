@@ -27,6 +27,7 @@ class _SubscribeButtonState extends State<SubscribeButton>
   late Animation<double> _slideAnimation;
   double _dragPosition = 0.0;
   bool _isDragging = false;
+  bool _isProcessing = false;
 
   void _log(String message) {
     AppLogger.d('🪪 [ProfileSubscribeButton] $message');
@@ -110,11 +111,17 @@ class _SubscribeButtonState extends State<SubscribeButton>
   }
 
   Future<void> _performToggle(BuildContext context, bool currentStatus) async {
+    if (_isProcessing) return;
+    
     final optimisticStatus = !currentStatus;
     _log(
       '🔄 toggle userId=${widget.userId} current=$currentStatus optimistic=$optimisticStatus',
     );
     _showSubscriptionSnackBar(optimisticStatus);
+
+    setState(() {
+      _isProcessing = true;
+    });
 
     try {
       final result = await widget.subscribeController.toggleSubscription(
@@ -154,6 +161,12 @@ class _SubscribeButtonState extends State<SubscribeButton>
       if (!currentStatus) {
         setState(() {
           _dragPosition = 0.0;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
         });
       }
     }
@@ -375,20 +388,24 @@ class _SubscribeButtonState extends State<SubscribeButton>
           _dragPosition = 0.0;
         }
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
-                child: child,
-              ),
-            );
-          },
-          child: isSubscribed
-              ? _buildSubscribedWidget(context)
-              : _buildSliderWidget(context),
+        return AnimatedOpacity(
+          opacity: _isProcessing ? 0.6 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: isSubscribed
+                ? _buildSubscribedWidget(context)
+                : _buildSliderWidget(context),
+          ),
         );
       },
     );

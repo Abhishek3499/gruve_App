@@ -78,6 +78,7 @@ class PostShareFlowBridge {
     bool hideShareCount = false,
     List<String>? taggedUserIds,
     String? draftId,
+    bool isMuted = false,
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runShareUploadChain(
@@ -93,6 +94,7 @@ class PostShareFlowBridge {
         hideShareCount: hideShareCount,
         taggedUserIds: taggedUserIds,
         draftId: draftId,
+        isMuted: isMuted,
       );
     });
   }
@@ -121,6 +123,7 @@ class PostShareFlowBridge {
     bool hideShareCount = false,
     List<String>? taggedUserIds,
     String? draftId,
+    bool isMuted = false,
   }) async {
     try {
       final isVideo = mediaPath != null && mediaPath.isNotEmpty
@@ -147,6 +150,7 @@ class PostShareFlowBridge {
         hideLikeCount: hideLikeCount,
         hideShareCount: hideShareCount,
         taggedUserIds: taggedUserIds,
+        isMuted: isMuted,
       );
       
       AppLogger.d("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");

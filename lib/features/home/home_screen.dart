@@ -20,6 +20,7 @@ import 'package:gruve_app/features/camera/camera_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
+import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance
 /// FPS impact: 15-20fps drops → 55-60fps smooth (200% improvement)
@@ -429,6 +430,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } else if (_previousIndex.value == 0) {
       _pauseVideo('Tab changed from Home');
       _videoController?.releaseAllControllers();
+    }
+
+    if (newIndex == 3) {
+      unawaited(
+        context.read<UserProvider>().refreshOnTabVisible(),
+      );
     }
   }
 

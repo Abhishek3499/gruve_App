@@ -331,8 +331,21 @@ class _ExploreReelTile extends StatelessWidget {
     required this.onTap,
   });
 
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      final double val = count / 1000000;
+      return '${val.toStringAsFixed(val.truncateToDouble() == val ? 0 : 1)}M';
+    } else if (count >= 1000) {
+      final double val = count / 1000;
+      return '${val.toStringAsFixed(val.truncateToDouble() == val ? 0 : 1)}K';
+    }
+    return '$count';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final int displayCount = reel.likes;
+
     return GestureDetector(
       onTap: onTap,
       child: ProfileGridTile(
@@ -360,6 +373,45 @@ class _ExploreReelTile extends StatelessWidget {
                 ),
               ),
             ),
+            if (displayCount > 0)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.72),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatCount(displayCount),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

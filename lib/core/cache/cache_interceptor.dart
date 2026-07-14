@@ -477,47 +477,48 @@ class CacheInvalidationHelper {
 
   Future<void> _invalidateOnPost(String? postId) async {
     // Invalidate feed cache
-    await _cacheManager.invalidatePattern('/feed');
-    await _cacheManager.invalidatePattern('/posts');
+    await _cacheManager.invalidatePattern('feed');
+    await _cacheManager.invalidatePattern('posts');
     
-    // Invalidate user profile if post belongs to current user
-    if (postId != null) {
-      await _cacheManager.invalidatePattern('/profile');
-    }
+    // Invalidate user profile
+    await _cacheManager.invalidatePattern('profile');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for new post: $postId');
   }
 
   Future<void> _invalidateOnLike(String? postId) async {
     // Invalidate feed and post details
-    await _cacheManager.invalidatePattern('/feed');
-    await _cacheManager.invalidatePattern('/posts/$postId');
+    await _cacheManager.invalidatePattern('feed');
+    await _cacheManager.invalidatePattern('posts/$postId');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for like: $postId');
   }
 
   Future<void> _invalidateOnFollow(String? userId) async {
     // Invalidate profile caches
-    await _cacheManager.invalidatePattern('/profile');
-    await _cacheManager.invalidatePattern('/user/$userId');
-    await _cacheManager.invalidatePattern('/feed');
+    await _cacheManager.invalidatePattern('profile');
+    await _cacheManager.invalidatePattern('user/profile');
+    if (userId != null && userId.isNotEmpty) {
+      await _cacheManager.invalidatePattern(userId);
+    }
+    await _cacheManager.invalidatePattern('posts/get-post');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for follow: $userId');
   }
 
   Future<void> _invalidateOnComment(String? postId) async {
     // Invalidate post details and feed
-    await _cacheManager.invalidatePattern('/posts/$postId');
-    await _cacheManager.invalidatePattern('/feed');
+    await _cacheManager.invalidatePattern('posts/$postId');
+    await _cacheManager.invalidatePattern('feed');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for comment: $postId');
   }
 
   Future<void> _invalidateOnMessage(String? conversationId) async {
     // Invalidate conversation caches
-    await _cacheManager.invalidatePattern('/conversations');
+    await _cacheManager.invalidatePattern('conversations');
     if (conversationId != null) {
-      await _cacheManager.invalidatePattern('/conversations/$conversationId');
+      await _cacheManager.invalidatePattern('conversations/$conversationId');
     }
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for message: $conversationId');
@@ -525,25 +526,25 @@ class CacheInvalidationHelper {
 
   Future<void> _invalidateOnProfileUpdate(String? userId) async {
     // Invalidate all profile-related caches
-    await _cacheManager.invalidatePattern('/profile');
-    await _cacheManager.invalidatePattern('/user/$userId');
+    await _cacheManager.invalidatePattern('profile');
+    await _cacheManager.invalidatePattern('user/$userId');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for profile update: $userId');
   }
 
   Future<void> _invalidateOnStoryCreate(String? userId) async {
     // Invalidate story caches
-    await _cacheManager.invalidatePattern('/stories');
-    await _cacheManager.invalidatePattern('/profile');
+    await _cacheManager.invalidatePattern('stories');
+    await _cacheManager.invalidatePattern('profile');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for story create: $userId');
   }
 
   Future<void> _invalidateOnHighlightUpdate(String? highlightId) async {
     // Invalidate highlight caches
-    await _cacheManager.invalidatePattern('/highlights');
+    await _cacheManager.invalidatePattern('highlights');
     if (highlightId != null) {
-      await _cacheManager.invalidatePattern('/highlights/$highlightId');
+      await _cacheManager.invalidatePattern('highlights/$highlightId');
     }
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for highlight update: $highlightId');

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 
 import 'package:gruve_app/features/story_preview/api/story_api/model/stroy_response.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
@@ -24,6 +25,7 @@ class StoryService {
     required String caption,
     required File file,
     String? mimeType,
+    bool isMuted = false,
   }) async {
     final isVideo = await LocalMediaUtils.isVideoForUpload(
       file.path,
@@ -67,6 +69,7 @@ class StoryService {
     required String caption,
     required String mediaPath,
     String? mediaMimeType,
+    bool isMuted = false,
   }) async {
     try {
       AppLogger.d('\n🚀 [StoryService] ===== CREATE STORY START =====');
@@ -86,6 +89,7 @@ class StoryService {
         caption: caption,
         file: file,
         mimeType: mediaMimeType,
+        isMuted: isMuted,
       );
 
       AppLogger.d('🌐 [StoryService] POST stories/');
@@ -104,7 +108,11 @@ class StoryService {
       AppLogger.d('[StoryService] Response status: ${res.statusCode}');
       AppLogger.d('🏁 [StoryService] ===== CREATE STORY END =====\n');
 
-      return CreateStoryResponse.fromJson(res.data);
+      final response = CreateStoryResponse.fromJson(res.data);
+      if (response.success) {
+        await CacheInvalidationService().onStoryCreated('');
+      }
+      return response;
     } on DioException catch (e) {
       AppLogger.d('\n❌ [StoryService] DIO ERROR');
       AppLogger.d('⚠️ [StoryService] type: ${e.type}');

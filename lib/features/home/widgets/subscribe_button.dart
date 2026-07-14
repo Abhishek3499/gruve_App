@@ -23,6 +23,8 @@ class SubscribeButton extends StatefulWidget {
 }
 
 class _SubscribeButtonState extends State<SubscribeButton> {
+  bool _isProcessing = false;
+
   void _log(String message) {
     AppLogger.d('🎬 [HomeSubscribeButton] $message');
   }
@@ -91,12 +93,18 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
             ),
-            onPressed: () async {
-              final optimisticStatus = !isSubscribed;
+            onPressed: _isProcessing
+                ? null
+                : () async {
+                    final optimisticStatus = !isSubscribed;
               _log(
                 '👆 tap userId=${widget.userId} current=$isSubscribed optimistic=$optimisticStatus',
               );
               _showSubscriptionSnackBar(optimisticStatus);
+
+              setState(() {
+                _isProcessing = true;
+              });
 
               try {
                 final result = await widget.subscribeController
@@ -129,6 +137,12 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                   ),
                 );
                 _log('🚨 error snackbar shown userId=${widget.userId}');
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    _isProcessing = false;
+                  });
+                }
               }
             },
             child: Text(

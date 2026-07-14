@@ -1,6 +1,7 @@
 
 import '../api/subscribe_api_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/user_profile/data/services/user_profile_service.dart';
 
 class SubscribeService {
   static final SubscribeService _instance = SubscribeService._internal();
@@ -8,6 +9,7 @@ class SubscribeService {
   SubscribeService._internal();
 
   final SubscribeApiService _apiService = SubscribeApiService();
+  final UserProfileService _userProfileService = UserProfileService();
   final Set<String> _subscribedUsers = {};
 
   void _log(String message) {
@@ -41,11 +43,23 @@ class SubscribeService {
     return isSubscribed;
   }
 
-  Future<bool> subscribeToUser(String userId) {
+  Future<bool> subscribeToUser(String userId) async {
+    _log('🚀 subscribeToUser request userId=$userId');
+    final profile = await _userProfileService.getUserProfileModel(userId);
+    if (profile.isFollowing) {
+      _log('🤝 User is already subscribed on server: no-op for userId=$userId');
+      return true;
+    }
     return toggleSubscription(userId);
   }
 
-  Future<bool> unsubscribeFromUser(String userId) {
+  Future<bool> unsubscribeFromUser(String userId) async {
+    _log('🚀 unsubscribeFromUser request userId=$userId');
+    final profile = await _userProfileService.getUserProfileModel(userId);
+    if (!profile.isFollowing) {
+      _log('🤝 User is already unsubscribed on server: no-op for userId=$userId');
+      return false;
+    }
     return toggleSubscription(userId);
   }
 
@@ -58,5 +72,10 @@ class SubscribeService {
     final count = _subscribedUsers.length;
     _log('🔢 getSubscriptionCount=$count');
     return count;
+  }
+
+  void clearAll() {
+    _subscribedUsers.clear();
+    _log('🧹 cleared all local subscription state');
   }
 }

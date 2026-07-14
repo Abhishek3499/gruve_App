@@ -5,60 +5,107 @@ import '../../domain/repository/user_repository.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../data/repository/user_repository_impl.dart';
 import '../../data/models/user_model.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
+import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;
   UserProvider(this.repository) {
     AppLogger.d('🔥 UserProvider CONSTRUCTOR CALLED');
+    _trackedAuthUserId = AuthStateManager().currentUserId;
+    _localSubscribedUserIds =
+        _collectLocalSubscribedUserIds(SubscribeController());
     _listenToSubscriptions();
+    AuthStateManager().addListener(_onAuthStateChanged);
   }
 
   Timer? _subscriptionDebounceTimer;
   bool _needsRefreshAfterCurrent = false;
+  bool _subscriptionListDirty = false;
+  Set<String> _localSubscribedUserIds = {};
+  String? _trackedAuthUserId;
 
   void _listenToSubscriptions() {
     SubscribeController().addListener(_onSubscriptionChanged);
   }
 
+  void _onAuthStateChanged() {
+    final authUserId = AuthStateManager().currentUserId;
+    if (authUserId == _trackedAuthUserId) return;
+
+    AppLogger.d(
+      '🔄 [UserProvider] Auth user changed $_trackedAuthUserId -> $authUserId, clearing list',
+    );
+    _trackedAuthUserId = authUserId;
+    _clearUserListState();
+    notifyListeners();
+  }
+
+  void _clearUserListState() {
+    _subscriptionDebounceTimer?.cancel();
+    _needsRefreshAfterCurrent = false;
+    _users.clear();
+    _isLoading = false;
+    _isFetchingMore = false;
+    _hasNext = true;
+    _currentPage = 1;
+    _errorMessage = null;
+    _hasInitialized = false;
+    _lastFetchTime = null;
+    _fetchInFlight = null;
+    _loadMoreInFlight = null;
+    _lastLoadMoreKey = null;
+    _subscriptionListDirty = false;
+    _localSubscribedUserIds = {};
+  }
+
+  Set<String> _collectLocalSubscribedUserIds(SubscribeController controller) {
+    return controller.users.entries
+        .where((e) => e.value.isSubscribed)
+        .map((e) => e.key)
+        .toSet();
+  }
+
   void _onSubscriptionChanged() {
-    AppLogger.d('🔔 [UserProvider] Subscription status changed in SubscribeController');
-    _lastFetchTime = null; // Invalidate the memory cache!
-
-    // ⚡ OPTIMISTIC UPDATE:
-    bool changed = false;
     final controller = SubscribeController();
-    final controllerUsers = controller.users;
+    final currentLocalSubscribed = _collectLocalSubscribedUserIds(controller);
+    final newlySubscribed =
+        currentLocalSubscribed.difference(_localSubscribedUserIds);
+    final newlyUnsubscribed =
+        _localSubscribedUserIds.difference(currentLocalSubscribed);
 
-    // 1. Remove unsubscribed users immediately
-    final beforeCount = _users.length;
-    _users.removeWhere((user) {
-      final isSubscribed = controller.isUserSubscribed(user.userId);
-      return !isSubscribed;
-    });
-    if (_users.length != beforeCount) {
-      changed = true;
-      AppLogger.d('⚡ [UserProvider] Optimistic Remove -> total users count: ${_users.length}');
+    if (newlySubscribed.isEmpty && newlyUnsubscribed.isEmpty) {
+      return;
     }
 
-    // 2. Add newly subscribed users immediately
-    for (final entry in controllerUsers.entries) {
-      final userId = entry.key;
-      final model = entry.value;
+    AppLogger.d(
+      '🔔 [UserProvider] Subscription delta — added: $newlySubscribed removed: $newlyUnsubscribed',
+    );
 
-      if (model.isSubscribed) {
-        final alreadyExists = _users.any((u) => u.userId == userId);
-        if (!alreadyExists) {
-          AppLogger.d('⚡ [UserProvider] Optimistic Add: ${model.username}');
-          _users.add(UserEntity(
-            userId: userId,
-            username: model.username,
-            fullName: model.username, // Fallback to username
-          ));
-          changed = true;
-        }
+    _localSubscribedUserIds = currentLocalSubscribed;
+    _lastFetchTime = null;
+    _subscriptionListDirty = true;
+
+    unawaited(HiveService().evictCachedData(
+      HiveService.userCacheBoxName,
+      'users_list',
+    ));
+    unawaited(CacheManager().invalidatePattern('user/users'));
+
+    var changed = false;
+
+    if (newlyUnsubscribed.isNotEmpty) {
+      final beforeCount = _users.length;
+      _users.removeWhere((user) => newlyUnsubscribed.contains(user.userId));
+      if (_users.length != beforeCount) {
+        changed = true;
+        AppLogger.d(
+          '⚡ [UserProvider] Removed unsubscribed users -> total: ${_users.length}',
+        );
       }
     }
 
@@ -66,19 +113,36 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     }
 
-    // Trigger background fetch if we have already initialized, so the UI updates immediately
-    if (_hasInitialized) {
-      _subscriptionDebounceTimer?.cancel();
-      _subscriptionDebounceTimer = Timer(const Duration(milliseconds: 750), () {
-        if (!_isLoading) {
-          AppLogger.d('🔄 [UserProvider] Subscription change debounce completed -> fetching updated users list');
-          fetchUsers();
-        } else {
-          AppLogger.d('🔄 [UserProvider] Subscription change debounce completed but already loading -> scheduling refresh');
-          _needsRefreshAfterCurrent = true;
-        }
-      });
-    }
+    _scheduleSubscriptionRefresh();
+  }
+
+  void _scheduleSubscriptionRefresh() {
+    _subscriptionDebounceTimer?.cancel();
+    _subscriptionDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      AppLogger.d('🔄 [UserProvider] Subscription refresh debounce fired');
+      if (!_isLoading) {
+        unawaited(fetchUsers(reason: 'subscription_change'));
+      } else {
+        _needsRefreshAfterCurrent = true;
+      }
+    });
+  }
+
+  /// Call when the Messages tab becomes visible.
+  Future<void> refreshOnTabVisible() async {
+    AppLogger.d('🔄 [UserProvider] Tab visible — refreshing subscribed user list');
+    _lastFetchTime = null;
+    await _invalidateUserListCaches();
+    await fetchUsers(loadMore: false, reason: 'tab_visible');
+  }
+
+  /// Call when the Messages tab becomes visible to pick up subscription changes.
+  Future<void> refreshIfSubscriptionDirty() async {
+    if (!_subscriptionListDirty) return;
+    AppLogger.d('🔄 [UserProvider] Refreshing dirty subscription user list');
+    _lastFetchTime = null;
+    await _invalidateUserListCaches();
+    await fetchUsers(loadMore: false, reason: 'subscription_change');
   }
 
   List<UserEntity> _users = [];
@@ -105,6 +169,50 @@ class UserProvider extends ChangeNotifier {
   Future<void>? _loadMoreInFlight;
   String? _lastLoadMoreKey;
   static const _cacheValidDuration = Duration(minutes: 2);
+  static const _cacheBypassReasons = {
+    'subscription_change',
+    'pull_to_refresh',
+    'tab_visible',
+  };
+
+  bool _shouldBypassCache(String reason) => _cacheBypassReasons.contains(reason);
+
+  Future<void> _invalidateUserListCaches() async {
+    await HiveService().evictCachedData(
+      HiveService.userCacheBoxName,
+      'users_list',
+    );
+    await CacheManager().invalidatePattern('user/users');
+  }
+
+  /// Message header should never show the logged-in user.
+  List<UserEntity> _excludeSelf(List<UserEntity> users) {
+    final selfId = _resolveSelfUserId();
+    if (selfId == null || selfId.isEmpty) return users;
+    return users.where((user) => user.userId.trim() != selfId).toList();
+  }
+
+  String? _resolveSelfUserId() {
+    final authId = AuthStateManager().currentUserId?.trim();
+    if (authId != null && authId.isNotEmpty) return authId;
+    return ProfileIdentityService.instance.cachedLoggedInUserId?.trim();
+  }
+
+  List<UserEntity> _usersFromApi(Iterable<UserEntity> apiUsers) {
+    return _excludeSelf(_cleanUsers(apiUsers));
+  }
+
+  void _syncSubscribedUsersFromApi(List<UserEntity> apiUsers) {
+    SubscribeController().syncSubscribedUsersFromApi(
+      apiUsers.map(
+        (user) => (
+          userId: user.userId,
+          username: user.username.isNotEmpty ? user.username : user.fullName,
+        ),
+      ),
+    );
+    _localSubscribedUserIds = apiUsers.map((user) => user.userId).toSet();
+  }
 
   // Getters
   List<UserEntity> get users => _users;
@@ -171,7 +279,8 @@ class UserProvider extends ChangeNotifier {
     required String reason,
   }) async {
     // 🚀 Cache-then-Network: Load from Hive offline storage first if we don't have users in memory
-    if (!loadMore && _users.isEmpty) {
+    final bypassCache = _shouldBypassCache(reason);
+    if (!loadMore && _users.isEmpty && !bypassCache) {
       final cachedData = HiveService().getCachedData(
         HiveService.userCacheBoxName,
         'users_list',
@@ -179,9 +288,10 @@ class UserProvider extends ChangeNotifier {
       if (cachedData is List) {
         AppLogger.d('📦 [UserProvider] Cache HIT. Restoring users from Hive Cache first.');
         try {
-          _users = cachedData
-              .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)).toEntity())
-              .toList();
+          _users = _usersFromApi(
+            cachedData
+                .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)).toEntity()),
+          );
           _hasInitialized = true;
           notifyListeners();
         } catch (e) {
@@ -192,6 +302,8 @@ class UserProvider extends ChangeNotifier {
 
     // Check memory cache validity for initial load
     if (!loadMore &&
+        !_shouldBypassCache(reason) &&
+        !_subscriptionListDirty &&
         _lastFetchTime != null &&
         DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration &&
         _users.isNotEmpty) {
@@ -226,15 +338,23 @@ class UserProvider extends ChangeNotifier {
       _currentPage = 1;
       _hasNext = true;
       _lastLoadMoreKey = null;
+      if (bypassCache) {
+        _users.clear();
+      }
     }
     _errorMessage = null;
     notifyListeners();
+
+    if (!loadMore && bypassCache) {
+      await _invalidateUserListCaches();
+    }
 
     try {
       final repo = repository as UserRepositoryImpl;
       final response = await repo.fetchUsersPaginated(
         page: _currentPage,
         cancelToken: _getCancelToken(),
+        skipCache: bypassCache,
       );
 
       AppLogger.d(
@@ -266,7 +386,7 @@ class UserProvider extends ChangeNotifier {
       // Update users list
       if (loadMore) {
         final beforeCount = _users.length;
-        _users = _cleanUsers([
+        _users = _usersFromApi([
           ..._users,
           ...response.users.map((m) => m.toEntity()),
         ]);
@@ -274,11 +394,13 @@ class UserProvider extends ChangeNotifier {
           '➕ [UserProvider] Appended ${_users.length - beforeCount} users — total: ${_users.length}',
         );
       } else {
-        _users = _cleanUsers(response.users.map((m) => m.toEntity()));
+        final apiUsers = _usersFromApi(response.users.map((m) => m.toEntity()));
+        _users = apiUsers;
+        _syncSubscribedUsersFromApi(apiUsers);
         _lastFetchTime = DateTime.now();
         _hasInitialized = true;
         AppLogger.d(
-          '🔄 [UserProvider] Replaced list with ${_users.length} users',
+          '🔄 [UserProvider] API list applied with ${_users.length} users (raw API=${response.users.length})',
         );
       }
 
@@ -292,6 +414,7 @@ class UserProvider extends ChangeNotifier {
       AppLogger.d(
         '✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage',
       );
+      _subscriptionListDirty = false;
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
         AppLogger.d('🚫 [UserProvider] Request cancelled');
@@ -339,31 +462,22 @@ class UserProvider extends ChangeNotifier {
   // Method to reset pagination state (for pull-to-refresh)
   Future<void> refreshUsers() async {
     AppLogger.d('🔄 [UserProvider] Refreshing users...');
-    _lastFetchTime = null; // Clear cache
-    await fetchUsers(loadMore: false);
+    _lastFetchTime = null;
+    await _invalidateUserListCaches();
+    await fetchUsers(loadMore: false, reason: 'pull_to_refresh');
   }
 
   /// Reset provider state
   void reset() {
-    _subscriptionDebounceTimer?.cancel();
-    _needsRefreshAfterCurrent = false;
-    _users.clear();
-    _isLoading = false;
-    _isFetchingMore = false;
-    _hasNext = true;
-    _currentPage = 1;
-    _errorMessage = null;
-    _hasInitialized = false;
-    _lastFetchTime = null;
-    _fetchInFlight = null;
-    _loadMoreInFlight = null;
-    _lastLoadMoreKey = null;
+    _trackedAuthUserId = AuthStateManager().currentUserId;
+    _clearUserListState();
     AppLogger.d('🔄 [UserProvider] Provider state reset');
     notifyListeners();
   }
 
   @override
   void dispose() {
+    AuthStateManager().removeListener(_onAuthStateChanged);
     SubscribeController().removeListener(_onSubscriptionChanged);
     _subscriptionDebounceTimer?.cancel();
     cancelActiveRequests();

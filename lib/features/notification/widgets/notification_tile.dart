@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/widgets/cached_avatar.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 
 class NotificationTile extends StatelessWidget {
@@ -26,16 +27,6 @@ class NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine the image provider
-    ImageProvider avatarProvider;
-    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
-      avatarProvider = NetworkImage(profileImage);
-    } else if (profileImage.isNotEmpty) {
-      avatarProvider = AssetImage(profileImage);
-    } else {
-      avatarProvider = const AssetImage(AppAssets.nprofile);
-    }
-
     ImageProvider? thumbnailProvider;
     if (postImage != null) {
       if (postImage!.startsWith('http://') || postImage!.startsWith('https://')) {
@@ -79,7 +70,11 @@ class NotificationTile extends StatelessWidget {
                   );
                 }
               },
-              child: CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+              child: CachedAvatar(
+                imageUrl: profileImage,
+                username: username,
+                radius: 20,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(

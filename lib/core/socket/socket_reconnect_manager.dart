@@ -113,6 +113,12 @@ class SocketReconnectManager with WidgetsBindingObserver {
   bool _isDisposed = false;
   bool _isOnline = true;
   bool _isAppInForeground = true;
+
+  /// Whether the user is currently authenticated.
+  /// Set via [setAuthState] by [AuthStateManager] on login/logout.
+  /// When false, [_scheduleReconnect] is a no-op — the reconnect loop
+  /// cannot run while there is no valid access token.
+  bool _isAuthenticated = false;
   DateTime? _lastConnectedAt;
 
   // 🚀 MEMORY MONITORING: Track subscription health
@@ -244,6 +250,30 @@ class SocketReconnectManager with WidgetsBindingObserver {
     await _cleanupActiveSocket();
     _reconnectAttempts = 0;
     await connect();
+  }
+
+  /// Updates the authentication state of the socket layer.
+  ///
+  /// **Must be called by [AuthStateManager]** whenever auth state changes:
+  /// - `true`  — after a successful login or session restore.
+  /// - `false` — immediately before / during logout.
+  ///
+  /// Setting [authenticated] to `false` immediately cancels any pending
+  /// reconnect timer and makes [_scheduleReconnect] a no-op, so the
+  /// reconnect loop stops dead regardless of network or lifecycle events.
+  void setAuthState(bool authenticated) {
+    if (_isAuthenticated == authenticated) return;
+    _isAuthenticated = authenticated;
+    _socketPrint('auth state updated: authenticated=$authenticated');
+    debugLog.socket(
+      'AUTH_STATE_CHANGED',
+      properties: {'authenticated': authenticated},
+    );
+    if (!authenticated) {
+      // Kill any pending reconnect timer so the next fire cannot slip
+      // through before _isAuthenticated is checked.
+      _clearReconnectTimer();
+    }
   }
 
   Future<void> _performConnect([String? accessToken]) async {
@@ -535,6 +565,21 @@ class SocketReconnectManager with WidgetsBindingObserver {
       return;
     }
 
+    // I-1: Hard stop when the user is not authenticated.
+    // This prevents the reconnect loop from firing during the login flow
+    // ("connect failed: missing auth token" → _scheduleReconnect → loop).
+    // AuthStateManager.setAuthState(true) must be called before connect()
+    // on login/session-restore to re-enable reconnects.
+    if (!_isAuthenticated) {
+      _socketPrint('reconnect skipped: user not authenticated');
+      debugLog.socket(
+        'RECONNECT_SKIPPED',
+        properties: {'reason': 'not_authenticated'},
+      );
+      _setState(SocketState.disconnected);
+      return;
+    }
+
     final nextAttempt = (_reconnectAttempts + 1).clamp(
       1,
       _maxReconnectAttempts,
@@ -600,7 +645,11 @@ class SocketReconnectManager with WidgetsBindingObserver {
         },
       );
 
-      if (_isOnline && isDisconnected && !_manualDisconnect) {
+      // I-3: Guard both the counter reset and the reconnect schedule behind
+      // _isAuthenticated. Without this, coming online while on the login
+      // screen resets _reconnectAttempts to 0 and restarts the 5-attempt
+      // loop indefinitely.
+      if (_isOnline && isDisconnected && !_manualDisconnect && _isAuthenticated) {
         _reconnectAttempts = 0;
         _scheduleReconnect();
       } else if (!_isOnline) {
@@ -640,7 +689,10 @@ class SocketReconnectManager with WidgetsBindingObserver {
       return;
     }
 
-    if (!wasInForeground && !_manualDisconnect && !isConnected) {
+    // I-3: Same auth guard for the lifecycle-triggered counter reset.
+    // Foregrounding the app while on the login screen previously reset
+    // _reconnectAttempts to 0 and restarted the missing-token loop.
+    if (!wasInForeground && !_manualDisconnect && !isConnected && _isAuthenticated) {
       _reconnectAttempts = 0;
       _scheduleReconnect();
     }

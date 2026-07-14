@@ -502,6 +502,16 @@ class SocketService {
   /// Check if currently reconnecting
   bool get isReconnecting => _reconnectManager.isConnecting;
 
+  /// Updates the socket layer's authentication state.
+  ///
+  /// Call with `true` after a successful login / session restore so that
+  /// the reconnect loop is allowed to run. Call with `false` on logout so
+  /// the loop stops immediately and cannot restart from connectivity or
+  /// lifecycle events. See [SocketReconnectManager.setAuthState] for details.
+  void setAuthState(bool authenticated) {
+    _reconnectManager.setAuthState(authenticated);
+  }
+
   /// Listen to socket events for advanced UI handling
   Stream<SocketEvent> get events => _reconnectManager.events;
 

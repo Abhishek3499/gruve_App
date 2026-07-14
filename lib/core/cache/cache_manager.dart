@@ -174,6 +174,13 @@ class CacheManager {
         return memoryEntry.data as T;
       } else {
         AppLogger.d('⏰ [CacheManager] Memory cache entry expired for $key (age: ${memoryEntry.age.inSeconds}s, ttl: ${memoryEntry.ttl.inSeconds}s)');
+        if (config.enableStaleWhileRevalidate) {
+          debugLog.cache('GET', key, 
+            type: 'STALE', 
+            hit: false,
+            size: _getDataSize(memoryEntry.data));
+          return memoryEntry.data as T;
+        }
       }
     } else {
       AppLogger.d('🔍 [CacheManager] No memory cache entry for $key');
@@ -191,6 +198,10 @@ class CacheManager {
       return diskEntry.data;
     } else if (diskEntry != null) {
       AppLogger.d('⏰ [CacheManager] Disk cache entry expired for $key (age: ${diskEntry.age.inSeconds}s, ttl: ${diskEntry.ttl.inSeconds}s)');
+      if (config.enableStaleWhileRevalidate) {
+        // Promote stale disk entry to memory cache so that synchronous checks (like _isStale) can detect it
+        _memoryCache[key] = diskEntry;
+      }
     } else {
       AppLogger.d('🔍 [CacheManager] No disk cache entry for $key');
     }
@@ -216,7 +227,7 @@ class CacheManager {
     String key,
     T data,
     CacheConfig config, {
-    T Function(dynamic)? toJson,
+    dynamic Function(T)? toJson,
   }) async {
     await initialize();
 
@@ -250,7 +261,7 @@ class CacheManager {
     T Function(dynamic) fromJson,
     CacheConfig config,
     Future<T> Function() refreshFunction, {
-    T Function(dynamic)? toJson,
+    dynamic Function(T)? toJson,
   }) async {
     await initialize();
 
@@ -380,7 +391,7 @@ class CacheManager {
   Future<void> _putToDisk<T>(
     String key,
     CacheEntry<T> entry,
-    T Function(dynamic) toJson,
+    dynamic Function(T) toJson,
   ) async {
     try {
       final json = entry.toJson();
@@ -430,7 +441,7 @@ class CacheManager {
     String key,
     Future<T> Function() refreshFunction,
     CacheConfig config,
-    T Function(dynamic)? toJson,
+    dynamic Function(T)? toJson,
   ) async {
     final refreshCompleter = Completer<void>();
     _backgroundRefreshes[key] = refreshCompleter.future;

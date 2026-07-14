@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/widgets/cached_avatar.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import '../../message/utils/conversation_utils.dart';
 
@@ -23,15 +24,6 @@ class FollowTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider avatarProvider;
-    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
-      avatarProvider = NetworkImage(profileImage);
-    } else if (profileImage.isNotEmpty) {
-      avatarProvider = AssetImage(profileImage);
-    } else {
-      avatarProvider = const AssetImage(AppAssets.nprofile);
-    }
-
     return InkWell(
       onTap: onTap,
       splashColor: Colors.white12,
@@ -65,7 +57,11 @@ class FollowTile extends StatelessWidget {
                   );
                 }
               },
-              child: CircleAvatar(radius: 20, backgroundImage: avatarProvider),
+              child: CachedAvatar(
+                imageUrl: profileImage,
+                username: username,
+                radius: 20,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(

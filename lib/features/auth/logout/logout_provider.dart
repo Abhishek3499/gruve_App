@@ -16,6 +16,7 @@ import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart'
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/providers/post_like_provider.dart';
 import 'package:gruve_app/features/share/providers/post_share_provider.dart';
+import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
 import 'package:gruve_app/features/user_profile/providers/block_provider.dart';
 import 'package:provider/provider.dart';
@@ -59,6 +60,8 @@ class LogoutProvider extends ChangeNotifier {
       }
 
       await AuthStateManager().logout();
+
+      SubscribeController().reset();
 
       if (context != null && context.mounted) {
         final profileProvider = _tryGetProvider<ProfileProvider>(context);

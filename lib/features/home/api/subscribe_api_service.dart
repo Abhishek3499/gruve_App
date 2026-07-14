@@ -27,7 +27,10 @@ class SubscribeApiService {
       final response = await _dio.post(
         _toggleEndpoint,
         data: {'user_id': userId},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          extra: {'noRetry': true},
+        ),
       );
 
       _log('✅ response status=${response.statusCode}');

@@ -42,6 +42,7 @@ class StoryController extends ChangeNotifier {
   Future<void> createStory({
     required String caption,
     required String mediaPath,
+    bool isMuted = false,
   }) async {
     try {
       AppLogger.d("\n🎬 ===== CONTROLLER START =====");
@@ -58,6 +59,7 @@ class StoryController extends ChangeNotifier {
       final response = await _service.createStory(
         caption: caption,
         mediaPath: mediaPath,
+        isMuted: isMuted,
       );
 
       AppLogger.d("📥 API Response: ${response.message}");

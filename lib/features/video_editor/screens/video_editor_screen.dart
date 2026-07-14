@@ -12,16 +12,19 @@ import 'package:gruve_app/features/camera/models/filter_model.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';
 import 'package:gruve_app/features/camera/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
+import 'package:gruve_app/core/utils/video_trim_helper.dart';
 
 class VideoEditorResult {
   final List<StickerData> stickers;
   final FilterModel filter;
   final bool isMuted;
+  final String? trimmedPath;
 
   const VideoEditorResult({
     required this.stickers,
     required this.filter,
     required this.isMuted,
+    this.trimmedPath,
   });
 }
 
@@ -60,6 +63,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   String? _selectedStickerId;
   bool _isPickerOrEditorOpen = false;
   late FilterModel _activeFilter;
+  bool _isSeeking = false;
+  bool _wasPlayingBeforeDrag = false;
 
   @override
   void initState() {
@@ -93,8 +98,21 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       _videoController!.setVolume(_isMuted ? 0.0 : 1.0);
       _videoController!.addListener(() {
         if (mounted) {
+          final position = _videoController!.value.position;
+          final duration = _videoController!.value.duration;
+
+          if (_videoController!.value.isPlaying && duration.inMilliseconds > 0 && !_isSeeking) {
+            final currentMs = position.inMilliseconds;
+            final startMs = (duration.inMilliseconds * _startTrim).toInt();
+            final endMs = (duration.inMilliseconds * _endTrim).toInt();
+
+            if (currentMs < startMs || currentMs >= endMs) {
+              _videoController!.seekTo(Duration(milliseconds: startMs));
+            }
+          }
+
           setState(() {
-            _currentPosition = _videoController!.value.position;
+            _currentPosition = position;
             _isPlaying = _videoController!.value.isPlaying;
           });
         }
@@ -240,8 +258,21 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         ? _currentPosition.inMilliseconds / _duration.inMilliseconds
         : 0.0;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(
+          context,
+          VideoEditorResult(
+            stickers: _stickers,
+            filter: _activeFilter,
+            isMuted: _isMuted,
+          ),
+        );
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -266,13 +297,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Back button
-                    const BackButton(
+                    BackButton(
                       color: Colors.white,
-                    ),
-                    // Next / Forward button in white circle
-                    GestureDetector(
-                      onTap: () {
-                        // Return the edited results
+                      onPressed: () {
                         Navigator.pop(
                           context,
                           VideoEditorResult(
@@ -281,6 +308,55 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                             isMuted: _isMuted,
                           ),
                         );
+                      },
+                    ),
+                    // Next / Forward button in white circle
+                    GestureDetector(
+                      onTap: () async {
+                        // 1. Show simple visual loader dialog
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFC358D7),
+                            ),
+                          ),
+                        );
+
+                        // 2. Perform programmatic video trim/export
+                        String? trimmedPath;
+                        try {
+                          final durationMs = _duration.inMilliseconds.toDouble();
+                          final startMs = durationMs * _startTrim;
+                          final endMs = durationMs * _endTrim;
+
+                          trimmedPath = await VideoTrimHelper.trimVideo(
+                            originalPath: widget.mediaPath,
+                            startMs: startMs,
+                            endMs: endMs,
+                          );
+                        } catch (e) {
+                          AppLogger.d('❌ [VideoEditorScreen] Trim execution error: $e');
+                        }
+
+                        // 3. Dismiss loading dialog
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+
+                        // 4. Return results with fallback (or null if export failed)
+                        if (context.mounted) {
+                          Navigator.pop(
+                            context,
+                            VideoEditorResult(
+                              stickers: _stickers,
+                              filter: _activeFilter,
+                              isMuted: _isMuted,
+                              trimmedPath: trimmedPath,
+                            ),
+                          );
+                        }
                       },
                       child: Container(
                         width: 36,
@@ -583,6 +659,13 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                       top: 0,
                                       bottom: 0,
                                       child: GestureDetector(
+                                        onHorizontalDragStart: (details) {
+                                          if (_videoController != null) {
+                                            _wasPlayingBeforeDrag =
+                                                _videoController!.value.isPlaying;
+                                            _videoController!.pause();
+                                          }
+                                        },
                                         onHorizontalDragUpdate: (details) {
                                           setState(() {
                                             double delta =
@@ -591,6 +674,22 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                             _startTrim = (_startTrim + delta)
                                                 .clamp(0.0, _endTrim - 0.1);
                                           });
+                                          if (!_isSeeking && _videoController != null) {
+                                            _isSeeking = true;
+                                            final targetDuration = _duration * _startTrim;
+                                            _videoController!.seekTo(targetDuration).then((_) {
+                                              _isSeeking = false;
+                                            });
+                                          }
+                                        },
+                                        onHorizontalDragEnd: (details) async {
+                                          if (_videoController != null) {
+                                            final targetDuration = _duration * _startTrim;
+                                            await _videoController!.seekTo(targetDuration);
+                                            if (_wasPlayingBeforeDrag) {
+                                              _videoController!.play();
+                                            }
+                                          }
                                         },
                                         child: Container(
                                           width: 12,
@@ -615,6 +714,13 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                       top: 0,
                                       bottom: 0,
                                       child: GestureDetector(
+                                        onHorizontalDragStart: (details) {
+                                          if (_videoController != null) {
+                                            _wasPlayingBeforeDrag =
+                                                _videoController!.value.isPlaying;
+                                            _videoController!.pause();
+                                          }
+                                        },
                                         onHorizontalDragUpdate: (details) {
                                           setState(() {
                                             double delta =
@@ -625,6 +731,22 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                               1.0,
                                             );
                                           });
+                                          if (!_isSeeking && _videoController != null) {
+                                            _isSeeking = true;
+                                            final targetDuration = _duration * _endTrim;
+                                            _videoController!.seekTo(targetDuration).then((_) {
+                                              _isSeeking = false;
+                                            });
+                                          }
+                                        },
+                                        onHorizontalDragEnd: (details) async {
+                                          if (_videoController != null) {
+                                            final targetDuration = _duration * _endTrim;
+                                            await _videoController!.seekTo(targetDuration);
+                                            if (_wasPlayingBeforeDrag) {
+                                              _videoController!.play();
+                                            }
+                                          }
                                         },
                                         child: Container(
                                           width: 12,
@@ -808,6 +930,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

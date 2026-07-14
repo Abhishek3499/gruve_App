@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/profile/controller/profile_count_refresh_bridge.dart';
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
+import 'package:gruve_app/core/cache/cache_manager.dart';
+
+import 'package:gruve_app/features/user_profile/data/services/user_profile_service.dart';
 
 import '../models/subscribe_model.dart';
 import '../services/subscribe_service.dart';
@@ -14,9 +18,11 @@ class SubscribeController extends ChangeNotifier {
   SubscribeController._internal();
 
   final SubscribeService _subscribeService = SubscribeService();
+  final UserProfileService _userProfileService = UserProfileService();
   final Map<String, SubscribeModel> _users = {};
   final Map<String, bool> _serverStates = {};
   final Set<String> _syncingUsers = <String>{};
+  final Set<String> _pendingResyncUsers = <String>{};
 
   Map<String, SubscribeModel> get users => Map.unmodifiable(_users);
 
@@ -38,6 +44,12 @@ class SubscribeController extends ChangeNotifier {
     return serviceState;
   }
 
+  bool isSubscriptionSynced(String userId) {
+    final local = isUserSubscribed(userId);
+    final server = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+    return server == local;
+  }
+
   SubscribeModel? getUserSubscribeModel(String userId) {
     final model = _users[userId];
     _log('🗂️ getUserSubscribeModel userId=$userId found=${model != null}');
@@ -51,15 +63,16 @@ class SubscribeController extends ChangeNotifier {
 
     final existing = _users[user.userId];
     final localStatus = existing?.isSubscribed;
-    final cachedStatus = _subscribeService.isUserSubscribed(user.userId);
-    // Trust subscribed=true from API / Subscribed tab. Never downgrade an
-    // explicit local unsubscribe when incoming is false.
-    final resolvedStatus = user.isSubscribed
-        ? true
-        : (localStatus ?? cachedStatus);
+    // Trust API flags. Never upgrade an explicit local unsub; never use stale
+    // in-memory service state to mark someone subscribed.
+    final resolvedStatus = localStatus == false
+        ? false
+        : user.isSubscribed
+            ? true
+            : localStatus == true;
 
     _log(
-      '🧠 resolved state userId=${user.userId} local=$localStatus cached=$cachedStatus incoming=${user.isSubscribed} final=$resolvedStatus',
+      '🧠 resolved state userId=${user.userId} local=$localStatus incoming=${user.isSubscribed} final=$resolvedStatus',
     );
 
     _users[user.userId] = user.copyWith(
@@ -72,13 +85,19 @@ class SubscribeController extends ChangeNotifier {
           : null,
     );
 
-    _serverStates[user.userId] = user.isSubscribed;
+    if (user.isSubscribed) {
+      _serverStates[user.userId] = true;
+    } else if (localStatus != true) {
+      _serverStates[user.userId] = false;
+    }
     _subscribeService.setSubscriptionStatus(user.userId, resolvedStatus);
     _log(
-      '📌 server baseline set userId=${user.userId} serverState=${user.isSubscribed} localState=$resolvedStatus',
+      '📌 server baseline set userId=${user.userId} serverState=${_serverStates[user.userId]} localState=$resolvedStatus',
     );
-    notifyListeners();
-    _log('📣 listeners notified after addOrUpdateUser userId=${user.userId}');
+    if (existing?.isSubscribed != resolvedStatus) {
+      notifyListeners();
+      _log('📣 listeners notified after addOrUpdateUser userId=${user.userId}');
+    }
   }
 
   void _applyLocalState(
@@ -114,19 +133,32 @@ class SubscribeController extends ChangeNotifier {
 
   Future<void> _syncWithServer(String userId) async {
     if (_syncingUsers.contains(userId)) {
-      _log('⏳ sync skipped, already running for userId=$userId');
+      _pendingResyncUsers.add(userId);
+      _log('⏳ sync queued, already running for userId=$userId');
       return;
     }
 
     _log('🔄 sync start for userId=$userId');
     _syncingUsers.add(userId);
     var syncFailed = false;
+    var iterations = 0;
+    const maxIterations = 3;
 
     try {
-      while (true) {
+      while (iterations < maxIterations) {
+        iterations++;
+        _log('🔄 sync loop iteration $iterations/$maxIterations for userId=$userId');
+
         final desiredState = isUserSubscribed(userId);
-        final serverState =
-            _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+
+        // Fetch fresh ground-truth server state (bypass stale profile cache).
+        _log('📡 sync fetching actual current server state for userId=$userId');
+        unawaited(CacheManager().invalidatePattern(userId));
+        final profileModel = await _userProfileService.getUserProfileModel(userId);
+        final serverState = profileModel.isFollowing;
+
+        // Update serverStates cache with the fresh value
+        _serverStates[userId] = serverState;
 
         _log(
           '🪞 sync compare userId=$userId desired=$desiredState server=$serverState',
@@ -165,13 +197,14 @@ class SubscribeController extends ChangeNotifier {
                 : 'user_unsubscribed',
           );
           _log('🔔 profile count refresh notified for userId=$userId');
+          unawaited(CacheInvalidationService().onUserFollowed(userId));
         } catch (e) {
           _log('❌ sync failed for userId=$userId error=$e');
           syncFailed = true;
 
           // Revert local state back to the correct server state
-          final serverState = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
-          _applyLocalState(userId, serverState);
+          final latestServerState = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+          _applyLocalState(userId, latestServerState);
 
           // Show floating SnackBar for error feedback using global ScaffoldMessenger state
           scaffoldMessengerKey.currentState?.showSnackBar(
@@ -184,17 +217,27 @@ class SubscribeController extends ChangeNotifier {
           break;
         }
       }
+
+      if (iterations >= maxIterations) {
+        final desiredState = isUserSubscribed(userId);
+        final finalServerState = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+        if (desiredState != finalServerState) {
+          _log('⚠️ [SubscribeController] Warning: reached max iterations ($maxIterations) for userId=$userId without aligning states (desired=$desiredState, server=$finalServerState)');
+        }
+      }
     } finally {
       _syncingUsers.remove(userId);
       _log('🧹 sync finished for userId=$userId syncFailed=$syncFailed');
 
+      final needsResync = _pendingResyncUsers.remove(userId);
       final desiredState = isUserSubscribed(userId);
       final serverState =
           _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
 
-      if (!syncFailed && desiredState != serverState) {
+      if (needsResync ||
+          (!syncFailed && desiredState != serverState)) {
         _log(
-          '🔁 state changed during sync, rerunning for userId=$userId desired=$desiredState server=$serverState',
+          '🔁 sync rerun for userId=$userId desired=$desiredState server=$serverState queued=$needsResync',
         );
         unawaited(_syncWithServer(userId));
       }
@@ -235,6 +278,44 @@ class SubscribeController extends ChangeNotifier {
     return _subscribeService.getSubscriptionCount();
   }
 
+  /// Align in-memory subscription state with the subscribed-users API response.
+  void syncSubscribedUsersFromApi(
+    Iterable<({String userId, String username})> apiUsers,
+  ) {
+    final apiIds = <String>{};
+    _subscribeService.clearAll();
+
+    for (final user in apiUsers) {
+      if (user.userId.isEmpty) continue;
+      apiIds.add(user.userId);
+      _applyLocalState(
+        user.userId,
+        true,
+        username: user.username,
+        notify: false,
+      );
+      _serverStates[user.userId] = true;
+    }
+
+    for (final userId in _users.keys.toList()) {
+      if (!apiIds.contains(userId)) {
+        _users.remove(userId);
+        _serverStates.remove(userId);
+      }
+    }
+    _log('🔄 syncSubscribedUsersFromApi count=${apiIds.length}');
+  }
+
+  /// Clears all subscription memory (call on logout / new login).
+  void reset() {
+    _users.clear();
+    _serverStates.clear();
+    _syncingUsers.clear();
+    _pendingResyncUsers.clear();
+    _subscribeService.clearAll();
+    _log('🧹 reset complete');
+  }
+
   /// Trusts the subscribed-feed API and marks authors as subscribed locally.
   /// Without this, missing `is_subscribed` flags make the feed strip every post.
   void seedSubscribedFeedAuthors(
@@ -244,6 +325,8 @@ class SubscribeController extends ChangeNotifier {
     var seeded = 0;
     for (final author in authors) {
       if (author.userId.isEmpty) continue;
+      final existing = _users[author.userId];
+      if (existing != null && !existing.isSubscribed) continue;
       _applyLocalState(
         author.userId,
         true,

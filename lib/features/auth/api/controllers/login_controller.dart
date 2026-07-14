@@ -60,20 +60,9 @@ class EmailSignInController {
   }
 
   String _loginErrorMessage(Object? error) {
-    final message = AuthApiException.userFacingMessage(
+    return AuthApiException.userFacingMessage(
       error,
-      fallback: 'Please enter the correct password.',
+      fallback: 'The provided credentials are incorrect.',
     );
-    final lower = message.toLowerCase();
-
-    if (lower.contains('invalid') ||
-        lower.contains('incorrect') ||
-        lower.contains('unauthorized') ||
-        lower.contains('credential') ||
-        lower.contains('password')) {
-      return 'Please enter the correct password.';
-    }
-
-    return message;
   }
 }

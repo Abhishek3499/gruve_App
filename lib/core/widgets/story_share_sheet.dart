@@ -29,10 +29,11 @@ class _StoryShareProfile {
 
 class StoryShareSheet extends StatefulWidget {
   final String? mediaPath;
+  final bool isMuted;
 
-  const StoryShareSheet({super.key, this.mediaPath});
+  const StoryShareSheet({super.key, this.mediaPath, this.isMuted = false});
 
-  static void show(BuildContext context, {String? mediaPath}) {
+  static void show(BuildContext context, {String? mediaPath, bool isMuted = false}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -40,7 +41,7 @@ class StoryShareSheet extends StatefulWidget {
       builder: (bottomSheetContext) {
         return ChangeNotifierProvider.value(
           value: Provider.of<StoryController>(context, listen: false),
-          child: StoryShareSheet(mediaPath: mediaPath),
+          child: StoryShareSheet(mediaPath: mediaPath, isMuted: isMuted),
         );
       },
     );
@@ -170,6 +171,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       await storyController.createStory(
         caption: '',
         mediaPath: widget.mediaPath!,
+        isMuted: widget.isMuted,
       );
 
       AppLogger.d('[StoryShareSheet] Response: ${storyController.message}');
