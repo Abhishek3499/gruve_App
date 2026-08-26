@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/user_profile/api/report_user_api_service.dart';
-import 'package:gruve_app/features/video_options/sheets/simple_report_sheet.dart';
+import 'package:gruve_app/features/user_profile/data/datasource/report_user_api_service.dart';
+import 'package:gruve_app/features/video_options/presentation/widgets/sheets/simple_report_sheet.dart';
 
 class ReportUserFlow {
   ReportUserFlow._();

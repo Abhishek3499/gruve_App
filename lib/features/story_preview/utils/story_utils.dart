@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
-import 'package:gruve_app/features/story_preview/screens/story_view_screen.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/controller/story_controller.dart';
-import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
+import 'package:gruve_app/features/story_preview/presentation/screens/story_view_screen.dart';
+import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
+import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
+import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/profile/data/api_calls/services/profile_services.dart';
-import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
+import 'package:gruve_app/features/profile/data/datasource/profile_services.dart';
+import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Provides current user's profile data including profile image

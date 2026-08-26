@@ -1,0 +1,22 @@
+import 'package:flutter/material.dart';
+
+import 'package:gruve_app/features/auth/data/datasource/forgot_password_service.dart';
+
+class ForgotPasswordController {
+  final ForgotPasswordService _service = ForgotPasswordService();
+
+  ValueNotifier<bool> isLoading = ValueNotifier(false);
+
+  Future<String> sendEmail(String email) async {
+    try {
+      isLoading.value = true;
+
+      final message = await _service.sendResetLink(identifier: email);
+      return message;
+    } catch (e) {
+      return e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+}

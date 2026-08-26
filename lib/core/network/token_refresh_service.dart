@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
-import 'package:gruve_app/services/socket_service.dart';
+import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 

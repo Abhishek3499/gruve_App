@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
+import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:video_player/video_player.dart';
 
 enum LocalMediaKind { image, video, unknown }

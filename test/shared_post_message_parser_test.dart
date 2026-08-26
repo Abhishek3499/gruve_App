@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gruve_app/features/message/utils/shared_post_message_parser.dart';
-import 'package:gruve_app/features/message/models/message_model.dart';
+import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 
 void main() {
   group('SharedPostMessageParser Tests', () {

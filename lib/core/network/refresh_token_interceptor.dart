@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/network/token_refresh_service.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Production-level Dio interceptor for automatic token refresh and retry

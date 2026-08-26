@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/features/profile/provider/profile_provider.dart';
-import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
+import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
+import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
 
 /// Test suite for story preview loading optimizations
 /// 

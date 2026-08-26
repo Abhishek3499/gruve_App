@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
-import 'package:gruve_app/features/user_profile/data/controller/user_profile_controller.dart';
+import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
-import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
-import 'package:gruve_app/features/home/models/subscribe_model.dart';
+import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
+import 'package:gruve_app/features/home/domain/entities/subscribe_model.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_filter_tabs.dart';
-import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_highlights_list.dart';
-import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_grid.dart';
-import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_profile_header.dart';
-import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
-import 'package:gruve_app/core/widgets/shimmer/profile_shimmer.dart';
+import 'package:gruve_app/features/user_profile/presentation/widgets/user_filter_tabs.dart';
+import 'package:gruve_app/features/user_profile/presentation/widgets/user_highlights_list.dart';
+import 'package:gruve_app/features/user_profile/presentation/widgets/user_profile_grid.dart';
+import 'package:gruve_app/features/user_profile/presentation/widgets/user_profile_header.dart';
+import 'package:gruve_app/features/user_profile/presentation/widgets/user_stats_row.dart';
+import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 

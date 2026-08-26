@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import '../../../../core/constants/api_constants.dart';
-import '../../../../core/network/api_client.dart';
-import '../models/user_model.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
+import 'package:gruve_app/core/network/api_client.dart';
+import 'package:gruve_app/features/message/data/dto/user_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserRemoteDataSource {

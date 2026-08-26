@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/features/auth/data/dto/edit_profile_response.dart';
+import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
+
+import 'package:gruve_app/features/account/domain/entities/profile_model.dart';
+import 'package:gruve_app/features/profile/presentation/widgets/edit_profile_button.dart';
+import 'package:gruve_app/features/profile/presentation/widgets/story_avatar_indicator.dart';
+import 'package:gruve_app/features/profile/presentation/widgets/profile_menu_drawer.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
+
+class ProfileHeader extends StatelessWidget {
+  final String fullName;
+  final String username;
+  final String profileImage;
+  final ValueChanged<EditProfileResponse>? onProfileUpdated;
+  final bool hasActiveStory;
+
+  const ProfileHeader({
+    super.key,
+    required this.fullName,
+    required this.username,
+    required this.profileImage,
+    this.onProfileUpdated,
+    this.hasActiveStory = false,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        /// Top 3 dots
+        Row(
+          children: [
+            const SizedBox(width: 20),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                AppLogger.d("[ProfileHeader] Menu button tapped");
+                ProfileMenuDrawer.show(context, profileImage: profileImage);
+              },
+              child: const Icon(Icons.menu, color: Colors.white, size: 30),
+            ),
+            const SizedBox(width: 20),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        /// Avatar + User Info Row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Avatar with Story Indicator
+              StoryAvatarIndicator(
+                profileImage: profileImage,
+                hasActiveStory: hasActiveStory,
+                onTap: () async {
+                  AppLogger.d(
+                    '[ProfileHeader] Opening own story - isOwnProfile: true',
+                  );
+                  await StoryUtils.navigateToStoryView(
+                    context,
+                    userId: null,
+                    displayName: fullName,
+                    username: username,
+                    avatar: profileImage,
+                    isOwnProfile: true,
+                  );
+                },
+              ),
+              const SizedBox(width: 25),
+
+              /// Name + Username + Button
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fullName.isNotEmpty ? fullName : "No Name",
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      username.isNotEmpty ? username : "@username",
+                      style: const TextStyle(
+                        color: Color(0xFF9544A7),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    EditProfileButton(
+                      profile: ProfileModel(
+                        username: username,
+                        bio: "",
+                        email: "",
+                        profileImagePath: profileImage,
+                      ),
+                      onProfileUpdated: onProfileUpdated,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

@@ -1,6 +1,6 @@
-import '../models/conversation_model.dart';
-import '../domain/entities/user_entity.dart';
-import '../../profile/data/models/user_profile_model.dart';
+import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
+import 'package:gruve_app/features/message/domain/entities/user_entity.dart';
+import 'package:gruve_app/features/profile/domain/entities/user_profile_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Centralized user display utility to ensure consistent naming across the entire chat module

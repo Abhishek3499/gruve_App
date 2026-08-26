@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../controllers/conversation_controller.dart';
-import '../services/message_service.dart';
-import '../models/conversation_model.dart';
-import '../providers/message_provider.dart';
-import '../screen/chat_screen.dart';
-import 'conversation_error_handler.dart';
+import 'package:gruve_app/features/message/presentation/controller/conversation_controller.dart';
+import 'package:gruve_app/features/message/data/datasource/message_service.dart';
+import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
+import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart';
+import 'package:gruve_app/features/message/utils/conversation_error_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Utility class for handling conversation creation across the app

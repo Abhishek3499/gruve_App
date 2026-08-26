@@ -8,10 +8,10 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-import '../../features/auth/token_storage.dart';
-import '../config/environment_config.dart';
-import '../debug/debug_logger.dart';
-import 'socket_logger.dart';
+import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/debug/debug_logger.dart';
+import 'package:gruve_app/core/socket/socket_logger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 // 🚀 PRODUCTION: Connection tracking

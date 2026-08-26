@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
-import 'package:gruve_app/features/message/models/conversation_model.dart';
-import 'package:gruve_app/features/message/models/message_model.dart';
-import 'package:gruve_app/features/message/data/models/user_model.dart';
-import 'package:gruve_app/features/profile/data/api_calls/model/profile_model.dart';
+import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
+import 'package:gruve_app/features/message/domain/entities/message_model.dart';
+import 'package:gruve_app/features/message/data/dto/user_model.dart';
+import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
 
 void main() {
   group('Conversation Parsing Tests', () {

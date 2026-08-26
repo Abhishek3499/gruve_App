@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
 import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
 
 import 'package:gruve_app/core/network/request_deduplication_manager.dart';

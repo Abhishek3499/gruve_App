@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:gruve_app/features/auth/token_storage.dart';
+import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileIdentityResolution {

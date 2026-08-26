@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
+import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:provider/provider.dart';
 
 class AuthGuard extends StatelessWidget {

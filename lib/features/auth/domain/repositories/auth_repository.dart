@@ -1,4 +1,4 @@
-import '../../data/models/auth_models.dart';
+import 'package:gruve_app/features/auth/data/models/auth_models.dart';
 
 abstract class AuthRepository {
   Future<EmailSignInResponse> login({
