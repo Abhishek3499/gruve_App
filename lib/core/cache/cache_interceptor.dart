@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -139,7 +140,7 @@ class CacheInterceptor extends Interceptor {
     // Skip caching for certain requests
     if (_shouldSkipCaching(options)) {
       if (_isBlockListEndpoint(options.path)) {
-        await _cacheManager.invalidatePattern('profile/block/list');
+        await _cacheManager.invalidatePattern(ApiConstants.blockList);
       }
       handler.next(options);
       return;
@@ -196,7 +197,7 @@ class CacheInterceptor extends Interceptor {
     // Skip caching for certain responses
     if (_shouldSkipCaching(response.requestOptions)) {
       if (_isBlockListEndpoint(response.requestOptions.path)) {
-        await _cacheManager.invalidatePattern('profile/block/list');
+        await _cacheManager.invalidatePattern(ApiConstants.blockList);
       }
       handler.next(response);
       return;
@@ -349,7 +350,7 @@ class CacheInterceptor extends Interceptor {
 
   bool _isBlockListEndpoint(String path) {
     final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
-    return normalizedPath.startsWith('profile/block/list');
+    return normalizedPath.startsWith(ApiConstants.blockList);
   }
 
   /// Creates appropriate CacheData wrapper based on response type
@@ -501,8 +502,8 @@ class CacheInvalidationHelper {
     if (userId != null && userId.isNotEmpty) {
       await _cacheManager.invalidatePattern(userId);
     }
-    await _cacheManager.invalidatePattern('posts/get-post');
-    
+    await _cacheManager.invalidatePattern(ApiConstants.getPost);
+
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for follow: $userId');
   }
 

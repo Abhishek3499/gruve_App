@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/saved/saved_header.dart';
 import 'package:gruve_app/features/profile_menu_drawer/screens/post_detail_screen.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SavedScreen extends StatefulWidget {
   const SavedScreen({super.key});
@@ -49,7 +50,7 @@ class _SavedScreenContent extends StatelessWidget {
           child: Column(
             children: [
               const SavedHeader(),
-              const SizedBox(height: 20),
+              SizedBox(height: context.rh(20)),
               Expanded(
                 child: Consumer<SavePostProvider>(
                   builder: (context, provider, _) {
@@ -64,20 +65,20 @@ class _SavedScreenContent extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
                               color: Colors.white70,
-                              size: 48,
+                              size: context.rw(48),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: context.rh(16)),
                             Text(
                               provider.savedPostsError!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: context.rf(16),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: context.rh(16)),
                             ElevatedButton(
                               onPressed: () {
                                 provider.fetchSavedPosts();
@@ -97,23 +98,23 @@ class _SavedScreenContent extends StatelessWidget {
                             Icon(
                               Icons.bookmark_border,
                               color: Colors.white.withValues(alpha: 0.5),
-                              size: 64,
+                              size: context.rw(64),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: context.rh(16)),
                             Text(
                               'No saved posts yet',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 18,
+                                fontSize: context.rf(18),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: context.rh(8)),
                             Text(
                               'Save posts to view them here',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 14,
+                                fontSize: context.rf(14),
                               ),
                             ),
                           ],
@@ -122,7 +123,7 @@ class _SavedScreenContent extends StatelessWidget {
                     }
 
                     return GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(context.rw(16)),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
@@ -174,10 +175,10 @@ class _SavedScreenContent extends StatelessWidget {
                                   post.media.isEmpty
                                       ? Container(
                                           color: Colors.grey[900],
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.broken_image,
                                             color: Colors.white54,
-                                            size: 32,
+                                            size: context.rw(32),
                                           ),
                                         )
                                       : Image.network(
@@ -187,10 +188,10 @@ class _SavedScreenContent extends StatelessWidget {
                                               (context, error, stackTrace) {
                                                 return Container(
                                                   color: Colors.grey[900],
-                                                  child: const Icon(
+                                                  child: Icon(
                                                     Icons.broken_image,
                                                     color: Colors.white54,
-                                                    size: 32,
+                                                    size: context.rw(32),
                                                   ),
                                                 );
                                               },
@@ -220,17 +221,17 @@ class _SavedScreenContent extends StatelessWidget {
                                       top: 8,
                                       right: 8,
                                       child: Container(
-                                        padding: const EdgeInsets.all(4),
+                                        padding: EdgeInsets.all(context.rw(4)),
                                         decoration: BoxDecoration(
                                           color: Colors.black54,
                                           borderRadius: BorderRadius.circular(
                                             4,
                                           ),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.play_arrow,
                                           color: Colors.white,
-                                          size: 16,
+                                          size: context.rw(16),
                                         ),
                                       ),
                                     ),
@@ -240,17 +241,17 @@ class _SavedScreenContent extends StatelessWidget {
                                     right: 8,
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.favorite,
                                           color: Colors.white,
-                                          size: 14,
+                                          size: context.rw(14),
                                         ),
-                                        const SizedBox(width: 4),
+                                        SizedBox(width: context.rw(4)),
                                         Text(
                                           '${post.likesCount}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 12,
+                                            fontSize: context.rf(12),
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),

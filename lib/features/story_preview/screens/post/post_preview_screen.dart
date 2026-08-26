@@ -19,6 +19,7 @@ import 'package:gruve_app/features/camera/models/filter_model.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';
 import 'package:gruve_app/features/camera/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class PostPreviewScreen extends StatefulWidget {
   final String mediaPath;
@@ -167,32 +168,32 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 24),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
+              SizedBox(height: context.rh(24)),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                 child: Text(
                   'Discard last clip?',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: context.rf(20),
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: context.rh(12)),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                 child: Text(
                   'If you continue, the last clip will be removed from your video.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 14,
+                    fontSize: context.rf(14),
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: context.rh(24)),
               Divider(
                 color: Colors.white.withValues(alpha: 0.1),
                 height: 1,
@@ -202,13 +203,13 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                 onTap: () => Navigator.pop(context, true),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: context.rh(16)),
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     'Discard',
                     style: TextStyle(
-                      color: Color(0xFFE53935),
-                      fontSize: 16,
+                      color: const Color(0xFFE53935),
+                      fontSize: context.rf(16),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -223,19 +224,19 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                 onTap: () => Navigator.pop(context, false),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: context.rh(16)),
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     'Cancel',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: context.rf(16),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.rh(8)),
             ],
           ),
         );
@@ -433,7 +434,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
 
               /// BOTTOM ACTION SECTION
               Container(
-                height: 80,
+                height: context.rh(80),
                 decoration: const BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -445,9 +446,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 35,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.rw(35),
+                        vertical: context.rh(16),
                       ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.8),
@@ -487,19 +488,19 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                               }
                             },
                             child: SizedBox(
-                              width: 120, // 👈 control size
+                              width: context.rw(120), // 👈 control size
                               child: Container(
-                                height: 42,
+                                height: context.rh(42),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(24),
                                   color: const ui.Color.fromARGB(155, 120, 2, 99),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Text(
+                                child: Text(
                                   "Edit Video",
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -554,9 +555,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                               }
                             },
                             child: SizedBox(
-                              width: 100, // 👈 thoda chhota
+                              width: context.rw(100), // 👈 thoda chhota
                               child: Container(
-                                height: 42,
+                                height: context.rh(42),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(24),
                                   color: const ui.Color.fromARGB(155, 120, 2, 99),
@@ -581,8 +582,8 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
 
   Widget _buildMediaPreview() {
     if (_mediaLoadFailed) {
-      return const Center(
-        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: 48),
+      return Center(
+        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: context.rw(48)),
       );
     }
 
@@ -607,8 +608,8 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
         File(_mediaPath),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(Icons.error, color: Colors.white, size: 48),
+          return Center(
+            child: Icon(Icons.error, color: Colors.white, size: context.rw(48)),
           );
         },
       );

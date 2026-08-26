@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -53,7 +54,7 @@ class TokenRefreshService {
       AppLogger.d('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
 
       final response = await dio.post(
-        '/auth/refresh',
+        ApiConstants.refreshToken,
         data: {'refresh_token': refreshToken, 'refreshToken': refreshToken},
         options: AuthEndpointPaths.skipAuthOptions(
           headers: {'Content-Type': 'application/json'},

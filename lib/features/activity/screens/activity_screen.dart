@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import '../controllers/activity_controller.dart';
 import '../widgets/activity_header.dart';
 import '../widgets/activity_summary_section.dart';
@@ -57,15 +58,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 27),
+                      SizedBox(height: context.rh(27)),
                       ActivitySummarySection(totalTime: _controller.totalTime),
-                      const SizedBox(height: 28),
+                      SizedBox(height: context.rh(28)),
                       ActivityDescriptionSection(
                         description: _controller.description,
                       ),
-                      const SizedBox(height: 34),
+                      SizedBox(height: context.rh(34)),
                       ActivityInsightsCard(controller: _controller),
-                      const SizedBox(height: 20),
+                      SizedBox(height: context.rh(20)),
                       const ActivityFooter(),
                     ],
                   ),

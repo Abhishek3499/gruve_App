@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import '../models/block_toggle_response_model.dart';
@@ -7,8 +8,8 @@ import '../../profile_menu_drawer/models/blocked/blocked_user_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class BlockApiService {
-  static const String _toggleEndpoint = 'profile/block/toggle';
-  static const String _listEndpoint = 'profile/block/list';
+  static const String _toggleEndpoint = ApiConstants.blockToggle;
+  static const String _listEndpoint = ApiConstants.blockList;
 
   late final Dio _dio;
 

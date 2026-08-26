@@ -6,6 +6,7 @@ import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/highlights/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/screens/highlight_viewer_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 /// Reusable highlights list for user profile
 /// Similar to StoryList but without "Add Story" button
@@ -36,10 +37,10 @@ class UserHighlightsList extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 102,
+      height: context.rh(102),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 30),
+        padding: EdgeInsets.only(left: context.rw(30)),
         itemCount: highlights.length,
         itemBuilder: (context, index) {
           return _buildHighlightItem(context, highlights[index]);
@@ -52,7 +53,7 @@ class UserHighlightsList extends StatelessWidget {
     final cover = highlight.coverPreviewUrl;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 18),
+      padding: EdgeInsets.only(right: context.rw(18)),
       child: GestureDetector(
         onTap: () {
           _log('[UserHighlightsList] Highlight tapped: ${highlight.title}');
@@ -75,23 +76,23 @@ class UserHighlightsList extends StatelessWidget {
                 child: cover != null
                     ? MediaUrlThumbnail(
                         url: cover,
-                        width: 60,
-                        height: 60,
+                        width: context.rw(60),
+                        height: context.rh(60),
                         fallback: _placeholderIcon(),
                         placeholder: _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: context.rh(6)),
             SizedBox(
-              width: 72,
+              width: context.rw(72),
               child: Text(
                 highlight.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: TextStyle(color: Colors.white, fontSize: context.rf(12)),
               ),
             ),
           ],
@@ -118,9 +119,9 @@ class _HighlightCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 64,
-      height: 64,
-      padding: const EdgeInsets.all(2),
+      width: context.rw(64),
+      height: context.rh(64),
+      padding: EdgeInsets.all(context.rw(2)),
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(

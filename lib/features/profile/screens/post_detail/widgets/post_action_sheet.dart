@@ -3,6 +3,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';
 import 'package:gruve_app/features/video_options/sheets/simple_report_sheet.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class PostActionSheet extends StatelessWidget {
   final Post post;
@@ -26,10 +27,10 @@ class PostActionSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: context.rh(12)),
               child: Container(
-                width: 40,
-                height: 4,
+                width: context.rw(40),
+                height: context.rh(4),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
@@ -37,12 +38,16 @@ class PostActionSheet extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: context.rw(16),
+                vertical: context.rh(8),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isOwnProfile) ...[
                     _buildActionTile(
+                      context: context,
                       icon: Icons.delete_outline,
                       label: 'Delete Post',
                       color: Colors.red,
@@ -53,6 +58,7 @@ class PostActionSheet extends StatelessWidget {
                   ],
                   if (!isOwnProfile) ...[
                     _buildActionTile(
+                      context: context,
                       icon: Icons.flag_outlined,
                       label: 'Report Post',
                       color: Colors.orange,
@@ -68,6 +74,7 @@ class PostActionSheet extends StatelessWidget {
                       },
                     ),
                     _buildActionTile(
+                      context: context,
                       icon: Icons.block_outlined,
                       label: 'Block User',
                       color: Colors.red,
@@ -77,8 +84,9 @@ class PostActionSheet extends StatelessWidget {
                       },
                     ),
                   ],
-                  const SizedBox(height: 8),
+                  SizedBox(height: context.rh(8)),
                   _buildActionTile(
+                    context: context,
                     icon: Icons.close,
                     label: 'Cancel',
                     onTap: () => Navigator.pop(context),
@@ -86,7 +94,7 @@ class PostActionSheet extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.rh(8)),
           ],
         ),
       ),
@@ -94,6 +102,7 @@ class PostActionSheet extends StatelessWidget {
   }
 
   Widget _buildActionTile({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
@@ -105,16 +114,19 @@ class PostActionSheet extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: context.rw(16),
+            vertical: context.rh(12),
+          ),
           child: Row(
             children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(width: 16),
+              Icon(icon, color: color, size: context.rw(22)),
+              SizedBox(width: context.rw(16)),
               Text(
                 label,
                 style: TextStyle(
                   color: color,
-                  fontSize: 16,
+                  fontSize: context.rf(16),
                   fontWeight: FontWeight.w500,
                 ),
               ),

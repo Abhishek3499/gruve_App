@@ -11,6 +11,7 @@ import '../widgets/views_content_tabs.dart';
 import '../widgets/views_progress_bar.dart';
 import '../widgets/views_footer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ViewsScreen extends StatefulWidget {
   const ViewsScreen({super.key});
@@ -58,19 +59,19 @@ class _ViewsScreenState extends State<ViewsScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 15),
+                      SizedBox(height: context.rh(15)),
 
                       /// COUNT ABOVE DONUT
                       const ViewsCountSection(),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: context.rh(40)),
 
                       /// DONUT + LEFT/RIGHT STATS
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
-                        children: const [
-                          Expanded(
+                        children: [
+                          const Expanded(
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: ViewsFollowersStats(isLeft: true),
@@ -78,11 +79,11 @@ class _ViewsScreenState extends State<ViewsScreen> {
                           ),
 
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: ViewsDonutChart(),
+                            padding: EdgeInsets.symmetric(horizontal: context.rw(20)),
+                            child: const ViewsDonutChart(),
                           ),
 
-                          Expanded(
+                          const Expanded(
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: ViewsFollowersStats(isLeft: false),
@@ -91,30 +92,30 @@ class _ViewsScreenState extends State<ViewsScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 35),
+                      SizedBox(height: context.rh(35)),
 
                       /// ACCOUNT REACHED
                       const ViewsAccountReached(),
 
-                      const SizedBox(height: 26),
+                      SizedBox(height: context.rh(26)),
 
                       /// By Content Type Heading
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'By content type',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: context.rf(14),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      SizedBox(height: context.rh(16)),
 
                       /// CONTENT TABS
                       ListenableBuilder(
@@ -124,11 +125,11 @@ class _ViewsScreenState extends State<ViewsScreen> {
                         },
                       ),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: context.rh(32)),
 
                       /// PROGRESS BARS
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                         child: ListenableBuilder(
                           listenable: _controller,
                           builder: (context, child) {
@@ -137,7 +138,7 @@ class _ViewsScreenState extends State<ViewsScreen> {
                                 contentType,
                               ) {
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 32),
+                                  padding: EdgeInsets.only(bottom: context.rh(32)),
                                   child: ViewsProgressBar(
                                     label: contentType.label,
                                     percentage: contentType.percentage,
@@ -149,7 +150,7 @@ class _ViewsScreenState extends State<ViewsScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: context.rh(20)),
 
                       const ViewsFooter(),
                     ],

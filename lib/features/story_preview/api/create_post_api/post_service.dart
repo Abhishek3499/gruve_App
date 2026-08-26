@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
@@ -247,7 +248,7 @@ class PostService {
       AppLogger.d('🌐 [PostService] POST posts/create-post/');
 
       final res = await _dio.post(
-        'posts/create-post/',
+        ApiConstants.createPost,
         data: formData,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -357,7 +358,7 @@ class PostService {
       AppLogger.d('🌐 [PostService] POST posts/drafts/');
 
       final res = await _dio.post(
-        'posts/drafts/',
+        ApiConstants.postDrafts,
         data: formData,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -394,7 +395,7 @@ class PostService {
       final queryParams = {'page': page, 'limit': limit};
 
       final res = await _getWithRetry(
-        "posts/drafts/",
+        ApiConstants.postDrafts,
         queryParameters: queryParams,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -473,7 +474,7 @@ class PostService {
       AppLogger.d('🌐 [PostService] PUT posts/drafts/$draftId/');
 
       final res = await _dio.put(
-        'posts/drafts/$draftId/',
+        ApiConstants.postDraft(draftId),
         data: formData,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -510,7 +511,7 @@ class PostService {
       AppLogger.d('🌐 [PostService] DELETE posts/drafts/$draftId/');
 
       final res = await _dio.delete(
-        'posts/drafts/$draftId/',
+        ApiConstants.postDraft(draftId),
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
@@ -588,7 +589,7 @@ class PostService {
       }
 
       final res = await _getWithRetry(
-        "posts/get-post/",
+        ApiConstants.getPost,
         queryParameters: queryParams,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -669,7 +670,7 @@ class PostService {
     final opts = Options(headers: {"Authorization": "Bearer $token"});
 
     try {
-      final res = await _getWithRetry("posts/get-post/", options: opts);
+      final res = await _getWithRetry(ApiConstants.getPost, options: opts);
 
       final data = res.data['data'];
 
@@ -722,7 +723,7 @@ class PostService {
 
     try {
       final res = await _dio.post(
-        "posts/like/toggle/",
+        ApiConstants.postLikeToggle,
         data: {"post_id": postId},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -755,7 +756,7 @@ class PostService {
         '🚀 [PostService] sharePost START postId=$postId, recipients=$recipientUserIds',
       );
       final res = await _dio.post(
-        "posts/share/",
+        ApiConstants.postShare,
         data: {"post_id": postId, "recipient_user_ids": recipientUserIds},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -774,7 +775,7 @@ class PostService {
 
     try {
       final res = await _dio.post(
-        "posts/save/toggle/",
+        ApiConstants.postSaveToggle,
         data: {"post_id": postId},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -809,7 +810,7 @@ class PostService {
 
     try {
       final res = await _dio.get(
-        "posts/saved/",
+        ApiConstants.savedPosts,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
@@ -844,7 +845,7 @@ class PostService {
       AppLogger.d("💬 ADD COMMENT → $text");
 
       final res = await _dio.post(
-        "posts/get-post/",
+        ApiConstants.getPost,
         data: {"post_id": postId, "comment": text},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -868,7 +869,7 @@ class PostService {
       AppLogger.d('🌐 [PostService] DELETE posts/$postId/');
 
       final res = await _dio.delete(
-        'posts/$postId/',
+        ApiConstants.post(postId),
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
@@ -933,7 +934,7 @@ class PostService {
         '🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId',
       );
       final res = await _dio.get(
-        "posts/get-post/",
+        ApiConstants.getPost,
         queryParameters: {"post_id": cleanPostId},
         options: opts,
       );
@@ -1070,7 +1071,7 @@ class PostService {
   ) async {
     try {
       final res = await _dio.get(
-        'user/profile/$userId/',
+        ApiConstants.userProfile(userId),
         queryParameters: const {'all_page': 1, 'all_limit': 20},
         options: opts,
       );

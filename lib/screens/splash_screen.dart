@@ -11,6 +11,7 @@ import 'package:gruve_app/screens/intro/intro_screen.dart';
 import 'package:gruve_app/services/socket_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -180,7 +181,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   child: Transform.scale(scale: scale, child: child),
                 );
               },
-              child: Image.asset(AppAssets.logoMain, width: 140),
+              child: Image.asset(AppAssets.logoMain, width: context.rw(140)),
             ),
           ),
           Positioned(
@@ -194,30 +195,30 @@ class _SplashScreenState extends State<SplashScreen> {
                   children: [
                     Image.asset(
                       'assets/splash_screen_logo/image 43.png',
-                      width: 16,
-                      height: 16,
+                      width: context.rw(16),
+                      height: context.rh(16),
                     ),
-                    const SizedBox(width: 3),
-                    const Text(
+                    SizedBox(width: context.rw(3)),
+                    Text(
                       'Made in India',
                       style: TextStyle(
                         color: Colors.white70,
-                        fontSize: 11,
+                        fontSize: context.rf(11),
                         fontFamily: 'Syncopate',
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: context.rh(6)),
                 RichText(
-                  text: const TextSpan(
+                  text: TextSpan(
                     children: [
                       TextSpan(
                         text: 'Powered by  ',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 11,
+                          fontSize: context.rf(11),
                           fontFamily: 'Syncopate',
                           fontWeight: FontWeight.w700,
                         ),
@@ -225,8 +226,8 @@ class _SplashScreenState extends State<SplashScreen> {
                       TextSpan(
                         text: 'Hardkore Tech',
                         style: TextStyle(
-                          color: Color(0xFF9B4DFF),
-                          fontSize: 11,
+                          color: const Color(0xFF9B4DFF),
+                          fontSize: context.rf(11),
                           fontFamily: 'Syncopate',
                           fontWeight: FontWeight.w700,
                         ),

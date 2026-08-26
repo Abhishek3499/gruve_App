@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/network/api_exception.dart';
 import 'package:gruve_app/features/notification/api/models/notification_model.dart';
@@ -16,7 +17,7 @@ class NotificationService {
   }) async {
     try {
       final response = await _dio.get(
-        'notifications/',
+        ApiConstants.notifications,
         queryParameters: {
           'page': page,
           'limit': limit,
@@ -50,7 +51,7 @@ class NotificationService {
   /// Get current unread notification count.
   Future<int> getUnreadCount({CancelToken? cancelToken}) async {
     try {
-      final response = await _dio.get('notifications/unread-count/', cancelToken: cancelToken);
+      final response = await _dio.get(ApiConstants.notificationsUnreadCount, cancelToken: cancelToken);
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         if (data is Map) {
@@ -90,7 +91,7 @@ class NotificationService {
       }
 
       final response = await _dio.post(
-        'notifications/mark-read/',
+        ApiConstants.notificationsMarkRead,
         data: requestData,
         cancelToken: cancelToken,
       );

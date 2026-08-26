@@ -20,6 +20,7 @@ import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.d
 import 'package:provider/provider.dart';
 import '../validators/signup_validator.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class OtpScreen extends StatefulWidget {
   // final AuthFlow authFlow;
@@ -277,6 +278,15 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     }
   }
 
+  void _clearOtpFields() {
+    for (final c in _controllers) {
+      c.clear();
+    }
+    if (mounted && _focusNodes.isNotEmpty) {
+      _focusNodes.first.requestFocus();
+    }
+  }
+
   Future<bool> _verifyOtpManually() async {
     final authUi = context.read<AuthUiProvider>();
     if (authUi.isLoading(AuthLoadingKey.otp)) return false;
@@ -290,6 +300,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(otpError)));
+      _clearOtpFields();
       return false;
     }
 
@@ -319,7 +330,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
-
+      _clearOtpFields();
       return false;
     }
 
@@ -358,7 +369,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
             ),
           ),
         );
-
+      _clearOtpFields();
       return false;
     }
   }
@@ -424,10 +435,10 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
               children: [
                 // 🔹 Top Bar (Fixed Progress Bar Width)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.rw(24),
 
-                    vertical: 16,
+                    vertical: context.rh(16),
                   ),
 
                   child: Row(
@@ -437,14 +448,14 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                         onPressed: _popFromOtp,
                       ),
 
-                      const SizedBox(width: 55),
+                      SizedBox(width: context.rw(55)),
 
                       // Progress Bar with Fixed Width
                       SizedBox(
-                        width: 210, // ✅ Width yahan se control karein
+                        width: context.rw(210), // ✅ Width yahan se control karein
 
                         child: Container(
-                          height: 9,
+                          height: context.rh(9),
 
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -472,17 +483,17 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                 ),
 
                 // 🔹 Content Area
-                const SizedBox(height: 100),
+                SizedBox(height: context.rh(100)),
 
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
 
                     child: SingleChildScrollView(
                       // Added scroll to prevent overflow on small screens
                       child: Column(
                         children: [
-                          const SizedBox(height: 60),
+                          SizedBox(height: context.rh(60)),
 
                           FittedBox(
                             fit: BoxFit.scaleDown,
@@ -490,11 +501,11 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                             child: RichText(
                               textAlign: TextAlign.center,
 
-                              text: const TextSpan(
+                              text: TextSpan(
                                 style: TextStyle(
                                   color: Colors.white,
 
-                                  fontSize: 28,
+                                  fontSize: context.rf(28),
 
                                   fontWeight: FontWeight.bold,
 
@@ -503,7 +514,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                                   fontFamily: AppAssets.syncopateFont,
                                 ),
 
-                                children: [
+                                children: const [
                                   TextSpan(text: 'Enter your '),
 
                                   TextSpan(
@@ -516,17 +527,17 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          SizedBox(height: context.rh(12)),
 
                           Text(
                             "Enter 4-digit code we have sent to you at",
 
                             textAlign: TextAlign.center,
 
-                            style: TextStyle(color: Colors.white, fontSize: 13),
+                            style: TextStyle(color: Colors.white, fontSize: context.rf(13)),
                           ),
 
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -537,32 +548,32 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                                     ? _maskPhoneNumber(widget.identifier)
                                     : widget.identifier,
 
-                                style: const TextStyle(
-                                  color: Color(0xFFB86AD0),
+                                style: TextStyle(
+                                  color: const Color(0xFFB86AD0),
 
-                                  fontSize: 14,
+                                  fontSize: context.rf(14),
 
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
 
-                              const SizedBox(width: 8),
+                              SizedBox(width: context.rw(8)),
 
                               GestureDetector(
                                 onTap: _popFromOtp,
 
-                                child: const Icon(
+                                child: Icon(
                                   Icons.edit,
 
-                                  color: Color(0xFFB86AD0),
+                                  color: const Color(0xFFB86AD0),
 
-                                  size: 16,
+                                  size: context.rw(16),
                                 ),
                               ),
                             ],
                           ),
 
-                          const SizedBox(height: 40),
+                          SizedBox(height: context.rh(40)),
 
                           // OTP Boxes
                           Row(
@@ -599,10 +610,10 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                               onPressed: (isLoading || isResending) ? null : _resendOtp,
 
                               child: isResending
-                                  ? const SizedBox(
-                                      height: 16,
-                                      width: 16,
-                                      child: CircularProgressIndicator(
+                                  ? SizedBox(
+                                      height: context.rh(16),
+                                      width: context.rw(16),
+                                      child: const CircularProgressIndicator(
                                         strokeWidth: 2.0,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
@@ -610,19 +621,19 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
                                             ),
                                       ),
                                     )
-                                  : const Text(
+                                  : Text(
                                       "Resend code",
 
                                       style: TextStyle(
-                                        color: Color(0xFFB86AD0),
+                                        color: const Color(0xFFB86AD0),
 
-                                        fontSize: 12,
+                                        fontSize: context.rf(12),
                                       ),
                                     ),
                             ),
                           ),
 
-                          const SizedBox(height: 40),
+                          SizedBox(height: context.rh(40)),
 
                           GetStartedButton(
                             controller: _otpButtonController,

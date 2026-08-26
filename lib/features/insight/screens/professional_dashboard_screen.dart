@@ -6,6 +6,7 @@ import 'package:gruve_app/features/views/screens/views_screen.dart';
 
 import '../widgets/insight_list_tile.dart';
 import '../widgets/insight_footer.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ProfessionalDashboardScreen extends StatelessWidget {
   const ProfessionalDashboardScreen({super.key});
@@ -28,8 +29,8 @@ class ProfessionalDashboardScreen extends StatelessWidget {
             children: [
               /// 🔥 FIXED HEADER (Stack hata kar Row lagaya hai)
               Container(
-                height: 70,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                height: context.rh(70),
+                padding: EdgeInsets.symmetric(horizontal: context.rw(20)),
                 child: Row(
                   // 👈 Stack ki jagah Row use kiya for perfect alignment
                   children: [
@@ -39,17 +40,17 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                     ),
 
                     /// 🔥 GAP (Back button aur Text ke beech)
-                    const SizedBox(width: 15),
+                    SizedBox(width: context.rw(15)),
 
                     /// Title
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         "Professional Dashboard",
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: context.rf(14),
                           fontWeight: FontWeight.w700,
                           fontFamily: 'syncopate',
                         ),
@@ -65,7 +66,7 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.only(top: 20),
+                        padding: EdgeInsets.only(top: context.rh(20)),
                         children: [
                           InsightListTile(
                             title: "Views",
@@ -76,7 +77,7 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
                           InsightListTile(
                             title: "Interactions",
                             onTap: () => Navigator.push(
@@ -87,7 +88,7 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
                           InsightListTile(
                             title: "Top Performing Reel",
                             onTap: () => Navigator.push(
@@ -97,7 +98,7 @@ class ProfessionalDashboardScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
                           InsightListTile(
                             title: "Activity",
                             onTap: () => Navigator.push(

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 import 'package:gruve_app/features/story_preview/providers/save_post_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -176,7 +177,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ],
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(40), context.rw(16), context.rh(16)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -193,16 +194,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           ? const Icon(Icons.person, color: Colors.white)
                           : null,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: context.rw(12)),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             post.username,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: context.rf(14),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -213,7 +214,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 12,
+                                fontSize: context.rf(12),
                               ),
                             ),
                         ],
@@ -221,7 +222,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: context.rh(16)),
 
                 // Action buttons
                 Row(
@@ -235,7 +236,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           count: post.likesCount,
                           onTap: () {},
                         ),
-                        const SizedBox(width: 24),
+                        SizedBox(width: context.rw(24)),
                         _buildActionButton(
                           icon: Icons.comment,
                           count: post.commentsCount,
@@ -257,11 +258,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                   provider.toggleSavePost(post.id);
                                 },
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(context.rw(8)),
                             child: Icon(
                               isSaved ? Icons.bookmark : Icons.bookmark_border,
                               color: Colors.white,
-                              size: 24,
+                              size: context.rw(24),
                             ),
                           ),
                         );
@@ -281,15 +282,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               opacity: videoController.value.isPlaying ? 0 : 1,
               duration: const Duration(milliseconds: 300),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(context.rw(16)),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.play_arrow,
                   color: Colors.white,
-                  size: 48,
+                  size: context.rw(48),
                 ),
               ),
             ),
@@ -319,8 +320,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Widget _buildImagePlayer(String imageUrl) {
     if (imageUrl.isEmpty) {
-      return const Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+      return Center(
+        child: Icon(Icons.broken_image, color: Colors.white54, size: context.rw(48)),
       );
     }
 
@@ -331,8 +332,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       height: double.infinity,
       placeholder: (context, url) =>
           const Center(child: CircularProgressIndicator(color: Colors.white)),
-      errorWidget: (context, url, error) => const Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+      errorWidget: (context, url, error) => Center(
+        child: Icon(Icons.broken_image, color: Colors.white54, size: context.rw(48)),
       ),
     );
   }
@@ -346,13 +347,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(width: 6),
+          Icon(icon, color: Colors.white, size: context.rw(20)),
+          SizedBox(width: context.rw(6)),
           Text(
             count > 999 ? '${(count / 1000).toStringAsFixed(1)}K' : '$count',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: context.rf(12),
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -23,6 +23,7 @@ import 'package:gruve_app/features/camera/models/filter_model.dart';
 import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dart';
 import 'package:gruve_app/features/camera/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class StoryPreviewScreen extends StatefulWidget {
   final String mediaPath;
@@ -236,28 +237,28 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
             filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               color: const Color(0xEB161616),
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(context.rw(24)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Video Playback Speed',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: context.rf(18),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: context.rh(8)),
                   Text(
                     'Adjust the playback speed of this video',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 14,
+                      fontSize: context.rf(14),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: context.rh(24)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -266,7 +267,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                       _buildSpeedOption('Fast (2.0x)', 2.0),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: context.rh(16)),
                 ],
               ),
             ),
@@ -296,7 +297,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(12)),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFC358D7) : Colors.white12,
           borderRadius: BorderRadius.circular(16),
@@ -335,32 +336,32 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 24),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
+              SizedBox(height: context.rh(24)),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                 child: Text(
                   'Discard last clip?',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: context.rf(20),
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: context.rh(12)),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                 child: Text(
                   'If you continue, the last clip will be removed from your video.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 14,
+                    fontSize: context.rf(14),
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: context.rh(24)),
               Divider(
                 color: Colors.white.withValues(alpha: 0.1),
                 height: 1,
@@ -370,13 +371,13 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                 onTap: () => Navigator.pop(context, true),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: context.rh(16)),
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     'Discard',
                     style: TextStyle(
-                      color: Color(0xFFE53935),
-                      fontSize: 16,
+                      color: const Color(0xFFE53935),
+                      fontSize: context.rf(16),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -391,19 +392,19 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                 onTap: () => Navigator.pop(context, false),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: context.rh(16)),
                   alignment: Alignment.center,
-                  child: const Text(
+                  child: Text(
                     'Cancel',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: context.rf(16),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.rh(8)),
             ],
           ),
         );
@@ -448,19 +449,19 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                 },
                                 child: _isInitialized
                                     ? _buildMediaPreview()
-                                    : const Center(
+                                    : Center(
                                         child: Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            CircularProgressIndicator(
+                                            const CircularProgressIndicator(
                                               color: Color(0xFFBB86FC),
                                             ),
-                                            SizedBox(height: 16),
+                                            SizedBox(height: context.rh(16)),
                                             Text(
                                               "Loading Preview...",
                                               style: TextStyle(
                                                 color: Colors.white70,
-                                                fontSize: 14,
+                                                fontSize: context.rf(14),
                                               ),
                                             ),
                                           ],
@@ -614,7 +615,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
               /// BOTTOM ACTION SECTION
               Container(
-                height: 80,
+                height: context.rh(80),
                 decoration: const BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -626,9 +627,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.rw(20),
+                        vertical: context.rh(16),
                       ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.8),
@@ -640,9 +641,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                             child: GestureDetector(
                               onTap: _isYourStorySharing ? null : _shareToYourStory,
                               child: Container(
-                                height: 42,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                                height: context.rh(42),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.rw(12),
                                 ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(24),
@@ -651,10 +652,10 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                 child: Row(
                                   children: [
                                     _isYourStorySharing
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
+                                        ? SizedBox(
+                                            width: context.rw(20),
+                                            height: context.rh(20),
+                                            child: const CircularProgressIndicator(
                                               color: Colors.white,
                                               strokeWidth: 2,
                                             ),
@@ -668,14 +669,14 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                               );
                                             },
                                           ),
-                                    const SizedBox(
-                                      width: 8,
+                                    SizedBox(
+                                      width: context.rw(8),
                                     ),
                                     Text(
                                       _isYourStorySharing ? "Sharing..." : "Your Story",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 14,
+                                        fontSize: context.rf(14),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -685,37 +686,37 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                             ),
                           ),
 
-                          const SizedBox(width: 10),
+                          SizedBox(width: context.rw(10)),
 
                           /// CLOSE FRIEND
                           Container(
-                            height: 42,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            height: context.rh(42),
+                            padding: EdgeInsets.symmetric(horizontal: context.rw(12)),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
-                              color: Color(0xFF72008D),
+                              color: const Color(0xFF72008D),
                             ),
                             child: Row(
                               children: [
                                 Container(
-                                  width: 25,
-                                  height: 25,
+                                  width: context.rw(25),
+                                  height: context.rh(25),
                                   decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: Colors.white,
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.star,
-                                    color: Color(0xFF4CAF50),
-                                    size: 20,
+                                    color: const Color(0xFF4CAF50),
+                                    size: context.rw(20),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
-                                const Text(
+                                SizedBox(width: context.rw(6)),
+                                Text(
                                   "Close Friend",
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -723,7 +724,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                             ),
                           ),
 
-                          const SizedBox(width: 15),
+                          SizedBox(width: context.rw(15)),
 
                           /// SEND
                           GestureDetector(
@@ -767,16 +768,16 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                               );
                             },
                             child: Container(
-                              width: 35,
-                              height: 35,
+                              width: context.rw(35),
+                              height: context.rh(35),
                               decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.white,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.arrow_forward_ios,
-                                color: Color(0xFF9544A7),
-                                size: 15,
+                                color: const Color(0xFF9544A7),
+                                size: context.rw(15),
                               ),
                             ),
                           ),
@@ -795,8 +796,8 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
   Widget _buildMediaPreview() {
     if (_mediaLoadFailed) {
-      return const Center(
-        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: 48),
+      return Center(
+        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: context.rw(48)),
       );
     }
 
@@ -821,8 +822,8 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         File(widget.mediaPath),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return const Center(
-            child: Icon(Icons.error, color: Colors.white, size: 48),
+          return Center(
+            child: Icon(Icons.error, color: Colors.white, size: context.rw(48)),
           );
         },
       );

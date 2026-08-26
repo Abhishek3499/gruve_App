@@ -6,6 +6,7 @@ import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/presentation/provider/user_provider.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class TagUsersScreen extends StatefulWidget {
   const TagUsersScreen({super.key});
@@ -108,7 +109,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(context.rw(16)),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -117,9 +118,12 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
                     onPressed: () => Navigator.pop(context),
                   ),
 
-                  const Text(
+                  Text(
                     "Tag People",
-                    style: TextStyle(color: Colors.white, fontSize: 18),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: context.rf(18),
+                    ),
                   ),
 
                   TextButton(
@@ -127,11 +131,11 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
                       FocusScope.of(context).unfocus();
                       Navigator.pop(context, selectedUsers);
                     },
-                    child: const Text(
+                    child: Text(
                       "Done",
                       style: TextStyle(
                         color: Color(0xFF007AFF),
-                        fontSize: 16,
+                        fontSize: context.rf(16),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -141,7 +145,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
             ),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
               child: CustomSearchBar(
                 controller: _searchController,
                 hintText: 'Search users',
@@ -153,17 +157,20 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
                 ),
                 borderRadius: 25,
                 borderWidth: 4,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search,
                   color: Colors.white,
-                  size: 23,
+                  size: context.rw(23),
                 ),
-                hintStyle: const TextStyle(color: Colors.white, fontSize: 14),
+                hintStyle: TextStyle(
+                  color: Colors.white,
+                  fontSize: context.rf(14),
+                ),
                 onChanged: _onSearchChanged,
               ),
             ),
 
-            const SizedBox(height: 10),
+            SizedBox(height: context.rh(10)),
 
             // Users List
             Expanded(child: _buildUserList(userProvider)),
@@ -186,16 +193,16 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
         return Center(
           child: Text(
             _searchError!,
-            style: const TextStyle(color: Colors.white54, fontSize: 14),
+            style: TextStyle(color: Colors.white54, fontSize: context.rf(14)),
           ),
         );
       }
 
       if (_users.isEmpty) {
-        return const Center(
+        return Center(
           child: Text(
             'No users found',
-            style: TextStyle(color: Colors.white54, fontSize: 14),
+            style: TextStyle(color: Colors.white54, fontSize: context.rf(14)),
           ),
         );
       }
@@ -249,9 +256,9 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
           children: [
             Text(
               provider.errorMessage!,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: Colors.white70, fontSize: context.rf(14)),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: context.rh(12)),
             ElevatedButton(
               onPressed: () => provider.fetchUsers(),
               style: ElevatedButton.styleFrom(
@@ -267,10 +274,10 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
 
     final generalUsers = provider.users;
     if (generalUsers.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No users found',
-          style: TextStyle(color: Colors.white54, fontSize: 14),
+          style: TextStyle(color: Colors.white54, fontSize: context.rf(14)),
         ),
       );
     }
@@ -280,10 +287,12 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
       itemCount: generalUsers.length + (provider.isFetchingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == generalUsers.length && provider.isFetchingMore) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+              padding: EdgeInsets.symmetric(vertical: context.rh(16)),
+              child: const CircularProgressIndicator(
+                color: Color(0xFFD42BC2),
+              ),
             ),
           );
         }

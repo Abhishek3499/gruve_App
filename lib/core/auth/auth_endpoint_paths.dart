@@ -1,20 +1,21 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 
 class AuthEndpointPaths {
   const AuthEndpointPaths._();
 
-  static const Set<String> _skipAuthPaths = {
-    'auth/login',
-    'auth/google',
-    'auth/signup',
-    'auth/verify-otp',
-    'auth/password-reset/verify-otp',
-    'auth/forgot-password',
-    'auth/password/reset/confirm',
-    'auth/reset-password',
-    'auth/refresh',
-    'auth/resend-otp',
-  };
+  static final Set<String> _skipAuthPaths = {
+    ApiConstants.login,
+    ApiConstants.googleSignIn,
+    ApiConstants.signup,
+    ApiConstants.verifyOtp,
+    ApiConstants.passwordResetVerifyOtp,
+    ApiConstants.forgotPassword,
+    ApiConstants.passwordResetConfirm,
+    ApiConstants.resetPassword,
+    ApiConstants.refreshToken,
+    ApiConstants.resendOtp,
+  }.map(normalize).toSet();
 
   static String normalize(String path) {
     var normalized = path.trim();

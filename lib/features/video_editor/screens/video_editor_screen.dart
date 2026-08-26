@@ -13,6 +13,7 @@ import 'package:gruve_app/features/story_preview/widgets/story_filter_picker.dar
 import 'package:gruve_app/features/camera/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/core/utils/video_trim_helper.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class VideoEditorResult {
   final List<StickerData> stickers;
@@ -289,9 +290,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
             children: [
               // 1. TOP HEADER (Chevrons)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.rw(16.0),
+                  vertical: context.rh(8.0),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -359,17 +360,17 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                         }
                       },
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: context.rw(36),
+                        height: context.rh(36),
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white,
                         ),
                         alignment: Alignment.center,
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_forward_ios,
-                          color: Color(0xFF6B1D7C),
-                          size: 16,
+                          color: const Color(0xFF6B1D7C),
+                          size: context.rw(16),
                         ),
                       ),
                     ),
@@ -381,9 +382,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
               Expanded(
                 flex: 4,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40.0,
-                    vertical: 10.0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.rw(40.0),
+                    vertical: context.rh(10.0),
                   ),
                   child: Center(
                     child: AspectRatio(
@@ -505,12 +506,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
 
               // 3. PLAY/PAUSE CONTROLS & TIMESTAMPS
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 12.0,
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.rw(24.0),
+                  vertical: context.rh(12.0),
                 ),
                 child: SizedBox(
-                  height: 50,
+                  height: context.rh(50),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -520,8 +521,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                         child: GestureDetector(
                           onTap: _togglePlayPause,
                           child: Container(
-                            width: 50,
-                            height: 50,
+                            width: context.rw(50),
+                            height: context.rh(50),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.white.withValues(alpha: 0.15),
@@ -529,7 +530,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                             child: Icon(
                               _isPlaying ? Icons.pause : Icons.play_arrow,
                               color: Colors.white,
-                              size: 24,
+                              size: context.rw(24),
                             ),
                           ),
                         ),
@@ -537,9 +538,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                       // Duration Text centered
                       Text(
                         '${_formatDuration(_currentPosition)} / ${_formatDuration(_duration)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: context.rf(14),
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.5,
                         ),
@@ -553,9 +554,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
               Expanded(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.rw(16.0),
+                    vertical: context.rh(8.0),
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -619,7 +620,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: context.rh(12)),
 
                               // Timeline video track & trim handles
                               SizedBox(
@@ -768,33 +769,33 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: context.rh(16)),
 
                               // Tap tp add music & text horizontal cards
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   _buildActionPill(
-                                    leading: const Icon(
+                                    leading: Icon(
                                       Icons.music_note,
                                       color: Colors.white,
-                                      size: 18,
+                                      size: context.rw(18),
                                     ),
                                     label: 'Tap tp add music',
                                     onTap: _addMusicSticker,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 10),
+                              SizedBox(height: context.rh(10)),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   _buildActionPill(
-                                    leading: const Text(
+                                    leading: Text(
                                       'Aa',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 16,
+                                        fontSize: context.rf(16),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -822,7 +823,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
 
               // 5. BOTTOM ACTION TOOLBAR
               Container(
-                height: 80,
+                height: context.rh(80),
                 decoration: const BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -834,9 +835,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                   child: BackdropFilter(
                     filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.rw(20),
+                        vertical: context.rh(16),
                       ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.8),
@@ -855,7 +856,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                         ? Icons.volume_off
                                         : Icons.volume_up,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: context.rw(24),
                                   ),
                                   'Volume',
                                 ),
@@ -866,8 +867,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                   Image.asset(
                                     AppAssets.text,
                                     color: Colors.white,
-                                    width: 22,
-                                    height: 22,
+                                    width: context.rw(22),
+                                    height: context.rh(22),
                                   ),
                                   'Text',
                                 ),
@@ -878,8 +879,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                   Image.asset(
                                     AppAssets.musics,
                                     color: Colors.white,
-                                    width: 22,
-                                    height: 22,
+                                    width: context.rw(22),
+                                    height: context.rh(22),
                                   ),
                                   'Music',
                                 ),
@@ -890,8 +891,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                   Image.asset(
                                     AppAssets.filter,
                                     color: Colors.white,
-                                    width: 22,
-                                    height: 22,
+                                    width: context.rw(22),
+                                    height: context.rh(22),
                                   ),
                                   'Filter',
                                 ),
@@ -942,8 +943,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        height: context.rh(38),
+        padding: EdgeInsets.symmetric(horizontal: context.rw(14)),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: const Color(
@@ -955,12 +956,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             leading,
-            const SizedBox(width: 12),
+            SizedBox(width: context.rw(12)),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: context.rf(13),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -972,12 +973,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
 
   Widget _buildBottomIconButton(Widget icon, String tooltip) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: EdgeInsets.symmetric(horizontal: context.rw(8.0)),
       child: Tooltip(
         message: tooltip,
         child: Container(
-          width: 44,
-          height: 44,
+          width: context.rw(44),
+          height: context.rh(44),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.white.withValues(alpha: 0.12),

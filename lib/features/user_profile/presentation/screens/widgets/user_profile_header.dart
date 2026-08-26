@@ -7,6 +7,7 @@ import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/subscribe_button.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class UserProfileHeader extends StatelessWidget {
   final String displayName;
@@ -58,7 +59,7 @@ class UserProfileHeader extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: EdgeInsets.symmetric(horizontal: context.rw(12)),
           child: Row(
             children: [
               BackButton(
@@ -71,9 +72,9 @@ class UserProfileHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: context.rh(30)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 25),
+          padding: EdgeInsets.symmetric(horizontal: context.rw(25)),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -82,29 +83,29 @@ class UserProfileHeader extends StatelessWidget {
                 hasActiveStory: hasActiveStory,
                 onTap: () => _openStoryView(context),
               ),
-              const SizedBox(width: 25),
+              SizedBox(width: context.rw(25)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
+                    SizedBox(height: context.rh(10)),
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.white,
-                        fontSize: 20,
+                        fontSize: context.rf(20),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: context.rh(4)),
                     Text(
                       '@$username',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Color(0xFF9544A7),
-                        fontSize: 14,
+                        fontSize: context.rf(14),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.rh(16)),
                     Row(
                       children: [
                         if (showSubscribeButton) ...[
@@ -114,10 +115,13 @@ class UserProfileHeader extends StatelessWidget {
                             subscribeController: subscribeController,
                             initialIsSubscribed: initialIsSubscribed,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: context.rw(8)),
                         ] else if (reserveSubscribeSpace) ...[
-                          const SizedBox(width: 130, height: 38),
-                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: context.rw(130),
+                            height: context.rh(38),
+                          ),
+                          SizedBox(width: context.rw(8)),
                         ],
                         GiftButton(
                           onTap: () {

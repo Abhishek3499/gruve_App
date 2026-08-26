@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class GiftButton extends StatelessWidget {
   final VoidCallback? onTap;
@@ -13,13 +14,13 @@ class GiftButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 44, // Thoda bada area touch ke liye (Accessibility)
-        height: 44,
+        width: context.rw(44), // Thoda bada area touch ke liye (Accessibility)
+        height: context.rh(44),
         alignment: Alignment.center,
         child: Image.asset(
           AppAssets.gifticon2,
-          width: 22,
-          height: 22,
+          width: context.rw(22),
+          height: context.rh(22),
           fit: BoxFit.contain,
         ),
       ),

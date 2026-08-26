@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile_menu_drawer/constants/post/more_constants.dart';
 import 'package:gruve_app/features/profile_menu_drawer/models/post/more_model.dart';
 import 'package:gruve_app/features/story_preview/widgets/more_widgets/more_card.dart';
@@ -71,7 +72,7 @@ class _MoreOptionScreenState extends State<MoreOptionScreen> {
                     'hide_share_count': sectionStates["How others can interact with your reel"]![1],
                   }),
                 ),
-              const SizedBox(height: 10),
+              SizedBox(height: context.rh(10)),
 
               // Scrollable area for cards
               Expanded(
@@ -86,9 +87,9 @@ class _MoreOptionScreenState extends State<MoreOptionScreen> {
                         children: [
                           // SECTION HEADER TEXT
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.rw(24),
+                              vertical: context.rh(12),
                             ),
                             child: Text(
                               sectionTitle,
@@ -119,7 +120,7 @@ class _MoreOptionScreenState extends State<MoreOptionScreen> {
                               }).toList(),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: context.rh(20)),
                         ],
                       );
                     }).toList(),

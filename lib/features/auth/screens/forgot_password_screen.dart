@@ -18,6 +18,7 @@ import 'package:gruve_app/core/widgets/video_background.dart';
 import 'package:gruve_app/core/widgets/inputs/neon_text_field.dart';
 
 import '../validators/signup_validator.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -101,9 +102,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       minHeight: constraints.maxHeight,
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 24,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.rw(24),
+                        vertical: context.rh(24),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -113,9 +114,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             fit: BoxFit.scaleDown,
                             child: Text.rich(
                               TextSpan(
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 26,
+                                  fontSize: context.rf(26),
                                   fontWeight: FontWeight.w700,
                                   fontFamily: AppAssets.syncopateFont,
                                 ),
@@ -131,25 +132,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               softWrap: false,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          const Text(
+                          SizedBox(height: context.rh(12)),
+                          Text(
                             'Lorem Ipsum is simply dummy text of the printing and typesetting industry',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white, fontSize: 15),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: context.rf(15),
+                            ),
                           ),
-                          const SizedBox(height: 40),
-                          const Align(
+                          SizedBox(height: context.rh(40)),
+                          Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'Email',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: context.rf(16),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
                           NeonTextField(
                             controller: _emailController,
                             hintText: 'Enter your Email',
@@ -161,14 +165,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 _forgotButtonController.submit(),
                             errorText: emailError,
                           ),
-                          const SizedBox(height: 40),
+                          SizedBox(height: context.rh(40)),
                           Center(
                             child: GetStartedButton(
                               controller: _forgotButtonController,
                               width: 250,
-                              textStyle: const TextStyle(
+                              textStyle: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
+                                fontSize: context.rf(13),
                                 fontWeight: FontWeight.bold,
                                 fontFamily: AppAssets.syncopateFont,
                               ),
@@ -288,7 +292,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 33),
+                padding: EdgeInsets.only(
+                  left: context.rw(24),
+                  top: context.rh(33),
+                ),
                 child: BackButton(
                   color: Colors.white,
                   onPressed: () => Navigator.pop(context),

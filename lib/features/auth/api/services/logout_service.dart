@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -29,7 +30,7 @@ class LogoutService {
     final request = LogoutRequest(refreshToken: refreshTokenValue);
 
     try {
-      const endpoint = "auth/logout/";
+      const endpoint = ApiConstants.logout;
       final requestData = request.toJson();
       final headers = {
         if (accessTokenValue != null && accessTokenValue.isNotEmpty)

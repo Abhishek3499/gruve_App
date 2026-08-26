@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart' show TokenStorage;
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
@@ -52,7 +53,7 @@ class CompleteProfileService {
 
       final formData = FormData.fromMap(formMap);
 
-      const endpoint = "auth/complete-profile/";
+      const endpoint = ApiConstants.completeProfile;
       final headers = <String, dynamic>{"Authorization": "Bearer $token"};
 
       AuthApiLogger.request(

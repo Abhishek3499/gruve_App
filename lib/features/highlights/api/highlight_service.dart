@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/highlights/model/highlight_model.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
@@ -27,7 +28,7 @@ class HighlightService {
       );
 
       final response = await _dio.get(
-        "highlights/mine/",
+        ApiConstants.myHighlights,
         cancelToken: cancelToken,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
@@ -64,7 +65,7 @@ class HighlightService {
       );
 
       final response = await _dio.get(
-        "highlights/$highlightId/stories/",
+        ApiConstants.highlightStories(highlightId),
         cancelToken: cancelToken,
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );

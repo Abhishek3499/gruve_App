@@ -13,6 +13,7 @@ import 'package:gruve_app/features/user_profile/presentation/screens/widgets/use
 import 'package:gruve_app/features/user_profile/presentation/screens/widgets/user_stats_row.dart';
 import 'package:gruve_app/core/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String profileUserId;
@@ -269,7 +270,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         clipBehavior: Clip.none,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(top: 130),
+                            padding: EdgeInsets.only(top: context.rh(130)),
                             child: ClipRRect(
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(110),
@@ -284,7 +285,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    const SizedBox(height: 120),
+                                    SizedBox(height: context.rh(120)),
                                     ValueListenableBuilder(
                                       valueListenable:
                                           _profileController.statsNotifier,
@@ -292,7 +293,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                         return UserStatsRow(stats: stats);
                                       },
                                     ),
-                                    const SizedBox(height: 20),
+                                    SizedBox(height: context.rh(20)),
                                     ValueListenableBuilder(
                                       valueListenable:
                                           _profileController.highlightList,
@@ -303,7 +304,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                         );
                                       },
                                     ),
-                                    const SizedBox(height: 20),
+                                    SizedBox(height: context.rh(20)),
                                     UserFilterTabs(
                                       selectedIndex: _selectedTab,
                                       onTabSelected: (index) {
@@ -323,7 +324,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SizedBox(height: 20),
+                              SizedBox(height: context.rh(20)),
                               UserProfileHeader(
                                 displayName: widget.userName,
                                 username: resolvedUsername,
@@ -346,7 +347,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                     ),
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: EdgeInsets.symmetric(horizontal: context.rw(10)),
                       sliver: DecoratedSliver(
                         decoration: BoxDecoration(color: _panelBackgroundColor),
                         sliver: SliverMainAxisGroup(
@@ -357,7 +358,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     SliverToBoxAdapter(
                       child: ColoredBox(
                         color: _panelBackgroundColor,
-                        child: const SizedBox(height: 100),
+                        child: SizedBox(height: context.rh(100)),
                       ),
                     ),
                   ],
@@ -373,7 +374,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Stack(
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 130),
+          padding: EdgeInsets.only(top: context.rh(130)),
           child: Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -383,7 +384,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 topRight: Radius.circular(30),
               ),
             ),
-            child: const SizedBox(height: 720),
+            child: SizedBox(height: context.rh(720)),
           ),
         ),
         const UserProfileShimmer(),

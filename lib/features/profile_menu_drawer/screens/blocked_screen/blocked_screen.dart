@@ -6,6 +6,7 @@ import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/blocked_h
 import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/blocked_tile.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/blocked/unblock_widget.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class BlockedScreen extends StatefulWidget {
   const BlockedScreen({super.key});
@@ -43,19 +44,19 @@ class _BlockedScreenState extends State<BlockedScreen> {
                   }
 
                   if (provider.blockedUsers.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Text(
                         'No blocked users',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 16,
+                          fontSize: context.rf(16),
                         ),
                       ),
                     );
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.only(top: 10),
+                    padding: EdgeInsets.only(top: context.rh(10)),
                     itemCount: provider.blockedUsers.length,
                     itemBuilder: (context, index) {
                       final user = provider.blockedUsers[index];
@@ -95,21 +96,21 @@ class _BlockedScreenState extends State<BlockedScreen> {
                               SnackBar(
                                 content: Row(
                                   children: [
-                                    const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
+                                    SizedBox(
+                                      width: context.rw(20),
+                                      height: context.rh(20),
+                                      child: const CircularProgressIndicator(
                                         strokeWidth: 2,
                                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    SizedBox(width: context.rw(12)),
                                     Expanded(
                                       child: Text(
                                         'Unblocking ${user.name}...',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 14,
+                                          fontSize: context.rf(14),
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -121,7 +122,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                margin: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(16)),
                                 duration: const Duration(milliseconds: 500),
                                 elevation: 8,
                               ),
@@ -141,14 +142,14 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 SnackBar(
                                   content: Row(
                                     children: [
-                                      const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                                      const SizedBox(width: 12),
+                                      Icon(Icons.check_circle, color: Colors.white, size: context.rw(20)),
+                                      SizedBox(width: context.rw(12)),
                                       Expanded(
                                         child: Text(
                                           '${user.name} unblocked successfully',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 14,
+                                            fontSize: context.rf(14),
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -160,7 +161,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  margin: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(16)),
                                   duration: const Duration(milliseconds: 1500),
                                   elevation: 8,
                                 ),
@@ -176,14 +177,14 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 SnackBar(
                                   content: Row(
                                     children: [
-                                      const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                                      const SizedBox(width: 12),
-                                      const Expanded(
+                                      Icon(Icons.error_outline, color: Colors.white, size: context.rw(20)),
+                                      SizedBox(width: context.rw(12)),
+                                      Expanded(
                                         child: Text(
                                           'Failed to unblock user',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 14,
+                                            fontSize: context.rf(14),
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -195,7 +196,7 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  margin: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(16)),
                                   duration: const Duration(milliseconds: 1500),
                                   elevation: 8,
                                 ),

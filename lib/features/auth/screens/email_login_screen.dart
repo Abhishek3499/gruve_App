@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/auth/api/controllers/login_controller.dart';
 import 'package:gruve_app/features/auth/core/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/presentation/provider/auth_ui_provider.dart';
@@ -202,7 +203,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
             LayoutBuilder(
               builder: (context, constraints) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
 
                   child: Form(
                     // ✅ FIX 6: Wrapped in Form for proper validation
@@ -219,13 +220,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                           SizedBox(height: constraints.maxHeight * 0.26),
 
                           // ✅ FIX 7: Removed stray Align wrapper that had syntax error
-                          const Text(
+                          Text(
                             'Email',
 
                             style: TextStyle(
                               color: Colors.white,
 
-                              fontSize: 28,
+                              fontSize: context.rf(28),
 
                               fontWeight: FontWeight.w700,
 
@@ -235,9 +236,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          SizedBox(height: context.rh(12)),
 
-                          const Text(
+                          Text(
                             'Please enter your valid email. We will send you a 4-digit code to verify your account.',
 
                             textAlign: TextAlign.center,
@@ -249,15 +250,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             style: TextStyle(
                               color: Colors.white,
 
-                              fontSize: 16,
+                              fontSize: context.rf(16),
 
                               fontWeight: FontWeight.w400,
                             ),
                           ),
 
-                          const SizedBox(height: 26),
+                          SizedBox(height: context.rh(26)),
 
-                          const Align(
+                          Align(
                             alignment: Alignment.centerLeft,
 
                             child: Text(
@@ -266,14 +267,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                               style: TextStyle(
                                 color: Colors.white70,
 
-                                fontSize: 16,
+                                fontSize: context.rf(16),
 
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
 
                           // ✅ FIX 8: Removed erroneous `const` — passing runtime controller
                           NeonTextField(
@@ -295,9 +296,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             errorText: emailError,
                           ),
 
-                          const SizedBox(height: 20),
+                          SizedBox(height: context.rh(20)),
 
-                          const Align(
+                          Align(
                             alignment: Alignment.centerLeft,
 
                             child: Text(
@@ -306,14 +307,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                               style: TextStyle(
                                 color: Colors.white70,
 
-                                fontSize: 16,
+                                fontSize: context.rf(16),
 
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
 
                           // ✅ FIX 9: Removed erroneous `const` — passing runtime controller
                           NeonPasswordField(
@@ -331,7 +332,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             errorText: passwordError,
                           ),
 
-                          const SizedBox(height: 10),
+                          SizedBox(height: context.rh(10)),
 
                           GestureDetector(
                             onTap: () {
@@ -344,7 +345,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                               );
                             },
 
-                            child: const Align(
+                            child: Align(
                               alignment: Alignment.centerRight,
 
                               child: Text(
@@ -353,7 +354,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                                 style: TextStyle(
                                   color: Color(0xFF9544A7),
 
-                                  fontSize: 14,
+                                  fontSize: context.rf(14),
 
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -361,7 +362,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 25),
+                          SizedBox(height: context.rh(25)),
 
                           Align(
                             alignment: Alignment.center,
@@ -400,11 +401,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                               child: RichText(
                                 textAlign: TextAlign.center,
 
-                                text: const TextSpan(
+                                text: TextSpan(
                                   style: TextStyle(
                                     color: Colors.white70,
 
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                   ),
 
                                   children: [
@@ -426,7 +427,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
                                         fontWeight: FontWeight.w700,
 
-                                        fontSize: 14,
+                                        fontSize: context.rf(14),
 
                                         fontFamily: AppAssets.montserratfont,
                                       ),
@@ -437,7 +438,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 24),
+                          SizedBox(height: context.rh(24)),
                         ],
                       ),
                     ),
@@ -449,7 +450,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
             // Back button
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 25),
+                padding: EdgeInsets.only(
+                  left: context.rw(24),
+                  top: context.rh(25),
+                ),
 
                 child: BackButton(
                   color: Colors.white,

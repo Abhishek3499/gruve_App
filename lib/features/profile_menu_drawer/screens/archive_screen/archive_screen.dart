@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile_menu_drawer/models/archive_model/archive_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Archive/archive_fav_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/archive/archive_header.dart';
@@ -36,14 +37,14 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
           child: Column(
             children: [
               const ArchiveHeader(),
-              const SizedBox(height: 10),
+              SizedBox(height: context.rh(10)),
 
               ArchiveSwitcherTab(
                 selectedTab: _selectedTab,
                 onTabChanged: _onTabChanged,
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: context.rh(20)),
 
               Expanded(
                 child: _selectedTab == ArchiveTab.archive

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 
@@ -95,7 +96,7 @@ class StoryService {
       AppLogger.d('🌐 [StoryService] POST stories/');
 
       final res = await _dio.post(
-        'stories/',
+        ApiConstants.stories,
         data: formData,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -135,7 +136,9 @@ class StoryService {
       AppLogger.d('👤 [StoryService] userId: ${userId ?? 'me'} | page: $page | limit: $limit');
 
       final token = await TokenStorage.getAccessToken();
-      final endpoint = userId == null ? 'stories/me/' : 'stories/user/$userId/';
+      final endpoint = userId == null
+          ? ApiConstants.myStories
+          : ApiConstants.userStories(userId);
 
       AppLogger.d('🌐 [StoryService] GET $endpoint');
 

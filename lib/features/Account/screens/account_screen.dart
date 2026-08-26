@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/Account/widgets/account_body.dart';
 import 'package:gruve_app/features/Account/widgets/account_header.dart';
 import 'package:gruve_app/features/profile/models/profile_model.dart';
@@ -129,21 +130,21 @@ class _AccountScreenState extends State<AccountScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline,
-                          size: 64,
+                          size: context.rw(64),
                           color: Colors.red,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: context.rh(16)),
                         Text(
                           'Error: ${_controller.errorMessage}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: context.rf(16),
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: context.rh(24)),
                         ElevatedButton(
                           onPressed: _fetchProfileData,
                           style: ElevatedButton.styleFrom(
@@ -180,7 +181,7 @@ class _AccountBodyShimmer extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Container(
-          margin: const EdgeInsets.only(top: 4),
+          margin: EdgeInsets.only(top: context.rh(4)),
           decoration: const BoxDecoration(
             color: Color(0xFF1B182D),
             borderRadius: BorderRadius.only(
@@ -188,18 +189,18 @@ class _AccountBodyShimmer extends StatelessWidget {
               topRight: Radius.elliptical(60, 50),
             ),
           ),
-          padding: const EdgeInsets.only(
-            top: 80,
-            left: 20,
-            right: 20,
-            bottom: 20,
+          padding: EdgeInsets.only(
+            top: context.rh(80),
+            left: context.rw(20),
+            right: context.rw(20),
+            bottom: context.rh(20),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
-              _AccountInfoCardShimmer(),
-              SizedBox(height: 20),
-              _AccountFooterShimmer(),
+            children: [
+              const _AccountInfoCardShimmer(),
+              SizedBox(height: context.rh(20)),
+              const _AccountFooterShimmer(),
             ],
           ),
         ),
@@ -221,7 +222,7 @@ class _AccountInfoCardShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 320,
+        width: context.rw(320),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(25),
@@ -229,13 +230,13 @@ class _AccountInfoCardShimmer extends StatelessWidget {
         ),
         child: AppShimmer(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: EdgeInsets.symmetric(horizontal: context.rw(10), vertical: context.rh(5)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
                 const ShimmerBox(width: 112, height: 18, borderRadius: 8),
-                const SizedBox(height: 24),
+                SizedBox(height: context.rh(24)),
                 _buildField(width: 168),
                 _divider(),
                 _buildField(width: 132),
@@ -247,7 +248,7 @@ class _AccountInfoCardShimmer extends StatelessWidget {
                 _buildField(width: 92),
                 _divider(),
                 _buildField(width: double.infinity, isBio: true),
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
               ],
             ),
           ),
@@ -283,10 +284,10 @@ class _AccountFooterShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppShimmer(
       child: Column(
-        children: const [
-          ShimmerBox(width: 112, height: 14, borderRadius: 6),
-          SizedBox(height: 8),
-          ShimmerBox(width: 190, height: 14, borderRadius: 6),
+        children: [
+          const ShimmerBox(width: 112, height: 14, borderRadius: 6),
+          SizedBox(height: context.rh(8)),
+          const ShimmerBox(width: 190, height: 14, borderRadius: 6),
         ],
       ),
     );

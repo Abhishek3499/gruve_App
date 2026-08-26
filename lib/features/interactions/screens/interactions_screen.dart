@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../controllers/interactions_controller.dart';
 import '../models/interactions_model.dart';
@@ -54,19 +55,19 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 15),
+                      SizedBox(height: context.rh(15)),
 
                       // COUNT ABOVE DONUT
                       const InteractionsCountSection(),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: context.rh(40)),
 
                       // DONUT + LEFT/RIGHT STATS
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
-                        children: const [
-                          Expanded(
+                        children: [
+                          const Expanded(
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: InteractionsFollowersStats(isLeft: true),
@@ -74,11 +75,11 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                           ),
 
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: InteractionsDonutChart(),
+                            padding: EdgeInsets.symmetric(horizontal: context.rw(20)),
+                            child: const InteractionsDonutChart(),
                           ),
 
-                          Expanded(
+                          const Expanded(
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: InteractionsFollowersStats(isLeft: false),
@@ -87,30 +88,30 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: context.rh(40)),
 
                       // ACCOUNT REACHED
                       const InteractionsAccountReached(),
 
-                      const SizedBox(height: 26),
+                      SizedBox(height: context.rh(26)),
 
                       // By Content Type Heading
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'By content type',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: context.rf(14),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      SizedBox(height: context.rh(16)),
 
                       // CONTENT TABS
                       ListenableBuilder(
@@ -122,11 +123,11 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                         },
                       ),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: context.rh(32)),
 
                       // PROGRESS BARS
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                         child: ListenableBuilder(
                           listenable: _controller,
                           builder: (context, child) {
@@ -134,7 +135,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                               children: InteractionsModel.data.contentTypes.map(
                                 (contentType) {
                                   return Padding(
-                                    padding: const EdgeInsets.only(bottom: 32),
+                                    padding: EdgeInsets.only(bottom: context.rh(32)),
                                     child: InteractionsProgressBar(
                                       label: contentType.label,
                                       percentage: contentType.percentage,
@@ -147,7 +148,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: context.rh(20)),
 
                       const InteractionsFooter(),
                     ],

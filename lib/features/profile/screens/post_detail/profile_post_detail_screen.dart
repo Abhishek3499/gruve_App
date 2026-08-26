@@ -14,6 +14,7 @@ import 'package:gruve_app/features/profile/data/api_calls/controller/profile_con
 import 'package:gruve_app/features/story_preview/api/create_post_api/post_service.dart';
 import 'package:gruve_app/features/profile/screens/post_detail/widgets/post_action_sheet.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ProfilePostDetailScreen extends StatefulWidget {
   final Post post;
@@ -245,21 +246,21 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E092D),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 28),
-            SizedBox(width: 10),
-            Text(
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: context.rw(28)),
+            SizedBox(width: context.rw(10)),
+            const Text(
               'Delete Post',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to permanently delete this post? This action cannot be undone.',
-          style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+          style: TextStyle(color: Colors.white70, fontSize: context.rf(14), height: 1.4),
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsPadding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(12)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -275,7 +276,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(8)),
             ),
             onPressed: () {
               Navigator.pop(dialogContext);
@@ -313,11 +314,11 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Icon(Icons.check_circle_outline, color: Colors.greenAccent),
-              SizedBox(width: 10),
-              Text('Post deleted successfully'),
+              const Icon(Icons.check_circle_outline, color: Colors.greenAccent),
+              SizedBox(width: context.rw(10)),
+              const Text('Post deleted successfully'),
             ],
           ),
           backgroundColor: const Color(0xFF1E092D),
@@ -330,11 +331,11 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Icon(Icons.error_outline, color: Colors.redAccent),
-              SizedBox(width: 10),
-              Text('Failed to delete post'),
+              const Icon(Icons.error_outline, color: Colors.redAccent),
+              SizedBox(width: context.rw(10)),
+              const Text('Failed to delete post'),
             ],
           ),
           backgroundColor: const Color(0xFF1E092D),
@@ -469,7 +470,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                 ],
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(60), context.rw(16), context.rh(16)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -494,16 +495,16 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                             )
                           : null,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: context.rw(12)),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             displayName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: context.rf(14),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -514,7 +515,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: 12,
+                                fontSize: context.rf(12),
                               ),
                             ),
                         ],
@@ -522,7 +523,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: context.rh(16)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -534,13 +535,13 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                           color: liked ? Colors.red : Colors.white,
                           onTap: () => _toggleLike(post.id),
                         ),
-                        const SizedBox(width: 24),
+                        SizedBox(width: context.rw(24)),
                         _buildActionButton(
                           icon: Icons.comment_outlined,
                           count: post.commentsCount,
                           onTap: () {},
                         ),
-                        const SizedBox(width: 24),
+                        SizedBox(width: context.rw(24)),
                         _buildActionButton(
                           icon: Icons.share_outlined,
                           count: 0,
@@ -554,11 +555,11 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                         return GestureDetector(
                           onTap: () => provider.toggleSavePost(post.id),
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(context.rw(8)),
                             child: Icon(
                               isSaved ? Icons.bookmark : Icons.bookmark_border,
                               color: Colors.white,
-                              size: 24,
+                              size: context.rw(24),
                             ),
                           ),
                         );
@@ -576,15 +577,15 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               opacity: videoController.value.isPlaying ? 0 : 1,
               duration: const Duration(milliseconds: 300),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(context.rw(16)),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.play_arrow,
                   color: Colors.white,
-                  size: 48,
+                  size: context.rw(48),
                 ),
               ),
             ),
@@ -619,8 +620,8 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       fadeInDuration: Duration.zero,
       fadeOutDuration: Duration.zero,
       placeholder: (context, url) => const _PostMediaSkeleton(),
-      errorWidget: (context, url, error) => const Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+      errorWidget: (context, url, error) => Center(
+        child: Icon(Icons.broken_image, color: Colors.white54, size: context.rw(48)),
       ),
     );
   }
@@ -635,13 +636,13 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 6),
+          Icon(icon, color: color, size: context.rw(20)),
+          SizedBox(width: context.rw(6)),
           Text(
             count > 999 ? '${(count / 1000).toStringAsFixed(1)}K' : '$count',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: context.rf(12),
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -6,6 +6,7 @@ import '../../domain/entities/user_entity.dart';
 import '../../data/repository/user_repository_impl.dart';
 import '../../data/models/user_model.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -94,7 +95,7 @@ class UserProvider extends ChangeNotifier {
       HiveService.userCacheBoxName,
       'users_list',
     ));
-    unawaited(CacheManager().invalidatePattern('user/users'));
+    unawaited(CacheManager().invalidatePattern(ApiConstants.users));
 
     var changed = false;
 
@@ -182,7 +183,7 @@ class UserProvider extends ChangeNotifier {
       HiveService.userCacheBoxName,
       'users_list',
     );
-    await CacheManager().invalidatePattern('user/users');
+    await CacheManager().invalidatePattern(ApiConstants.users);
   }
 
   /// Message header should never show the logged-in user.

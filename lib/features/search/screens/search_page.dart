@@ -12,6 +12,7 @@ import '../../message/providers/message_provider.dart';
 import '../../message/screen/chat_screen.dart';
 import '../../user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SearchPage extends StatefulWidget {
   final SearchNavigationType navigationType;
@@ -265,14 +266,14 @@ class _SearchPageState extends State<SearchPage> {
               children: [
                 /// HEADER
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(context.rw(16)),
                   child: Row(
                     children: [
                       BackButton(
                         color: Colors.white,
                         onPressed: _closeSearch,
                       ),
-                      const SizedBox(width: 22),
+                      SizedBox(width: context.rw(22)),
 
                       /// SEARCH BAR
                       Expanded(
@@ -290,36 +291,36 @@ class _SearchPageState extends State<SearchPage> {
                 /// CONTENT
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.only(bottom: 34),
+                    padding: EdgeInsets.only(bottom: context.rh(34)),
                     children: [
                       // CHANGED: Single if-else if chain - only ONE state shows at a time
 
                       // STATE 1: Empty search with no recent searches - show empty hint
                       if (showEmptyState) ...[
-                        const Padding(
-                          padding: EdgeInsets.all(32),
+                        Padding(
+                          padding: EdgeInsets.all(context.rw(32)),
                           child: Center(
                             child: Column(
                               children: [
                                 Icon(
                                   Icons.search_outlined,
                                   color: Colors.white54,
-                                  size: 48,
+                                  size: context.rw(48),
                                 ),
-                                SizedBox(height: 16),
+                                SizedBox(height: context.rh(16)),
                                 Text(
                                   'No recent searches',
                                   style: TextStyle(
                                     color: Colors.white54,
-                                    fontSize: 16,
+                                    fontSize: context.rf(16),
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                SizedBox(height: context.rh(8)),
                                 Text(
                                   'Start typing to see suggestions',
                                   style: TextStyle(
                                     color: Colors.white38,
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                   ),
                                 ),
                               ],
@@ -330,15 +331,20 @@ class _SearchPageState extends State<SearchPage> {
                       // STATE 2: Empty search with recent searches - show recent searches only
                       else if (isEmptySearch && hasRecentSearches) ...[
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                          padding: EdgeInsets.fromLTRB(
+                            context.rw(16),
+                            context.rh(8),
+                            context.rw(16),
+                            context.rh(8),
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'Recent Search',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
+                                  fontSize: context.rf(18),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -347,11 +353,11 @@ class _SearchPageState extends State<SearchPage> {
                                   await _recentSearchService.clearAll();
                                   _loadRecentSearches();
                                 },
-                                child: const Text(
+                                child: Text(
                                   'Clear all',
                                   style: TextStyle(
                                     color: Color(0xFFD42BC2),
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -384,36 +390,36 @@ class _SearchPageState extends State<SearchPage> {
                                 );
                                 _loadRecentSearches();
                               },
-                              child: const Icon(
+                              child: Icon(
                                 Icons.close,
                                 color: Colors.white54,
-                                size: 20,
+                                size: context.rw(20),
                               ),
                             ),
                             onTap: () => _navigateToUserProfile(user),
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        SizedBox(height: context.rh(20)),
                       ]
                       // STATE 3: Loading state - show shimmer only when user has typed and API is in progress
                       else if (isLoading) ...[
                         // CHANGED: Only show loader when user has typed something AND search is in progress
-                        const Padding(
-                          padding: EdgeInsets.only(top: 16),
+                        Padding(
+                          padding: EdgeInsets.only(top: context.rh(16)),
                           child: SearchResultsShimmer(itemCount: 6),
                         ),
                       ]
                       // STATE 4: Error state - show error message only when API has failed
                       else if (hasError) ...[
                         Padding(
-                          padding: const EdgeInsets.all(24),
+                          padding: EdgeInsets.all(context.rw(24)),
                           child: Center(
                             child: Text(
                               _searchError!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white54,
-                                fontSize: 14,
+                                fontSize: context.rf(14),
                               ),
                             ),
                           ),
@@ -447,30 +453,30 @@ class _SearchPageState extends State<SearchPage> {
                           !isLoading &&
                           !hasError &&
                           !hasResults) ...[
-                        const Padding(
-                          padding: EdgeInsets.all(24),
+                        Padding(
+                          padding: EdgeInsets.all(context.rw(24)),
                           child: Center(
                             child: Column(
                               children: [
                                 Icon(
                                   Icons.search_off,
                                   color: Colors.white54,
-                                  size: 48,
+                                  size: context.rw(48),
                                 ),
-                                SizedBox(height: 16),
+                                SizedBox(height: context.rh(16)),
                                 Text(
                                   'No results found',
                                   style: TextStyle(
                                     color: Colors.white54,
-                                    fontSize: 16,
+                                    fontSize: context.rf(16),
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                SizedBox(height: context.rh(8)),
                                 Text(
                                   'Try different keywords',
                                   style: TextStyle(
                                     color: Colors.white38,
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                   ),
                                 ),
                               ],

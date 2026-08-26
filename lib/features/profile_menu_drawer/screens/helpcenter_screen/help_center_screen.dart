@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/help_center_header.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/help_center_switcher_tab.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/Helpcenter/faq_tab.dart';
@@ -42,12 +43,12 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           child: Column(
             children: [
               const HelpCenterHeader(),
-              const SizedBox(height: 10),
+              SizedBox(height: context.rh(10)),
               HelpCenterSwitcherTab(
                 selectedTab: selectedTab,
                 onTabChanged: _onTabChanged,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.rh(20)),
 
               /// CONTENT AREA
               Expanded(

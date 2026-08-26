@@ -17,6 +17,7 @@ import '../widgets/stats_row.dart';
 import '../widgets/story_list.dart';
 import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
@@ -179,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.rh(16)),
                     ElevatedButton(
                       onPressed: () => provider.fetchProfileData(),
                       style: ElevatedButton.styleFrom(
@@ -228,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: const TextStyle(color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: context.rh(16)),
                         ElevatedButton(
                           onPressed: () {
                             userProfileProvider.fetchProfile(widget.userId!);
@@ -296,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       clipBehavior: Clip.none,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(top: 130),
+                          padding: EdgeInsets.only(top: context.rh(130)),
                           child: ClipRRect(
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(100),
@@ -307,16 +308,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const SizedBox(height: 110),
+                                  SizedBox(height: context.rh(110)),
                                   StatsRow(
                                     subscribersCount:
                                         provider.stats.subscribersCount,
                                     likesCount: provider.stats.likesCount,
                                     videosCount: provider.stats.videosCount,
                                   ),
-                                  const SizedBox(height: 25),
+                                  SizedBox(height: context.rh(25)),
                                   StoryList(provider: provider),
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: context.rh(20)),
                                   FilterTabs(
                                     selectedIndex: selectedTab,
                                     onTabSelected: (index) {
@@ -367,7 +368,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.rw(10),
+                    ),
                     sliver: DecoratedSliver(
                       decoration: BoxDecoration(color: _panelBackgroundColor),
                       sliver: SliverMainAxisGroup(
@@ -378,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   SliverToBoxAdapter(
                     child: ColoredBox(
                       color: _panelBackgroundColor,
-                      child: const SizedBox(height: 100),
+                      child: SizedBox(height: context.rh(100)),
                     ),
                   ),
                 ],
@@ -412,7 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 130),
+                    padding: EdgeInsets.only(top: context.rh(130)),
                     child: ClipRRect(
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(100),
@@ -423,32 +426,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const SizedBox(height: 110),
+                            SizedBox(height: context.rh(110)),
                             StatsRow(
                               subscribersCount: userProfile.followersCount,
                               likesCount: userProfile.followingCount,
                               videosCount: userProfile.postsCount,
                             ),
-                            const SizedBox(height: 25),
+                            SizedBox(height: context.rh(25)),
                             if (userProfile.bio.isNotEmpty) ...[
                               Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.rw(20),
                                 ),
                                 child: Text(
                                   userProfile.bio,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              SizedBox(height: context.rh(20)),
                             ],
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: context.rw(20),
+                              ),
                               child: ElevatedButton(
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -470,15 +474,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   userProfile.isFollowing
                                       ? 'Following'
                                       : 'Follow',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 16,
+                                    fontSize: context.rf(16),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            SizedBox(height: context.rh(20)),
                             FilterTabs(
                               selectedIndex: selectedTab,
                               onTabSelected: (index) {
@@ -511,7 +515,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(10)),
               sliver: DecoratedSliver(
                 decoration: BoxDecoration(color: _panelBackgroundColor),
                 sliver: SliverMainAxisGroup(
@@ -522,7 +526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SliverToBoxAdapter(
               child: ColoredBox(
                 color: _panelBackgroundColor,
-                child: const SizedBox(height: 100),
+                child: SizedBox(height: context.rh(100)),
               ),
             ),
           ],
@@ -545,28 +549,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SliverToBoxAdapter(
           child: Container(
             width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            margin: EdgeInsets.symmetric(
+              horizontal: context.rw(13),
+              vertical: context.rh(20),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: context.rw(24),
+              vertical: context.rh(36),
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
-            child: const Column(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.video_library_outlined,
                   color: Colors.white,
-                  size: 34,
+                  size: context.rw(34),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: context.rh(12)),
                 Text(
                   'No posts yet',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: context.rf(18),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

@@ -3,6 +3,8 @@ import 'package:gruve_app/features/search/controllers/explore_reels_controller.d
 import 'package:gruve_app/features/search/widgets/explore_reels_grid.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
 
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
+
 import 'search_page.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -46,9 +48,9 @@ class _SearchScreenState extends State<SearchScreen> {
           bottom: false,
           child: Column(
             children: [
-              const SizedBox(height: 16),
+              SizedBox(height: context.rh(16)),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                 child: CustomSearchBar(
                   readOnly: true,
                   onTap: () {
@@ -62,7 +64,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: context.rh(12)),
               Expanded(
                 child: ExploreReelsGrid(controller: _exploreController),
               ),

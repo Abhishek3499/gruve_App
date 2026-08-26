@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart' show TokenStorage;
 
@@ -113,7 +114,7 @@ class EditProfileService {
         throw Exception('Authentication token is missing');
       }
 
-      const endpoint = 'user/edit_profile';
+      const endpoint = ApiConstants.fetchProfile;
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
 
       AppLogger.d('=== FETCH PROFILE REQUEST DETAILS ===');
@@ -196,7 +197,7 @@ class EditProfileService {
         throw Exception('Authentication token is missing');
       }
 
-      const endpoint = 'user/edit_profile/';
+      const endpoint = ApiConstants.updateProfile;
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
       final requestData = await _buildUpdatePayload(request);
 

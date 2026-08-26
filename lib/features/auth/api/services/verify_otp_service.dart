@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -23,7 +24,7 @@ class VerifyOtpService {
     try {
       AppLogger.d('Verify OTP purpose=$purpose identifier=$identifier');
 
-      const endpoint = 'auth/verify-otp/';
+      const endpoint = ApiConstants.verifyOtp;
       final body = {
         'identifier': identifier,
         'otp': otp,
@@ -75,13 +76,13 @@ class VerifyOtpService {
       AuthApiLogger.request(
         'ResendOtp',
         dio: dio,
-        endpoint: 'auth/resend-otp/',
+        endpoint: ApiConstants.resendOtp,
         method: 'POST',
         body: body,
       );
 
       final response = await dio.post(
-        'auth/resend-otp/',
+        ApiConstants.resendOtp,
         data: body,
         options: AuthEndpointPaths.skipAuthOptions(),
       );

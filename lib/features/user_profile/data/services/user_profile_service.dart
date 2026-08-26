@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/features/profile/data/models/user_profile_model.dart';
@@ -32,7 +33,7 @@ class UserProfileService {
     CancelToken? cancelToken,
   }) async {
     AppLogger.d(" User Profile API Called");
-    final endpoint = "user/profile/$userId/";
+    final endpoint = ApiConstants.userProfile(userId);
     AppLogger.d(" Endpoint: $endpoint");
     AppLogger.d(" Fetching user profile for userId: $userId");
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/network/app_dio.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/parsing/safe_parsing_helpers.dart';
@@ -11,7 +12,7 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Service responsible for handling all message-related API calls
 class MessageService {
-  static const String _conversationsEndpoint = '/conversations/';
+  static const String _conversationsEndpoint = ApiConstants.conversations;
 
   late final Dio _dio;
 
@@ -131,7 +132,7 @@ class MessageService {
       throw ArgumentError('Conversation ID cannot be empty');
     }
 
-    final endpoint = '/conversations/$conversationId/messages/';
+    final endpoint = ApiConstants.conversationMessages(conversationId);
 
     try {
       AppLogger.d('[MessageService] 📡 GET $endpoint 📄 page=$page');
@@ -352,7 +353,7 @@ class MessageService {
       throw ArgumentError('Media file not found: $filePath');
     }
 
-    final endpoint = '/conversations/$conversationId/messages/media/';
+    final endpoint = ApiConstants.conversationMessagesMedia(conversationId);
     final fileName = filePath.split('/').last.split('\\').last;
 
     try {
@@ -414,7 +415,7 @@ class MessageService {
       throw ArgumentError('Message must have content or media');
     }
 
-    final endpoint = '/conversations/$conversationId/messages/';
+    final endpoint = ApiConstants.conversationMessages(conversationId);
     final body = <String, dynamic>{};
     if (media != null) {
       // API expects content key (possibly empty) when media is attached.
@@ -561,7 +562,7 @@ class MessageService {
       throw ArgumentError('Conversation ID cannot be empty');
     }
 
-    final endpoint = '/conversations/$conversationId/messages/read';
+    final endpoint = ApiConstants.conversationMessagesRead(conversationId);
 
     try {
       AppLogger.d('👁️ [MessageService] POST $endpoint');
@@ -600,7 +601,7 @@ class MessageService {
       );
 
       final response = await _dio.post<Map<String, dynamic>>(
-        '/conversations/',
+        ApiConstants.conversations,
         data: {'receiver_id': receiverId},
         cancelToken: cancelToken,
       );
@@ -734,7 +735,10 @@ class MessageService {
       throw ArgumentError('Message ID cannot be empty');
     }
 
-    final endpoint = '/conversations/$conversationId/messages/$messageId';
+    final endpoint = ApiConstants.conversationMessage(
+      conversationId,
+      messageId,
+    );
 
     try {
       AppLogger.d('🗑️ [MessageService] 🚀 DELETE $endpoint');
@@ -815,7 +819,10 @@ class MessageService {
       throw ArgumentError('Message content cannot be empty');
     }
 
-    final endpoint = '/conversations/$conversationId/messages/$messageId';
+    final endpoint = ApiConstants.conversationMessage(
+      conversationId,
+      messageId,
+    );
 
     try {
       AppLogger.d('[MessageService] ✏️ PATCH $endpoint');

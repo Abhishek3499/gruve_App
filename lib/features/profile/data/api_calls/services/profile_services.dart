@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/network/api_exception.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
@@ -55,7 +56,7 @@ class ProfileService {
         );
 
         final response = await _dio.get(
-          "user/profile_data/",
+          ApiConstants.profileData,
           queryParameters: queryParams.isNotEmpty ? queryParams : null,
           cancelToken: cancelToken,
           options: Options(headers: {"Authorization": "Bearer $token"}),

@@ -11,6 +11,7 @@ import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:gruve_app/services/image_picker_service.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});
@@ -198,21 +199,21 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
               child: Column(
                 children: [
-                  const SizedBox(height: 120),
+                  SizedBox(height: context.rh(120)),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: context.rf(22),
                           fontWeight: FontWeight.w500,
                           fontFamily: AppAssets.syncopateFont,
                           color: Colors.white,
                         ),
-                        children: [
+                        children: const [
                           TextSpan(text: 'Complete '),
                           TextSpan(
                             text: 'Profile',
@@ -222,10 +223,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: context.rh(20)),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: const Text(
+                    child: Text(
                       'Lorem Ipsum is simply dummy text of the\nprinting and typesetting industry',
 
                       textAlign: TextAlign.left,
@@ -233,13 +234,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       style: TextStyle(
                         color: Colors.white,
 
-                        fontSize: 14,
+                        fontSize: context.rf(14),
 
                         height: 1.4,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: context.rh(40)),
                   Center(
                     child: GestureDetector(
                       onTap: _pickProfileImage,
@@ -247,7 +248,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         clipBehavior: Clip.none,
                         children: [
                           CircleAvatar(
-                            radius: 60,
+                            radius: context.rw(60),
                             backgroundColor: Colors.purple,
                             backgroundImage: selectedImageBytes != null
                                 ? MemoryImage(selectedImageBytes)
@@ -264,8 +265,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             right: 5,
                             bottom: 17,
                             child: Container(
-                              height: 26,
-                              width: 26,
+                              height: context.rh(26),
+                              width: context.rw(26),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: const Color(0xFFB026FF),
@@ -273,8 +274,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               child: Center(
                                 child: Image.asset(
                                   AppAssets.editbutton,
-                                  height: 15,
-                                  width: 15,
+                                  height: context.rh(15),
+                                  width: context.rw(15),
                                   color: Colors.white,
                                   fit: BoxFit.contain,
                                 ),
@@ -289,19 +290,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     duration: const Duration(milliseconds: 200),
                     child: (_profileImageTouched ? _profileImageError : null) != null
                         ? Padding(
-                            padding: const EdgeInsets.only(top: 10),
+                            padding: EdgeInsets.only(top: context.rh(10)),
                             child: Text(
                               _profileImageError!,
-                              style: const TextStyle(
-                                color: Color(0xFFFF6B6B),
-                                fontSize: 11,
+                              style: TextStyle(
+                                color: const Color(0xFFFF6B6B),
+                                fontSize: context.rf(11),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           )
                         : const SizedBox.shrink(),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: context.rh(40)),
                   NeonTextField(
                     controller: _usernameController,
                     focusNode: _usernameFocus,
@@ -311,7 +312,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     onFieldSubmitted: (_) => _completeButtonController.submit(),
                     errorText: _usernameTouched ? _usernameError : null,
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: context.rh(40)),
                   GetStartedButton(
                     controller: _completeButtonController,
                     text: 'Complete',

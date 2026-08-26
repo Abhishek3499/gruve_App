@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
@@ -121,7 +122,7 @@ class ExploreReelsService {
     final safeSort = sort == 'latest' ? 'latest' : 'trending';
 
     final response = await _dio.get(
-      'explore/reels/',
+      ApiConstants.exploreReels,
       queryParameters: {'page': page, 'limit': safeLimit, 'sort': safeSort},
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
@@ -218,7 +219,7 @@ class ExploreReelsService {
     try {
       final token = await TokenStorage.getAccessToken();
       final response = await _dio.get(
-        'user/profile/$id/',
+        ApiConstants.userProfile(id),
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       final root = response.data;

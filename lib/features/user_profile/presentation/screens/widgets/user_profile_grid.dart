@@ -6,6 +6,7 @@ import 'package:gruve_app/features/profile/screens/post_detail/profile_post_deta
 import 'package:gruve_app/core/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/widgets/profile_grid_style.dart';
 import 'package:gruve_app/core/widgets/shimmer/profile_shimmer.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class UserProfileGrid extends StatelessWidget {
   static const gridDelegate = ProfileGridStyle.gridDelegate;
@@ -118,15 +119,15 @@ class UserProfileGrid extends StatelessWidget {
                         top: 6,
                         right: 6,
                         child: Container(
-                          padding: const EdgeInsets.all(3),
+                          padding: EdgeInsets.all(context.rw(3)),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.55),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.play_arrow_rounded,
                             color: Colors.white,
-                            size: 14,
+                            size: context.rw(14),
                           ),
                         ),
                       ),

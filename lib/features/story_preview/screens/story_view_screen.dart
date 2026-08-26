@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/api/story_api/model/story_model.dart';
 import 'package:gruve_app/features/story_preview/controllers/story_playback_controller.dart';
@@ -481,11 +482,11 @@ class _StoryMediaLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: SizedBox(
-        width: 28,
-        height: 28,
-        child: CircularProgressIndicator(
+        width: context.rw(28),
+        height: context.rh(28),
+        child: const CircularProgressIndicator(
           color: AppColors.loaderDark,
           strokeWidth: 2.4,
         ),

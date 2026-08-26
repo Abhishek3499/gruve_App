@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -9,7 +10,7 @@ class ForgotPasswordService {
   final Dio _dio = AuthDio.getInstance();
   Future<String> sendResetLink({required String identifier}) async {
     try {
-      const endpoint = 'auth/forgot-password/';
+      const endpoint = ApiConstants.forgotPassword;
       final requestData = {"identifier": identifier};
       
       AuthApiLogger.request(

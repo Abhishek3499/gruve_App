@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile/data/api_calls/model/profile_stats_model.dart';
 import '../../../../../core/constants/app_colors.dart';
 
@@ -46,7 +47,7 @@ class UserStatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: EdgeInsets.symmetric(horizontal: context.rw(40)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

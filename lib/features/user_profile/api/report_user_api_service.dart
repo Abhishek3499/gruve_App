@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/user_profile/models/report_user_response_model.dart';
 
 class ReportUserApiService {
-  static const String _endpoint = 'profile/report/';
+  static const String _endpoint = ApiConstants.reportUser;
 
   late final Dio _dio;
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -60,7 +61,7 @@ class UserSearchService {
 
     try {
       final response = await _dio.get(
-        'user/users/search/',
+        ApiConstants.userSearch,
         queryParameters: {'username': trimmedQuery},
         cancelToken: cancelToken,
         options: Options(

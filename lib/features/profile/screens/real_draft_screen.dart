@@ -5,6 +5,7 @@ import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_
 import 'package:gruve_app/features/story_preview/providers/drafts_provider.dart';
 import 'package:gruve_app/features/story_preview/screens/post/share_post_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ReelsDraftsScreen extends StatefulWidget {
   const ReelsDraftsScreen({super.key});
@@ -146,9 +147,9 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
             children: [
               // --- Custom AppBar ---
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.rw(16),
+                  vertical: context.rh(20),
                 ),
                 child: Row(
                   children: [
@@ -156,13 +157,13 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
                       color: Colors.white,
                       onPressed: () => Navigator.pop(context),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Center(
                         child: Text(
                           'Reels Drafts',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: context.rf(18),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -201,9 +202,9 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
           children: [
             Text(
               provider.errorMessage!,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: Colors.white70, fontSize: context.rf(14)),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: context.rh(12)),
             ElevatedButton(
               onPressed: () => provider.fetchDrafts(),
               style: ElevatedButton.styleFrom(
@@ -219,12 +220,12 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
 
     final drafts = provider.drafts;
     if (drafts.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No drafts saved yet',
           style: TextStyle(
             color: Colors.white54,
-            fontSize: 16,
+            fontSize: context.rf(16),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -232,7 +233,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
       itemCount: drafts.length,
       itemBuilder: (context, index) {
         final draft = drafts[index];

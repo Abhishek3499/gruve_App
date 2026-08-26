@@ -16,6 +16,7 @@ import 'package:gruve_app/core/widgets/primary_button.dart';
 import 'package:gruve_app/core/widgets/outline_button.dart';
 import 'package:gruve_app/core/widgets/video_background.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -116,13 +117,13 @@ class _SignInScreenState extends State<SignInScreen> {
         overlayOpacity: 0.85,
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
             child: Column(
               children: [
                 const Spacer(),
                 const AuthHeader(title: 'Sign  ', highlightedText: 'IN'),
 
-                const SizedBox(height: 32),
+                SizedBox(height: context.rh(32)),
 
                 PrimaryButton(
                   text: 'Continue with Email',
@@ -131,7 +132,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: context.rh(16)),
 
                 OutlineButton(
                   text: 'Use phone number',
@@ -140,21 +141,21 @@ class _SignInScreenState extends State<SignInScreen> {
                   },
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: context.rh(24)),
 
                 const AuthDivider(),
 
-                const SizedBox(height: 24),
+                SizedBox(height: context.rh(24)),
 
                 _isGoogleLoading
-                    ? const SizedBox(
-                        width: 50,
-                        height: 50,
+                    ? SizedBox(
+                        width: context.rw(50),
+                        height: context.rh(50),
                         child: Center(
                           child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
+                            width: context.rw(24),
+                            height: context.rh(24),
+                            child: const CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Color(0xFFBB86FC),
                             ),
@@ -169,10 +170,13 @@ class _SignInScreenState extends State<SignInScreen> {
                     _navigate(context, const SignupScreen());
                   },
                   child: RichText(
-                    text: const TextSpan(
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    text: TextSpan(
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: context.rf(14),
+                      ),
                       children: [
-                        TextSpan(
+                        const TextSpan(
                           text: 'Don\'t have an account?  ',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -182,9 +186,9 @@ class _SignInScreenState extends State<SignInScreen> {
                         TextSpan(
                           text: 'Sign Up',
                           style: TextStyle(
-                            color: Color(0xFFB86AD0),
+                            color: const Color(0xFFB86AD0),
                             fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                            fontSize: context.rf(14),
                             fontFamily: AppAssets.montserratfont,
                           ),
                         ),
@@ -192,7 +196,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 25),
+                SizedBox(height: context.rh(25)),
               ],
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_diamond_st
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_footer.dart';
 import 'package:gruve_app/features/profile_menu_drawer/widgets/wallet_header.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -18,14 +19,14 @@ class WalletScreen extends StatelessWidget {
           children: [
             /// ===== TOP CONTENT =====
             const WalletHeader(),
-            const SizedBox(height: 22),
+            SizedBox(height: context.rh(22)),
             const WalletDiamondStatsCard(),
 
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(height: 20),
+                  SizedBox(height: context.rh(20)),
                   WalletCenterCart(
                     title: "Cheers",
                     buttonText: "Add cheers",
@@ -33,7 +34,7 @@ class WalletScreen extends StatelessWidget {
                       AppLogger.d("Add Cheers button clicked");
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: context.rh(20)),
                   WalletCenterCart(
                     title: "Mints",
                     buttonText: "Redeem",
@@ -47,7 +48,7 @@ class WalletScreen extends StatelessWidget {
 
             /// ===== FOOTER (Always Bottom) =====
             const WalletFooter(),
-            const SizedBox(height: 20),
+            SizedBox(height: context.rh(20)),
           ],
         ),
       ),

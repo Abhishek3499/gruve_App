@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
 
 class CommentsSheet extends StatefulWidget {
@@ -46,10 +47,10 @@ class _CommentsSheetState extends State<CommentsSheet> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: EdgeInsets.symmetric(vertical: context.rh(12)),
             child: Container(
-              width: 40,
-              height: 4,
+              width: context.rw(40),
+              height: context.rh(4),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
@@ -57,21 +58,28 @@ class _CommentsSheetState extends State<CommentsSheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: context.rw(16),
+              vertical: context.rh(8),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Comments',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: context.rf(18),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close, color: Colors.white, size: 24),
+                  child: Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: context.rw(24),
+                  ),
                 ),
               ],
             ),
@@ -88,7 +96,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
           ),
           const Divider(color: Colors.white12),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(context.rw(16)),
             child: Row(
               children: [
                 Expanded(
@@ -116,26 +124,26 @@ class _CommentsSheetState extends State<CommentsSheet> {
                         borderRadius: BorderRadius.circular(24),
                         borderSide: const BorderSide(color: Colors.white),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: context.rw(16),
+                        vertical: context.rh(12),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: context.rw(8)),
                 GestureDetector(
                   onTap: _addComment,
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(context.rw(8)),
                     decoration: BoxDecoration(
                       color: Colors.blue,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.send,
                       color: Colors.white,
-                      size: 20,
+                      size: context.rw(20),
                     ),
                   ),
                 ),
@@ -149,16 +157,19 @@ class _CommentsSheetState extends State<CommentsSheet> {
 
   Widget _buildCommentTile(Map<String, String> comment) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.rw(16),
+        vertical: context.rh(12),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 16,
             backgroundColor: Colors.grey[700],
-            child: const Icon(Icons.person, color: Colors.white, size: 16),
+            child: Icon(Icons.person, color: Colors.white, size: context.rw(16)),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: context.rw(12)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,28 +178,28 @@ class _CommentsSheetState extends State<CommentsSheet> {
                   children: [
                     Text(
                       comment['username']!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: context.rf(14),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: context.rw(8)),
                     Text(
                       comment['timestamp']!,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
+                        fontSize: context.rf(12),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: context.rh(4)),
                 Text(
                   comment['comment']!,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 14,
+                    fontSize: context.rf(14),
                   ),
                 ),
               ],
@@ -197,7 +208,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
           Icon(
             Icons.favorite_border,
             color: Colors.white.withValues(alpha: 0.5),
-            size: 16,
+            size: context.rw(16),
           ),
         ],
       ),

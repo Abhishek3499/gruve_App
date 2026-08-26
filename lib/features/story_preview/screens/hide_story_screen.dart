@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
 import 'package:gruve_app/features/story_preview/widgets/hide_story_widgets/done_button.dart';
 import 'package:gruve_app/features/story_preview/widgets/hide_story_widgets/hide_story_header.dart';
@@ -32,23 +33,23 @@ class HideStoryScreen extends StatelessWidget {
               },
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: context.rh(20)),
 
-            const CustomSearchBar(
+            CustomSearchBar(
               hintText: 'Search',
               width: 362,
               borderRadius: 25,
               borderWidth: 4,
-              backgroundGradient: LinearGradient(
+              backgroundGradient: const LinearGradient(
                 colors: [Color(0xFF72008D), Color(0xFF511263)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              prefixIcon: Icon(Icons.search, color: Colors.white, size: 23),
-              hintStyle: TextStyle(color: Colors.white, fontSize: 14),
+              prefixIcon: Icon(Icons.search, color: Colors.white, size: context.rw(23)),
+              hintStyle: TextStyle(color: Colors.white, fontSize: context.rf(14)),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: context.rh(20)),
 
             /// USER LIST
             const Expanded(child: UserList()),
@@ -57,7 +58,7 @@ class HideStoryScreen extends StatelessWidget {
 
             /// DONE BUTTON
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(context.rw(20)),
               child: DoneButton(
                 onDone: () {
                   Navigator.pop(context);

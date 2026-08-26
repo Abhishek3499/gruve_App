@@ -11,6 +11,7 @@ import 'package:gruve_app/features/profile/screens/post_detail/profile_post_deta
 import '../widgets/header.dart';
 import '../widgets/follow_tile.dart';
 import '../widgets/notification_tile.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -62,12 +63,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 20, 18, 10),
+      padding: EdgeInsets.fromLTRB(
+        context.rw(18),
+        context.rh(20),
+        context.rw(18),
+        context.rh(10),
+      ),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 13,
+          fontSize: context.rf(13),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -188,13 +194,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 Widget content;
 
                 if (provider.isLoading) {
-                  content = const SingleChildScrollView(
+                  content = SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Header(),
-                        SizedBox(height: 12),
-                        NotificationShimmer(itemCount: 8),
+                        const Header(),
+                        SizedBox(height: context.rh(12)),
+                        const NotificationShimmer(itemCount: 8),
                       ],
                     ),
                   );
@@ -205,27 +211,29 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       children: [
                         const Header(),
                         Container(
-                          height: 300,
+                          height: context.rh(300),
                           alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.rw(24),
+                          ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.error_outline,
                                 color: Colors.redAccent,
-                                size: 48,
+                                size: context.rw(48),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: context.rh(16)),
                               Text(
                                 provider.errorMessage,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 14,
+                                  fontSize: context.rf(14),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: context.rh(16)),
                               ElevatedButton(
                                 onPressed: () {
                                   provider.fetchInitialNotifications(
@@ -283,9 +291,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ...provider.earlierNotifications.map((n) => _buildNotificationTile(n)),
                         ],
                         if (provider.isLoadingMore)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: context.rh(24),
+                            ),
+                            child: const Center(
                               child: CircularProgressIndicator(
                                 color: Colors.white,
                                 strokeWidth: 2.5,
@@ -314,32 +324,32 @@ class _EmptyNotifications extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 400,
+      height: context.rh(400),
       alignment: Alignment.center,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.notifications_none_outlined,
-            size: 64,
+            size: context.rw(64),
             color: Colors.white.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: context.rh(16)),
+          Text(
             "No notifications yet",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: context.rf(16),
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: context.rh(8)),
           Text(
             "When you get notifications, they will appear here.",
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 12,
+              fontSize: context.rf(12),
             ),
           ),
         ],

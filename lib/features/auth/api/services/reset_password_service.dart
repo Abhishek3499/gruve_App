@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -15,7 +16,7 @@ class ResetPasswordService {
     required String password,
   }) async {
     try {
-      const endpoint = "auth/reset-password/";
+      const endpoint = ApiConstants.resetPassword;
       final requestData = {
         "identifier": identifier,
         "otp": otp,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/home/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/home/models/subscribe_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SubscribeButton extends StatefulWidget {
   final String userId;
@@ -180,7 +181,7 @@ class _SubscribeButtonState extends State<SubscribeButton>
 
     return Container(
       width: totalWidth,
-      height: 38,
+      height: context.rh(38),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.centerLeft,
@@ -201,15 +202,15 @@ class _SubscribeButtonState extends State<SubscribeButton>
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 01),
+              padding: EdgeInsets.only(right: context.rw(1)),
               child: Opacity(
                 opacity: (1.0 - (_dragPosition / (maxDragDistance * 0.75)))
                     .clamp(0.0, 1.0),
-                child: const Text(
+                child: Text(
                   'Slide to Subscribe',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: context.rf(10),
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
                   ),
@@ -305,10 +306,10 @@ class _SubscribeButtonState extends State<SubscribeButton>
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.chevron_right,
-                  size: 18,
-                  color: Color(0xFFFE24E0),
+                  size: context.rw(18),
+                  color: const Color(0xFFFE24E0),
                 ),
               ),
             ),
@@ -325,8 +326,8 @@ class _SubscribeButtonState extends State<SubscribeButton>
         borderRadius: BorderRadius.circular(20),
         onTap: () => _performToggle(context, true),
         child: Container(
-          width: 130,
-          height: 38,
+          width: context.rw(130),
+          height: context.rh(38),
           decoration: BoxDecoration(
             color: const Color(0xFF33123B).withValues(alpha: 0.6),
             border: Border.all(color: const Color(0xFFFE24E0), width: 1.5),
@@ -334,14 +335,14 @@ class _SubscribeButtonState extends State<SubscribeButton>
           ),
           child: Stack(
             children: [
-              const Padding(
-                padding: EdgeInsets.only(left: 12, right: 38),
+              Padding(
+                padding: EdgeInsets.only(left: context.rw(12), right: context.rw(38)),
                 child: Center(
                   child: Text(
                     'Subscribed',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: context.rf(12),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -352,16 +353,16 @@ class _SubscribeButtonState extends State<SubscribeButton>
                 top: 4,
                 bottom: 4,
                 child: Container(
-                  width: 30,
-                  height: 30,
+                  width: context.rw(30),
+                  height: context.rh(30),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.check,
-                    size: 16,
-                    color: Color(0xFFFE24E0),
+                    size: context.rw(16),
+                    color: const Color(0xFFFE24E0),
                   ),
                 ),
               ),

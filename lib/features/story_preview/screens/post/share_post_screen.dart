@@ -12,6 +12,7 @@ import 'package:gruve_app/features/story_preview/api/post/menu_row.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SharePostScreen extends StatefulWidget {
   final String mediaPath;
@@ -164,9 +165,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
+            left: context.rw(20),
+            right: context.rw(20),
+            top: context.rh(20),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -175,11 +176,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Add Location",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: context.rf(18),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -198,7 +199,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: context.rh(16)),
               TextField(
                 controller: locationController,
                 autofocus: true,
@@ -220,7 +221,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: context.rh(20)),
               ElevatedButton(
                 onPressed: () {
                   setState(() {
@@ -233,7 +234,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 120, 2, 99),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: context.rh(14)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -435,7 +436,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       Center(
                         child: Container(
                           width: MediaQuery.of(context).size.width * 0.80,
-                          height: 300,
+                          height: context.rh(300),
 
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(30),
@@ -447,11 +448,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      SizedBox(height: context.rh(20)),
 
                       // Caption Area
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                         child: TextField(
                           controller: captionController,
                           style: const TextStyle(color: Colors.white),
@@ -462,11 +463,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: context.rh(10)),
 
                       // Hashtag Chip (Reusable Component)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: ActionChip(
@@ -491,7 +492,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      SizedBox(height: context.rh(30)),
 
                       // List of Reusable Rows
                       const Divider(color: Colors.white10, height: 1),
@@ -608,12 +609,12 @@ class _SharePostScreenState extends State<SharePostScreen> {
 
               // Footer Buttons
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(context.rw(24)),
                 child: Row(
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 42,
+                        height: context.rh(42),
                         child: GestureDetector(
                           onTap: (_isSavingDraft || _isSharing)
                               ? null
@@ -627,19 +628,19 @@ class _SharePostScreenState extends State<SharePostScreen> {
                             ),
                             alignment: Alignment.center,
                             child: _isSavingDraft
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
+                                ? SizedBox(
+                                    width: context.rw(20),
+                                    height: context.rh(20),
+                                    child: const CircularProgressIndicator(
                                       strokeWidth: 2,
                                       color: Color(0xFFBB86FC),
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     "Save Draft",
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 14,
+                                      fontSize: context.rf(14),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -648,11 +649,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
                       ),
                     ),
 
-                    const SizedBox(width: 16),
+                    SizedBox(width: context.rw(16)),
 
                     Expanded(
                       child: SizedBox(
-                        height: 42,
+                        height: context.rh(42),
                         child: GestureDetector(
                           onTap: (_isSharing || _isSavingDraft)
                               ? null
@@ -666,19 +667,19 @@ class _SharePostScreenState extends State<SharePostScreen> {
                             ),
                             alignment: Alignment.center,
                             child: _isSharing
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
+                                ? SizedBox(
+                                    width: context.rw(20),
+                                    height: context.rh(20),
+                                    child: const CircularProgressIndicator(
                                       strokeWidth: 2,
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     "Share",
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 14,
+                                      fontSize: context.rf(14),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -722,11 +723,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
                 ),
               ),
               if (!_videoController!.value.isPlaying)
-                const Center(
+                Center(
                   child: Icon(
                     Icons.play_circle_fill,
                     color: Colors.white70,
-                    size: 42,
+                    size: context.rw(42),
                   ),
                 ),
             ],
@@ -760,8 +761,8 @@ class _SharePostScreenState extends State<SharePostScreen> {
             width: double.infinity,
             height: double.infinity,
             color: Colors.grey[800],
-            child: const Center(
-              child: Icon(Icons.error, color: Colors.white, size: 48),
+            child: Center(
+              child: Icon(Icons.error, color: Colors.white, size: context.rw(48)),
             ),
           );
         },
@@ -792,8 +793,8 @@ class _SharePostScreenState extends State<SharePostScreen> {
             width: double.infinity,
             height: double.infinity,
             color: Colors.grey[800],
-            child: const Center(
-              child: Icon(Icons.error, color: Colors.white, size: 48),
+            child: Center(
+              child: Icon(Icons.error, color: Colors.white, size: context.rw(48)),
             ),
           );
         },

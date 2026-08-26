@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/features/share/providers/post_share_provider.dart';
 import '../widgets/share_user_grid.dart';
 import '../widgets/share_social_buttons.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class ShareBottomSheet extends StatefulWidget {
   final String postId;
@@ -33,7 +34,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
 
     return Padding(
       key: const ValueKey('send'),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: context.rw(20), vertical: context.rh(12)),
       child: GestureDetector(
         onTap: () async {
           final success = await shareProvider.sharePost(widget.postId);
@@ -43,7 +44,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
         },
         child: Container(
           width: double.infinity,
-          height: 50,
+          height: context.rh(50),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(25),
             gradient: const LinearGradient(
@@ -61,19 +62,19 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
           ),
           child: Center(
             child: isSending
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
+                ? SizedBox(
+                    width: context.rw(24),
+                    height: context.rh(24),
+                    child: const CircularProgressIndicator(
                       color: Colors.white,
                       strokeWidth: 2.5,
                     ),
                   )
                 : Text(
                     'Send to ${selectedUsers.length} ${selectedUsers.length == 1 ? 'person' : 'people'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: context.rf(16),
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
@@ -106,16 +107,16 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
               children: [
                 // Handle bar
                 Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  width: 65,
-                  height: 3,
+                  margin: EdgeInsets.only(top: context.rh(8)),
+                  width: context.rw(65),
+                  height: context.rh(3),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
 
                 // User grid with search
                 const Expanded(
@@ -143,7 +144,7 @@ class _ShareBottomSheetState extends State<ShareBottomSheet> {
                       : const ShareSocialButtons(key: ValueKey('social')),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
               ],
             ),
           ),

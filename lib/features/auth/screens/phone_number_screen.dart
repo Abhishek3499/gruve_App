@@ -12,6 +12,7 @@ import 'package:gruve_app/features/home/home_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../validators/phone_number_validator.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class PhoneNumberScreen extends StatefulWidget {
   const PhoneNumberScreen({super.key});
@@ -154,7 +155,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -165,27 +166,27 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                         title: 'phone ',
                         highlightedText: 'number',
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      SizedBox(height: context.rh(12)),
+                      Text(
                         'Please enter your valid number. We will send\n'
                         'you a 4-digit code to verify your account.',
                         textAlign: TextAlign.left,
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 13,
+                          fontSize: context.rf(13),
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 26),
-                      const Text(
+                      SizedBox(height: context.rh(26)),
+                      Text(
                         'Phone Number',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 16,
+                          fontSize: context.rf(16),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: context.rh(10)),
                       PhoneInputField(
                         controller: _phoneController,
                         textInputAction: TextInputAction.done,
@@ -194,7 +195,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             _phoneButtonController.submit(),
                         errorText: phoneError,
                       ),
-                      const SizedBox(height: 36),
+                      SizedBox(height: context.rh(36)),
                       Center(
                         child: GetStartedButton(
                           controller: _phoneButtonController,
@@ -203,7 +204,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           onComplete: _handleLogin,
                         ),
                       ),
-                      const SizedBox(height: 90),
+                      SizedBox(height: context.rh(90)),
                       Center(
                         child: GestureDetector(
                           onTap: () {
@@ -216,13 +217,13 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           },
                           child: RichText(
                             textAlign: TextAlign.center,
-                            text: const TextSpan(
+                            text: TextSpan(
                               style: TextStyle(
                                 color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: context.rf(14),
                               ),
                               children: [
-                                TextSpan(
+                                const TextSpan(
                                   text: "Don't have an account?  ",
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
@@ -232,9 +233,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                 TextSpan(
                                   text: 'Sign Up',
                                   style: TextStyle(
-                                    color: Color(0xFFB86AD0),
+                                    color: const Color(0xFFB86AD0),
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 14,
+                                    fontSize: context.rf(14),
                                     fontFamily: AppAssets.montserratfont,
                                   ),
                                 ),
@@ -243,7 +244,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: context.rh(40)),
                     ],
                   ),
                 ),

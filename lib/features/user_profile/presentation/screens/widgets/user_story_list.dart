@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class UserStoryList extends StatelessWidget {
   final List<Map<String, dynamic>> stories;
@@ -15,7 +16,7 @@ class UserStoryList extends StatelessWidget {
     // Show skeleton placeholders when loading or no stories
     if (isLoading || stories.isEmpty) {
       return SizedBox(
-        height: 90,
+        height: context.rh(90),
         child: Row(
           children: [
             /// 🔥 SCROLLABLE STORIES (skeleton placeholders)
@@ -33,7 +34,7 @@ class UserStoryList extends StatelessWidget {
 
     // Show real stories
     return SizedBox(
-      height: 90,
+      height: context.rh(90),
       child: Row(
         children: [
           /// 🔥 SCROLLABLE STORIES

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 import 'package:gruve_app/features/auth/api/controllers/reset_password_controller.dart';
 
@@ -110,7 +111,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           children: [
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.only(left: 24, top: 9),
+                padding: EdgeInsets.only(
+                  left: context.rw(24),
+                  top: context.rh(9),
+                ),
 
                 child: Align(
                   alignment: Alignment.topLeft,
@@ -126,7 +130,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             LayoutBuilder(
               builder: (context, constraints) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
 
                   child: SingleChildScrollView(
                     child: Column(
@@ -138,11 +142,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         RichText(
                           textAlign: TextAlign.start,
 
-                          text: const TextSpan(
+                          text: TextSpan(
                             style: TextStyle(
                               color: Colors.white,
 
-                              fontSize: 26,
+                              fontSize: context.rf(26),
 
                               fontWeight: FontWeight.w700,
 
@@ -161,9 +165,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        SizedBox(height: context.rh(12)),
 
-                        const Text(
+                        Text(
                           'Create a new password for your account.\nMake sure it\'s strong and secure.',
 
                           textAlign: TextAlign.center,
@@ -171,15 +175,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           style: TextStyle(
                             color: Colors.white,
 
-                            fontSize: 16,
+                            fontSize: context.rf(16),
 
                             fontWeight: FontWeight(400),
                           ),
                         ),
 
-                        const SizedBox(height: 40),
+                        SizedBox(height: context.rh(40)),
 
-                        const Align(
+                        Align(
                           alignment: Alignment.centerLeft,
 
                           child: Text(
@@ -188,14 +192,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             style: TextStyle(
                               color: Color(0xFFFFFFFF),
 
-                              fontSize: 16,
+                              fontSize: context.rf(16),
 
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 10),
+                        SizedBox(height: context.rh(10)),
 
                         NeonPasswordField(
                           hintText: 'Enter Your Password',
@@ -208,9 +212,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           errorText: _passwordTouched ? _passwordError : null,
                         ),
 
-                        const SizedBox(height: 20),
+                        SizedBox(height: context.rh(20)),
 
-                        const Align(
+                        Align(
                           alignment: Alignment.centerLeft,
 
                           child: Text(
@@ -219,14 +223,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             style: TextStyle(
                               color: Color(0xFFFFFFFF),
 
-                              fontSize: 16,
+                              fontSize: context.rf(16),
 
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 10),
+                        SizedBox(height: context.rh(10)),
 
                         NeonPasswordField(
                           hintText: 'Confirm Your Password',
@@ -239,7 +243,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           errorText: _confirmPasswordTouched ? _confirmPasswordError : null,
                         ),
 
-                        const SizedBox(height: 40),
+                        SizedBox(height: context.rh(40)),
 
                         Align(
                           alignment: AlignmentGeometry.center,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import '../constants/privacy_constants.dart';
 
 import '../widgets/account_privacy_header.dart';
@@ -43,7 +44,7 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
           child: Column(
             children: [
               const AccountPrivacyHeader(),
-              SizedBox(height: 12),
+              SizedBox(height: context.rh(12)),
 
               PrivacyCard(
                 child: Column(

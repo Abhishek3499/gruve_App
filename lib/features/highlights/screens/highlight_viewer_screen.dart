@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:gruve_app/features/profile/provider/profile_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class HighlightViewerScreen extends StatefulWidget {
   final String highlightId;
@@ -151,7 +152,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: context.rh(24), horizontal: context.rw(20)),
               decoration: BoxDecoration(
                 color: const ui.Color.fromARGB(220, 33, 19, 44),
                 border: Border(
@@ -165,9 +166,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 42,
-                    height: 4.5,
-                    margin: const EdgeInsets.only(bottom: 22),
+                    width: context.rw(42),
+                    height: context.rh(4.5),
+                    margin: EdgeInsets.only(bottom: context.rh(22)),
                     decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(10),
@@ -182,7 +183,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        padding: EdgeInsets.symmetric(vertical: context.rh(16), horizontal: context.rw(16)),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
@@ -190,16 +191,16 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                             width: 1,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
-                            SizedBox(width: 12),
+                            Icon(Icons.delete_outline, color: Colors.redAccent, size: context.rw(22)),
+                            SizedBox(width: context.rw(12)),
                             Text(
                               'Delete Highlight',
                               style: TextStyle(
                                 color: Colors.redAccent,
-                                fontSize: 16,
+                                fontSize: context.rf(16),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -208,20 +209,20 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: context.rh(14)),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => Navigator.pop(context),
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: context.rh(16)),
                         alignment: Alignment.center,
-                        child: const Text(
+                        child: Text(
                           'Cancel',
                           style: TextStyle(
                             color: Colors.white70,
-                            fontSize: 16,
+                            fontSize: context.rf(16),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -248,7 +249,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       builder: (dialogContext) {
         return Center(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 28),
+            margin: EdgeInsets.symmetric(horizontal: context.rw(28)),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -268,12 +269,12 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(context.rw(24)),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(context.rw(16)),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.redAccent.withValues(alpha: 0.12),
@@ -282,58 +283,58 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                       width: 1.5,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.warning_amber_rounded,
                     color: Colors.redAccent,
-                    size: 32,
+                    size: context.rw(32),
                   ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
+                SizedBox(height: context.rh(20)),
+                Text(
                   'Delete Highlight',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: context.rf(20),
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.none,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: context.rh(12)),
                 Text(
                   'Are you sure you want to delete "${highlight?.title}"? This action cannot be undone.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 14,
+                    fontSize: context.rf(14),
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.none,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 26),
+                SizedBox(height: context.rh(26)),
                 Row(
                   children: [
                     Expanded(
                       child: TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: EdgeInsets.symmetric(vertical: context.rh(14)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Keep it',
                           style: TextStyle(
                             color: Colors.white60,
-                            fontSize: 15,
+                            fontSize: context.rf(15),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    SizedBox(width: context.rw(14)),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
@@ -342,17 +343,17 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: EdgeInsets.symmetric(vertical: context.rh(14)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 4,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Delete',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: context.rf(15),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -386,7 +387,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
             content: Row(
               children: [
                 const Icon(Icons.check_circle_outline, color: Colors.white),
-                const SizedBox(width: 12),
+                SizedBox(width: context.rw(12)),
                 Text('"${highlight?.title}" deleted successfully.'),
               ],
             ),
@@ -406,11 +407,11 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Failed to delete highlight. Please try again.'),
+                const Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: context.rw(12)),
+                const Text('Failed to delete highlight. Please try again.'),
               ],
             ),
             backgroundColor: Colors.redAccent,
@@ -490,14 +491,14 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 48),
-          const SizedBox(height: 16),
+          Icon(Icons.error_outline, color: Colors.white, size: context.rw(48)),
+          SizedBox(height: context.rh(16)),
           Text(
             errorMessage ?? 'An error occurred',
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style: TextStyle(color: Colors.white, fontSize: context.rf(16)),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.rh(16)),
           ElevatedButton(
             onPressed: _fetchHighlight,
             child: const Text('Retry'),
@@ -508,15 +509,15 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.photo_library_outlined, color: Colors.white, size: 48),
-          SizedBox(height: 16),
+          Icon(Icons.photo_library_outlined, color: Colors.white, size: context.rw(48)),
+          SizedBox(height: context.rh(16)),
           Text(
             'No stories available',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+            style: TextStyle(color: Colors.white, fontSize: context.rf(16)),
           ),
         ],
       ),
@@ -556,7 +557,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     return SafeArea(
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        padding: EdgeInsets.fromLTRB(context.rw(10), context.rh(8), context.rw(10), context.rh(8)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -575,8 +576,8 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                 },
               )
             else
-              const SizedBox(height: 2.6),
-            const SizedBox(height: 10),
+              SizedBox(height: context.rh(2.6)),
+            SizedBox(height: context.rh(10)),
             Row(
               children: [
                 BackButton(
@@ -590,9 +591,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                   Expanded(
                     child: Text(
                       highlight!.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: context.rf(16),
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
@@ -601,15 +602,15 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                   ),
                   IconButton(
                     onPressed: _showMoreOptions,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_vert,
                       color: Colors.white,
-                      size: 24,
+                      size: context.rw(24),
                     ),
                   ),
                 ] else ...[
                   const Spacer(),
-                  const SizedBox(width: 48),
+                  SizedBox(width: context.rw(48)),
                 ],
               ],
             ),
@@ -646,13 +647,13 @@ class _InstagramHighlightProgress extends StatelessWidget {
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(
-              left: index == 0 ? 0 : 2,
-              right: index == count - 1 ? 0 : 2,
+              left: index == 0 ? 0 : context.rw(2),
+              right: index == count - 1 ? 0 : context.rw(2),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: SizedBox(
-                height: 2.6,
+                height: context.rh(2.6),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -766,8 +767,8 @@ class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
   Widget build(BuildContext context) {
     if (_isVideo) {
       if (_videoFailed) {
-        return const Center(
-          child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+        return Center(
+          child: Icon(Icons.broken_image, color: Colors.white, size: context.rw(64)),
         );
       }
 
@@ -790,8 +791,8 @@ class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
 
     final imageUrl = _mediaUrl;
     if (!MediaUrlThumbnail.isHttpUrl(imageUrl)) {
-      return const Center(
-        child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+      return Center(
+        child: Icon(Icons.broken_image, color: Colors.white, size: context.rw(64)),
       );
     }
 
@@ -804,8 +805,8 @@ class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
       fadeOutDuration: Duration.zero,
       useOldImageOnUrlChange: true,
       placeholder: (context, url) => const _HighlightLoader(),
-      errorWidget: (context, url, error) => const Center(
-        child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+      errorWidget: (context, url, error) => Center(
+        child: Icon(Icons.broken_image, color: Colors.white, size: context.rw(64)),
       ),
     );
   }
@@ -816,11 +817,11 @@ class _HighlightLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: SizedBox(
-        width: 28,
-        height: 28,
-        child: CircularProgressIndicator(
+        width: context.rw(28),
+        height: context.rh(28),
+        child: const CircularProgressIndicator(
           color: AppColors.loaderDark,
           strokeWidth: 2.6,
         ),

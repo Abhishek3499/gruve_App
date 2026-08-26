@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/features/message/models/message_model.dart';
 import 'package:gruve_app/features/story_preview/screens/post/tag_users_screen.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class TagPeopleScreen extends StatefulWidget {
   final String mediaPath;
@@ -34,9 +35,9 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
             children: [
               /// 1. CUSTOM HEADER (Back, Title, Done)
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.rw(16),
+                  vertical: context.rh(8),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -45,11 +46,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                       color: Colors.white,
                       onPressed: () => Navigator.pop(context),
                     ),
-                    const Text(
+                    Text(
                       "Tag People",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: context.rf(18),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -57,11 +58,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                       onPressed: () {
                         Navigator.pop(context, selectedUsers); // ✅ MUST
                       },
-                      child: const Text(
+                      child: Text(
                         "Done",
                         style: TextStyle(
-                          color: Color(0xFF007AFF), // iOS Blue color
-                          fontSize: 16,
+                          color: const Color(0xFF007AFF), // iOS Blue color
+                          fontSize: context.rf(16),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -71,7 +72,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
               ),
 
               /// 2. MAIN CONTENT
-              SizedBox(height: 30),
+              SizedBox(height: context.rh(30)),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -80,7 +81,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                     Center(
                       child: Container(
                         width: MediaQuery.of(context).size.width * 0.75,
-                        height: 400,
+                        height: context.rh(400),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -91,12 +92,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: context.rh(20)),
 
                     // ✅ 2. YAHI ADD KARNA HAI (Selected Users List)
                     if (selectedUsers.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                         child: Column(
                           children: selectedUsers.map((user) {
                             return ListTile(
@@ -130,7 +131,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                         ),
                       ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: context.rh(20)),
 
                     // 3. TAP TO TAG BUTTON (already hai)
                     GestureDetector(
@@ -152,12 +153,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                       child: Column(
                         children: [
                           Container(
-                            height: 70,
-                            width: 70,
+                            height: context.rh(70),
+                            width: context.rw(70),
                             decoration: BoxDecoration(shape: BoxShape.circle),
                             child: const Icon(Icons.add, color: Colors.white),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: context.rh(12)),
                           const Text(
                             "Tap to Tag People",
                             style: TextStyle(color: Colors.white70),
@@ -188,8 +189,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       if (LocalMediaUtils.isVideoPath(widget.mediaPath)) {
         return Container(
           color: Colors.black,
-          child: const Center(
-            child: Icon(Icons.play_circle_fill, color: Colors.white, size: 50),
+          child: Center(
+            child: Icon(Icons.play_circle_fill, color: Colors.white, size: context.rw(50)),
           ),
         );
       }

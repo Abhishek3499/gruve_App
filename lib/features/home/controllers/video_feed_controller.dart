@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/api/create_post_api/model/post_model.dart';
@@ -1841,7 +1842,7 @@ class VideoFeedController {
       'feed_posts_subscribed',
     );
     final cacheManager = CacheManager();
-    await cacheManager.invalidatePattern('posts/get-post');
+    await cacheManager.invalidatePattern(ApiConstants.getPost);
     await cacheManager.invalidatePattern('user/profile');
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/widgets/more_widgets/more_header.dart';
 import 'package:gruve_app/features/story_preview/widgets/more_widgets/replying_card.dart';
 import 'package:gruve_app/features/story_preview/widgets/more_widgets/view_card.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class StorySettingsScreen extends StatelessWidget {
   const StorySettingsScreen({super.key});
@@ -34,10 +35,10 @@ class StorySettingsScreen extends StatelessWidget {
               left: 20,
               right: 20,
               child: Column(
-                children: const [
-                  ReplyingCard(),
-                  SizedBox(height: 33),
-                  ViewCard(),
+                children: [
+                  const ReplyingCard(),
+                  SizedBox(height: context.rh(33)),
+                  const ViewCard(),
                 ],
               ),
             ),

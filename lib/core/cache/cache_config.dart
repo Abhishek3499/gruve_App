@@ -1,3 +1,5 @@
+import 'package:gruve_app/core/constants/api_constants.dart';
+
 /// Cache configuration for different endpoints
 /// Optimizes data loading with proper TTL and stale-while-revalidate strategy
 class CacheConfigs {
@@ -6,7 +8,7 @@ class CacheConfigs {
     final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
 
     // Feed/Posts endpoints - Cache for 5 minutes, serve stale for 10 minutes
-    if (normalizedPath.contains('posts/get-post') ||
+    if (normalizedPath.contains(ApiConstants.getPost) ||
         normalizedPath.contains('feed/')) {
       return CacheConfig(
         ttl: const Duration(minutes: 5),

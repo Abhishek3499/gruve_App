@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -23,12 +24,12 @@ class MoreScreen extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
+        padding: EdgeInsets.symmetric(vertical: context.rh(18)),
         child: Text(
           label,
           style: TextStyle(
             color: textColor,
-            fontSize: 15,
+            fontSize: context.rf(15),
             fontWeight: FontWeight.w500,
             letterSpacing: 0.2,
           ),
@@ -48,35 +49,35 @@ class MoreScreen extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
+              SizedBox(height: context.rh(12)),
               // Header Row
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.history,
                     color: Colors.white,
-                    size: 22,
+                    size: context.rw(22),
                   ),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  SizedBox(width: context.rw(8)),
+                  Expanded(
                     child: Text(
                       "Archive stories while they're active.",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: context.rf(14),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
                       color: Colors.white70,
-                      size: 24,
+                      size: context.rw(24),
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -173,14 +174,14 @@ class MoreScreen extends StatelessWidget {
                 height: 1,
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: context.rh(16)),
 
               // Close button
               GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: double.infinity,
-                  height: 50,
+                  height: context.rh(50),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(25),
                     gradient: const LinearGradient(
@@ -196,12 +197,12 @@ class MoreScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'Close',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: context.rf(16),
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
@@ -209,8 +210,8 @@ class MoreScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 16),
+
+              SizedBox(height: context.rh(16)),
             ],
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class AudienceScreen extends StatefulWidget {
   final bool initialIsEveryone;
@@ -48,19 +49,19 @@ class _AudienceScreenState extends State<AudienceScreen> {
               'isCloseFriends': isCloseFriends,
             }),
           ),
-          title: const Text(
+          title: Text(
             "Audience",
-            style: TextStyle(color: Colors.white, fontSize: 20),
+            style: TextStyle(color: Colors.white, fontSize: context.rf(20)),
           ),
           centerTitle: true,
         ),
         body: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(context.rw(20.0)),
           child: Column(
             children: [
               // The Main Purple Card
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(context.rw(20)),
                 decoration: BoxDecoration(
                   color: const Color(0xFF5B0A6C), // Deep purple card
                   borderRadius: BorderRadius.circular(15),
@@ -75,12 +76,15 @@ class _AudienceScreenState extends State<AudienceScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "How can see your reel",
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: context.rf(14),
+                      ),
                     ),
-                    const SizedBox(height: 20),
-  
+                    SizedBox(height: context.rh(20)),
+
                     // Everyone Option
                     _buildAudienceTile(
                       icon: Icons.group_outlined,
@@ -93,8 +97,8 @@ class _AudienceScreenState extends State<AudienceScreen> {
                         });
                       },
                     ),
-  
-                    const SizedBox(height: 15),
+
+                    SizedBox(height: context.rh(15)),
   
                     // Close Friends Option
                     _buildAudienceTile(
@@ -129,22 +133,22 @@ class _AudienceScreenState extends State<AudienceScreen> {
   }) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(width: 15),
+        Icon(icon, color: Colors.white, size: context.rw(24)),
+        SizedBox(width: context.rw(15)),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: Colors.white, fontSize: context.rf(16)),
               ),
               if (subtitle != null)
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.blueAccent,
-                    fontSize: 12,
+                    fontSize: context.rf(12),
                   ),
                 ),
             ],

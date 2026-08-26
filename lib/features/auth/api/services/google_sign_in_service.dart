@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/core/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/core/auth_api_logger.dart';
@@ -40,7 +41,7 @@ class GoogleAuthService {
         throw 'Google did not return an ID token. Please try again.';
       }
 
-      const endpoint = 'auth/google/';
+      const endpoint = ApiConstants.googleSignIn;
       final requestData = {'token': idToken};
 
       AuthApiLogger.request(

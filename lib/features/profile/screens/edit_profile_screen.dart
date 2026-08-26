@@ -6,6 +6,7 @@ import '../../../features/auth/api/controllers/edit_profile_controller.dart';
 import '../models/profile_model.dart';
 import '../widgets/personal_info_card.dart';
 import '../widgets/profile_image_picker.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final ProfileModel? initialProfile;
@@ -231,7 +232,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: Column(
         children: [
           Container(
-            height: 190,
+            height: context.rh(190),
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -264,9 +265,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ? 'Hey, ${_controller.fullName}'
                           : 'Hey, User',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: context.rf(18),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -319,7 +320,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         // The dark form container
                         Container(
-                          margin: const EdgeInsets.only(top: 60),
+                          margin: EdgeInsets.only(top: context.rh(60)),
                           width: double.infinity,
                           decoration: const BoxDecoration(
                             color: Color(0xFF1B182D),
@@ -377,14 +378,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
+            Icon(Icons.error_outline, size: context.rw(64), color: Colors.red),
+            SizedBox(height: context.rh(16)),
             Text(
               'Error: ${_controller.errorMessage}',
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Colors.white, fontSize: context.rf(16)),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: context.rh(24)),
             ElevatedButton(
               onPressed: _fetchProfileData,
               style: ElevatedButton.styleFrom(
@@ -423,7 +424,7 @@ class _EditProfileFormShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 320,
+        width: context.rw(320),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(25),
@@ -431,11 +432,11 @@ class _EditProfileFormShimmer extends StatelessWidget {
         ),
         child: AppShimmer(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: EdgeInsets.symmetric(horizontal: context.rw(10), vertical: context.rh(5)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -443,7 +444,7 @@ class _EditProfileFormShimmer extends StatelessWidget {
                     ShimmerBox(width: 22, height: 22, borderRadius: 6),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: context.rh(24)),
                 _buildField(width: 168),
                 _divider(),
                 _buildField(width: 132),
@@ -455,13 +456,13 @@ class _EditProfileFormShimmer extends StatelessWidget {
                 _buildField(width: 92),
                 _divider(),
                 _buildField(width: double.infinity, isBio: true),
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
                 const ShimmerBox(
                   width: double.infinity,
                   height: 48,
                   borderRadius: 30,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: context.rh(20)),
               ],
             ),
           ),

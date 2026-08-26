@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 
@@ -51,7 +52,7 @@ class CommentService {
 
     try {
       final res = await _dio.get(
-        'posts/comments/',
+        ApiConstants.comments,
         queryParameters: {'post_id': postId},
         options: opts,
       );
@@ -81,7 +82,7 @@ class CommentService {
 
     try {
       return await _tryAddComment(
-        endpoint: 'posts/comments/',
+        endpoint: ApiConstants.comments,
         payload: payload,
         options: opts,
         body: body,
@@ -98,7 +99,7 @@ class CommentService {
       await Future<void>.delayed(const Duration(seconds: 1));
 
       return await _tryAddComment(
-        endpoint: 'posts/comments/',
+        endpoint: ApiConstants.comments,
         payload: payload,
         options: opts,
         body: body,

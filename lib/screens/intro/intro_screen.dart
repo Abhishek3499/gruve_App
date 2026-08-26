@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/auth/screens/sign_in_screen.dart';
 import 'package:gruve_app/core/widgets/get_started_button.dart';
 import 'package:gruve_app/core/widgets/video_background.dart';
@@ -21,23 +22,23 @@ class _IntroScreenState extends State<IntroScreen> {
         overlayOpacity: 0.85,
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Spacer(),
                   Image.asset(AppAssets.logoMain, width: 90),
-                  const SizedBox(height: 24),
+                  SizedBox(height: context.rh(24)),
                   RichText(
                     textAlign: TextAlign.center,
-                    text: const TextSpan(
+                    text: TextSpan(
                       children: [
                         TextSpan(
                           text: 'Lights. ',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 24,
+                            fontSize: context.rf(24),
                             fontWeight: FontWeight.w700,
                             fontFamily: AppAssets.syncopateFont,
                             height: 1.2,
@@ -46,19 +47,19 @@ class _IntroScreenState extends State<IntroScreen> {
                         TextSpan(
                           text: 'Camera.\n',
                           style: TextStyle(
-                            color: Color(0xFF9B4DFF),
-                            fontSize: 24,
+                            color: const Color(0xFF9B4DFF),
+                            fontSize: context.rf(24),
                             fontWeight: FontWeight.w700,
                             fontFamily: AppAssets.syncopateFont,
                             height: 1.2,
                           ),
                         ),
-                        WidgetSpan(child: SizedBox(height: 12)),
+                        WidgetSpan(child: SizedBox(height: context.rh(12))),
                         TextSpan(
                           text: 'Fame Begins.',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 24,
+                            fontSize: context.rf(24),
                             fontWeight: FontWeight.w700,
                             fontFamily: AppAssets.syncopateFont,
                             height: 1.8,
@@ -103,7 +104,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     },
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: context.rh(40)),
                 ],
               ),
             ),

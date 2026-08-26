@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -108,7 +109,7 @@ class HighlightCreateService {
       AppLogger.d('[Highlight] Request Body: $requestData');
 
       final response = await _dio.post(
-        'highlights/',
+        ApiConstants.createHighlight,
         data: requestData,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );

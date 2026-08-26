@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/search/data/user_search/user_search_service.dart';
 import 'package:gruve_app/features/search/widgets/search_bar.dart';
 import 'package:gruve_app/features/story_preview/widgets/close_friend/close_friend_header.dart';
@@ -98,7 +99,7 @@ class _CloseFriendScreenState extends State<CloseFriendScreen> {
               },
             ),
 
-            const SizedBox(height: 10),
+            SizedBox(height: context.rh(10)),
 
             CustomSearchBar(
               controller: _searchController,
@@ -111,16 +112,16 @@ class _CloseFriendScreenState extends State<CloseFriendScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.search,
                 color: Colors.white,
-                size: 23,
+                size: context.rw(23),
               ),
-              hintStyle: const TextStyle(color: Colors.white, fontSize: 14),
+              hintStyle: TextStyle(color: Colors.white, fontSize: context.rf(14)),
               onChanged: _onSearchChanged,
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: context.rh(20)),
 
             /// MULTI SELECT USER LIST
             Expanded(
@@ -136,7 +137,7 @@ class _CloseFriendScreenState extends State<CloseFriendScreen> {
 
             /// DONE BUTTON
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(context.rw(20)),
               child: DoneButton(
                 onDone: () {
                   Navigator.pop(context);

@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SubscribeApiService {
-  static const String _toggleEndpoint = 'profile/subscribe/toggle';
+  static const String _toggleEndpoint = ApiConstants.subscribeToggle;
 
   late final Dio _dio;
 

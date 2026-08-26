@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class UserFilterTabs extends StatelessWidget {
   final int selectedIndex;
@@ -73,7 +74,7 @@ class UserFilterTabs extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         buildTab("Gruves", 0),
-        const SizedBox(width: 20),
+        SizedBox(width: context.rw(20)),
         buildTab("Likes", 1),
       ],
     );

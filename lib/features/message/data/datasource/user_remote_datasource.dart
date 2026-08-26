@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/user_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -14,7 +15,7 @@ class UserRemoteDataSource {
   }) async {
     try {
       final rawResponse = await apiClient.get(
-        'user/users/?page=$page&limit=20',
+        '${ApiConstants.users}?page=$page&limit=20',
         cancelToken: cancelToken,
         skipCache: skipCache,
       );
