@@ -449,13 +449,25 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
             children: [
               GestureDetector(
                 onTap: () => _openProfile(context),
-                child: OptimizedAvatar(
-                  imageUrl: widget.profilePicture,
-                  radius: 17.5,
-                  name: widget.username,
-                  fallback: Image.asset(
-                    AppAssets.user,
-                    fit: BoxFit.cover,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: OptimizedAvatar(
+                    imageUrl: widget.profilePicture,
+                    radius: 17.5,
+                    name: widget.username,
+                    fallback: Image.asset(
+                      AppAssets.user,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -471,6 +483,13 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 4.0,
+                          color: Colors.black54,
+                          offset: Offset(0.0, 1.0),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -485,9 +504,21 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
           if (widget.caption.isNotEmpty) ...[
             LayoutBuilder(
               builder: (context, constraints) {
+                const captionTextStyle = TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 4.0,
+                      color: Colors.black54,
+                      offset: Offset(0.0, 1.0),
+                    ),
+                  ],
+                );
+
                 final textSpan = TextSpan(
                   text: widget.caption,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: captionTextStyle,
                 );
 
                 final textPainter = TextPainter(
@@ -512,9 +543,21 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                       children: [
                         TextSpan(
                           text: widget.caption.substring(0, endIndex),
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: captionTextStyle,
                         ),
-                        const TextSpan(text: linkText, style: TextStyle(fontSize: 13)),
+                        const TextSpan(
+                          text: linkText,
+                          style: TextStyle(
+                            fontSize: 13,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 4.0,
+                                color: Colors.black54,
+                                offset: Offset(0.0, 1.0),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     );
 
@@ -533,7 +576,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
 
                   return RichText(
                     text: TextSpan(
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: captionTextStyle,
                       children: [
                         TextSpan(
                           text: widget.caption.substring(0, endIndex),
@@ -543,6 +586,13 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                           style: const TextStyle(
                             color: Color(0xFFB86AD0),
                             fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 4.0,
+                                color: Colors.black54,
+                                offset: Offset(0.0, 1.0),
+                              ),
+                            ],
                           ),
                           recognizer: _moreGestureRecognizer,
                         ),
@@ -552,7 +602,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                 } else {
                   return RichText(
                     text: TextSpan(
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: captionTextStyle,
                       children: [
                         TextSpan(
                           text: widget.caption,
@@ -563,6 +613,13 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                             style: const TextStyle(
                               color: Color(0xFFB86AD0),
                               fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 4.0,
+                                  color: Colors.black54,
+                                  offset: Offset(0.0, 1.0),
+                                ),
+                              ],
                             ),
                             recognizer: _lessGestureRecognizer,
                           ),
@@ -602,6 +659,13 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 4.0,
+                                  color: Colors.black54,
+                                  offset: Offset(0.0, 1.0),
+                                ),
+                              ],
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),

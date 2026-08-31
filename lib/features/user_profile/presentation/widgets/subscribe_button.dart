@@ -113,7 +113,7 @@ class _SubscribeButtonState extends State<SubscribeButton>
 
   Future<void> _performToggle(BuildContext context, bool currentStatus) async {
     if (_isProcessing) return;
-    
+
     final optimisticStatus = !currentStatus;
     _log(
       '🔄 toggle userId=${widget.userId} current=$currentStatus optimistic=$optimisticStatus',
@@ -199,20 +199,25 @@ class _SubscribeButtonState extends State<SubscribeButton>
       ),
       child: Stack(
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: EdgeInsets.only(right: context.rw(1)),
+          Positioned(
+            left: thumbSize + (padding * 2),
+            right: 4,
+            top: 0,
+            bottom: 0,
+            child: Align(
+              alignment: Alignment.center,
               child: Opacity(
                 opacity: (1.0 - (_dragPosition / (maxDragDistance * 0.75)))
                     .clamp(0.0, 1.0),
                 child: Text(
                   'Slide to Subscribe',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: context.rf(10),
+                    fontSize: context.rf(9.5),
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.1,
                   ),
                 ),
               ),
@@ -336,7 +341,10 @@ class _SubscribeButtonState extends State<SubscribeButton>
           child: Stack(
             children: [
               Padding(
-                padding: EdgeInsets.only(left: context.rw(12), right: context.rw(38)),
+                padding: EdgeInsets.only(
+                  left: context.rw(12),
+                  right: context.rw(38),
+                ),
                 child: Center(
                   child: Text(
                     'Subscribed',
@@ -398,7 +406,10 @@ class _SubscribeButtonState extends State<SubscribeButton>
               return FadeTransition(
                 opacity: animation,
                 child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                  scale: Tween<double>(
+                    begin: 0.95,
+                    end: 1.0,
+                  ).animate(animation),
                   child: child,
                 ),
               );

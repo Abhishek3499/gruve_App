@@ -62,6 +62,7 @@ class EditProfileForm extends StatelessWidget {
     required IconData prefixIcon,
     int maxLines = 1,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -80,6 +81,8 @@ class EditProfileForm extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          textInputAction: textInputAction ?? (maxLines > 1 ? TextInputAction.done : TextInputAction.next),
+          onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           validator: validator,
           style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
           decoration: InputDecoration(

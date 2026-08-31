@@ -529,10 +529,15 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
 
                                 if (!context.mounted) return;
 
+                                // Stop this screen's video/audio before handing off to
+                                // SharePostScreen, which is pushed on top (not a replacement),
+                                // so playback would otherwise keep running underneath it.
+                                _videoController?.pause();
+
                                 AppLogger.d(
                                   'PostPreviewScreen navigating with mediaPath: $finalPath',
                                 );
-                                Navigator.push(
+                                await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => SharePostScreen(
@@ -543,6 +548,10 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                     ),
                                   ),
                                 );
+
+                                if (mounted && _isVideo) {
+                                  _videoController?.play();
+                                }
                               } catch (e) {
                                 AppLogger.d('Navigation error: $e');
                                 if (mounted) {

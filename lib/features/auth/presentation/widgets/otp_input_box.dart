@@ -69,6 +69,11 @@ class OtpInputBox extends StatelessWidget {
                   textAlignVertical: TextAlignVertical.center,
                   maxLength: 4,
                   showCursor: false,
+                  onTap: () {
+                    controller.selection = TextSelection.collapsed(
+                      offset: controller.text.length,
+                    );
+                  },
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,

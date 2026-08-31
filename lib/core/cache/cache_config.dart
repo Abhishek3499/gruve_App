@@ -33,15 +33,19 @@ class CacheConfigs {
       );
     }
 
-    // Messages/Conversations - Cache for 1 minute, serve stale for 2 minutes
-    if (normalizedPath.contains('messages/') ||
-        normalizedPath.contains('conversations/')) {
+    // Messages - Real-time chat thread messages should never be cached in HTTP cache
+    if (normalizedPath.contains('messages/')) {
+      return CacheConfig.noCache();
+    }
+
+    // Conversations list overview - Short cache for list overview
+    if (normalizedPath.contains('conversations/')) {
       return CacheConfig(
-        ttl: const Duration(minutes: 1),
-        staleWhileRevalidate: const Duration(minutes: 2),
+        ttl: const Duration(seconds: 15),
+        staleWhileRevalidate: const Duration(seconds: 30),
         enableMemoryCache: true,
-        enableDiskCache: false, // Don't persist messages to disk
-        maxMemorySize: 10 * 1024 * 1024, // 10MB for messages
+        enableDiskCache: false, // Don't persist conversations list to disk
+        maxMemorySize: 5 * 1024 * 1024, // 5MB for conversations list
       );
     }
 

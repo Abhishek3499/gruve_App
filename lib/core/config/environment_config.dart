@@ -35,6 +35,8 @@ class EnvironmentConfig {
       case 'staging':
       case 'stage':
         return Environment.staging;
+      case 'local':
+        return Environment.local;
       case 'development':
       case 'dev':
       default:
@@ -65,6 +67,15 @@ class EnvironmentConfig {
       case Environment.development:
         _baseUrl = _envValue('DEV_BASE_URL', fallbackKey: 'BASE_URL');
         _wsUrl = _envValue('DEV_WS_URL', fallbackKey: 'WS_URL');
+        _enableLogging = true;
+        _enableDebugTools = true;
+        _enableCrashReporting = false;
+        _apiTimeout = 20;
+        _wsTimeout = 10;
+        break;
+      case Environment.local:
+        _baseUrl = _envValue('LOCAL_BASE_URL', fallbackKey: 'BASE_URL');
+        _wsUrl = _envValue('LOCAL_WS_URL', fallbackKey: 'WS_URL');
         _enableLogging = true;
         _enableDebugTools = true;
         _enableCrashReporting = false;
@@ -113,6 +124,7 @@ class EnvironmentConfig {
   static bool get isDevelopment => _environment == Environment.development;
   static bool get isStaging => _environment == Environment.staging;
   static bool get isProduction => _environment == Environment.production;
+  static bool get isLocal => _environment == Environment.local;
   static bool get enableLogging => _enableLogging;
   static bool get enableDebugTools => _enableDebugTools;
   static bool get enableCrashReporting => _enableCrashReporting;
@@ -136,6 +148,8 @@ class EnvironmentConfig {
         return 'Gruve (Staging)';
       case Environment.development:
         return 'Gruve (Dev)';
+      case Environment.local:
+        return 'Gruve (Local)';
     }
   }
 
@@ -155,10 +169,10 @@ class EnvironmentConfig {
 
   static bool isFeatureEnabled(String featureName) {
     final featureFlags = {
-      'new_feed_ui': isDevelopment || isStaging,
-      'advanced_filters': isDevelopment,
-      'beta_features': isDevelopment,
-      'analytics': !isDevelopment,
+      'new_feed_ui': isDevelopment || isStaging || isLocal,
+      'advanced_filters': isDevelopment || isLocal,
+      'beta_features': isDevelopment || isLocal,
+      'analytics': !isDevelopment && !isLocal,
       'crash_reporting': _enableCrashReporting,
     };
     return featureFlags[featureName] ?? false;
@@ -181,7 +195,7 @@ class EnvironmentConfig {
   }
 }
 
-enum Environment { development, staging, production }
+enum Environment { development, staging, production, local }
 
 extension EnvironmentExtension on Environment {
   String get name {
@@ -192,6 +206,8 @@ extension EnvironmentExtension on Environment {
         return 'staging';
       case Environment.production:
         return 'production';
+      case Environment.local:
+        return 'local';
     }
   }
 
@@ -203,6 +219,8 @@ extension EnvironmentExtension on Environment {
         return 'Staging';
       case Environment.production:
         return 'Production';
+      case Environment.local:
+        return 'Local';
     }
   }
 }

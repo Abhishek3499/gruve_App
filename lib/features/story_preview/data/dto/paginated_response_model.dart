@@ -7,7 +7,7 @@ class PaginatedPostsResponse {
   /// List of posts for current page
   final List<Post> posts;
 
-  /// Cursor for next page (null if no more pages)
+  /// Cursor for next page (nullf no more pages)
   final CursorModel? nextCursor;
 
   /// Whether more posts are available

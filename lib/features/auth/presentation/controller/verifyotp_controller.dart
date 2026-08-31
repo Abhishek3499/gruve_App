@@ -36,7 +36,7 @@ class VerifyotpController {
       if (!response.success) {
         errorMessage = AuthApiException.userFacingMessage(
           response.message,
-          fallback: 'Please enter the correct OTP.',
+          fallback: 'OTP does not match. Please enter the valid OTP sent to you.',
         );
         return;
       }
@@ -68,7 +68,7 @@ class VerifyotpController {
     } catch (e) {
       errorMessage = AuthApiException.userFacingMessage(
         e,
-        fallback: 'Please enter the correct OTP.',
+        fallback: 'OTP does not match. Please enter the valid OTP sent to you.',
       );
     } finally {
       isLoading = false;

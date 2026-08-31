@@ -597,7 +597,7 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
 
     return ValueListenableBuilder<int>(
       valueListenable: widget.controller.itemRevisionListenable(itemKey),
-      builder: (context, _, __) => _buildFeedItem(),
+      builder: (context, _, _) => _buildFeedItem(),
     );
   }
 

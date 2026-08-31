@@ -137,7 +137,24 @@ class AuthApiException extends ApiException {
       return "Server is temporarily unavailable. Please try again in a few minutes.";
     }
 
-    // 4. Session Expired
+    // 4. Invalid/Wrong/Expired OTP (checked before the generic session-expired
+    // check below, since backend OTP-failure text often also contains "expired"
+    // or comes back with a 401/403 status, which would otherwise be misread as
+    // a session timeout instead of a bad OTP).
+    final isOtpError = lower.contains('otp') &&
+        (lower.contains('invalid') ||
+            lower.contains('incorrect') ||
+            lower.contains('wrong') ||
+            lower.contains('mismatch') ||
+            lower.contains('expired') ||
+            lower.contains('does not match') ||
+            lower.contains('failed'));
+
+    if (isOtpError) {
+      return "OTP does not match. Please enter the valid OTP sent to you.";
+    }
+
+    // 5. Session Expired
     final isSessionExpired = statusCode == 401 || statusCode == 403 ||
         (error is DioException && (error.response?.statusCode == 401 || error.response?.statusCode == 403)) ||
         lower.contains('expired') ||
@@ -150,18 +167,6 @@ class AuthApiException extends ApiException {
 
     if (isSessionExpired) {
       return "Your session has expired. Please sign in again.";
-    }
-
-    // 5. Invalid OTP (Precise matching to avoid blocking general validation errors)
-    final isOtpError = lower.contains('invalid otp') ||
-        lower.contains('incorrect otp') ||
-        lower.contains('otp incorrect') ||
-        lower.contains('wrong otp') ||
-        lower.contains('otp mismatch') ||
-        lower == 'otp verification failed';
-
-    if (isOtpError) {
-      return "The OTP you entered is incorrect. Please try again.";
     }
 
     // 6. Invalid Credentials (Precise matching to avoid blocking field validation)

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/network/api_exception.dart';
@@ -126,6 +128,7 @@ class MessageService {
     String? currentUserId,
     String? receiverUserId,
     int page = 1,
+    bool forceRefresh = false,
     CancelToken? cancelToken,
   }) async {
     if (conversationId.isEmpty) {
@@ -135,13 +138,22 @@ class MessageService {
     final endpoint = ApiConstants.conversationMessages(conversationId);
 
     try {
-      AppLogger.d('[MessageService] 📡 GET $endpoint 📄 page=$page');
+      AppLogger.d(
+        '[MessageService] 📡 GET $endpoint 📄 page=$page forceRefresh=$forceRefresh',
+      );
 
       final response = await _dio.get<dynamic>(
         endpoint,
         queryParameters: page > 1 ? {'page': page} : null,
         cancelToken: cancelToken,
-        options: Options(receiveTimeout: const Duration(seconds: 45)),
+        options: Options(
+          receiveTimeout: const Duration(seconds: 45),
+          extra: {
+            'skipCache': forceRefresh || page == 1,
+            'bypassCache': forceRefresh || page == 1,
+            'noCache': forceRefresh || page == 1,
+          },
+        ),
       );
 
       AppLogger.d(
@@ -324,17 +336,18 @@ class MessageService {
     if (lower.endsWith('.webm')) return DioMediaType('video', 'webm');
     if (lower.endsWith('.m4v')) return DioMediaType('video', 'x-m4v');
     if (lower.endsWith('.3gp')) return DioMediaType('video', '3gpp');
-    
+
     if (lower.endsWith('.png')) return DioMediaType('image', 'png');
     if (lower.endsWith('.gif')) return DioMediaType('image', 'gif');
     if (lower.endsWith('.webp')) return DioMediaType('image', 'webp');
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return DioMediaType('image', 'jpeg');
-    
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))
+      return DioMediaType('image', 'jpeg');
+
     if (lower.endsWith('.m4a')) return DioMediaType('audio', 'mp4');
     if (lower.endsWith('.aac')) return DioMediaType('audio', 'aac');
     if (lower.endsWith('.mp3')) return DioMediaType('audio', 'mpeg');
     if (lower.endsWith('.wav')) return DioMediaType('audio', 'wav');
-    
+
     return DioMediaType('image', 'jpeg'); // Safe fallback
   }
 
@@ -378,7 +391,10 @@ class MessageService {
         final raw = response.data;
         final map = raw is Map<String, dynamic>
             ? raw
-            : SafeParsingHelpers.safeMapParse(raw, context: 'uploadMessageMedia');
+            : SafeParsingHelpers.safeMapParse(
+                raw,
+                context: 'uploadMessageMedia',
+              );
         return MessageMediaPayload.fromJson(map);
       }
 
@@ -442,6 +458,7 @@ class MessageService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        unawaited(CacheInvalidationService().onMessageSent(conversationId));
         final messageData = _unwrapMessagePayload(response.data);
         final responseMap = SafeParsingHelpers.safeMapParse(
           messageData,
@@ -566,7 +583,9 @@ class MessageService {
 
     try {
       AppLogger.d('👁️ [MessageService] POST $endpoint');
-      final data = messageIds != null ? {'message_ids': messageIds} : <String, dynamic>{};
+      final data = messageIds != null
+          ? {'message_ids': messageIds}
+          : <String, dynamic>{};
       final response = await _dio.post<dynamic>(
         endpoint,
         data: data,

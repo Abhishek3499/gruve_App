@@ -508,8 +508,14 @@ class CacheInvalidationHelper {
   }
 
   Future<void> _invalidateOnComment(String? postId) async {
+    // Invalidate comment cache for specific post or all comments
+    await _cacheManager.invalidatePattern('posts/comments');
+    if (postId != null && postId.isNotEmpty) {
+      await _cacheManager.invalidatePattern('post_id: $postId');
+      await _cacheManager.invalidatePattern('post_id=$postId');
+      await _cacheManager.invalidatePattern('posts/$postId');
+    }
     // Invalidate post details and feed
-    await _cacheManager.invalidatePattern('posts/$postId');
     await _cacheManager.invalidatePattern('feed');
     
     AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for comment: $postId');

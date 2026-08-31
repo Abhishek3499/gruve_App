@@ -203,7 +203,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       if (index < _focusNodes.length - 1) {
         _focusNodes[index + 1].requestFocus();
       } else {
-        _focusNodes[index].unfocus();
+        _focusNodes[index].requestFocus();
       }
       return;
     }
@@ -225,7 +225,7 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
     if (nextEmptyIndex != -1) {
       _focusNodes[nextEmptyIndex].requestFocus();
     } else {
-      _focusNodes.last.unfocus();
+      _focusNodes.last.requestFocus();
     }
   }
 

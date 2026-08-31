@@ -4,9 +4,11 @@ import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
+import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
 
 /// Global authentication state manager
@@ -119,7 +121,14 @@ class AuthStateManager extends ChangeNotifier {
   }
 
   /// Called when authentication fails (logout, token refresh failure)
-  Future<void> onAuthFailure() async {
+  ///
+  /// [message], when provided, marks this as a *forced* logout (e.g. the
+  /// refresh token was invalid/expired or the refresh call failed): the
+  /// user is shown why they were signed out and is navigated straight to
+  /// [SignInScreen] via [rootNavigatorKey], regardless of which screen is
+  /// currently open. Manual logout (see [logout]) calls this with no
+  /// message and stays silent — [LogoutWidget] handles its own navigation.
+  Future<void> onAuthFailure({String? message}) async {
     AppLogger.d(
       '🚨 [AuthState] Authentication failed - initiating logout flow',
     );
@@ -168,6 +177,27 @@ class AuthStateManager extends ChangeNotifier {
       _isLoggingOut = false;
       notifyListeners();
     }
+
+    if (message != null && message.trim().isNotEmpty) {
+      _forceNavigateToSignIn(message);
+    }
+  }
+
+  /// Shows the session-expiry reason and forcibly navigates to
+  /// [SignInScreen], bypassing whatever screen/route is currently active.
+  void _forceNavigateToSignIn(String message) {
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    rootNavigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const SignInScreen()),
+      (route) => false,
+    );
   }
 
   /// Manually triggers logout (user-initiated)

@@ -1,10 +1,18 @@
+import 'package:gruve_app/core/config/environment_config.dart';
+
 /// Central registry of every backend API endpoint path used by the app.
 ///
-/// Paths are relative to [EnvironmentConfig.baseUrl] unless noted otherwise.
+/// Paths are relative to [baseUrl] unless noted otherwise.
 /// Keep this file as the single source of truth when adding or renaming
 /// endpoints so folder/feature restructuring never has to hunt for literals.
 class ApiConstants {
   const ApiConstants._();
+
+  /// Active API base URL, read from .env via [EnvironmentConfig].
+  static String get baseUrl => EnvironmentConfig.baseUrl;
+
+  /// Active WebSocket URL, read from .env via [EnvironmentConfig].
+  static String get wsUrl => EnvironmentConfig.wsUrl;
 
   // ---- Auth ----
   static const String login = 'auth/login/';

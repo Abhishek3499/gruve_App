@@ -140,11 +140,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+                size: 24,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  isVideo ? 'Video uploaded successfully' : 'Image uploaded successfully',
+                  isVideo
+                      ? 'Video uploaded successfully'
+                      : 'Image uploaded successfully',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
@@ -370,10 +376,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _ensureHomeFeedTab();
 
       _cameraFlowInProgress = true;
-      
+
       // 🚀 OPTIMIZATION: Pre-warm camera again right before opening
       unawaited(CameraControllerService.prewarmCamera());
-      
+
       try {
         final result = await CameraHandler.openCamera(context);
         if (!mounted || _isDisposed) return;
@@ -433,9 +439,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     if (newIndex == 3) {
-      unawaited(
-        context.read<UserProvider>().refreshOnTabVisible(),
-      );
+      unawaited(context.read<UserProvider>().refreshOnTabVisible());
     }
   }
 
@@ -453,22 +457,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         backgroundColor: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         title: const Text(
           'Exit Gruve',
           style: TextStyle(
-            color: Colors.white, 
+            color: Colors.white,
             fontWeight: FontWeight.bold,
             fontFamily: 'Outfit',
           ),
         ),
         content: const Text(
           'Are you sure you want to exit the app?',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
         actions: [
@@ -496,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: const Text(
               'Exit',
               style: TextStyle(
-                color: Colors.white, 
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),

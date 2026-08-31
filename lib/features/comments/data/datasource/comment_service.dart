@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
@@ -29,6 +31,9 @@ class CommentService {
     String postId, {
     bool forceRefresh = false,
   }) async {
+    if (forceRefresh) {
+      invalidatePost(postId);
+    }
     final cached = _cache[postId];
     if (!forceRefresh && cached != null && cached.isFresh) {
       return cached.comments;
@@ -37,7 +42,7 @@ class CommentService {
     final inFlight = _inFlight[postId];
     if (inFlight != null) return inFlight;
 
-    final future = _fetchComments(postId);
+    final future = _fetchComments(postId, forceRefresh: forceRefresh);
     _inFlight[postId] = future;
     try {
       return await future;
@@ -46,9 +51,15 @@ class CommentService {
     }
   }
 
-  Future<List<Comment>> _fetchComments(String postId) async {
+  Future<List<Comment>> _fetchComments(
+    String postId, {
+    bool forceRefresh = false,
+  }) async {
     final token = await TokenStorage.getAccessToken();
-    final opts = Options(headers: {'Authorization': 'Bearer $token'});
+    final opts = Options(
+      headers: {'Authorization': 'Bearer $token'},
+      extra: forceRefresh ? {'skipCache': true, 'bypassCache': true} : null,
+    );
 
     try {
       final res = await _dio.get(
@@ -80,8 +91,9 @@ class CommentService {
     final opts = Options();
     final payload = {'post_id': postId, 'body': body};
 
+    Comment? comment;
     try {
-      return await _tryAddComment(
+      comment = await _tryAddComment(
         endpoint: ApiConstants.comments,
         payload: payload,
         options: opts,
@@ -98,13 +110,18 @@ class CommentService {
       AppLogger.d('[CommentService] First comment attempt failed: $e. Retrying in 1s...');
       await Future<void>.delayed(const Duration(seconds: 1));
 
-      return await _tryAddComment(
+      comment = await _tryAddComment(
         endpoint: ApiConstants.comments,
         payload: payload,
         options: opts,
         body: body,
       );
     }
+
+    if (comment != null) {
+      invalidatePost(postId);
+    }
+    return comment;
   }
 
   Future<Comment?> _tryAddComment({
@@ -169,5 +186,6 @@ class CommentService {
 
   static void invalidatePost(String postId) {
     _cache.remove(postId);
+    unawaited(CacheInvalidationService().onCommentAdded(postId));
   }
 }

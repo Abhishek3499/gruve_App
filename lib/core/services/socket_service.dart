@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/socket/socket_reconnect_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -440,6 +441,9 @@ class SocketService {
 
     try {
       final sent = _reconnectManager.sendMessage(messageData);
+      if (sent && conversationId != null) {
+        unawaited(CacheInvalidationService().onMessageSent(conversationId));
+      }
       return sent;
     } catch (e) {
       AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");

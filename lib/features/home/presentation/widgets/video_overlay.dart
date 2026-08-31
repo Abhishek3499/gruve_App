@@ -79,6 +79,27 @@ class _VideoOverlayState extends State<VideoOverlay> {
     final loggedInUserId = Provider.of<AuthStateManager>(context).currentUserId;
     return Stack(
       children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 280,
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.75),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
         // User Info at Bottom Left
         Positioned(
           left: 0,

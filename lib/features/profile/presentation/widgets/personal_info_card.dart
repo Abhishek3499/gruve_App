@@ -30,7 +30,7 @@ class PersonalInfoCard extends StatelessWidget {
     required this.genderController,
     required this.bioController,
     required this.onSave,
-    this.showEditIcon = true,
+    this.showEditIcon = false,
     this.showUpdateButton = true,
     this.isReadOnly = false,
     this.showEmail = true,
@@ -163,6 +163,8 @@ class PersonalInfoCard extends StatelessWidget {
           readOnly: fieldReadOnly, // ✅ Read-only mode
           maxLines: isBio ? 3 : 1,
           maxLength: isBio ? 150 : null,
+          textInputAction: isBio ? TextInputAction.done : TextInputAction.next,
+          onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14,

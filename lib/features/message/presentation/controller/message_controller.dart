@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
 import 'package:gruve_app/features/message/domain/entities/message_media_model.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
@@ -614,6 +615,7 @@ class MessageController extends ChangeNotifier {
         currentUserId: currentUserId,
         receiverUserId: receiverUserId,
         page: page,
+        forceRefresh: replace,
         cancelToken: _cancelToken,
       );
 

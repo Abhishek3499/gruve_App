@@ -629,7 +629,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) =>
-                                _signupButtonController.submit(),
+                                _confirmPasswordFocus.unfocus(),
                             errorText: confirmPasswordError,
                           ),
                         ],
