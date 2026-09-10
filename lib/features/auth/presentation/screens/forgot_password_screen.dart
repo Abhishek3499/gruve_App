@@ -48,8 +48,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     _setupRealTimeValidation();
   }
 
-
-
   void _setupRealTimeValidation() {
     // Email field real-time validation
 
@@ -134,11 +132,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                           SizedBox(height: context.rh(12)),
                           Text(
-                            'Lorem Ipsum is simply dummy text of the printing and typesetting industry',
+                            'Please enter your valid email. We will send you a 4-digit code to verify your account.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: context.rf(15),
+                              fontSize: context.rf(16),
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                           SizedBox(height: context.rh(40)),
@@ -147,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             child: Text(
                               'Email',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Colors.white70,
                                 fontSize: context.rf(16),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -157,25 +156,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           NeonTextField(
                             controller: _emailController,
                             hintText: 'Enter your Email',
-                            prefixIcon: AppAssets.user2,
+                            prefixIcon: AppAssets.emailicon,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.done,
                             focusNode: _emailFocus,
-                            onFieldSubmitted: (_) =>
-                                _forgotButtonController.submit(),
+                            onFieldSubmitted: (_) => _emailFocus.unfocus(),
                             errorText: emailError,
                           ),
                           SizedBox(height: context.rh(40)),
                           Center(
                             child: GetStartedButton(
                               controller: _forgotButtonController,
-                              width: 250,
-                              textStyle: TextStyle(
-                                color: Colors.white,
-                                fontSize: context.rf(13),
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppAssets.syncopateFont,
-                              ),
                               text: 'RESET PASSWORD',
                               isLoading: isLoading,
                               onComplete: () async {

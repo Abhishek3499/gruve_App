@@ -1,6 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Keeps a single OTP box to exactly one digit during normal typing, while
+/// still allowing a full multi-digit burst (paste or SMS autofill) to pass
+/// through untouched so the parent can distribute it across the other boxes.
+///
+/// Without this, each box's [TextField] could accumulate more than one
+/// character (e.g. when a keystroke lands before focus finishes moving to
+/// the next box), which made the parent's paste-distribution logic run on
+/// ordinary typing and jump focus to the wrong field.
+class _OtpDigitInputFormatter extends TextInputFormatter {
+  const _OtpDigitInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final newDigits = newValue.text.replaceAll(RegExp(r'\D'), '');
+
+    if (newDigits.length <= 1) {
+      return TextEditingValue(
+        text: newDigits,
+        selection: TextSelection.collapsed(offset: newDigits.length),
+      );
+    }
+
+    final oldDigits = oldValue.text.replaceAll(RegExp(r'\D'), '');
+    final addedDigits = newDigits.length - oldDigits.length;
+
+    if (addedDigits > 1) {
+      // A bulk insert (paste / autofill) — pass the full burst through.
+      return TextEditingValue(
+        text: newDigits,
+        selection: TextSelection.collapsed(offset: newDigits.length),
+      );
+    }
+
+    // A single keystroke landed on top of an existing digit; keep only the
+    // latest digit instead of letting this box accumulate characters.
+    final latest = newDigits.substring(newDigits.length - 1);
+    return TextEditingValue(
+      text: latest,
+      selection: TextSelection.collapsed(offset: latest.length),
+    );
+  }
+}
+
 class OtpInputBox extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -67,7 +113,6 @@ class OtpInputBox extends StatelessWidget {
                       : null,
                   textAlign: TextAlign.center,
                   textAlignVertical: TextAlignVertical.center,
-                  maxLength: 4,
                   showCursor: false,
                   onTap: () {
                     controller.selection = TextSelection.collapsed(
@@ -98,10 +143,7 @@ class OtpInputBox extends StatelessWidget {
                       onBackspace?.call();
                     }
                   },
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(4),
-                  ],
+                  inputFormatters: const [_OtpDigitInputFormatter()],
                 ),
               ),
             ),

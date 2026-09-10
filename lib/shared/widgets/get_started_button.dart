@@ -259,15 +259,19 @@ class _GetStartedButtonState extends State<GetStartedButton>
                   padding: EdgeInsets.only(left: _circleSize + 14, right: 16),
                   child: Opacity(
                     opacity: (1 - (_dragX / _center)).clamp(0.0, 1.0),
-                    child: Text(
-                      widget.text,
-                      style:
-                          widget.textStyle ??
-                          const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w400,
-                          ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.text,
+                        maxLines: 1,
+                        style:
+                            widget.textStyle ??
+                            const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
                     ),
                   ),
                 ),

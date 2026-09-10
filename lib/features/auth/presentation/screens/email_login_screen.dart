@@ -327,7 +327,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             textInputAction: TextInputAction.done,
 
                             onFieldSubmitted: (_) =>
-                                _loginButtonController.submit(),
+                                FocusScope.of(context).unfocus(),
 
                             errorText: passwordError,
                           ),
