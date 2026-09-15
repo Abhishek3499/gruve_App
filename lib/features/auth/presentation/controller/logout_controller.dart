@@ -1,20 +1,18 @@
 
-import 'package:gruve_app/features/auth/domain/entities/logout_model.dart';
 import 'package:gruve_app/features/auth/data/datasource/logout_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class LogoutController {
   final LogoutService _service = LogoutService();
-  bool isLoading = false;
-  String? errorMessage;
-  LogoutResponse? response;
 
-  Future<void> logout({
+  /// Calls the logout API when a token is available. Returns an immutable
+  /// [LogoutResult] describing whether the API call itself succeeded;
+  /// callers preserve the previous behavior of proceeding with local
+  /// session cleanup regardless of this result.
+  Future<LogoutResult> logout({
     String? accessToken,
     String? refreshToken,
   }) async {
-    isLoading = true;
-    errorMessage = null;
     AppLogger.d('[Logout] Starting logout API process');
 
     try {
@@ -22,28 +20,37 @@ class LogoutController {
           (refreshToken != null && refreshToken.isNotEmpty) ||
           (accessToken != null && accessToken.isNotEmpty);
 
-      if (hasToken) {
-        final res = await _service.logout(
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-        );
-        response = res;
-
-        if (!res.success) {
-          errorMessage = res.message;
-          AppLogger.d('[Logout] Logout API failed: ${res.message}');
-        } else {
-          AppLogger.d('[Logout] Logout API successful');
-        }
-      } else {
+      if (!hasToken) {
         AppLogger.d('[Logout] No tokens found, skipping API call');
+        return const LogoutResult(isSuccess: true);
       }
+
+      final res = await _service.logout(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+
+      if (!res.success) {
+        AppLogger.d('[Logout] Logout API failed: ${res.message}');
+        return LogoutResult(isSuccess: false, errorMessage: res.message);
+      }
+
+      AppLogger.d('[Logout] Logout API successful');
+      return const LogoutResult(isSuccess: true);
     } catch (e) {
-      errorMessage = e.toString();
       AppLogger.d('[Logout] Logout API error: $e');
+      return LogoutResult(isSuccess: false, errorMessage: e.toString());
     } finally {
-      isLoading = false;
       AppLogger.d('[Logout] Logout API process completed');
     }
   }
+}
+
+/// Immutable outcome of the logout API call, returned by
+/// [LogoutController.logout] for the notifier to log/act on.
+class LogoutResult {
+  const LogoutResult({required this.isSuccess, this.errorMessage});
+
+  final bool isSuccess;
+  final String? errorMessage;
 }

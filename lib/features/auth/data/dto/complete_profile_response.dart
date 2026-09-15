@@ -47,32 +47,35 @@ class CompleteProfileResponse {
         : null;
 
     final statusStr = root['status'];
-    final statusOk = statusStr is String &&
-        statusStr.toLowerCase().trim() == 'success';
+    final statusOk =
+        statusStr is String && statusStr.toLowerCase().trim() == 'success';
 
     // After merging `data`, profile fields often live as user_id / username / profile_picture.
-    final hasUserPayload = root['user'] != null ||
+    final hasUserPayload =
+        root['user'] != null ||
         root['profile'] != null ||
         root['id'] != null ||
         root['user_id'] != null;
 
     final errors = root['errors'] ?? root['non_field_errors'];
-    final hasErrors = errors != null &&
+    final hasErrors =
+        errors != null &&
         ((errors is Map && errors.isNotEmpty) ||
             (errors is List && errors.isNotEmpty));
 
     final code = root['code'];
-    final codeOk = code == 200 ||
-        code == '200' ||
-        (code is num && code.toInt() == 200);
+    final codeOk =
+        code == 200 || code == '200' || (code is num && code.toInt() == 200);
 
     // Many backends return 200 with `{ "user": ... }` or `{}` without `success`.
-    final inferredOk = explicitSuccess == null &&
+    final inferredOk =
+        explicitSuccess == null &&
         !hasErrors &&
         (root['error'] == null || root['error'] == false) &&
         (hasUserPayload || root.isEmpty || codeOk);
 
-    final success = explicitSuccess == true ||
+    final success =
+        explicitSuccess == true ||
         (explicitSuccess == null && statusOk) ||
         (explicitSuccess == null && codeOk && hasUserPayload && !hasErrors) ||
         inferredOk;
@@ -82,9 +85,6 @@ class CompleteProfileResponse {
         ? extracted
         : _coerceMessage(root['message']);
 
-    return CompleteProfileResponse(
-      success: success,
-      message: message,
-    );
+    return CompleteProfileResponse(success: success, message: message);
   }
 }

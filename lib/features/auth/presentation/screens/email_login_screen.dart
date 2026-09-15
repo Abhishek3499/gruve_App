@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
-import 'package:gruve_app/features/auth/presentation/controller/login_controller.dart';
+import 'package:gruve_app/features/auth/presentation/controller/login_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/controller/auth_session_helper.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
-import 'package:provider/provider.dart';
 
 import 'package:gruve_app/features/auth/presentation/screens/forgot_password_screen.dart';
 
@@ -20,15 +19,14 @@ import 'package:gruve_app/shared/widgets/inputs/neon_text_field.dart';
 
 import 'package:gruve_app/shared/widgets/inputs/neon_password_field.dart';
 
-class EmailLoginScreen extends StatefulWidget {
+class EmailLoginScreen extends ConsumerStatefulWidget {
   const EmailLoginScreen({super.key});
 
   @override
-  State<EmailLoginScreen> createState() => _EmailLoginScreenState();
+  ConsumerState<EmailLoginScreen> createState() => _EmailLoginScreenState();
 }
 
-class _EmailLoginScreenState extends State<EmailLoginScreen> {
-  final EmailSignInController _controller = EmailSignInController();
+class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   final GetStartedButtonController _loginButtonController =
       GetStartedButtonController();
 
@@ -51,7 +49,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AuthUiProvider>().resetLogin();
+      if (mounted) ref.read(loginNotifierProvider.notifier).reset();
     });
     _setupRealTimeValidation();
   }
@@ -66,13 +64,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         _emailController.text,
       );
 
-      context.read<AuthUiProvider>().setValidationError('login_email', error);
+      ref.read(loginNotifierProvider.notifier).setEmailError(error);
     });
 
     // Password field real-time validation
     _passwordController.addListener(() {
       final error = _validatePasswordForLogin(_passwordController.text);
-      context.read<AuthUiProvider>().setValidationError('login_password', error);
+      ref.read(loginNotifierProvider.notifier).setPasswordError(error);
     });
   }
 
@@ -109,18 +107,18 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       });
     }
 
-    final authUi = context.read<AuthUiProvider>();
-    if (authUi.isLoading(AuthLoadingKey.login)) return false;
+    final loginNotifier = ref.read(loginNotifierProvider.notifier);
+    if (ref.read(loginNotifierProvider).isLoading) return false;
 
     final emailError = SignupValidator.validateEmailRealTime(
       _emailController.text,
     );
     final passwordError = _validatePasswordForLogin(_passwordController.text);
 
-    authUi.setErrors({
-      'login_email': emailError,
-      'login_password': passwordError,
-    });
+    loginNotifier.setErrorsNow(
+      emailError: emailError,
+      passwordError: passwordError,
+    );
 
     // Check real-time validation errors instead of form validation
     if (emailError != null || passwordError != null) {
@@ -133,58 +131,37 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       return false;
     }
 
-    authUi.setLoading(AuthLoadingKey.login, true);
-
-    try {
-      await _controller.signIn(
-        identifier: _emailController.text.trim(),
-
-        password: _passwordController.text.trim(),
-      );
-    } finally {
-      authUi.setLoading(AuthLoadingKey.login, false);
-    }
+    final result = await loginNotifier.signIn(
+      identifier: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
 
     if (!mounted) return false;
 
-    //
-
-    if (_controller.errorMessage != null) {
+    if (!result.isSuccess) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(_controller.errorMessage!)));
+        ..showSnackBar(SnackBar(content: Text(result.errorMessage!)));
 
       return false;
     }
 
-    if (_controller.response?.success == true) {
-      if (!mounted) return false;
+    AuthSessionHelper.bootstrapAfterLogin(context, result.accessToken!);
 
-      final accessToken = _controller.response!.data!.accessToken;
-      AuthSessionHelper.bootstrapAfterLogin(context, accessToken);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
 
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
-      );
-
-      return true;
-    }
-
-    return false;
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.login),
-    );
-    final emailErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('login_email'),
-    );
-    final passwordErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('login_password'),
-    );
+    final loginState = ref.watch(loginNotifierProvider);
+    final isLoading = loginState.isLoading;
+    final emailErrorRaw = loginState.emailError;
+    final passwordErrorRaw = loginState.passwordError;
     final emailError = _emailTouched ? emailErrorRaw : null;
     final passwordError = _passwordTouched ? passwordErrorRaw : null;
     return Scaffold(

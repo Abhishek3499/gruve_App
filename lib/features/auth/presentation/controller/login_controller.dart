@@ -1,68 +1,70 @@
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/auth/data/datasource/auth_api_exception.dart';
-
-import 'package:gruve_app/features/auth/domain/entities/login_model.dart';
 import 'package:gruve_app/features/auth/data/datasource/login_services.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 
-class EmailSignInController {
-  final EmailSignInService _service = EmailSignInService();
+/// Handles the email/password sign-in call and its post-login side effects
+/// (token save, profile identity priming). Loading state and field-level
+/// validation errors are owned by `AuthUiProvider`, not here.
+class LoginController {
+  LoginController({EmailSignInService? service})
+      : _service = service ?? EmailSignInService();
 
-  bool isLoading = false;
-  String? errorMessage;
-  EmailSignInResponse? response;
+  final EmailSignInService _service;
 
-  Future<void> signIn({
+  Future<LoginResult> signIn({
     required String identifier,
     required String password,
   }) async {
-    isLoading = true;
-    errorMessage = null;
-
     try {
       final res = await _service.signIn(
         identifier: identifier,
         password: password,
       );
 
-      response = res;
-
-      AppLogger.d("✅ SUCCESS: ${res.success}");
-      AppLogger.d("📩 MESSAGE: ${res.message}");
-
-      // ✅ TOKEN SAVE SAFE
       if (res.success && res.data != null) {
-        final accessToken = res.data!.accessToken;
-        final refreshToken = res.data!.refreshToken;
+        final data = res.data!;
 
         await AuthStateManager().onAuthSuccess(
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-          userId: res.data!.userId,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          userId: data.userId,
         );
         ProfileIdentityService.instance.clearCachedLoggedInUserId();
 
-        if (res.data!.userId.trim().isNotEmpty) {
-          ProfileIdentityService.instance.primeLoggedInUserId(res.data!.userId);
+        if (data.userId.trim().isNotEmpty) {
+          ProfileIdentityService.instance.primeLoggedInUserId(data.userId);
         }
 
-        AppLogger.d("✅ TOKENS SAVED SUCCESSFULLY");
-      } else {
-        errorMessage = _loginErrorMessage(res.message);
+        return LoginResult.success(accessToken: data.accessToken);
       }
+
+      return LoginResult.failure(_errorMessage(res.message));
     } catch (e) {
-      errorMessage = _loginErrorMessage(e);
-      AppLogger.d("❌ CONTROLLER ERROR: $e");
-    } finally {
-      isLoading = false;
+      return LoginResult.failure(_errorMessage(e));
     }
   }
 
-  String _loginErrorMessage(Object? error) {
-    return AuthApiException.userFacingMessage(
-      error,
-      fallback: 'The provided credentials are incorrect.',
-    );
-  }
+  String _errorMessage(Object? error) => AuthApiException.userFacingMessage(
+        error,
+        fallback: 'The provided credentials are incorrect.',
+      );
+}
+
+class LoginResult {
+  const LoginResult._({
+    required this.isSuccess,
+    this.accessToken,
+    this.errorMessage,
+  });
+
+  factory LoginResult.success({required String accessToken}) =>
+      LoginResult._(isSuccess: true, accessToken: accessToken);
+
+  factory LoginResult.failure(String message) =>
+      LoginResult._(isSuccess: false, errorMessage: message);
+
+  final bool isSuccess;
+  final String? accessToken;
+  final String? errorMessage;
 }

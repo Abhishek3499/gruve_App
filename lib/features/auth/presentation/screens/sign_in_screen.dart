@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/features/auth/presentation/controller/google_sign_in_controller.dart';
+import 'package:gruve_app/features/auth/presentation/controller/google_sign_in_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/complete_profile_screen.dart';
 import 'package:gruve_app/features/auth/presentation/screens/phone_number_screen.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/auth_header.dart';
@@ -18,17 +19,14 @@ import 'package:gruve_app/shared/widgets/video_background.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class SignInScreen extends StatefulWidget {
+class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenState();
+  ConsumerState<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen> {
-  final GoogleAuthController _googleController = GoogleAuthController();
-  bool _isGoogleLoading = false;
-
+class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   void initState() {
     super.initState();
@@ -68,17 +66,16 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (_isGoogleLoading) return;
+    if (ref.read(googleSignInNotifierProvider).isLoading) return;
 
-    setState(() => _isGoogleLoading = true);
-
-    final success = await _googleController.signIn();
+    final result = await ref
+        .read(googleSignInNotifierProvider.notifier)
+        .signIn();
 
     if (!mounted) return;
-    setState(() => _isGoogleLoading = false);
 
-    if (!success) {
-      final message = _googleController.errorMessage;
+    if (!result.isSuccess) {
+      final message = result.errorMessage;
       if (message != null && message.trim().isNotEmpty) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -87,12 +84,12 @@ class _SignInScreenState extends State<SignInScreen> {
       return;
     }
 
-    final accessToken = _googleController.response?.data?.accessToken;
+    final accessToken = result.accessToken;
     if (accessToken != null && accessToken.isNotEmpty) {
       AuthSessionHelper.connectSocket(accessToken);
     }
 
-    final isNewUser = _googleController.needsProfileSetup;
+    final isNewUser = result.needsProfileSetup;
 
     if (!isNewUser && mounted) {
       AuthSessionHelper.bootstrapAfterLogin(context, accessToken ?? '');
@@ -110,6 +107,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isGoogleLoading = ref.watch(googleSignInNotifierProvider).isLoading;
     return Scaffold(
       backgroundColor: Colors.black, // ✅ FIX
       body: VideoBackground(
@@ -147,7 +145,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                 SizedBox(height: context.rh(24)),
 
-                _isGoogleLoading
+                isGoogleLoading
                     ? SizedBox(
                         width: context.rw(50),
                         height: context.rh(50),

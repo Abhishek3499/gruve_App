@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
@@ -16,9 +17,6 @@ import 'package:gruve_app/features/user_profile/data/datasource/user_profile_ser
 import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/post_like_provider.dart';
-import 'package:gruve_app/features/share/presentation/controller/post_share_provider.dart';
-import 'package:gruve_app/features/auth/presentation/controller/logout_provider.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
 
@@ -81,7 +79,11 @@ Future<void> main() async {
     AppLogger.d('🚨 [Main] AuthStateManager initialization failed: $e');
   }
 
-  runApp(MyApp(authStateManager: authStateManager));
+  runApp(
+    ProviderScope(
+      child: MyApp(authStateManager: authStateManager),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -144,8 +146,6 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => BlockProvider()),
         ChangeNotifierProvider(create: (_) => SavePostProvider()),
-        ChangeNotifierProvider(create: (_) => LogoutProvider()),
-        ChangeNotifierProvider(create: (_) => AuthUiProvider()),
         ChangeNotifierProvider(
           lazy: false,
           create: (_) => MessageProvider(MessageService()),
@@ -172,9 +172,6 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => PostLikeProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => PostShareProvider(),
         ),
       ],
       child: MaterialApp(

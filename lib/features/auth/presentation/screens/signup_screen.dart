@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gruve_app/core/assets.dart';
 
@@ -18,21 +19,19 @@ import 'package:gruve_app/shared/widgets/inputs/neon_text_field.dart';
 
 import 'package:gruve_app/shared/widgets/inputs/neon_password_field.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/signup_controller.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
+import 'package:gruve_app/features/auth/presentation/controller/signup_notifier.dart';
 import 'package:gruve_app/features/auth/validators/phone_number_validator.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   // ── Controllers ──────────────────────────────────────────
 
   final _nameController = TextEditingController();
@@ -64,7 +63,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // ── Other State ──────────────────────────────────────────
 
-  final SignupController controller = SignupController();
   final GetStartedButtonController _signupButtonController =
       GetStartedButtonController();
 
@@ -82,7 +80,7 @@ class _SignupScreenState extends State<SignupScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AuthUiProvider>().resetSignup();
+      if (mounted) ref.read(signupNotifierProvider.notifier).reset();
     });
     _setupRealTimeValidation();
     _setupFocusListeners();
@@ -148,7 +146,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _nameController.text,
       );
 
-      context.read<AuthUiProvider>().setValidationError('signup_name', error);
+      ref.read(signupNotifierProvider.notifier).setNameError(error);
     });
 
     // Identifier field real-time validation
@@ -156,7 +154,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _identifierController.addListener(() {
       final error = _validateIdentifier(_identifierController.text);
 
-      context.read<AuthUiProvider>().setValidationError('signup_identifier', error);
+      ref.read(signupNotifierProvider.notifier).setIdentifierError(error);
     });
 
     // Password field real-time validation
@@ -166,7 +164,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _passwordController.text,
       );
 
-      context.read<AuthUiProvider>().setValidationError('signup_password', error);
+      ref.read(signupNotifierProvider.notifier).setPasswordError(error);
 
       // Revalidate confirm password when password changes
 
@@ -177,10 +175,9 @@ class _SignupScreenState extends State<SignupScreen> {
           _confirmPasswordController.text,
         );
 
-        context.read<AuthUiProvider>().setValidationError(
-          'signup_confirm_password',
-          confirmError,
-        );
+        ref
+            .read(signupNotifierProvider.notifier)
+            .setConfirmPasswordError(confirmError);
       }
     });
 
@@ -193,14 +190,14 @@ class _SignupScreenState extends State<SignupScreen> {
         _confirmPasswordController.text,
       );
 
-      context.read<AuthUiProvider>().setValidationError('signup_confirm_password', error);
+      ref.read(signupNotifierProvider.notifier).setConfirmPasswordError(error);
     });
   }
 
   String? _validateIdentifier(String identifier) {
     final trimmed = identifier.trim();
 
-    if (context.read<AuthUiProvider>().useEmail) {
+    if (ref.read(signupNotifierProvider).useEmail) {
       return SignupValidator.validateEmailRealTime(trimmed);
     }
 
@@ -221,34 +218,33 @@ class _SignupScreenState extends State<SignupScreen> {
           _confirmPasswordController.text,
         );
 
-    final authUi = context.read<AuthUiProvider>();
-    authUi.setErrors({
-      'signup_name': nameError,
-      'signup_identifier': identifierError,
-      'signup_password': passwordError,
-      'signup_confirm_password': confirmPasswordError,
-    });
+    final signupNotifier = ref.read(signupNotifierProvider.notifier);
+    signupNotifier.setErrorsNow(
+      nameError: nameError,
+      identifierError: identifierError,
+      passwordError: passwordError,
+      confirmPasswordError: confirmPasswordError,
+    );
 
     return nameError == null &&
         identifierError == null &&
         passwordError == null &&
         confirmPasswordError == null &&
-        authUi.selectedGender != null;
+        ref.read(signupNotifierProvider).selectedGender != null;
   }
 
   String _firstSignupError() {
-    final authUi = context.read<AuthUiProvider>();
-    return authUi.error('signup_name') ??
-        authUi.error('signup_identifier') ??
-        authUi.error('signup_password') ??
-        authUi.error('signup_confirm_password') ??
-        authUi.genderError ??
+    final signupState = ref.read(signupNotifierProvider);
+    return signupState.nameError ??
+        signupState.identifierError ??
+        signupState.passwordError ??
+        signupState.confirmPasswordError ??
+        signupState.genderError ??
         'Please complete all required fields';
   }
 
   void _setContactMode(bool useEmail) {
-    final authUi = context.read<AuthUiProvider>();
-    if (authUi.useEmail == useEmail) return;
+    if (ref.read(signupNotifierProvider).useEmail == useEmail) return;
 
     if (mounted) {
       setState(() {
@@ -256,10 +252,9 @@ class _SignupScreenState extends State<SignupScreen> {
       });
     }
 
-    authUi.setContactMode(useEmail);
+    ref.read(signupNotifierProvider.notifier).setContactMode(useEmail);
     _identifierFocus.unfocus();
     _identifierController.clear();
-    authUi.setError('signup_identifier', null);
   }
 
   @override
@@ -287,30 +282,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.signup),
-    );
-    final selectedGender = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.selectedGender,
-    );
-    final genderError = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.genderError,
-    );
-    final useEmail = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.useEmail,
-    );
-    final nameErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('signup_name'),
-    );
-    final identifierErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('signup_identifier'),
-    );
-    final passwordErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('signup_password'),
-    );
-    final confirmPasswordErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('signup_confirm_password'),
-    );
+    final signupState = ref.watch(signupNotifierProvider);
+    final isLoading = signupState.isLoading;
+    final selectedGender = signupState.selectedGender;
+    final genderError = signupState.genderError;
+    final useEmail = signupState.useEmail;
+    final nameErrorRaw = signupState.nameError;
+    final identifierErrorRaw = signupState.identifierError;
+    final passwordErrorRaw = signupState.passwordError;
+    final confirmPasswordErrorRaw = signupState.confirmPasswordError;
 
     final nameError = _nameTouched ? nameErrorRaw : null;
     final identifierError = _identifierTouched ? identifierErrorRaw : null;
@@ -651,13 +631,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           // ✅ Gender touched mark — error dikhao agar empty
 
-                          final authUi = context.read<AuthUiProvider>();
+                          final signupNotifier = ref.read(
+                            signupNotifierProvider.notifier,
+                          );
                           final messenger = ScaffoldMessenger.of(context);
                           final nav = Navigator.of(context);
-                          if (authUi.isLoading(AuthLoadingKey.signup)) {
+                          if (ref.read(signupNotifierProvider).isLoading) {
                             return false;
                           }
-                          authUi.touchGender();
+                          signupNotifier.touchGender();
 
                           if (mounted) {
                             setState(() {
@@ -681,37 +663,20 @@ class _SignupScreenState extends State<SignupScreen> {
                             return false;
                           }
 
-                          authUi.setLoading(AuthLoadingKey.signup, true);
-
                           final identifier = _identifierController.text.trim();
 
-                          try {
-                            await controller.signup(
-                              fullName: _nameController.text.trim(),
-
-                              identifier: identifier,
-
-                              password: _passwordController.text.trim(),
-
-                              gender: selectedGender,
-                            );
-                          } finally {
-                            if (mounted) {
-                              authUi.setLoading(AuthLoadingKey.signup, false);
-                            }
-                          }
+                          final result = await signupNotifier.signup(
+                            fullName: _nameController.text.trim(),
+                            identifier: identifier,
+                            password: _passwordController.text.trim(),
+                            gender: selectedGender,
+                          );
 
                           if (!mounted) return false;
 
-                          if (!mounted) return false;
-
-                          final response = controller.signupResponse;
-                          if (controller.errorMessage != null ||
-                              response == null ||
-                              response.success != true ||
-                              response.data == null) {
+                          if (!result.isSuccess) {
                             final errorText =
-                                controller.errorMessage ??
+                                result.errorMessage ??
                                 'Signup failed. Please try again.';
                             messenger
                               ..hideCurrentSnackBar()
@@ -719,8 +684,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                             return false;
                           }
-
-                          if (!mounted) return false;
 
                           if (!nav.mounted) return false;
                           nav.push(
@@ -960,7 +923,7 @@ class _SignupScreenState extends State<SignupScreen> {
         onTap: () {
           _hideGenderMenu();
           if (!mounted) return;
-          context.read<AuthUiProvider>().setGender(value);
+          ref.read(signupNotifierProvider.notifier).setGender(value);
           FocusScope.of(context).requestFocus(_passwordFocus);
         },
         borderRadius: BorderRadius.circular(14),

@@ -1,97 +1,114 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 
-class PostShareProvider extends ChangeNotifier {
-  final PostService _postService = PostService();
-  final Set<SearchUser> _selectedUsers = {};
-  bool _isSending = false;
+/// Immutable UI state for the post-share flow (recipient picker + search).
+@immutable
+class PostShareState {
+  const PostShareState({
+    this.selectedUsers = const {},
+    this.isSending = false,
+    this.searchResults = const [],
+    this.isSearching = false,
+    this.searchError,
+    this.searchQuery = '',
+  });
 
-  // Search-related states managed by Provider
-  final DebouncedUserSearch _userSearch = DebouncedUserSearch();
-  List<SearchUser> _searchResults = [];
-  bool _isSearching = false;
-  String? _searchError;
-  String _searchQuery = '';
+  final Set<SearchUser> selectedUsers;
+  final bool isSending;
+  final List<SearchUser> searchResults;
+  final bool isSearching;
+  final String? searchError;
+  final String searchQuery;
 
-  Set<SearchUser> get selectedUsers => _selectedUsers;
-  bool get isSending => _isSending;
+  PostShareState copyWith({
+    Set<SearchUser>? selectedUsers,
+    bool? isSending,
+    List<SearchUser>? searchResults,
+    bool? isSearching,
+    String? searchError,
+    bool clearSearchError = false,
+    String? searchQuery,
+  }) {
+    return PostShareState(
+      selectedUsers: selectedUsers ?? this.selectedUsers,
+      isSending: isSending ?? this.isSending,
+      searchResults: searchResults ?? this.searchResults,
+      isSearching: isSearching ?? this.isSearching,
+      searchError: clearSearchError ? null : (searchError ?? this.searchError),
+      searchQuery: searchQuery ?? this.searchQuery,
+    );
+  }
+}
 
-  List<SearchUser> get searchResults => _searchResults;
-  bool get isSearching => _isSearching;
-  String? get searchError => _searchError;
-  String get searchQuery => _searchQuery;
+/// Replaces the previous `PostShareProvider` (ChangeNotifier). Owns
+/// recipient selection, the debounced user search, and the share API call.
+class PostShareNotifier extends Notifier<PostShareState> {
+  late final PostService _postService;
+  late final DebouncedUserSearch _userSearch;
+
+  @override
+  PostShareState build() {
+    _postService = PostService();
+    _userSearch = DebouncedUserSearch();
+    ref.onDispose(_userSearch.dispose);
+    return const PostShareState();
+  }
 
   void toggleUser(SearchUser user) {
-    if (_isSending) return;
+    if (state.isSending) return;
 
-    final exists = _selectedUsers.any((u) => u.id == user.id);
+    final updated = {...state.selectedUsers};
+    final exists = updated.any((u) => u.id == user.id);
     if (exists) {
-      _selectedUsers.removeWhere((u) => u.id == user.id);
+      updated.removeWhere((u) => u.id == user.id);
     } else {
-      _selectedUsers.add(user);
+      updated.add(user);
     }
-    notifyListeners();
+    state = state.copyWith(selectedUsers: updated);
   }
 
   void updateSearchQuery(String query) {
-    _searchQuery = query;
-    _searchError = null;
+    state = state.copyWith(searchQuery: query, clearSearchError: true);
 
     if (query.trim().isEmpty) {
-      _searchResults = [];
-      _isSearching = false;
       _userSearch.clear();
-      notifyListeners();
+      state = state.copyWith(searchResults: const [], isSearching: false);
       return;
     }
 
-    _isSearching = true;
-    notifyListeners();
+    state = state.copyWith(isSearching: true);
 
     _userSearch.search(
       query,
       onResults: (users) {
-        _searchResults = users;
-        _isSearching = false;
-        notifyListeners();
+        state = state.copyWith(searchResults: users, isSearching: false);
       },
       onError: (error) {
-        _searchResults = [];
-        _isSearching = false;
-        _searchError = 'Unable to search users right now';
-        notifyListeners();
+        state = state.copyWith(
+          searchResults: const [],
+          isSearching: false,
+          searchError: 'Unable to search users right now',
+        );
       },
     );
   }
 
   void clearSelection() {
-    _selectedUsers.clear();
-    _isSending = false;
-    _searchResults = [];
-    _isSearching = false;
-    _searchError = null;
-    _searchQuery = '';
     _userSearch.clear();
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _userSearch.dispose();
-    super.dispose();
+    state = const PostShareState();
   }
 
   Future<bool> sharePost(String postId) async {
-    if (_selectedUsers.isEmpty || _isSending) return false;
+    if (state.selectedUsers.isEmpty || state.isSending) return false;
 
-    _isSending = true;
-    notifyListeners();
+    state = state.copyWith(isSending: true);
 
-    final recipientIds = _selectedUsers.map((u) => u.id).toList();
-    final names = _selectedUsers.map((u) => u.username).join(', ');
+    final recipientIds = state.selectedUsers.map((u) => u.id).toList();
+    final names = state.selectedUsers.map((u) => u.username).join(', ');
 
     try {
       final success = await _postService.sharePost(
@@ -114,9 +131,8 @@ class PostShareProvider extends ChangeNotifier {
         throw Exception('Share request failed');
       }
     } catch (e) {
-      AppLogger.d('❌ [PostShareProvider] Error sharing post: $e');
-      _isSending = false;
-      notifyListeners();
+      AppLogger.d('❌ [PostShareNotifier] Error sharing post: $e');
+      state = state.copyWith(isSending: false);
       scaffoldMessengerKey.currentState?.showSnackBar(
         const SnackBar(
           content: Text('Failed to share post. Please try again.'),
@@ -129,3 +145,6 @@ class PostShareProvider extends ChangeNotifier {
     }
   }
 }
+
+final postShareNotifierProvider =
+    NotifierProvider<PostShareNotifier, PostShareState>(PostShareNotifier.new);

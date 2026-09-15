@@ -1,39 +1,48 @@
 import 'package:gruve_app/features/auth/data/datasource/auth_api_exception.dart';
-
-import 'package:gruve_app/features/auth/domain/entities/login_model.dart';
 import 'package:gruve_app/features/auth/data/datasource/login_services.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 
+/// Requests a login OTP for a phone number via the shared
+/// [EmailSignInService]. Loading state and field-level validation errors are
+/// owned by the Phone Login Riverpod notifier, not here.
 class PhoneSignInController {
-  final EmailSignInService _service = EmailSignInService();
+  PhoneSignInController({EmailSignInService? service})
+      : _service = service ?? EmailSignInService();
 
-  bool isLoading = false;
-  String? errorMessage;
-  EmailSignInResponse? response;
+  final EmailSignInService _service;
 
-  Future<void> requestOtp({required String phoneNumber}) async {
-    isLoading = true;
-    errorMessage = null;
-
+  Future<PhoneLoginResult> requestOtp({required String phoneNumber}) async {
     try {
       final res = await _service.requestLoginOtp(identifier: phoneNumber);
-      response = res;
 
-      AppLogger.d('Phone login OTP requested success=${res.success}');
-      if (!res.success) {
-        errorMessage = AuthApiException.userFacingMessage(
+      if (res.success) {
+        return PhoneLoginResult.success();
+      }
+
+      return PhoneLoginResult.failure(
+        AuthApiException.userFacingMessage(
           res.message,
           fallback: 'Please enter a valid phone number.',
-        );
-      }
-    } catch (e) {
-      errorMessage = AuthApiException.userFacingMessage(
-        e,
-        fallback: 'Please enter a valid phone number.',
+        ),
       );
-      AppLogger.d('Phone login OTP request error: $e');
-    } finally {
-      isLoading = false;
+    } catch (e) {
+      return PhoneLoginResult.failure(
+        AuthApiException.userFacingMessage(
+          e,
+          fallback: 'Please enter a valid phone number.',
+        ),
+      );
     }
   }
+}
+
+class PhoneLoginResult {
+  const PhoneLoginResult._({required this.isSuccess, this.errorMessage});
+
+  factory PhoneLoginResult.success() => const PhoneLoginResult._(isSuccess: true);
+
+  factory PhoneLoginResult.failure(String message) =>
+      PhoneLoginResult._(isSuccess: false, errorMessage: message);
+
+  final bool isSuccess;
+  final String? errorMessage;
 }

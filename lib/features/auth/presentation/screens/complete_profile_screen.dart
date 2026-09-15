@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
-import 'dart:typed_data';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 import 'package:gruve_app/shared/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/shared/widgets/video_background.dart';
-import 'package:gruve_app/features/auth/presentation/controller/complete_profile_controller.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
+import 'package:gruve_app/features/auth/presentation/controller/complete_profile_notifier.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 import 'package:gruve_app/core/services/image_picker_service.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class CompleteProfileScreen extends StatefulWidget {
+class CompleteProfileScreen extends ConsumerStatefulWidget {
   const CompleteProfileScreen({super.key});
 
   @override
-  State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
+  ConsumerState<CompleteProfileScreen> createState() =>
+      _CompleteProfileScreenState();
 }
 
-class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
-  final CompleteProfileController controller = CompleteProfileController();
+class _CompleteProfileScreenState
+    extends ConsumerState<CompleteProfileScreen> {
   final GetStartedButtonController _completeButtonController =
       GetStartedButtonController();
   final TextEditingController _usernameController = TextEditingController();
@@ -36,7 +34,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AuthUiProvider>().resetCompleteProfile();
+      if (mounted) {
+        ref.read(completeProfileNotifierProvider.notifier).reset();
+      }
     });
 
     _usernameController.addListener(() {
@@ -72,8 +72,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       });
     }
 
-    final authUi = context.read<AuthUiProvider>();
-    final selectedImage = authUi.selectedProfileImage;
+    final selectedImage = ref.read(completeProfileNotifierProvider).selectedImage;
     final username = _usernameController.text.trim();
     final usernameError = SignupValidator.validateUsernameRealTime(username);
 
@@ -124,7 +123,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           return;
         }
 
-        context.read<AuthUiProvider>().setProfileImage(image, bytes);
+        ref
+            .read(completeProfileNotifierProvider.notifier)
+            .setProfileImage(image, bytes);
         setState(() => _profileImageError = null);
       },
     );
@@ -135,40 +136,26 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     if (!_validateCompleteProfile()) return false;
 
-    final authUi = context.read<AuthUiProvider>();
-    if (authUi.isLoading(AuthLoadingKey.completeProfile)) return false;
-    final selectedImage = authUi.selectedProfileImage;
+    final completeProfileNotifier = ref.read(
+      completeProfileNotifierProvider.notifier,
+    );
+    if (ref.read(completeProfileNotifierProvider).isLoading) return false;
+    final selectedImage = ref.read(completeProfileNotifierProvider).selectedImage;
     final username = _usernameController.text.trim();
     final file = selectedImage?.path;
 
-    AppLogger.d("USERNAME: '$username'");
-    AppLogger.d("IMAGE PATH: '$file'");
-
-    authUi.setLoading(AuthLoadingKey.completeProfile, true);
-    try {
-      await controller.completeProfile(
-        username: username,
-        file: file,
-        image: selectedImage,
-      );
-    } finally {
-      if (mounted) {
-        context.read<AuthUiProvider>().setLoading(
-          AuthLoadingKey.completeProfile,
-          false,
-        );
-      }
-    }
+    final result = await completeProfileNotifier.completeProfile(
+      username: username,
+      file: file,
+      image: selectedImage,
+    );
 
     if (!mounted) return false;
 
-    if (controller.errorMessage != null) {
-      _showSnackBar(controller.errorMessage!);
-      return false;
-    }
-
-    if (controller.response == null) {
-      _showSnackBar('Profile could not be saved. Please try again.');
+    if (!result.isSuccess) {
+      _showSnackBar(
+        result.errorMessage ?? 'Profile could not be saved. Please try again.',
+      );
       return false;
     }
 
@@ -181,15 +168,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedImage = context.select<AuthUiProvider, Object?>(
-      (authUi) => authUi.selectedProfileImage,
-    );
-    final selectedImageBytes = context.select<AuthUiProvider, Uint8List?>(
-      (authUi) => authUi.selectedProfileImageBytes,
-    );
-    final isLoading = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.completeProfile),
-    );
+    final completeProfileState = ref.watch(completeProfileNotifierProvider);
+    final selectedImage = completeProfileState.selectedImage;
+    final selectedImageBytes = completeProfileState.selectedImageBytes;
+    final isLoading = completeProfileState.isLoading;
 
     return Scaffold(
       backgroundColor: Colors.black,

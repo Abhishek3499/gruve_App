@@ -1,32 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 import 'package:gruve_app/shared/widgets/inputs/phone_input_field.dart';
 import 'package:gruve_app/shared/widgets/video_background.dart';
-import 'package:gruve_app/features/auth/presentation/controller/phone_signin_controller.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
+import 'package:gruve_app/features/auth/presentation/controller/phone_login_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/otp_screen.dart';
 import 'package:gruve_app/features/auth/presentation/screens/signup_screen.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/phone_number_header.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
-import 'package:provider/provider.dart';
 
 import 'package:gruve_app/features/auth/validators/phone_number_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class PhoneNumberScreen extends StatefulWidget {
+class PhoneNumberScreen extends ConsumerStatefulWidget {
   const PhoneNumberScreen({super.key});
 
   @override
-  State<PhoneNumberScreen> createState() => _PhoneNumberScreenState();
+  ConsumerState<PhoneNumberScreen> createState() => _PhoneNumberScreenState();
 }
 
-class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
+class _PhoneNumberScreenState extends ConsumerState<PhoneNumberScreen> {
   late final TextEditingController _phoneController;
   final FocusNode _phoneFocus = FocusNode();
   bool _phoneTouched = false;
 
-  final PhoneSignInController _controller = PhoneSignInController();
   final GetStartedButtonController _phoneButtonController =
       GetStartedButtonController();
 
@@ -34,7 +32,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AuthUiProvider>().resetPhoneLogin();
+      if (mounted) ref.read(phoneLoginNotifierProvider.notifier).reset();
     });
     _phoneController = TextEditingController();
     _setupRealTimeValidation();
@@ -46,7 +44,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         _phoneController.text,
       );
 
-      context.read<AuthUiProvider>().setValidationError('phone_login_phone', error);
+      ref.read(phoneLoginNotifierProvider.notifier).setPhoneError(error);
     });
   }
 
@@ -68,7 +66,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     final phone = _phoneController.text.trim();
     final phoneError = PhoneNumberValidator.validatePhoneRealTime(phone);
 
-    context.read<AuthUiProvider>().setError('phone_login_phone', phoneError);
+    final phoneLoginNotifier = ref.read(phoneLoginNotifierProvider.notifier);
+    phoneLoginNotifier.setPhoneErrorNow(phoneError);
 
     if (phoneError != null) {
       ScaffoldMessenger.of(context)
@@ -78,29 +77,19 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
       return false;
     }
 
-    final authUi = context.read<AuthUiProvider>();
-    if (authUi.isLoading(AuthLoadingKey.phoneLogin)) {
+    if (ref.read(phoneLoginNotifierProvider).isLoading) {
       return false;
     }
-    authUi.setLoading(AuthLoadingKey.phoneLogin, true);
 
-    try {
-      await _controller.requestOtp(phoneNumber: phone);
-    } finally {
-      authUi.setLoading(AuthLoadingKey.phoneLogin, false);
-    }
+    final result = await phoneLoginNotifier.requestOtp(phoneNumber: phone);
 
     if (!mounted) return false;
 
-    if (_controller.errorMessage != null) {
+    if (!result.isSuccess) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(_controller.errorMessage!)));
+        ..showSnackBar(SnackBar(content: Text(result.errorMessage!)));
 
-      return false;
-    }
-
-    if (_controller.response?.success != true) {
       return false;
     }
 
@@ -134,12 +123,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.phoneLogin),
-    );
-    final phoneErrorRaw = context.select<AuthUiProvider, String?>(
-      (authUi) => authUi.error('phone_login_phone'),
-    );
+    final phoneLoginState = ref.watch(phoneLoginNotifierProvider);
+    final isLoading = phoneLoginState.isLoading;
+    final phoneErrorRaw = phoneLoginState.phoneError;
     final phoneError = _phoneTouched ? phoneErrorRaw : null;
     return Scaffold(
       resizeToAvoidBottomInset: true,

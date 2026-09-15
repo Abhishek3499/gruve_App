@@ -1,34 +1,45 @@
-import 'package:flutter/material.dart';
 import 'package:gruve_app/features/auth/data/datasource/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/data/datasource/reset_password_service.dart';
 
+/// Submits the new password. Loading state is owned by the Reset Password
+/// Riverpod notifier, not here.
 class ResetPasswordController {
-  final ResetPasswordService _service = ResetPasswordService();
+  ResetPasswordController({ResetPasswordService? service})
+      : _service = service ?? ResetPasswordService();
 
-  ValueNotifier<bool> isLoading = ValueNotifier(false);
+  final ResetPasswordService _service;
 
-  Future<String> resetPassword({
+  Future<ResetPasswordResult> resetPassword({
     required String identifier,
     required String otp,
     required String password,
   }) async {
     try {
-      isLoading.value = true;
-
       final response = await _service.resetPassword(
         identifier: identifier,
         otp: otp,
         password: password,
       );
 
-      return response.message;
-    } catch (e) {
-      return AuthApiException.userFacingMessage(
-        e,
-        fallback: 'Password could not be reset. Please try again.',
+      return ResetPasswordResult(
+        isSuccess: response.message.toLowerCase().contains('success'),
+        message: response.message,
       );
-    } finally {
-      isLoading.value = false;
+    } catch (e) {
+      return ResetPasswordResult(
+        isSuccess: false,
+        message: AuthApiException.userFacingMessage(
+          e,
+          fallback: 'Password could not be reset. Please try again.',
+        ),
+      );
     }
   }
+}
+
+class ResetPasswordResult {
+  const ResetPasswordResult({required this.isSuccess, required this.message});
+
+  final bool isSuccess;
+  final String message;
 }

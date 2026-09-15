@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/logout_widget.dart';
-import 'package:gruve_app/features/auth/presentation/controller/logout_provider.dart';
+import 'package:gruve_app/features/auth/presentation/controller/logout_notifier.dart';
 import 'package:gruve_app/features/archive/presentation/screens/archive_screen.dart';
 import 'package:gruve_app/features/blocked/presentation/screens/blocked_screen.dart';
 import 'package:gruve_app/features/help_center/presentation/screens/help_center_screen.dart';
@@ -17,7 +17,7 @@ import 'package:gruve_app/features/account/presentation/screens/account_screen.d
 import 'package:gruve_app/features/insight/presentation/screens/professional_dashboard_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class ProfileMenuDrawer extends StatelessWidget {
+class ProfileMenuDrawer extends ConsumerWidget {
   final String? profileImage;
   const ProfileMenuDrawer({super.key, this.profileImage});
 
@@ -54,7 +54,7 @@ class ProfileMenuDrawer extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       children: [
         // Transparent dismissible barrier area on the left
@@ -283,14 +283,19 @@ class ProfileMenuDrawer extends StatelessWidget {
                       const SizedBox(height: 10),
 
                       /// Logout
-                      Consumer<LogoutProvider>(
-                        builder: (context, logoutProvider, child) {
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final isLoading = ref.watch(
+                            logoutNotifierProvider.select((s) => s.isLoading),
+                          );
                           return GestureDetector(
-                            onTap: logoutProvider.isLoading ? null : () {
+                            onTap: isLoading ? null : () {
                               AppLogger.d("🔥 LOGOUT CLICKED");
 
                               Navigator.pop(context); // 👈 close drawer first
-                              logoutProvider.clearError(); // Clear previous errors
+                              ref
+                                  .read(logoutNotifierProvider.notifier)
+                                  .clearError(); // Clear previous errors
 
                               showDialog(
                                 context: context,
@@ -302,22 +307,22 @@ class ProfileMenuDrawer extends StatelessWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  logoutProvider.isLoading 
-                                      ? Icons.hourglass_empty 
-                                      : Icons.logout, 
-                                  color: logoutProvider.isLoading 
-                                      ? Colors.grey 
-                                      : Colors.white, 
+                                  isLoading
+                                      ? Icons.hourglass_empty
+                                      : Icons.logout,
+                                  color: isLoading
+                                      ? Colors.grey
+                                      : Colors.white,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 16),
                                 Text(
-                                  logoutProvider.isLoading 
-                                      ? "Logging out..." 
+                                  isLoading
+                                      ? "Logging out..."
                                       : "Log out",
                                   style: TextStyle(
-                                    color: logoutProvider.isLoading 
-                                        ? Colors.grey 
+                                    color: isLoading
+                                        ? Colors.grey
                                         : Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,

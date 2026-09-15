@@ -5,38 +5,54 @@ import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/features/auth/data/dto/complete_profile_request.dart';
 import 'package:gruve_app/features/auth/data/dto/complete_profile_response.dart';
 
+/// Submits the completed profile (username + photo). Loading state and the
+/// selected image are owned by the Complete Profile Riverpod notifier, not
+/// here.
 class CompleteProfileController {
-  final CompleteProfileService _service = CompleteProfileService();
-  bool isLoading = false;
-  String? errorMessage;
-  CompleteProfileResponse? response;
+  CompleteProfileController({CompleteProfileService? service})
+      : _service = service ?? CompleteProfileService();
 
-  Future<void> completeProfile({
+  final CompleteProfileService _service;
+
+  Future<CompleteProfileResult> completeProfile({
     required String username,
     String? file,
     XFile? image,
   }) async {
-    isLoading = true;
-    errorMessage = null;
-    response = null;
-
     try {
-      final result = await _service.completeProfile(
+      final response = await _service.completeProfile(
         request: CompleteProfileRequest(username: username),
         file: file,
         image: image,
       );
 
-      response = result;
+      return CompleteProfileResult.success(response);
     } catch (e) {
-      response = null;
-      errorMessage = AuthApiException.userFacingMessage(
-        e,
-        fallback:
-            'Profile could not be saved. Please check your username and photo.',
+      return CompleteProfileResult.failure(
+        AuthApiException.userFacingMessage(
+          e,
+          fallback:
+              'Profile could not be saved. Please check your username and photo.',
+        ),
       );
-    } finally {
-      isLoading = false;
     }
   }
+}
+
+class CompleteProfileResult {
+  const CompleteProfileResult._({
+    required this.isSuccess,
+    this.response,
+    this.errorMessage,
+  });
+
+  factory CompleteProfileResult.success(CompleteProfileResponse response) =>
+      CompleteProfileResult._(isSuccess: true, response: response);
+
+  factory CompleteProfileResult.failure(String message) =>
+      CompleteProfileResult._(isSuccess: false, errorMessage: message);
+
+  final bool isSuccess;
+  final CompleteProfileResponse? response;
+  final String? errorMessage;
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/reset_password_controller.dart';
+import 'package:gruve_app/features/auth/presentation/controller/reset_password_notifier.dart';
 
 import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
 
@@ -14,11 +15,9 @@ import 'package:gruve_app/shared/widgets/video_background.dart';
 import 'package:gruve_app/shared/widgets/inputs/neon_password_field.dart';
 
 import 'package:gruve_app/features/auth/presentation/screens/email_login_screen.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
-import 'package:provider/provider.dart';
 
-class ResetPasswordScreen extends StatefulWidget {
+class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String identifier;
   final String otp;
 
@@ -29,11 +28,11 @@ class ResetPasswordScreen extends StatefulWidget {
   });
 
   @override
-  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() =>
+      _ResetPasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  final ResetPasswordController _controller = ResetPasswordController();
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final GetStartedButtonController _resetButtonController =
       GetStartedButtonController();
 
@@ -50,7 +49,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AuthUiProvider>().resetResetPassword();
+      if (mounted) ref.read(resetPasswordNotifierProvider.notifier).reset();
     });
 
     _newPasswordController = TextEditingController();
@@ -95,9 +94,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.resetPassword),
-    );
+    final isLoading = ref.watch(resetPasswordNotifierProvider).isLoading;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -262,14 +259,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   _confirmPasswordTouched = true;
                                 });
                               }
-                              final authUi = context.read<AuthUiProvider>();
+                              final resetPasswordNotifier = ref.read(
+                                resetPasswordNotifierProvider.notifier,
+                              );
                               final messenger = ScaffoldMessenger.of(context);
                               final nav = Navigator.of(context);
                               final password = _newPasswordController.text
                                   .trim();
-                              if (authUi.isLoading(
-                                AuthLoadingKey.resetPassword,
-                              )) {
+                              if (ref
+                                  .read(resetPasswordNotifierProvider)
+                                  .isLoading) {
                                 return false;
                               }
 
@@ -291,30 +290,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 return false;
                               }
 
-                              authUi.setLoading(
-                                AuthLoadingKey.resetPassword,
-                                true,
-                              );
-
                               // 🔥 CALL API
 
-                              late final String message;
-                              try {
-                                message = await _controller.resetPassword(
-                                  identifier: widget.identifier,
-                                  otp: widget.otp,
-                                  password: password,
-                                );
-                              } finally {
-                                authUi.setLoading(
-                                  AuthLoadingKey.resetPassword,
-                                  false,
-                                );
-                              }
+                              final result = await resetPasswordNotifier
+                                  .resetPassword(
+                                    identifier: widget.identifier,
+                                    otp: widget.otp,
+                                    password: password,
+                                  );
 
                               if (!mounted) return false;
 
-                              if (message.toLowerCase().contains("success")) {
+                              if (result.isSuccess) {
                                 // ✅ CLEAR TOKEN AFTER SUCCESS
 
                                 await TokenStorage.clearResetToken();
@@ -324,7 +311,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                 messenger
                                   ..hideCurrentSnackBar()
                                   ..showSnackBar(
-                                    SnackBar(content: Text(message)),
+                                    SnackBar(content: Text(result.message)),
                                   );
 
                                 if (!nav.mounted) return false;
@@ -339,13 +326,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                                 return true;
                               } else {
-                                if (!mounted) return false;
-
                                 messenger
                                   ..hideCurrentSnackBar()
                                   ..showSnackBar(
                                     SnackBar(
-                                      content: Text(message),
+                                      content: Text(result.message),
 
                                       backgroundColor: Colors.red,
                                     ),

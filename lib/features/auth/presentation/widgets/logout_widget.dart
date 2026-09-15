@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/app_navigator.dart';
-import 'package:gruve_app/features/auth/presentation/controller/logout_provider.dart';
+import 'package:gruve_app/features/auth/presentation/controller/logout_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class LogoutWidget extends StatelessWidget {
+class LogoutWidget extends ConsumerWidget {
   const LogoutWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -50,17 +50,23 @@ class LogoutWidget extends StatelessWidget {
                     const SizedBox(height: 27),
 
                     /// LOGOUT BUTTON
-                    Consumer<LogoutProvider>(
-                      builder: (context, logoutProvider, child) {
+                    Builder(
+                      builder: (context) {
+                        final isLoading = ref.watch(
+                          logoutNotifierProvider.select((s) => s.isLoading),
+                        );
                         return GestureDetector(
-                          onTap: logoutProvider.isLoading ? null : () {
+                          onTap: isLoading ? null : () {
                             AppLogger.d("🔥 YES CLICKED");
-                            logoutProvider.clearError(); // Clear any previous logout error
+                            final notifier = ref.read(
+                              logoutNotifierProvider.notifier,
+                            );
+                            notifier.clearError(); // Clear any previous logout error
 
                             // Start logout ASAP; it will continue in background after navigation.
                             final providerContext =
                                 rootNavigatorKey.currentContext ?? context;
-                            logoutProvider.logout(context: providerContext);
+                            notifier.logout(context: providerContext);
 
                             AppLogger.d("🚀 [LogoutWidget] Navigating to SignIn immediately...");
                             Navigator.of(context).pop(); // Close dialog immediately
@@ -78,7 +84,7 @@ class LogoutWidget extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(30),
-                              gradient: logoutProvider.isLoading
+                              gradient: isLoading
                                   ? const LinearGradient(
                                       colors: [Colors.grey, Colors.grey],
                                     )
@@ -94,7 +100,7 @@ class LogoutWidget extends StatelessWidget {
                               ],
                             ),
                             child: Center(
-                              child: logoutProvider.isLoading
+                              child: isLoading
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,

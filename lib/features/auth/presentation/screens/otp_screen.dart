@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/verifyotp_controller.dart';
+import 'package:gruve_app/features/auth/presentation/controller/otp_notifier.dart';
 import 'package:gruve_app/features/auth/data/datasource/verify_otp_service.dart';
 
 import 'package:sms_autofill/sms_autofill.dart';
@@ -16,13 +17,10 @@ import 'package:gruve_app/features/auth/presentation/widgets/otp_input_box.dart'
 import 'package:gruve_app/main.dart';
 
 import 'package:gruve_app/features/auth/presentation/controller/auth_session_helper.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_ui_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class OtpScreen extends StatefulWidget {
+class OtpScreen extends ConsumerStatefulWidget {
   // final AuthFlow authFlow;
 
   final String title;
@@ -71,11 +69,11 @@ class OtpScreen extends StatefulWidget {
   });
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
-  final VerifyotpController controller = VerifyotpController();
+class _OtpScreenState extends ConsumerState<OtpScreen>
+    with CodeAutoFill, RouteAware {
   final GetStartedButtonController _otpButtonController =
       GetStartedButtonController();
 
@@ -148,20 +146,12 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<AuthUiProvider>().resetOtp();
+      if (mounted) ref.read(otpNotifierProvider.notifier).reset();
     });
 
     listenForCode();
 
     _focusNodes.first.requestFocus();
-
-    AppLogger.d("🔥 OTP SCREEN INIT");
-
-    AppLogger.d("👉 isForgot: ${widget.isForgot}");
-
-    AppLogger.d("👉 type: ${widget.type}");
-
-    AppLogger.d("👉 identifier: ${widget.identifier}");
   }
 
   @override
@@ -236,10 +226,8 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   }
 
   Future<void> _resendOtp() async {
-    final authUi = context.read<AuthUiProvider>();
-    if (authUi.isLoading(AuthLoadingKey.resendOtp)) return;
-
-    authUi.setLoading(AuthLoadingKey.resendOtp, true);
+    final otpNotifier = ref.read(otpNotifierProvider.notifier);
+    if (ref.read(otpNotifierProvider).isResending) return;
 
     String purpose = OtpPurpose.signup;
     if (widget.isForgot) {
@@ -248,33 +236,27 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
       purpose = OtpPurpose.login;
     }
 
-    try {
-      final success = await controller.resendOtp(
-        identifier: widget.identifier,
-        purpose: purpose,
-      );
+    final result = await otpNotifier.resendOtp(
+      identifier: widget.identifier,
+      purpose: purpose,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      if (success) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text("OTP has been resent successfully.")),
-          );
-      } else {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(controller.errorMessage ?? "Failed to resend OTP"),
-            ),
-          );
-      }
-    } finally {
-      if (mounted) {
-        authUi.setLoading(AuthLoadingKey.resendOtp, false);
-      }
+    if (result.isSuccess) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text("OTP has been resent successfully.")),
+        );
+    } else {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(result.errorMessage ?? "Failed to resend OTP"),
+          ),
+        );
     }
   }
 
@@ -288,12 +270,10 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
   }
 
   Future<bool> _verifyOtpManually() async {
-    final authUi = context.read<AuthUiProvider>();
-    if (authUi.isLoading(AuthLoadingKey.otp)) return false;
+    final otpNotifier = ref.read(otpNotifierProvider.notifier);
+    if (ref.read(otpNotifierProvider).isLoading) return false;
 
     final otp = _controllers.map((e) => e.text).join();
-
-    AppLogger.d("OTP entered");
 
     final otpError = SignupValidator.validateOtpRealTime(otp);
     if (otpError != null) {
@@ -306,72 +286,46 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
     FocusScope.of(context).unfocus();
 
-    authUi.setLoading(AuthLoadingKey.otp, true);
-
-    AppLogger.d('🟡 BEFORE API CALL');
-    AppLogger.d('👉 purpose: $_otpPurpose');
-    AppLogger.d('📡 CALLING CONTROLLER...');
-
-    try {
-      await controller.verifyOtp(
-        identifier: widget.identifier,
-        otp: otp,
-        purpose: _otpPurpose,
-      );
-    } finally {
-      if (mounted) {
-        authUi.setLoading(AuthLoadingKey.otp, false);
-      }
-    }
+    final result = await otpNotifier.verifyOtp(
+      identifier: widget.identifier,
+      otp: otp,
+      purpose: _otpPurpose,
+    );
 
     if (!mounted) return false;
 
-    if (controller.errorMessage != null) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(controller.errorMessage!)));
-      _clearOtpFields();
-      return false;
-    }
-
-    if (controller.verifyOtpResponse?.success == true) {
-      if (widget.isForgot) {
-        final token = controller.verifyOtpResponse?.resetToken ?? otp;
-
-        if (widget.onVerifiedWithToken != null) {
-          widget.onVerifiedWithToken!(token);
-        } else {
-          AppLogger.d("⚠️ onVerifiedWithToken is null");
-        }
-      } else {
-        if (widget.onVerified != null) {
-          widget.onVerified!();
-        }
-
-        final accessToken = controller.verifyOtpResponse?.data?.accessToken;
-        if (accessToken != null && accessToken.isNotEmpty && mounted) {
-          if (widget.isLogin) {
-            AuthSessionHelper.bootstrapAfterLogin(context, accessToken);
-          } else {
-            AuthSessionHelper.connectSocket(accessToken);
-          }
-        }
-      }
-
-      return true;
-    } else {
+    if (!result.isSuccess) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(
-            content: Text(
-              controller.verifyOtpResponse?.message ?? "Invalid OTP",
-            ),
-          ),
+          SnackBar(content: Text(result.errorMessage ?? "Invalid OTP")),
         );
       _clearOtpFields();
       return false;
     }
+
+    if (widget.isForgot) {
+      final token = result.response?.resetToken ?? otp;
+
+      if (widget.onVerifiedWithToken != null) {
+        widget.onVerifiedWithToken!(token);
+      }
+    } else {
+      if (widget.onVerified != null) {
+        widget.onVerified!();
+      }
+
+      final accessToken = result.response?.data?.accessToken;
+      if (accessToken != null && accessToken.isNotEmpty && mounted) {
+        if (widget.isLogin) {
+          AuthSessionHelper.bootstrapAfterLogin(context, accessToken);
+        } else {
+          AuthSessionHelper.connectSocket(accessToken);
+        }
+      }
+    }
+
+    return true;
   }
 
   @override
@@ -408,12 +362,9 @@ class _OtpScreenState extends State<OtpScreen> with CodeAutoFill, RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.otp),
-    );
-    final isResending = context.select<AuthUiProvider, bool>(
-      (authUi) => authUi.isLoading(AuthLoadingKey.resendOtp),
-    );
+    final otpState = ref.watch(otpNotifierProvider);
+    final isLoading = otpState.isLoading;
+    final isResending = otpState.isResending;
 
     return PopScope(
       canPop: !_blocksSystemBack || _allowSignupOtpPop,

@@ -2,7 +2,6 @@ import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/auth/data/datasource/auth_api_exception.dart';
 
-import 'package:gruve_app/features/auth/domain/entities/google_sign_in_model.dart';
 import 'package:gruve_app/features/auth/data/datasource/google_sign_in_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -12,20 +11,12 @@ class GoogleAuthController {
 
   final GoogleAuthService _service;
 
-  bool isLoading = false;
-  String? errorMessage;
-  GoogleSignInResponse? response;
-
-  Future<bool> signIn() async {
-    isLoading = true;
-    errorMessage = null;
-
+  Future<GoogleSignInResult> signIn() async {
     try {
       final res = await _service.signIn();
-      response = res;
 
       if (res == null) {
-        return false;
+        return const GoogleSignInResult.failure(null);
       }
 
       if (res.success && res.data != null) {
@@ -44,26 +35,53 @@ class GoogleAuthController {
         }
 
         AppLogger.d('Google sign-in tokens saved successfully');
-        return true;
+        return GoogleSignInResult.success(
+          accessToken: data.accessToken,
+          needsProfileSetup: data.needsProfileSetup || data.isNewUser,
+        );
       }
 
-      errorMessage = res.message.isNotEmpty
-          ? res.message
-          : 'Google sign-in failed. Please try again.';
-      return false;
-    } catch (e) {
-      errorMessage = AuthApiException.userFacingMessage(
-        e,
-        fallback: 'Google sign-in failed. Please try again.',
+      return GoogleSignInResult.failure(
+        res.message.isNotEmpty
+            ? res.message
+            : 'Google sign-in failed. Please try again.',
       );
+    } catch (e) {
       AppLogger.d('Google sign-in controller error: $e');
-      return false;
-    } finally {
-      isLoading = false;
+      return GoogleSignInResult.failure(
+        AuthApiException.userFacingMessage(
+          e,
+          fallback: 'Google sign-in failed. Please try again.',
+        ),
+      );
     }
   }
+}
 
-  bool get needsProfileSetup =>
-      response?.data?.needsProfileSetup == true ||
-      response?.data?.isNewUser == true;
+/// Immutable outcome of a Google Sign-In attempt, returned by
+/// [GoogleAuthController.signIn] for the notifier/screen to act on.
+class GoogleSignInResult {
+  const GoogleSignInResult._({
+    required this.isSuccess,
+    this.accessToken,
+    this.needsProfileSetup = false,
+    this.errorMessage,
+  });
+
+  const GoogleSignInResult.failure(String? message)
+    : this._(isSuccess: false, errorMessage: message);
+
+  factory GoogleSignInResult.success({
+    required String accessToken,
+    required bool needsProfileSetup,
+  }) => GoogleSignInResult._(
+    isSuccess: true,
+    accessToken: accessToken,
+    needsProfileSetup: needsProfileSetup,
+  );
+
+  final bool isSuccess;
+  final String? accessToken;
+  final bool needsProfileSetup;
+  final String? errorMessage;
 }

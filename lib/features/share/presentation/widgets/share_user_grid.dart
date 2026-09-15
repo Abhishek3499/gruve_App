@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
@@ -8,14 +9,14 @@ import 'package:gruve_app/features/share/presentation/controller/post_share_prov
 
 import 'package:gruve_app/features/share/presentation/widgets/share_user_item.dart';
 
-class ShareUserGrid extends StatefulWidget {
+class ShareUserGrid extends ConsumerStatefulWidget {
   const ShareUserGrid({super.key});
 
   @override
-  State<ShareUserGrid> createState() => _ShareUserGridState();
+  ConsumerState<ShareUserGrid> createState() => _ShareUserGridState();
 }
 
-class _ShareUserGridState extends State<ShareUserGrid> {
+class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
   final TextEditingController _searchController = TextEditingController();
   late final ScrollController _scrollController;
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
@@ -57,15 +58,15 @@ class _ShareUserGridState extends State<ShareUserGrid> {
   }
 
   void _onSearchChanged(String query) {
-    context.read<PostShareProvider>().updateSearchQuery(query);
+    ref.read(postShareNotifierProvider.notifier).updateSearchQuery(query);
   }
 
-  void _onUserTap(PostShareProvider shareProvider, SearchUser user) {
-    shareProvider.toggleUser(user);
+  void _onUserTap(SearchUser user) {
+    ref.read(postShareNotifierProvider.notifier).toggleUser(user);
   }
 
-  bool _isUserSelected(PostShareProvider shareProvider, SearchUser user) {
-    return shareProvider.selectedUsers.any((u) => u.id == user.id);
+  bool _isUserSelected(PostShareState shareState, SearchUser user) {
+    return shareState.selectedUsers.any((u) => u.id == user.id);
   }
 
   @override
@@ -107,10 +108,10 @@ class _ShareUserGridState extends State<ShareUserGrid> {
   }
 
   Widget _buildContent() {
-    final shareProvider = context.watch<PostShareProvider>();
-    final isSearching = shareProvider.isSearching;
-    final searchError = shareProvider.searchError;
-    final searchResults = shareProvider.searchResults;
+    final shareState = ref.watch(postShareNotifierProvider);
+    final isSearching = shareState.isSearching;
+    final searchError = shareState.searchError;
+    final searchResults = shareState.searchResults;
 
     if (isSearching) {
       return const Center(
@@ -152,8 +153,8 @@ class _ShareUserGridState extends State<ShareUserGrid> {
           final user = searchResults[index];
           return ShareUserItem(
             user: user,
-            isSelected: _isUserSelected(shareProvider, user),
-            onTap: () => _onUserTap(shareProvider, user),
+            isSelected: _isUserSelected(shareState, user),
+            onTap: () => _onUserTap(user),
           );
         },
       );
@@ -230,8 +231,8 @@ class _ShareUserGridState extends State<ShareUserGrid> {
 
         return ShareUserItem(
           user: searchUser,
-          isSelected: _isUserSelected(shareProvider, searchUser),
-          onTap: () => _onUserTap(shareProvider, searchUser),
+          isSelected: _isUserSelected(shareState, searchUser),
+          onTap: () => _onUserTap(searchUser),
         );
       },
     );
