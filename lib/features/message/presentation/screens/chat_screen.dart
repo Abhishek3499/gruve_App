@@ -6,7 +6,7 @@ import 'package:gruve_app/features/user_profile/presentation/controller/block_pr
 import 'package:provider/provider.dart';
 
 import 'package:gruve_app/core/services/socket_service.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/features/message/presentation/controller/message_controller.dart';
 import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';

@@ -10,7 +10,7 @@ import 'package:gruve_app/main.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
-import 'package:gruve_app/features/home/presentation/controller/video_feed_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/presentation/widgets/optimized_video_overlay.dart';
 import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_top_bar.dart';
@@ -49,6 +49,9 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     super.initState();
 
     _controller = VideoFeedController();
+    AppLogger.d(
+      '🏁 [VideoFeed] Initial feed selection: $selectedContentTab (controller feed=${_controller.currentFeed})',
+    );
     _loadErrorListener = _surfaceNonBlockingLoadError;
     _controller.loadErrorListenable.addListener(_loadErrorListener);
 
@@ -191,8 +194,10 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
 
   void _onPageChanged(int page) {
     AppLogger.d('📄 [VideoFeed] onPageChanged page=$page');
+    // Preload for the new neighbor is scheduled (debounced) inside playVideo —
+    // never triggered eagerly here, so a fast multi-page fling doesn't spin up
+    // and immediately cancel a controller for every index it passes through.
     _controller.playVideo(page, deferPreload: true);
-    _controller.warmupVideoAt(page + 1);
     HapticFeedback.selectionClick();
     unawaited(_maybeLoadMorePages(page));
   }
@@ -200,18 +205,18 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   void _onFeedScroll(ScrollNotification notification) {
     if (!_pageController.hasClients) return;
 
-    if (notification is ScrollUpdateNotification && notification.depth == 0) {
-      final page = _pageController.page;
-      if (page == null) return;
-
-      final nextIndex = page.ceil();
-      if (nextIndex > page && nextIndex < _controller.mediaUrls.length) {
-        _controller.warmupVideoAt(nextIndex);
-      }
+    // Intentionally no ScrollUpdateNotification handling here — warming up a
+    // video based on mid-drag position starts real network/decoder work that
+    // usually gets cancelled a moment later once the drag settles elsewhere.
+    if (notification is ScrollStartNotification && notification.depth == 0) {
+      AppLogger.d('👆 [VideoFeed] Scroll drag started');
       return;
     }
 
     if (notification is ScrollEndNotification && notification.depth == 0) {
+      AppLogger.d(
+        '🛑 [VideoFeed] Scroll drag ended, settled page=${_pageController.page?.round()}',
+      );
       _controller.commitPendingEnsureControllersAroundIndex();
     }
   }
@@ -626,51 +631,59 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
             ),
             ValueListenableBuilder<int>(
               valueListenable: widget.controller.currentIndex,
-              builder: (context, currentIdx, _) {
-                if (currentIdx != widget.index) return const SizedBox.shrink();
-                return Stack(
-                  children: [
-                    OptimizedVideoOverlay(
-                      selectedTab: widget.selectedTab,
-                      onTabChanged: widget.onTabChanged,
-                      controller: widget.controller,
-                      onOwnProfileTap: widget.onOwnProfileTap,
-                      currentIndex: currentIdx,
-                    ),
-                    if (effectiveVideo && _overlayTriggerCounter > 0)
-                      PlayPauseAnimationOverlay(
-                        key: ValueKey(_overlayTriggerCounter),
-                        isPlaying: _overlayIsPlayingIcon,
-                      ),
-                    if (_isPausedByUser && effectiveVideo && videoController != null)
-                      ValueListenableBuilder<VideoPlayerValue>(
-                        valueListenable: videoController,
-                        builder: (context, value, child) {
-                          if (!value.isInitialized || value.isPlaying) {
-                            return const SizedBox.shrink();
-                          }
-                          return IgnorePointer(
-                            child: Center(
-                              child: Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.pause_rounded,
-                                  color: Colors.white,
-                                  size: 45,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
+              // Toggle visibility only — keep OptimizedVideoOverlay/VideoUserInfo
+              // mounted across swipes instead of switching between SizedBox.shrink()
+              // and Stack (different widget types at the same slot force Flutter to
+              // destroy and recreate the whole overlay subtree, including its async
+              // profile-identity resolution and gesture recognizers, on every swipe).
+              builder: (context, currentIdx, overlayStack) {
+                return Offstage(
+                  offstage: currentIdx != widget.index,
+                  child: overlayStack,
                 );
               },
+              child: Stack(
+                children: [
+                  OptimizedVideoOverlay(
+                    selectedTab: widget.selectedTab,
+                    onTabChanged: widget.onTabChanged,
+                    controller: widget.controller,
+                    onOwnProfileTap: widget.onOwnProfileTap,
+                    currentIndex: widget.index,
+                  ),
+                  if (effectiveVideo && _overlayTriggerCounter > 0)
+                    PlayPauseAnimationOverlay(
+                      key: ValueKey(_overlayTriggerCounter),
+                      isPlaying: _overlayIsPlayingIcon,
+                    ),
+                  if (_isPausedByUser && effectiveVideo && videoController != null)
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: videoController,
+                      builder: (context, value, child) {
+                        if (!value.isInitialized || value.isPlaying) {
+                          return const SizedBox.shrink();
+                        }
+                        return IgnorePointer(
+                          child: Center(
+                            child: Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.pause_rounded,
+                                color: Colors.white,
+                                size: 45,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -905,6 +918,19 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   bool _hasEverRenderedFrame = false;
   bool _showPlaybackBufferSpinner = false;
   Timer? _bufferingShowTimer;
+  /// True once this item is known to be off-screen with a controller already
+  /// bound (i.e. it was preloaded). Only that case needs the defensive
+  /// texture-recovery rebuild in [_onCurrentIndexChanged] — a controller that
+  /// attaches while already current triggers its own rebuild via
+  /// [_syncController], so a second blanket rebuild right after would be
+  /// redundant.
+  bool _needsCurrentIndexRebuildKick = false;
+  /// Last state [_syncController] observed, so it can skip rebuilding when
+  /// nothing relevant to this item actually changed on a global
+  /// [VideoFeedController.videoControllersRevision] tick caused by some other
+  /// slot in the feed.
+  bool _lastObservedFailed = false;
+  bool _lastObservedInitializing = false;
 
   static const Duration _bufferingSpinnerShowDelay = Duration(milliseconds: 400);
 
@@ -967,6 +993,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    _needsCurrentIndexRebuildKick = !_isCurrentItem;
     widget.controller.videoControllersRevision.addListener(_syncController);
     widget.controller.currentIndex.addListener(_onCurrentIndexChanged);
     _syncController();
@@ -992,6 +1019,10 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
   void _onCurrentIndexChanged() {
     if (widget.controller.currentIndex.value != widget.index) {
+      // Leaving current — arm the recovery kick so the next arrival (even a
+      // revisit of an already-cached slot) still gets it, matching the prior
+      // unconditional behavior for every real "become current" transition.
+      _needsCurrentIndexRebuildKick = true;
       _cancelBufferingShowTimer();
       if (_showPlaybackBufferSpinner) {
         setState(() => _showPlaybackBufferSpinner = false);
@@ -1009,7 +1040,14 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     _syncPlaybackBufferSpinner(ctrl.value);
 
     // Recover from a stale black texture after swiping onto a preloaded slot.
-    if (mounted) setState(() {});
+    // Only needed when the controller was already sitting there from an
+    // earlier preload — a controller that attached in this same cycle while
+    // already current already triggers its own rebuild via _syncController,
+    // so a second blanket setState here would just be a redundant rebuild.
+    if (_needsCurrentIndexRebuildKick) {
+      _needsCurrentIndexRebuildKick = false;
+      if (mounted) setState(() {});
+    }
   }
 
   void _detachController() {
@@ -1019,19 +1057,37 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     _boundController = null;
     _initialized = false;
     _hasEverRenderedFrame = false;
+    // Force the next _syncController() call to re-evaluate from scratch
+    // (relevant when widget.index itself changes, e.g. didUpdateWidget).
+    _lastObservedFailed = false;
+    _lastObservedInitializing = false;
   }
 
+  // Single gate for everything `videoControllersRevision` can affect for this
+  // item (controller identity, load-failure, initializing flag). Listening to
+  // this per-widget instance means a controller change for a DIFFERENT index
+  // only costs a few cheap lookups here — no setState, no rebuild — instead of
+  // the unconditional rebuild every alive FeedVideoPlayer used to take on
+  // every tick of the shared, feed-wide revision counter.
   void _syncController() {
-    if (widget.controller.hasVideoLoadFailed(widget.index)) {
-      if (_boundController != null) {
-        _detachController();
-        setState(() {});
-      }
+    final failed = widget.controller.hasVideoLoadFailed(widget.index);
+    final initializing = widget.controller.isVideoInitializing(widget.index);
+    final next = failed ? null : widget.controller.controllerForMediaIndex(widget.index);
+
+    final relevantStateChanged = failed != _lastObservedFailed ||
+        initializing != _lastObservedInitializing ||
+        !identical(next, _boundController);
+
+    _lastObservedFailed = failed;
+    _lastObservedInitializing = initializing;
+
+    if (!relevantStateChanged) return;
+
+    if (failed) {
+      if (_boundController != null) _detachController();
+      setState(() {});
       return;
     }
-
-    final next = widget.controller.controllerForMediaIndex(widget.index);
-    if (identical(next, _boundController)) return;
 
     _boundController?.removeListener(_onControllerUpdate);
     _boundController = next;
@@ -1085,10 +1141,12 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: widget.controller.videoControllersRevision,
-      builder: (context, _, child) => _buildVideoContent(context),
-    );
+    // No ValueListenableBuilder on the shared, feed-wide videoControllersRevision
+    // here — _syncController (wired in initState) already listens to it and
+    // calls setState only when this item's own controller/failed/initializing
+    // state actually changed, so an unrelated slot's controller update no
+    // longer forces this widget to rebuild too.
+    return _buildVideoContent(context);
   }
 
   Widget _buildVideoContent(BuildContext context) {

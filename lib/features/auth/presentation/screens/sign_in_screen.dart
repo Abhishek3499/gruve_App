@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/features/auth/presentation/controller/google_sign_in_notifier.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/google_sign_in_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/complete_profile_screen.dart';
 import 'package:gruve_app/features/auth/presentation/screens/phone_number_screen.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/auth_header.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/auth_divider.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/social_login_row.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/features/auth/presentation/controller/auth_session_helper.dart';
+import 'package:gruve_app/features/auth/presentation/controllers/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/presentation/screens/email_login_screen.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 import 'package:gruve_app/features/auth/presentation/screens/signup_screen.dart';
 import 'package:gruve_app/shared/widgets/primary_button.dart';
 import 'package:gruve_app/shared/widgets/outline_button.dart';
 import 'package:gruve_app/shared/widgets/video_background.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -35,10 +35,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       GoogleSignIn.instance.initialize(
         serverClientId: EnvironmentConfig.googleWebClientId,
       ).catchError((e) {
-        AppLogger.d('Failed to warm up Google Sign In: $e');
+        authLogger.d('Failed to warm up Google Sign In: $e');
       });
     } catch (e) {
-      AppLogger.d('Failed to warm up Google Sign In: $e');
+      authLogger.d('Failed to warm up Google Sign In: $e');
     }
   }
 

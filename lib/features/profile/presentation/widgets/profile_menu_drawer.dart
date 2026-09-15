@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/logout_widget.dart';
-import 'package:gruve_app/features/auth/presentation/controller/logout_notifier.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/logout_notifier.dart';
 import 'package:gruve_app/features/archive/presentation/screens/archive_screen.dart';
 import 'package:gruve_app/features/blocked/presentation/screens/blocked_screen.dart';
 import 'package:gruve_app/features/help_center/presentation/screens/help_center_screen.dart';

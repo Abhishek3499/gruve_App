@@ -4,7 +4,7 @@ import 'package:gruve_app/features/highlights_create/presentation/controller/hig
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 
 class StorySelectorScreen extends StatefulWidget {
   final List<String> mediaPaths;

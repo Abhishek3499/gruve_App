@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +9,7 @@ import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
-import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation

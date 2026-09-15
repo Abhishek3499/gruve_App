@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
-import 'package:gruve_app/features/auth/presentation/controller/edit_profile_controller.dart';
+import 'package:gruve_app/features/profile/presentation/controller/edit_profile_controller.dart';
 import 'package:gruve_app/features/account/domain/entities/profile_model.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/personal_info_card.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_image_picker.dart';

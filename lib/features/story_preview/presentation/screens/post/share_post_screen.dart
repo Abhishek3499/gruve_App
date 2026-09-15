@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/more_option_screen.dart';

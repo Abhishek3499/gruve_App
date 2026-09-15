@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_panel.dart';
-import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/story_avatar_indicator.dart';
 import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/gift_button.dart';

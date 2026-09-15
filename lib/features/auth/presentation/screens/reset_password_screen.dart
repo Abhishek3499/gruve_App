@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/reset_password_notifier.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/reset_password_notifier.dart';
 
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 

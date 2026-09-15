@@ -9,7 +9,7 @@ import 'package:gruve_app/features/story_preview/data/dto/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/data/dto/paginated_response_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_draft_model.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';

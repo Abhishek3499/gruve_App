@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/user_profile/data/dto/report_user_response_model.dart';
 

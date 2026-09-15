@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileIdentityResolution {
@@ -70,10 +70,6 @@ class ProfileIdentityService {
       loggedInUserId: _normalizeUserId(loggedInUserId),
       profileUserId: normalizedProfileUserId,
     );
-
-    AppLogger.d('👤 LoggedInUserId: ${resolution.loggedInUserId ?? "null"}');
-    AppLogger.d('📄 ProfileUserId: ${resolution.profileUserId ?? "null"}');
-    AppLogger.d('🔍 IsOwnProfile: ${resolution.isOwnProfile}');
 
     return resolution;
   }

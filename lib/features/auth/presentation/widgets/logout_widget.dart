@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/app_navigator.dart';
-import 'package:gruve_app/features/auth/presentation/controller/logout_notifier.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/logout_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
 
 class LogoutWidget extends ConsumerWidget {
   const LogoutWidget({super.key});
@@ -57,7 +57,7 @@ class LogoutWidget extends ConsumerWidget {
                         );
                         return GestureDetector(
                           onTap: isLoading ? null : () {
-                            AppLogger.d("🔥 YES CLICKED");
+                            authLogger.d("🔥 YES CLICKED");
                             final notifier = ref.read(
                               logoutNotifierProvider.notifier,
                             );
@@ -68,7 +68,7 @@ class LogoutWidget extends ConsumerWidget {
                                 rootNavigatorKey.currentContext ?? context;
                             notifier.logout(context: providerContext);
 
-                            AppLogger.d("🚀 [LogoutWidget] Navigating to SignIn immediately...");
+                            authLogger.d("🚀 [LogoutWidget] Navigating to SignIn immediately...");
                             Navigator.of(context).pop(); // Close dialog immediately
 
                             rootNavigatorKey.currentState?.pushAndRemoveUntil(
@@ -77,7 +77,7 @@ class LogoutWidget extends ConsumerWidget {
                               ),
                               (route) => false,
                             );
-                            AppLogger.d("🚀 [LogoutWidget] Instant navigation completed.");
+                            authLogger.d("🚀 [LogoutWidget] Instant navigation completed.");
                           },
                           child: Container(
                             width: double.infinity,

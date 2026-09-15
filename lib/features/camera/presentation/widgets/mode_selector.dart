@@ -3,7 +3,7 @@ import 'package:gruve_app/features/story_preview/presentation/controller/story_c
 import 'package:gruve_app/features/story_preview/presentation/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/post_preview_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_sheet.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_preview_screen.dart';

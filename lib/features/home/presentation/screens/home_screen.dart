@@ -10,8 +10,8 @@ import 'package:gruve_app/shared/widgets/bottom_navigation/custom_bottom_navigat
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:gruve_app/core/media/video_playback_guard.dart';
-import 'package:gruve_app/features/home/presentation/controller/video_feed_controller.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_feed.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/auth/current_user_provider.dart';

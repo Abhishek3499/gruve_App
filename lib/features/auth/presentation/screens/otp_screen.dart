@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/otp_notifier.dart';
-import 'package:gruve_app/features/auth/data/datasource/verify_otp_service.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/otp_notifier.dart';
+import 'package:gruve_app/features/auth/data/services/verify_otp_service.dart';
 
 import 'package:sms_autofill/sms_autofill.dart';
 
@@ -16,7 +16,7 @@ import 'package:gruve_app/features/auth/presentation/widgets/otp_input_box.dart'
 
 import 'package:gruve_app/main.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/auth_session_helper.dart';
+import 'package:gruve_app/features/auth/presentation/controllers/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 

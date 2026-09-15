@@ -7,7 +7,7 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music/presentation/screens/music_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
-import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/home/presentation/widgets/subscribe_button.dart';
 
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';

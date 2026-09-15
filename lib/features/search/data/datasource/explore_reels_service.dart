@@ -6,7 +6,7 @@ import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/features/search/domain/entities/explore_reel_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';

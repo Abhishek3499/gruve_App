@@ -11,7 +11,7 @@ import 'package:gruve_app/features/story_preview/presentation/widgets/story_view
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 
 void _log(String message) {
   AppLogger.d(message);

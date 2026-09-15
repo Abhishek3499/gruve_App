@@ -11,7 +11,7 @@ import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
-import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;

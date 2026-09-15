@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/post_like_provider.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
-import 'package:gruve_app/features/home/domain/entities/subscribe_model.dart';
+import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_user_info.dart';
-import 'package:gruve_app/features/home/presentation/controller/video_feed_controller.dart';
-import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
 import 'package:gruve_app/features/home/presentation/widgets/right_action_bar.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_panel.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/video_options_sheet.dart';
@@ -42,7 +42,9 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
     super.initState();
     _subscribeController = SubscribeController();
     _seedCurrentUser();
-    _loadCurrentUserId();
+    // Sync + cached (populated at app startup) — avoids an async secure-storage
+    // read on every swipe for a value that's only needed if Options is opened.
+    _currentUserId = TokenStorage.getCurrentUserIdSync();
   }
 
   @override
@@ -51,15 +53,6 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
     if (oldWidget.currentIndex != widget.currentIndex ||
         oldWidget.selectedTab != widget.selectedTab) {
       _seedCurrentUser();
-    }
-  }
-
-  Future<void> _loadCurrentUserId() async {
-    final userId = await TokenStorage.getCurrentUserId();
-    if (mounted) {
-      setState(() {
-        _currentUserId = userId;
-      });
     }
   }
 

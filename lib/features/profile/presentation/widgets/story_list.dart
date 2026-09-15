@@ -5,7 +5,7 @@ import 'package:gruve_app/features/highlights/presentation/controller/highlight_
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
 import 'package:gruve_app/features/highlights/presentation/screens/highlight_viewer_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 

@@ -11,7 +11,7 @@ import 'package:gruve_app/features/highlights/data/datasource/highlight_service.
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
-import 'package:gruve_app/features/auth/data/dto/edit_profile_response.dart';
+import 'package:gruve_app/features/profile/data/dto/edit_profile_response.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileProvider extends ChangeNotifier {

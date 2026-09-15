@@ -4,7 +4,7 @@ import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 import 'package:gruve_app/shared/widgets/inputs/phone_input_field.dart';
 import 'package:gruve_app/shared/widgets/video_background.dart';
-import 'package:gruve_app/features/auth/presentation/controller/phone_login_notifier.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/phone_login_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/otp_screen.dart';
 import 'package:gruve_app/features/auth/presentation/screens/signup_screen.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/phone_number_header.dart';

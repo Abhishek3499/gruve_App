@@ -6,7 +6,7 @@ import 'package:gruve_app/shared/widgets/cached_avatar.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
-import 'package:gruve_app/features/home/presentation/controller/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_top_bar.dart';

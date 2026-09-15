@@ -18,7 +18,7 @@ import 'package:gruve_app/features/user_profile/presentation/controller/block_pr
 import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/post_like_provider.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';

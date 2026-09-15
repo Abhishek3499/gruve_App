@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/home/presentation/controller/subscribe_controller.dart';
-import 'package:gruve_app/features/home/domain/entities/subscribe_model.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 

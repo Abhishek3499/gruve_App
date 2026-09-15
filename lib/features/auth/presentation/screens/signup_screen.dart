@@ -19,7 +19,7 @@ import 'package:gruve_app/shared/widgets/inputs/neon_text_field.dart';
 
 import 'package:gruve_app/shared/widgets/inputs/neon_password_field.dart';
 
-import 'package:gruve_app/features/auth/presentation/controller/signup_notifier.dart';
+import 'package:gruve_app/features/auth/presentation/notifiers/signup_notifier.dart';
 import 'package:gruve_app/features/auth/validators/phone_number_validator.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';

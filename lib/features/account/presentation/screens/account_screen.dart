@@ -3,7 +3,7 @@ import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/account/presentation/widgets/account_body.dart';
 import 'package:gruve_app/features/account/presentation/widgets/account_header.dart';
 import 'package:gruve_app/features/account/domain/entities/profile_model.dart';
-import 'package:gruve_app/features/auth/presentation/controller/edit_profile_controller.dart';
+import 'package:gruve_app/features/profile/presentation/controller/edit_profile_controller.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
 import '../../../../core/assets.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';

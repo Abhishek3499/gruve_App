@@ -8,7 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-import 'package:gruve_app/features/auth/data/datasource/token_storage.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/debug/debug_logger.dart';
 import 'package:gruve_app/core/socket/socket_logger.dart';
