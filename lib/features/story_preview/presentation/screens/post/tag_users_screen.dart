@@ -290,9 +290,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
           return Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: context.rh(16)),
-              child: const CircularProgressIndicator(
-                color: Color(0xFFD42BC2),
-              ),
+              child: const CircularProgressIndicator(color: Color(0xFFD42BC2)),
             ),
           );
         }
@@ -302,11 +300,15 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: (user.profilePicture != null && user.profilePicture!.isNotEmpty)
+            backgroundImage:
+                (user.profilePicture != null && user.profilePicture!.isNotEmpty)
                 ? NetworkImage(user.profilePicture!)
                 : AssetImage(AppAssets.profile) as ImageProvider,
           ),
-          title: Text(user.fullName, style: const TextStyle(color: Colors.white)),
+          title: Text(
+            user.fullName,
+            style: const TextStyle(color: Colors.white),
+          ),
           subtitle: Text(
             '@${user.username}',
             style: const TextStyle(color: Colors.white54),
@@ -319,15 +321,19 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
               if (isSelected) {
                 selectedUsers.removeWhere((u) => u.id == user.userId);
               } else {
-                selectedUsers.add(ChatUser(
-                  id: user.userId,
-                  name: user.fullName,
-                  avatar: (user.profilePicture != null && user.profilePicture!.isNotEmpty)
-                      ? user.profilePicture!
-                      : AppAssets.profile,
-                  lastMessage: '',
-                  lastMessageTime: '',
-                ));
+                selectedUsers.add(
+                  ChatUser(
+                    id: user.userId,
+                    name: user.fullName,
+                    avatar:
+                        (user.profilePicture != null &&
+                            user.profilePicture!.isNotEmpty)
+                        ? user.profilePicture!
+                        : AppAssets.profile,
+                    lastMessage: '',
+                    lastMessageTime: '',
+                  ),
+                );
               }
             });
           },

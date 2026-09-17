@@ -34,20 +34,25 @@ class ProductionLogger {
   }
 
   /// Log error messages
-  void error(String message, {String? tag, Object? error, StackTrace? stackTrace}) {
+  void error(
+    String message, {
+    String? tag,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
     if (EnvironmentConfig.enableLogging) {
       final prefix = tag != null ? '[$tag] ' : '';
       AppLogger.d('❌ $prefix$message');
-      
+
       if (error != null) {
         AppLogger.d('❌ $prefix Error: $error');
       }
-      
+
       if (stackTrace != null) {
         AppLogger.d('❌ $prefix Stack: $stackTrace');
       }
     }
-    
+
     // In production, send to crash reporting
     if (!kDebugMode && EnvironmentConfig.enableCrashReporting) {
       // Send to Firebase Crashlytics or similar
@@ -56,40 +61,52 @@ class ProductionLogger {
   }
 
   /// Log performance metrics
-  void performance(String operation, Duration duration, {Map<String, dynamic>? metadata}) {
+  void performance(
+    String operation,
+    Duration duration, {
+    Map<String, dynamic>? metadata,
+  }) {
     if (EnvironmentConfig.enableLogging) {
-      final metadataStr = metadata != null 
+      final metadataStr = metadata != null
           ? ' | ${metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
-      AppLogger.d('⏱️ [PERF] $operation: ${duration.inMilliseconds}ms$metadataStr');
+      AppLogger.d(
+        '⏱️ [PERF] $operation: ${duration.inMilliseconds}ms$metadataStr',
+      );
     }
   }
 
   /// Log network requests
-  void network(String method, String endpoint, int statusCode, Duration duration, {
+  void network(
+    String method,
+    String endpoint,
+    int statusCode,
+    Duration duration, {
     int? responseSize,
     Map<String, dynamic>? metadata,
   }) {
     if (EnvironmentConfig.enableLogging) {
       final sizeStr = responseSize != null ? ' | Size: ${responseSize}B' : '';
-      final metadataStr = metadata != null 
+      final metadataStr = metadata != null
           ? ' | ${metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
-      
+
       final statusIcon = statusCode >= 200 && statusCode < 300 ? '✅' : '❌';
-      AppLogger.d('🌐 [NET] $statusIcon $method $endpoint ($statusCode) | ${duration.inMilliseconds}ms$sizeStr$metadataStr');
+      AppLogger.d(
+        '🌐 [NET] $statusIcon $method $endpoint ($statusCode) | ${duration.inMilliseconds}ms$sizeStr$metadataStr',
+      );
     }
   }
 
   /// Log user actions
   void userAction(String action, {Map<String, dynamic>? properties}) {
     if (EnvironmentConfig.enableLogging) {
-      final propsStr = properties != null 
+      final propsStr = properties != null
           ? ' | ${properties.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
       AppLogger.d('👤 [USER] $action$propsStr');
     }
-    
+
     // In production, send to analytics
     if (!kDebugMode && EnvironmentConfig.isFeatureEnabled('analytics')) {
       // Send to Firebase Analytics or similar
@@ -112,7 +129,9 @@ class ProductionLogger {
   void cache(String operation, String key, {String? type, Duration? duration}) {
     if (EnvironmentConfig.enableLogging) {
       final typeStr = type != null ? ' [$type]' : '';
-      final durationStr = duration != null ? ' | ${duration.inMilliseconds}ms' : '';
+      final durationStr = duration != null
+          ? ' | ${duration.inMilliseconds}ms'
+          : '';
       AppLogger.d('💾 [CACHE] $operation$typeStr $key$durationStr');
     }
   }
@@ -121,7 +140,7 @@ class ProductionLogger {
   void auth(String event, {String? userId, Map<String, dynamic>? metadata}) {
     if (EnvironmentConfig.enableLogging) {
       final userStr = userId != null ? ' | User: $userId' : '';
-      final metadataStr = metadata != null 
+      final metadataStr = metadata != null
           ? ' | ${metadata.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'
           : '';
       AppLogger.d('🔐 [AUTH] $event$userStr$metadataStr');
@@ -144,21 +163,39 @@ class TaggedLogger {
   void debug(String message) => _logger.debug(message, tag: tag);
   void info(String message) => _logger.info(message, tag: tag);
   void warning(String message) => _logger.warning(message, tag: tag);
-  void error(String message, {Object? error, StackTrace? stackTrace}) => 
+  void error(String message, {Object? error, StackTrace? stackTrace}) =>
       _logger.error(message, tag: tag, error: error, stackTrace: stackTrace);
-  void performance(String operation, Duration duration, {Map<String, dynamic>? metadata}) => 
-      _logger.performance(operation, duration, metadata: metadata);
-  void network(String method, String endpoint, int statusCode, Duration duration, {
-        int? responseSize, Map<String, dynamic>? metadata}) => 
-      _logger.network(method, endpoint, statusCode, duration, 
-          responseSize: responseSize, metadata: metadata);
-  void userAction(String action, {Map<String, dynamic>? properties}) => 
+  void performance(
+    String operation,
+    Duration duration, {
+    Map<String, dynamic>? metadata,
+  }) => _logger.performance(operation, duration, metadata: metadata);
+  void network(
+    String method,
+    String endpoint,
+    int statusCode,
+    Duration duration, {
+    int? responseSize,
+    Map<String, dynamic>? metadata,
+  }) => _logger.network(
+    method,
+    endpoint,
+    statusCode,
+    duration,
+    responseSize: responseSize,
+    metadata: metadata,
+  );
+  void userAction(String action, {Map<String, dynamic>? properties}) =>
       _logger.userAction(action, properties: properties);
-  void socket(String event, {Map<String, dynamic>? data}) => 
+  void socket(String event, {Map<String, dynamic>? data}) =>
       _logger.socket(event, data: data);
-  void cache(String operation, String key, {String? type, Duration? duration}) => 
-      _logger.cache(operation, key, type: type, duration: duration);
-  void auth(String event, {String? userId, Map<String, dynamic>? metadata}) => 
+  void cache(
+    String operation,
+    String key, {
+    String? type,
+    Duration? duration,
+  }) => _logger.cache(operation, key, type: type, duration: duration);
+  void auth(String event, {String? userId, Map<String, dynamic>? metadata}) =>
       _logger.auth(event, userId: userId, metadata: metadata);
 }
 
@@ -170,6 +207,6 @@ extension LoggerExtension on String {
   void logDebug({String? tag}) => logger.debug(this, tag: tag);
   void logInfo({String? tag}) => logger.info(this, tag: tag);
   void logWarning({String? tag}) => logger.warning(this, tag: tag);
-  void logError({String? tag, Object? error, StackTrace? stackTrace}) => 
+  void logError({String? tag, Object? error, StackTrace? stackTrace}) =>
       logger.error(this, tag: tag, error: error, stackTrace: stackTrace);
 }

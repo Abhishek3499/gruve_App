@@ -18,8 +18,7 @@ class CompleteProfileScreen extends ConsumerStatefulWidget {
       _CompleteProfileScreenState();
 }
 
-class _CompleteProfileScreenState
-    extends ConsumerState<CompleteProfileScreen> {
+class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   final GetStartedButtonController _completeButtonController =
       GetStartedButtonController();
   final TextEditingController _usernameController = TextEditingController();
@@ -40,15 +39,15 @@ class _CompleteProfileScreenState
     });
 
     _usernameController.addListener(() {
-      final error = SignupValidator.validateUsernameRealTime(_usernameController.text);
+      final error = SignupValidator.validateUsernameRealTime(
+        _usernameController.text,
+      );
       if (mounted) {
         setState(() {
           _usernameError = error;
         });
       }
     });
-
-
   }
 
   @override
@@ -72,7 +71,9 @@ class _CompleteProfileScreenState
       });
     }
 
-    final selectedImage = ref.read(completeProfileNotifierProvider).selectedImage;
+    final selectedImage = ref
+        .read(completeProfileNotifierProvider)
+        .selectedImage;
     final username = _usernameController.text.trim();
     final usernameError = SignupValidator.validateUsernameRealTime(username);
 
@@ -140,7 +141,9 @@ class _CompleteProfileScreenState
       completeProfileNotifierProvider.notifier,
     );
     if (ref.read(completeProfileNotifierProvider).isLoading) return false;
-    final selectedImage = ref.read(completeProfileNotifierProvider).selectedImage;
+    final selectedImage = ref
+        .read(completeProfileNotifierProvider)
+        .selectedImage;
     final username = _usernameController.text.trim();
     final file = selectedImage?.path;
 
@@ -270,7 +273,9 @@ class _CompleteProfileScreenState
                   ),
                   AnimatedSize(
                     duration: const Duration(milliseconds: 200),
-                    child: (_profileImageTouched ? _profileImageError : null) != null
+                    child:
+                        (_profileImageTouched ? _profileImageError : null) !=
+                            null
                         ? Padding(
                             padding: EdgeInsets.only(top: context.rh(10)),
                             child: Text(

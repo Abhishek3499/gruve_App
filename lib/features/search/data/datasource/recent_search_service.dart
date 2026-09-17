@@ -9,8 +9,10 @@ class RecentSearchService {
 
   Future<void> addRecentSearch(SearchUser user) async {
     try {
-      AppLogger.d('💾 [RecentSearchService] Adding user to recent searches: ${user.username}');
-      
+      AppLogger.d(
+        '💾 [RecentSearchService] Adding user to recent searches: ${user.username}',
+      );
+
       final prefs = await SharedPreferences.getInstance();
       final recentSearches = await getRecentSearches();
 
@@ -28,8 +30,10 @@ class RecentSearchService {
       // Convert to JSON and save
       final jsonList = recentSearches.map((user) => _userToJson(user)).toList();
       await prefs.setString(_key, jsonEncode(jsonList));
-      
-      AppLogger.d('✅ [RecentSearchService] Added ${user.username}. Total recent searches: ${recentSearches.length}');
+
+      AppLogger.d(
+        '✅ [RecentSearchService] Added ${user.username}. Total recent searches: ${recentSearches.length}',
+      );
     } catch (e) {
       AppLogger.d('❌ [RecentSearchService] Error adding recent search: $e');
     }
@@ -38,10 +42,10 @@ class RecentSearchService {
   Future<List<SearchUser>> getRecentSearches() async {
     try {
       AppLogger.d('📖 [RecentSearchService] Loading recent searches...');
-      
+
       final prefs = await SharedPreferences.getInstance();
       final jsonString = prefs.getString(_key);
-      
+
       if (jsonString == null || jsonString.isEmpty) {
         AppLogger.d('📖 [RecentSearchService] No recent searches found');
         return [];
@@ -54,7 +58,9 @@ class RecentSearchService {
           .whereType<SearchUser>()
           .toList();
 
-      AppLogger.d('✅ [RecentSearchService] Loaded ${recentSearches.length} recent searches');
+      AppLogger.d(
+        '✅ [RecentSearchService] Loaded ${recentSearches.length} recent searches',
+      );
       return recentSearches;
     } catch (e) {
       AppLogger.d('❌ [RecentSearchService] Error loading recent searches: $e');
@@ -64,16 +70,20 @@ class RecentSearchService {
 
   Future<void> removeRecentSearch(String userId) async {
     try {
-      AppLogger.d('🗑️ [RecentSearchService] Removing user from recent searches: $userId');
-      
+      AppLogger.d(
+        '🗑️ [RecentSearchService] Removing user from recent searches: $userId',
+      );
+
       final recentSearches = await getRecentSearches();
       recentSearches.removeWhere((user) => user.id == userId);
 
       final prefs = await SharedPreferences.getInstance();
       final jsonList = recentSearches.map((user) => _userToJson(user)).toList();
       await prefs.setString(_key, jsonEncode(jsonList));
-      
-      AppLogger.d('✅ [RecentSearchService] Removed user. Remaining: ${recentSearches.length}');
+
+      AppLogger.d(
+        '✅ [RecentSearchService] Removed user. Remaining: ${recentSearches.length}',
+      );
     } catch (e) {
       AppLogger.d('❌ [RecentSearchService] Error removing recent search: $e');
     }
@@ -82,10 +92,10 @@ class RecentSearchService {
   Future<void> clearAll() async {
     try {
       AppLogger.d('🗑️ [RecentSearchService] Clearing all recent searches...');
-      
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_key);
-      
+
       AppLogger.d('✅ [RecentSearchService] Cleared all recent searches');
     } catch (e) {
       AppLogger.d('❌ [RecentSearchService] Error clearing recent searches: $e');

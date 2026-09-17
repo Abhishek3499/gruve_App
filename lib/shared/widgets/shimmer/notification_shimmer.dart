@@ -35,7 +35,9 @@ class NotificationShimmer extends StatelessWidget {
             itemCount: itemCount,
             itemBuilder: (_, index) => _NotificationRowSkeleton(
               showThumbnail: index % 2 == 0,
-              messageWidth: index % 3 == 0 ? 180.0 : (index % 3 == 1 ? 160.0 : 200.0),
+              messageWidth: index % 3 == 0
+                  ? 180.0
+                  : (index % 3 == 1 ? 160.0 : 200.0),
             ),
           ),
         ],

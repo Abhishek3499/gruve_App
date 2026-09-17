@@ -76,16 +76,16 @@ class UserProfile {
       // ✅ Service already extracted 'data' layer — so start from 'user' directly
       final user = json['user'] as Map<String, dynamic>;
       final stats = (user['stats'] ?? {}) as Map<String, dynamic>;
-      
+
       // Posts parsing
       final posts = (json['posts'] ?? {}) as Map<String, dynamic>;
       final allPosts = (posts['all'] ?? {}) as Map<String, dynamic>;
       final likedPosts = (posts['likes'] ?? {}) as Map<String, dynamic>;
-      
+
       final allResults = (allPosts['results'] as List<dynamic>? ?? [])
           .map((e) => PostItem.fromJson(e as Map<String, dynamic>))
           .toList();
-          
+
       final likedResults = (likedPosts['results'] as List<dynamic>? ?? [])
           .map((e) => PostItem.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -96,9 +96,9 @@ class UserProfile {
       AppLogger.d('✅ [UserProfile] allPosts: ${allResults.length}');
 
       return UserProfile(
-        userId:         user['id']?.toString() ?? '',
-        username:       user['username']?.toString() ?? '',
-        fullName:       user['full_name']?.toString() ?? '',
+        userId: user['id']?.toString() ?? '',
+        username: user['username']?.toString() ?? '',
+        fullName: user['full_name']?.toString() ?? '',
         profilePicture: _pickString(user, const [
           'profile_picture',
           'profileImage',
@@ -107,16 +107,16 @@ class UserProfile {
           'photo',
           'image',
         ]),
-        bio:            user['bio']?.toString() ?? '',
+        bio: user['bio']?.toString() ?? '',
         followersCount: stats['subscribers_count'] as int? ?? 0,
         followingCount: stats['likes_count'] as int? ?? 0,
-        postsCount:     stats['videos_count'] as int? ?? 0,
-        isPrivate:      user['is_private'] as bool? ?? false,
-        isFollowing:    user['is_subscribed'] as bool? ?? false,
+        postsCount: stats['videos_count'] as int? ?? 0,
+        isPrivate: user['is_private'] as bool? ?? false,
+        isFollowing: user['is_subscribed'] as bool? ?? false,
         hasActiveStory: json['has_active_story'] as bool? ?? false,
-        highlights:     json['highlights'] as List<dynamic>? ?? [],
-        allPosts:       allResults,
-        likedPosts:     likedResults,
+        highlights: json['highlights'] as List<dynamic>? ?? [],
+        allPosts: allResults,
+        likedPosts: likedResults,
       );
     } catch (e) {
       AppLogger.d('❌ [UserProfile] Error parsing profile: $e');

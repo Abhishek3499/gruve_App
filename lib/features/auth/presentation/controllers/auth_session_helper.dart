@@ -13,9 +13,7 @@ class AuthSessionHelper {
   static void bootstrapAfterLogin(BuildContext context, String accessToken) {
     if (accessToken.isEmpty) return;
 
-    unawaited(
-      Future.microtask(() => SocketService().connect(accessToken)),
-    );
+    unawaited(Future.microtask(() => SocketService().connect(accessToken)));
 
     final profileProvider = Provider.of<ProfileProvider>(
       context,

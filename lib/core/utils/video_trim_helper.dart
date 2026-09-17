@@ -16,18 +16,24 @@ class VideoTrimHelper {
     try {
       final originalFile = File(originalPath);
       if (!originalFile.existsSync()) {
-        AppLogger.d('❌ [VideoTrimHelper] Original file does not exist: $originalPath');
+        AppLogger.d(
+          '❌ [VideoTrimHelper] Original file does not exist: $originalPath',
+        );
         return null;
       }
 
       final trimmer = Trimmer();
-      AppLogger.d('🎬 [VideoTrimHelper] Loading video for trimming: $originalPath');
+      AppLogger.d(
+        '🎬 [VideoTrimHelper] Loading video for trimming: $originalPath',
+      );
       await trimmer.loadVideo(videoFile: originalFile);
 
       String? trimmedPath;
       final completer = Completer<String?>();
 
-      AppLogger.d('🎬 [VideoTrimHelper] Saving trimmed video from $startMs to $endMs ms...');
+      AppLogger.d(
+        '🎬 [VideoTrimHelper] Saving trimmed video from $startMs to $endMs ms...',
+      );
       await trimmer.saveTrimmedVideo(
         startValue: startMs,
         endValue: endMs,
@@ -41,33 +47,51 @@ class VideoTrimHelper {
       await completer.future;
 
       if (trimmedPath != null) {
-        AppLogger.d('🎬 [VideoTrimHelper] Video trimmed successfully: $trimmedPath');
+        AppLogger.d(
+          '🎬 [VideoTrimHelper] Video trimmed successfully: $trimmedPath',
+        );
         try {
           final rawFile = File(trimmedPath!);
           if (rawFile.existsSync()) {
             final directoryPath = rawFile.parent.path;
-            final originalName = rawFile.path.replaceAll(r'\', '/').split('/').last;
+            final originalName = rawFile.path
+                .replaceAll(r'\', '/')
+                .split('/')
+                .last;
 
             final extensionIndex = originalName.lastIndexOf('.');
-            final nameWithoutExt = extensionIndex != -1 ? originalName.substring(0, extensionIndex) : originalName;
-            final ext = extensionIndex != -1 ? originalName.substring(extensionIndex) : '';
+            final nameWithoutExt = extensionIndex != -1
+                ? originalName.substring(0, extensionIndex)
+                : originalName;
+            final ext = extensionIndex != -1
+                ? originalName.substring(extensionIndex)
+                : '';
 
-            final sanitizedName = nameWithoutExt.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_') + ext;
+            final sanitizedName =
+                nameWithoutExt.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_') + ext;
             final safePath = '$directoryPath/$sanitizedName';
 
-            AppLogger.d('🎬 [VideoTrimHelper] Renaming trimmed video to safe path: $safePath');
+            AppLogger.d(
+              '🎬 [VideoTrimHelper] Renaming trimmed video to safe path: $safePath',
+            );
             final safeFile = await rawFile.rename(safePath);
             if (safeFile.existsSync()) {
-              AppLogger.d('🎬 [VideoTrimHelper] Cleaned/Safe trimmed file path exists: ${safeFile.path}');
+              AppLogger.d(
+                '🎬 [VideoTrimHelper] Cleaned/Safe trimmed file path exists: ${safeFile.path}',
+              );
               return safeFile.path;
             }
           }
         } catch (renameError) {
-          AppLogger.d('⚠️ [VideoTrimHelper] Renaming failed, returning raw trimmedPath: $renameError');
+          AppLogger.d(
+            '⚠️ [VideoTrimHelper] Renaming failed, returning raw trimmedPath: $renameError',
+          );
         }
         return trimmedPath;
       } else {
-        AppLogger.d('❌ [VideoTrimHelper] Trim completed but output path is null');
+        AppLogger.d(
+          '❌ [VideoTrimHelper] Trim completed but output path is null',
+        );
         return null;
       }
     } catch (e) {

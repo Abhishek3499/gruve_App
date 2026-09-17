@@ -54,8 +54,6 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
     _setupRealTimeValidation();
   }
 
-
-
   void _setupRealTimeValidation() {
     // Email field real-time validation
 

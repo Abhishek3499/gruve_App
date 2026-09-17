@@ -79,7 +79,9 @@ class _ViewsScreenState extends State<ViewsScreen> {
                           ),
 
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: context.rw(20)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.rw(20),
+                            ),
                             child: const ViewsDonutChart(),
                           ),
 
@@ -101,7 +103,9 @@ class _ViewsScreenState extends State<ViewsScreen> {
 
                       /// By Content Type Heading
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(16),
+                        ),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -129,7 +133,9 @@ class _ViewsScreenState extends State<ViewsScreen> {
 
                       /// PROGRESS BARS
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(16),
+                        ),
                         child: ListenableBuilder(
                           listenable: _controller,
                           builder: (context, child) {
@@ -138,7 +144,9 @@ class _ViewsScreenState extends State<ViewsScreen> {
                                 contentType,
                               ) {
                                 return Padding(
-                                  padding: EdgeInsets.only(bottom: context.rh(32)),
+                                  padding: EdgeInsets.only(
+                                    bottom: context.rh(32),
+                                  ),
                                   child: ViewsProgressBar(
                                     label: contentType.label,
                                     percentage: contentType.percentage,

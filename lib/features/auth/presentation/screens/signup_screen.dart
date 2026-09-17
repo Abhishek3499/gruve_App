@@ -59,8 +59,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _passwordTouched = false;
   bool _confirmPasswordTouched = false;
 
-
-
   // ── Other State ──────────────────────────────────────────
 
   final GetStartedButtonController _signupButtonController =
@@ -295,7 +293,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final nameError = _nameTouched ? nameErrorRaw : null;
     final identifierError = _identifierTouched ? identifierErrorRaw : null;
     final passwordError = _passwordTouched ? passwordErrorRaw : null;
-    final confirmPasswordError = _confirmPasswordTouched ? confirmPasswordErrorRaw : null;
+    final confirmPasswordError = _confirmPasswordTouched
+        ? confirmPasswordErrorRaw
+        : null;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -680,7 +680,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 'Signup failed. Please try again.';
                             messenger
                               ..hideCurrentSnackBar()
-                              ..showSnackBar(SnackBar(content: Text(errorText)));
+                              ..showSnackBar(
+                                SnackBar(content: Text(errorText)),
+                              );
 
                             return false;
                           }
@@ -889,7 +891,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   elevation: 8,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: Color(0xFFAF50C4), width: 1.5),
+                    side: const BorderSide(
+                      color: Color(0xFFAF50C4),
+                      width: 1.5,
+                    ),
                   ),
                   child: Container(
                     decoration: BoxDecoration(

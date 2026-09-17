@@ -18,7 +18,9 @@ class HiveService {
       await Hive.initFlutter();
       await Hive.openBox(userCacheBoxName);
       await Hive.openBox(feedCacheBoxName);
-      AppLogger.d('📦 [HiveService] Hive initialized and cache boxes opened successfully.');
+      AppLogger.d(
+        '📦 [HiveService] Hive initialized and cache boxes opened successfully.',
+      );
     } catch (e) {
       AppLogger.d('🚨 [HiveService] Initialization failed: $e');
     }
@@ -32,9 +34,13 @@ class HiveService {
       }
       final box = Hive.box(boxName);
       await box.put(key, data);
-      AppLogger.d('✅ [HiveService] Cached data in box "$boxName" for key "$key"');
+      AppLogger.d(
+        '✅ [HiveService] Cached data in box "$boxName" for key "$key"',
+      );
     } catch (e) {
-      AppLogger.d('🚨 [HiveService] Failed to cache data in box "$boxName" for key "$key": $e');
+      AppLogger.d(
+        '🚨 [HiveService] Failed to cache data in box "$boxName" for key "$key": $e',
+      );
     }
   }
 
@@ -47,13 +53,19 @@ class HiveService {
       final box = Hive.box(boxName);
       final data = box.get(key);
       if (data != null) {
-        AppLogger.d('📖 [HiveService] Cache HIT for key "$key" in box "$boxName"');
+        AppLogger.d(
+          '📖 [HiveService] Cache HIT for key "$key" in box "$boxName"',
+        );
       } else {
-        AppLogger.d('ℹ️ [HiveService] Cache MISS for key "$key" in box "$boxName"');
+        AppLogger.d(
+          'ℹ️ [HiveService] Cache MISS for key "$key" in box "$boxName"',
+        );
       }
       return data;
     } catch (e) {
-      AppLogger.d('🚨 [HiveService] Failed to get cached data in box "$boxName" for key "$key": $e');
+      AppLogger.d(
+        '🚨 [HiveService] Failed to get cached data in box "$boxName" for key "$key": $e',
+      );
       return null;
     }
   }
@@ -66,9 +78,13 @@ class HiveService {
       }
       final box = Hive.box(boxName);
       await box.delete(key);
-      AppLogger.d('🧹 [HiveService] Evicted cache key "$key" from box "$boxName"');
+      AppLogger.d(
+        '🧹 [HiveService] Evicted cache key "$key" from box "$boxName"',
+      );
     } catch (e) {
-      AppLogger.d('🚨 [HiveService] Failed to evict key "$key" from box "$boxName": $e');
+      AppLogger.d(
+        '🚨 [HiveService] Failed to evict key "$key" from box "$boxName": $e',
+      );
     }
   }
 

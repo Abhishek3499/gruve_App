@@ -212,7 +212,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
 
   Widget _buildMainContent(BoxConstraints constraints) {
     final loggedInUserId = _lastLoggedInUserId;
-    final isDirectOwnProfile = loggedInUserId != null &&
+    final isDirectOwnProfile =
+        loggedInUserId != null &&
         loggedInUserId.isNotEmpty &&
         loggedInUserId.trim() == widget.profileUserId.trim();
 

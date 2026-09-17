@@ -189,12 +189,16 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     final isLocal = File(rawPath).existsSync();
 
     String resolvedPath = rawPath;
-    if (!isLocal && !rawPath.startsWith('http://') && !rawPath.startsWith('https://')) {
+    if (!isLocal &&
+        !rawPath.startsWith('http://') &&
+        !rawPath.startsWith('https://')) {
       final baseUrl = EnvironmentConfig.baseUrl.trim();
       if (baseUrl.isNotEmpty) {
         final baseUri = Uri.tryParse(baseUrl);
         if (baseUri != null) {
-          final normalizedRelativePath = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+          final normalizedRelativePath = rawPath.startsWith('/')
+              ? rawPath
+              : '/$rawPath';
           resolvedPath = baseUri.resolve(normalizedRelativePath).toString();
         }
       }
@@ -339,12 +343,16 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     final isLocal = File(rawPath).existsSync();
 
     String resolvedPath = rawPath;
-    if (!isLocal && !rawPath.startsWith('http://') && !rawPath.startsWith('https://')) {
+    if (!isLocal &&
+        !rawPath.startsWith('http://') &&
+        !rawPath.startsWith('https://')) {
       final baseUrl = EnvironmentConfig.baseUrl.trim();
       if (baseUrl.isNotEmpty) {
         final baseUri = Uri.tryParse(baseUrl);
         if (baseUri != null) {
-          final normalizedRelativePath = rawPath.startsWith('/') ? rawPath : '/$rawPath';
+          final normalizedRelativePath = rawPath.startsWith('/')
+              ? rawPath
+              : '/$rawPath';
           resolvedPath = baseUri.resolve(normalizedRelativePath).toString();
         }
       }
@@ -464,7 +472,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                 child: SafeArea(
                   top: false,
                   child: GestureDetector(
-                    onTap: () {}, // Absorb taps to prevent skipping stories or popping screen
+                    onTap:
+                        () {}, // Absorb taps to prevent skipping stories or popping screen
                     behavior: HitTestBehavior.opaque,
                     child: StoryViewBottom(isOwnProfile: widget.isOwnProfile),
                   ),

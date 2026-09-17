@@ -75,7 +75,9 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                           ),
 
                           Padding(
-                            padding: EdgeInsets.symmetric(horizontal: context.rw(20)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.rw(20),
+                            ),
                             child: const InteractionsDonutChart(),
                           ),
 
@@ -97,7 +99,9 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
 
                       // By Content Type Heading
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(16),
+                        ),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -127,7 +131,9 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
 
                       // PROGRESS BARS
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(16),
+                        ),
                         child: ListenableBuilder(
                           listenable: _controller,
                           builder: (context, child) {
@@ -135,7 +141,9 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                               children: InteractionsModel.data.contentTypes.map(
                                 (contentType) {
                                   return Padding(
-                                    padding: EdgeInsets.only(bottom: context.rh(32)),
+                                    padding: EdgeInsets.only(
+                                      bottom: context.rh(32),
+                                    ),
                                     child: InteractionsProgressBar(
                                       label: contentType.label,
                                       percentage: contentType.percentage,

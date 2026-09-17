@@ -66,7 +66,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
       // Allow frame to render without selection border
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final boundary = _boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          _boundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) return widget.mediaPath;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -75,9 +77,13 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
       final bytes = byteData.buffer.asUint8List();
       final tempDir = Directory.systemTemp;
-      final file = File('${tempDir.path}/story_flattened_${DateTime.now().millisecondsSinceEpoch}.png');
+      final file = File(
+        '${tempDir.path}/story_flattened_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       await file.writeAsBytes(bytes);
-      AppLogger.d('📸 [StoryPreviewScreen] Flattened canvas captured: ${file.path}');
+      AppLogger.d(
+        '📸 [StoryPreviewScreen] Flattened canvas captured: ${file.path}',
+      );
       return file.path;
     } catch (e) {
       AppLogger.d('❌ [StoryPreviewScreen] Error flattening canvas: $e');
@@ -101,17 +107,15 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
       final finalPath = await _captureFlattenedImage();
 
       await storyController.createStory(
-         caption: '',
-         mediaPath: finalPath,
-         isMuted: _isMuted,
-       );
+        caption: '',
+        mediaPath: finalPath,
+        isMuted: _isMuted,
+      );
 
       if (!mounted) return;
 
       if (storyController.isSuccess) {
-        context.read<StoryStateController>().markStoryAsShared(
-          finalPath,
-        );
+        context.read<StoryStateController>().markStoryAsShared(finalPath);
 
         // Notify that the counts/story changed so Profile screen updates.
         ProfileCountRefreshBridge.notifyCountsChanged(reason: 'story_shared');
@@ -156,7 +160,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final profileProvider = context.read<ProfileProvider>();
-        
+
         // Only fetch if profile is null OR stale (>5 minutes)
         if (!profileProvider.hasFreshProfile && !profileProvider.isLoading) {
           // Fetch avatar only (skip highlights for speed)
@@ -297,7 +301,10 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         );
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(12)),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.rw(16),
+          vertical: context.rh(12),
+        ),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFC358D7) : Colors.white12,
           borderRadius: BorderRadius.circular(16),
@@ -451,7 +458,8 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                     ? _buildMediaPreview()
                                     : Center(
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             const CircularProgressIndicator(
                                               color: Color(0xFFBB86FC),
@@ -482,7 +490,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                 },
                                 onDelete: () {
                                   setState(() {
-                                    _stickers.removeWhere((s) => s.id == sticker.id);
+                                    _stickers.removeWhere(
+                                      (s) => s.id == sticker.id,
+                                    );
                                     if (_selectedStickerId == sticker.id) {
                                       _selectedStickerId = null;
                                     }
@@ -500,26 +510,32 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                   _isPickerOrEditorOpen = true;
                                   try {
                                     if (sticker.isMusic) {
-                                      final updated = await StoryMusicPicker.open(
-                                        context,
-                                        initialSticker: sticker,
-                                      );
+                                      final updated =
+                                          await StoryMusicPicker.open(
+                                            context,
+                                            initialSticker: sticker,
+                                          );
                                       if (updated != null && mounted) {
                                         setState(() {
-                                          final index = _stickers.indexWhere((s) => s.id == sticker.id);
+                                          final index = _stickers.indexWhere(
+                                            (s) => s.id == sticker.id,
+                                          );
                                           if (index != -1) {
                                             _stickers[index] = updated;
                                           }
                                         });
                                       }
                                     } else if (sticker.isText) {
-                                      final updated = await StoryTextEditor.open(
-                                        context,
-                                        initialSticker: sticker,
-                                      );
+                                      final updated =
+                                          await StoryTextEditor.open(
+                                            context,
+                                            initialSticker: sticker,
+                                          );
                                       if (updated != null && mounted) {
                                         setState(() {
-                                          final index = _stickers.indexWhere((s) => s.id == sticker.id);
+                                          final index = _stickers.indexWhere(
+                                            (s) => s.id == sticker.id,
+                                          );
                                           if (index != -1) {
                                             _stickers[index] = updated;
                                           }
@@ -536,6 +552,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         ),
                       ),
                     ),
+
                     /// TOP BAR + ACTION BUTTONS (ONE ROW)
                     Positioned(
                       top: 10,
@@ -547,7 +564,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         children: [
                           StoryTopBar(
                             onClose: () async {
-                              final shouldDiscard = await _showDiscardDialog(context);
+                              final shouldDiscard = await _showDiscardDialog(
+                                context,
+                              );
                               if (shouldDiscard && context.mounted) {
                                 Navigator.pop(context);
                               }
@@ -562,7 +581,8 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                               if (_isPickerOrEditorOpen) return;
                               _isPickerOrEditorOpen = true;
                               try {
-                                final newTextSticker = await StoryTextEditor.open(context);
+                                final newTextSticker =
+                                    await StoryTextEditor.open(context);
                                 if (newTextSticker != null && mounted) {
                                   setState(() {
                                     _stickers.add(newTextSticker);
@@ -577,7 +597,8 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                               if (_isPickerOrEditorOpen) return;
                               _isPickerOrEditorOpen = true;
                               try {
-                                final musicSticker = await StoryMusicPicker.open(context);
+                                final musicSticker =
+                                    await StoryMusicPicker.open(context);
                                 if (musicSticker != null && mounted) {
                                   setState(() {
                                     _stickers.add(musicSticker);
@@ -639,7 +660,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                           /// YOUR STORY
                           Expanded(
                             child: GestureDetector(
-                              onTap: _isYourStorySharing ? null : _shareToYourStory,
+                              onTap: _isYourStorySharing
+                                  ? null
+                                  : _shareToYourStory,
                               child: Container(
                                 height: context.rh(42),
                                 padding: EdgeInsets.symmetric(
@@ -655,25 +678,32 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                         ? SizedBox(
                                             width: context.rw(20),
                                             height: context.rh(20),
-                                            child: const CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
-                                            ),
+                                            child:
+                                                const CircularProgressIndicator(
+                                                  color: Colors.white,
+                                                  strokeWidth: 2,
+                                                ),
                                           )
                                         : Consumer<ProfileProvider>(
                                             builder: (context, provider, _) {
                                               return CachedAvatar(
-                                                imageUrl: provider.cachedUser?.profileImage,
-                                                username: provider.cachedUser?.username ?? '',
+                                                imageUrl: provider
+                                                    .cachedUser
+                                                    ?.profileImage,
+                                                username:
+                                                    provider
+                                                        .cachedUser
+                                                        ?.username ??
+                                                    '',
                                                 radius: 13,
                                               );
                                             },
                                           ),
-                                    SizedBox(
-                                      width: context.rw(8),
-                                    ),
+                                    SizedBox(width: context.rw(8)),
                                     Text(
-                                      _isYourStorySharing ? "Sharing..." : "Your Story",
+                                      _isYourStorySharing
+                                          ? "Sharing..."
+                                          : "Your Story",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: context.rf(14),
@@ -691,7 +721,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                           /// CLOSE FRIEND
                           Container(
                             height: context.rh(42),
-                            padding: EdgeInsets.symmetric(horizontal: context.rw(12)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.rw(12),
+                            ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
                               color: const Color(0xFF72008D),
@@ -737,14 +769,18 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                 context: context,
                                 barrierDismissible: false,
                                 builder: (context) => const Center(
-                                  child: CircularProgressIndicator(color: Color(0xFFC358D7)),
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFFC358D7),
+                                  ),
                                 ),
                               );
 
                               final finalPath = await _captureFlattenedImage();
 
                               if (context.mounted) {
-                                Navigator.pop(context); // Dismiss loading dialog
+                                Navigator.pop(
+                                  context,
+                                ); // Dismiss loading dialog
                               }
 
                               if (!context.mounted) return;
@@ -760,9 +796,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                       listen: false,
                                     ),
                                     child: StoryShareSheet(
-                                       mediaPath: finalPath,
-                                       isMuted: _isMuted,
-                                     ),
+                                      mediaPath: finalPath,
+                                      isMuted: _isMuted,
+                                    ),
                                   );
                                 },
                               );
@@ -797,7 +833,11 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
   Widget _buildMediaPreview() {
     if (_mediaLoadFailed) {
       return Center(
-        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: context.rw(48)),
+        child: Icon(
+          Icons.videocam_off_outlined,
+          color: Colors.white54,
+          size: context.rw(48),
+        ),
       );
     }
 

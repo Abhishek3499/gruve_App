@@ -76,5 +76,5 @@ class CompleteProfileNotifier extends Notifier<CompleteProfileUiState> {
 
 final completeProfileNotifierProvider =
     NotifierProvider<CompleteProfileNotifier, CompleteProfileUiState>(
-  CompleteProfileNotifier.new,
-);
+      CompleteProfileNotifier.new,
+    );

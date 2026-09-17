@@ -146,7 +146,9 @@ class ProfileModel {
     );
     AppLogger.d("[ProfileModel] Final hasActiveStory: $hasActiveStory");
     AppLogger.d("[ProfileModel] Parsed storyCount: $storyCount");
-    AppLogger.d("[ProfileModel] Parsed unreadNotificationCount: $unreadNotificationCount");
+    AppLogger.d(
+      "[ProfileModel] Parsed unreadNotificationCount: $unreadNotificationCount",
+    );
 
     final model = ProfileModel(
       id: id,

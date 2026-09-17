@@ -6,7 +6,8 @@ import 'package:gruve_app/features/auth/data/dto/signup_response.dart';
 /// Handles the signup API call. Loading state and field-level validation
 /// errors are owned by the Signup Riverpod notifier, not here.
 class SignupController {
-  SignupController({SignupService? service}) : _service = service ?? SignupService();
+  SignupController({SignupService? service})
+    : _service = service ?? SignupService();
 
   final SignupService _service;
 

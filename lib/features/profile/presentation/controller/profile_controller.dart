@@ -140,18 +140,18 @@ class ProfileController {
 
   void removePostLocal(String postId) {
     if (_disposed) return;
-    
+
     // Remove from all tab states
     _allTabState.posts.removeWhere((p) => p.id == postId);
     _trendingTabState.posts.removeWhere((p) => p.id == postId);
     _likedTabState.posts.removeWhere((p) => p.id == postId);
-    
+
     // Update the aligned postsNotifier for tab 0
     postsNotifier.value = List<Post>.from(_allTabState.posts);
-    
+
     // Re-trigger grid UI rebuild
     gridRevision.value++;
-    
+
     // Decrement posts count in profile stats if greater than 0
     final currentStats = statsNotifier.value;
     if (currentStats.videosCount > 0) {
@@ -161,8 +161,10 @@ class ProfileController {
         videosCount: currentStats.videosCount - 1,
       );
     }
-    
-    AppLogger.d('🗑️ [ProfileController] Locally removed post $postId from all tabs');
+
+    AppLogger.d(
+      '🗑️ [ProfileController] Locally removed post $postId from all tabs',
+    );
   }
 
   /// Throttled near-end scroll: avoids duplicate requests while flinging.
@@ -247,7 +249,9 @@ class ProfileController {
         '🌐 [ProfileController] Calling repository.fetchProfileData()',
       );
 
-      final userData = await _repository.fetchProfileData(cancelToken: _getCancelToken());
+      final userData = await _repository.fetchProfileData(
+        cancelToken: _getCancelToken(),
+      );
       AppLogger.d(
         '✅ [ProfileController] Repository returned data: ${userData.runtimeType}',
       );
@@ -511,7 +515,9 @@ class ProfileController {
     AppLogger.d('📊 [ProfileController] Raw data keys: ${raw.keys.toList()}');
 
     final postsData = raw['data']?['posts'] ?? raw['posts'];
-    AppLogger.d('📊 [ProfileController] Posts data found: ${postsData != null}');
+    AppLogger.d(
+      '📊 [ProfileController] Posts data found: ${postsData != null}',
+    );
     if (postsData != null) {
       AppLogger.d(
         '📊 [ProfileController] Posts data type: ${postsData.runtimeType}',
@@ -979,7 +985,6 @@ class ProfileController {
       } else {
         AppLogger.d('[ProfileController] Duplicate post skipped id=${post.id}');
       }
-      
     }
 
     return unique;

@@ -15,24 +15,27 @@ class ExploreReelUser {
   factory ExploreReelUser.fromJson(Map<String, dynamic> json) {
     return ExploreReelUser(
       id: json['id']?.toString() ?? json['user_id']?.toString() ?? '',
-      username: json['username']?.toString() ??
+      username:
+          json['username']?.toString() ??
           json['user_name']?.toString() ??
           json['name']?.toString() ??
           '',
-      profilePicture: Post.normalizeMediaUrl(_pickString(json, const [
-        'profile_picture',
-        'profilePicture',
-        'profile_image',
-        'profileImage',
-        'profile_pic',
-        'profilePic',
-        'avatar',
-        'avatar_url',
-        'avatarUrl',
-        'photo',
-        'picture',
-        'image',
-      ])),
+      profilePicture: Post.normalizeMediaUrl(
+        _pickString(json, const [
+          'profile_picture',
+          'profilePicture',
+          'profile_image',
+          'profileImage',
+          'profile_pic',
+          'profilePic',
+          'avatar',
+          'avatar_url',
+          'avatarUrl',
+          'photo',
+          'picture',
+          'image',
+        ]),
+      ),
     );
   }
 
@@ -108,30 +111,48 @@ class ExploreReel {
     final preview = toPreviewPost();
     final tag = prefix.isEmpty ? 'ExploreReel' : 'ExploreReel/$prefix';
 
-    AppLogger.d('────────── reel id=$id user=${user.username} ──────────', tag: tag);
+    AppLogger.d(
+      '────────── reel id=$id user=${user.username} ──────────',
+      tag: tag,
+    );
     AppLogger.d('raw.thumbnail     = ${_orEmpty(thumbnail)}', tag: tag);
     AppLogger.d('raw.mediaUrl      = ${_orEmpty(mediaUrl)}', tag: tag);
-    AppLogger.d('resolved.media    = ${_orEmpty(_resolvedMediaUrl())}', tag: tag);
-    AppLogger.d('resolved.thumb    = ${_orEmpty(_resolvedThumbnailUrl())}', tag: tag);
+    AppLogger.d(
+      'resolved.media    = ${_orEmpty(_resolvedMediaUrl())}',
+      tag: tag,
+    );
+    AppLogger.d(
+      'resolved.thumb    = ${_orEmpty(_resolvedThumbnailUrl())}',
+      tag: tag,
+    );
     AppLogger.d('preview.media     = ${_orEmpty(preview.media)}', tag: tag);
-    AppLogger.d('preview.thumbUrl  = ${_orEmpty(preview.thumbnailUrl)}', tag: tag);
-    AppLogger.d('preview.gridUrl   = ${_orEmpty(preview.gridPreviewUrl)}', tag: tag);
+    AppLogger.d(
+      'preview.thumbUrl  = ${_orEmpty(preview.thumbnailUrl)}',
+      tag: tag,
+    );
+    AppLogger.d(
+      'preview.gridUrl   = ${_orEmpty(preview.gridPreviewUrl)}',
+      tag: tag,
+    );
     AppLogger.d('preview.mediaType = ${preview.mediaType}', tag: tag);
-    AppLogger.d('user.profilePic   = ${_orEmpty(user.profilePicture)}', tag: tag);
+    AppLogger.d(
+      'user.profilePic   = ${_orEmpty(user.profilePicture)}',
+      tag: tag,
+    );
     AppLogger.d('hasPlayableMedia  = $hasPlayableMedia', tag: tag);
   }
 
-  static void logAllUrls(
-    Iterable<ExploreReel> reels, {
-    String prefix = '',
-  }) {
+  static void logAllUrls(Iterable<ExploreReel> reels, {String prefix = ''}) {
     final list = reels.toList();
     if (list.isEmpty) {
       AppLogger.d('(no reels)', tag: 'ExploreReel');
       return;
     }
 
-    AppLogger.d('══════ EXPLORE REEL URLS (${list.length}) ══════', tag: 'ExploreReel');
+    AppLogger.d(
+      '══════ EXPLORE REEL URLS (${list.length}) ══════',
+      tag: 'ExploreReel',
+    );
     for (var i = 0; i < list.length; i++) {
       list[i].logUrls(prefix: prefix.isEmpty ? '#$i' : '$prefix#$i');
     }
@@ -158,7 +179,10 @@ class ExploreReel {
     final user = userJson is Map
         ? ExploreReelUser.fromJson(Map<String, dynamic>.from(userJson))
         : ExploreReelUser(
-            id: json['user_id']?.toString() ?? json['creator_id']?.toString() ?? '',
+            id:
+                json['user_id']?.toString() ??
+                json['creator_id']?.toString() ??
+                '',
             username: userJson is String
                 ? userJson
                 : (json['username']?.toString() ?? ''),
@@ -201,9 +225,7 @@ class ExploreReel {
     for (final nestedKey in ['media', 'video', 'file', 'post']) {
       final nested = json[nestedKey];
       if (nested is! Map) continue;
-      final fromNested = _readThumbnailValue(
-        Map<String, dynamic>.from(nested),
-      );
+      final fromNested = _readThumbnailValue(Map<String, dynamic>.from(nested));
       if (fromNested.isNotEmpty) return fromNested;
     }
     return '';
@@ -293,13 +315,14 @@ class ExploreReel {
   Post toPreviewPost() {
     final media = _resolvedMediaUrl();
     final imageThumb = _resolvedThumbnailUrl();
-    final isVideoMedia =
-        media.isNotEmpty && Post.mediaUrlLooksLikeVideo(media);
+    final isVideoMedia = media.isNotEmpty && Post.mediaUrlLooksLikeVideo(media);
 
     return Post(
       id: id,
       caption: '',
-      media: isVideoMedia ? media : (imageThumb.isNotEmpty ? imageThumb : media),
+      media: isVideoMedia
+          ? media
+          : (imageThumb.isNotEmpty ? imageThumb : media),
       thumbnailUrl: imageThumb,
       userId: user.id,
       likesCount: likes,

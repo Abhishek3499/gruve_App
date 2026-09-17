@@ -126,8 +126,9 @@ class ProfileProvider extends ChangeNotifier {
     final shouldFetchHighlights =
         !avatarOnly &&
         (force ||
-        _lastHighlightsFetch == null ||
-        now.difference(_lastHighlightsFetch!) >= const Duration(minutes: 5));
+            _lastHighlightsFetch == null ||
+            now.difference(_lastHighlightsFetch!) >=
+                const Duration(minutes: 5));
 
     if (!shouldFetchProfile && !shouldFetchHighlights) {
       _log('[Profile] Both profile and highlights are fresh. Skipping fetch.');
@@ -147,7 +148,7 @@ class ProfileProvider extends ChangeNotifier {
               .then((_) {
                 _lastProfileFetch = DateTime.now();
                 user = controller.user;
-                
+
                 // Pre-cache avatar after successful fetch
                 if (user != null) {
                   unawaited(_precacheUserAvatar(user!));
@@ -364,22 +365,19 @@ class ProfileProvider extends ChangeNotifier {
 
   /// NEW: Quick fetch for avatar only (skip highlights)
   Future<void> fetchAvatarOnly() async {
-    return _runProfileFetch(
-      fetchUserReason: 'avatar_only',
-      avatarOnly: true,
-    );
+    return _runProfileFetch(fetchUserReason: 'avatar_only', avatarOnly: true);
   }
 
   /// NEW: Pre-cache avatar after profile fetch
   Future<void> _precacheUserAvatar(ProfileModel user) async {
     final imageUrl = user.profileImage.trim();
     if (imageUrl.isEmpty || !imageUrl.startsWith('http')) return;
-    
+
     try {
       final provider = CachedNetworkImageProvider(imageUrl);
       final stream = provider.resolve(ImageConfiguration.empty);
       final completer = Completer<void>();
-      
+
       late ImageStreamListener listener;
       listener = ImageStreamListener(
         (info, synchronousCall) {
@@ -395,7 +393,7 @@ class ProfileProvider extends ChangeNotifier {
           stream.removeListener(listener);
         },
       );
-      
+
       stream.addListener(listener);
       await completer.future.timeout(
         const Duration(seconds: 3),
@@ -405,7 +403,7 @@ class ProfileProvider extends ChangeNotifier {
           }
         },
       );
-      
+
       AppLogger.d('✅ [ProfileProvider] Pre-cached user avatar');
     } catch (e) {
       AppLogger.d('⚠️ [ProfileProvider] Avatar pre-cache failed: $e');

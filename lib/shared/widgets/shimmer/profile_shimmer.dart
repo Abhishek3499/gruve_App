@@ -95,19 +95,13 @@ class UserProfileShimmer extends StatelessWidget {
                 SizedBox(height: 20),
                 ProfileStoriesShimmer(),
                 SizedBox(height: 20),
-                ProfileTabsShimmer(
-                  widths: [94, 78],
-                  height: 40,
-                ),
+                ProfileTabsShimmer(widths: [94, 78], height: 40),
                 ProfileGridShimmer(itemCount: 9),
               ],
             ),
           ),
           const Column(
-            children: [
-              SizedBox(height: 20),
-              _UserProfileHeaderShimmer(),
-            ],
+            children: [SizedBox(height: 20), _UserProfileHeaderShimmer()],
           ),
         ],
       ),
@@ -158,11 +152,7 @@ class _DividerShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      width: 1.2,
-      color: Colors.white,
-    );
+    return Container(height: 40, width: 1.2, color: Colors.white);
   }
 }
 

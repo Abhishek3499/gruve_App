@@ -97,7 +97,9 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                     // ✅ 2. YAHI ADD KARNA HAI (Selected Users List)
                     if (selectedUsers.isNotEmpty)
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(16),
+                        ),
                         child: Column(
                           children: selectedUsers.map((user) {
                             return ListTile(
@@ -190,7 +192,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
         return Container(
           color: Colors.black,
           child: Center(
-            child: Icon(Icons.play_circle_fill, color: Colors.white, size: context.rw(50)),
+            child: Icon(
+              Icons.play_circle_fill,
+              color: Colors.white,
+              size: context.rw(50),
+            ),
           ),
         );
       }

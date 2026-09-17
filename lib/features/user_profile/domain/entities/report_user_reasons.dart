@@ -7,10 +7,7 @@ class ReportUserReason {
 
 const List<ReportUserReason> kReportUserReasons = [
   ReportUserReason(key: 'dislike', label: "I just don't like it"),
-  ReportUserReason(
-    key: 'bullying',
-    label: 'Bullying or unwanted contact',
-  ),
+  ReportUserReason(key: 'bullying', label: 'Bullying or unwanted contact'),
   ReportUserReason(
     key: 'self_harm',
     label: 'Suicide, self-injury or eating disorders',
@@ -19,12 +16,6 @@ const List<ReportUserReason> kReportUserReasons = [
     key: 'substance_abuse',
     label: 'Substance abuse or addiction',
   ),
-  ReportUserReason(
-    key: 'harassment',
-    label: 'Harassment or discrimination',
-  ),
-  ReportUserReason(
-    key: 'violence',
-    label: 'Violence or threats of violence',
-  ),
+  ReportUserReason(key: 'harassment', label: 'Harassment or discrimination'),
+  ReportUserReason(key: 'violence', label: 'Violence or threats of violence'),
 ];

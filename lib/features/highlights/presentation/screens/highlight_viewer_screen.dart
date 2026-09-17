@@ -152,7 +152,10 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
-              padding: EdgeInsets.symmetric(vertical: context.rh(24), horizontal: context.rw(20)),
+              padding: EdgeInsets.symmetric(
+                vertical: context.rh(24),
+                horizontal: context.rw(20),
+              ),
               decoration: BoxDecoration(
                 color: const ui.Color.fromARGB(220, 33, 19, 44),
                 border: Border(
@@ -183,7 +186,10 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: EdgeInsets.symmetric(vertical: context.rh(16), horizontal: context.rw(16)),
+                        padding: EdgeInsets.symmetric(
+                          vertical: context.rh(16),
+                          horizontal: context.rw(16),
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
@@ -194,7 +200,11 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.delete_outline, color: Colors.redAccent, size: context.rw(22)),
+                            Icon(
+                              Icons.delete_outline,
+                              color: Colors.redAccent,
+                              size: context.rw(22),
+                            ),
                             SizedBox(width: context.rw(12)),
                             Text(
                               'Delete Highlight',
@@ -319,7 +329,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                       child: TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: context.rh(14)),
+                          padding: EdgeInsets.symmetric(
+                            vertical: context.rh(14),
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -343,7 +355,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
-                          padding: EdgeInsets.symmetric(vertical: context.rh(14)),
+                          padding: EdgeInsets.symmetric(
+                            vertical: context.rh(14),
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -377,11 +391,15 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     });
 
     final highlightController = context.read<HighlightController>();
-    final success = await highlightController.deleteHighlight(widget.highlightId);
+    final success = await highlightController.deleteHighlight(
+      widget.highlightId,
+    );
 
     if (success) {
       if (mounted) {
-        context.read<ProfileProvider>().removeHighlightLocally(widget.highlightId);
+        context.read<ProfileProvider>().removeHighlightLocally(
+          widget.highlightId,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -513,7 +531,11 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.photo_library_outlined, color: Colors.white, size: context.rw(48)),
+          Icon(
+            Icons.photo_library_outlined,
+            color: Colors.white,
+            size: context.rw(48),
+          ),
           SizedBox(height: context.rh(16)),
           Text(
             'No stories available',
@@ -557,7 +579,12 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     return SafeArea(
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.fromLTRB(context.rw(10), context.rh(8), context.rw(10), context.rh(8)),
+        padding: EdgeInsets.fromLTRB(
+          context.rw(10),
+          context.rh(8),
+          context.rw(10),
+          context.rh(8),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -768,7 +795,11 @@ class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
     if (_isVideo) {
       if (_videoFailed) {
         return Center(
-          child: Icon(Icons.broken_image, color: Colors.white, size: context.rw(64)),
+          child: Icon(
+            Icons.broken_image,
+            color: Colors.white,
+            size: context.rw(64),
+          ),
         );
       }
 
@@ -792,7 +823,11 @@ class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
     final imageUrl = _mediaUrl;
     if (!MediaUrlThumbnail.isHttpUrl(imageUrl)) {
       return Center(
-        child: Icon(Icons.broken_image, color: Colors.white, size: context.rw(64)),
+        child: Icon(
+          Icons.broken_image,
+          color: Colors.white,
+          size: context.rw(64),
+        ),
       );
     }
 
@@ -806,7 +841,11 @@ class _HighlightStoryMediaState extends State<_HighlightStoryMedia> {
       useOldImageOnUrlChange: true,
       placeholder: (context, url) => const _HighlightLoader(),
       errorWidget: (context, url, error) => Center(
-        child: Icon(Icons.broken_image, color: Colors.white, size: context.rw(64)),
+        child: Icon(
+          Icons.broken_image,
+          color: Colors.white,
+          size: context.rw(64),
+        ),
       ),
     );
   }

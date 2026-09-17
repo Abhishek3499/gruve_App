@@ -66,10 +66,7 @@ class EmailSignInService {
       return EmailSignInResponse.fromJson(response.data);
     } on DioException catch (e) {
       AuthApiLogger.error(logLabel, e);
-      throw AuthApiException.extractMessage(
-        e,
-        fallback: fallbackMessage,
-      );
+      throw AuthApiException.extractMessage(e, fallback: fallbackMessage);
     } catch (e) {
       authLogger.d("$logLabel failed: $e");
       rethrow;

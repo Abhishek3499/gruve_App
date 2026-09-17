@@ -1,4 +1,3 @@
-
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/production_logger.dart';
@@ -14,7 +13,9 @@ class DebugLogger {
   }
 
   /// Log cache operations
-  void cache(String operation, String key, {
+  void cache(
+    String operation,
+    String key, {
     String? type,
     String? source,
     int? size,
@@ -30,16 +31,17 @@ class DebugLogger {
     if (duration != null) parts.add('${duration.inMilliseconds}ms');
 
     final message = parts.join(' ');
-    
+
     AppLogger.d(message);
-    
-    
+
     // Also log to production logger
     logger.debug(message, tag: 'Cache');
   }
 
   /// Log network operations
-  void network(String method, String endpoint, {
+  void network(
+    String method,
+    String endpoint, {
     int? statusCode,
     Duration? duration,
     int? responseSize,
@@ -63,7 +65,7 @@ class DebugLogger {
     }
 
     final message = parts.join(' ');
-    
+
     if (error != null) {
       logger.error(message, tag: 'Network');
     } else {
@@ -72,7 +74,8 @@ class DebugLogger {
   }
 
   /// Log WebSocket events
-  void socket(String event, {
+  void socket(
+    String event, {
     String? conversationId,
     String? userId,
     int? reconnectAttempts,
@@ -94,7 +97,7 @@ class DebugLogger {
     }
 
     final message = parts.join(' ');
-    
+
     if (error != null) {
       logger.error(message, tag: 'Socket');
     } else {
@@ -103,7 +106,9 @@ class DebugLogger {
   }
 
   /// Log performance metrics
-  void performance(String operation, Duration duration, {
+  void performance(
+    String operation,
+    Duration duration, {
     Map<String, dynamic>? metadata,
     int? frameTime,
     double? fps,
@@ -122,13 +127,14 @@ class DebugLogger {
 
     // Direct logger call to avoid recursion
     AppLogger.d('⏱️ [PERF] $operation: ${duration.inMilliseconds}ms');
-    
-    
+
     logger.performance(operation, duration, metadata: metadata);
   }
 
   /// Log UI state changes
-  void ui(String component, String state, {
+  void ui(
+    String component,
+    String state, {
     String? previousState,
     Map<String, dynamic>? properties,
   }) {
@@ -143,13 +149,13 @@ class DebugLogger {
 
     // Direct logger call to avoid recursion
     AppLogger.d(parts.join(' '));
-    
-    
+
     logger.debug(parts.join(' '), tag: 'UI');
   }
 
   /// Log authentication events
-  void auth(String event, {
+  void auth(
+    String event, {
     String? userId,
     String? method,
     String? error,
@@ -163,7 +169,7 @@ class DebugLogger {
     if (error != null) parts.add('ERROR:$error');
 
     final message = parts.join(' ');
-    
+
     if (error != null) {
       logger.error(message, tag: 'Auth');
     } else {
@@ -172,7 +178,8 @@ class DebugLogger {
   }
 
   /// Log user interactions
-  void user(String action, {
+  void user(
+    String action, {
     String? screen,
     String? target,
     Map<String, dynamic>? properties,
@@ -191,7 +198,9 @@ class DebugLogger {
   }
 
   /// Log navigation events
-  void navigation(String from, String to, {
+  void navigation(
+    String from,
+    String to, {
     String? method,
     Map<String, dynamic>? arguments,
   }) {
@@ -208,7 +217,9 @@ class DebugLogger {
   }
 
   /// Log repository operations
-  void repository(String operation, String entity, {
+  void repository(
+    String operation,
+    String entity, {
     String? id,
     Map<String, dynamic>? data,
     String? error,
@@ -228,7 +239,7 @@ class DebugLogger {
     if (error != null) parts.add('ERROR:$error');
 
     final message = parts.join(' ');
-    
+
     if (error != null) {
       logger.error(message, tag: 'Repository');
     } else {
@@ -237,7 +248,9 @@ class DebugLogger {
   }
 
   /// Log provider state changes
-  void provider(String name, String state, {
+  void provider(
+    String name,
+    String state, {
     String? previousState,
     Map<String, dynamic>? data,
     int? itemCount,
@@ -256,7 +269,9 @@ class DebugLogger {
   }
 
   /// Log widget lifecycle
-  void widget(String widgetName, String lifecycle, {
+  void widget(
+    String widgetName,
+    String lifecycle, {
     Map<String, dynamic>? properties,
   }) {
     final parts = <String>['[WIDGET]', widgetName, lifecycle];
@@ -292,7 +307,8 @@ class DebugLogger {
   }
 
   /// Log image loading
-  void image(String url, {
+  void image(
+    String url, {
     String? operation,
     int? size,
     Duration? loadTime,
@@ -309,7 +325,7 @@ class DebugLogger {
     if (error != null) parts.add('ERROR:$error');
 
     final message = parts.join(' ');
-    
+
     if (error != null) {
       logger.error(message, tag: 'Image');
     } else {
@@ -318,7 +334,8 @@ class DebugLogger {
   }
 
   /// Log errors with context
-  void error(String error, {
+  void error(
+    String error, {
     String? context,
     String? stackTrace,
     Map<String, dynamic>? metadata,
@@ -338,9 +355,15 @@ class DebugLogger {
     }
 
     final message = parts.join(' ');
-    
-    logger.error(message, error: errorObj ?? error, stackTrace: stackTraceObj ?? (stackTrace != null ? StackTrace.fromString(stackTrace) : null));
-    
+
+    logger.error(
+      message,
+      error: errorObj ?? error,
+      stackTrace:
+          stackTraceObj ??
+          (stackTrace != null ? StackTrace.fromString(stackTrace) : null),
+    );
+
     if (fatal == true) {
       developer.log('🚨 FATAL ERROR: $message', name: 'DebugLogger');
     }
@@ -399,7 +422,7 @@ class ComponentLogger {
       AppLogger.d(parts.join(' '));
     }
   }
-  
+
   void info(String message, {Map<String, dynamic>? properties}) {
     if (kDebugMode) {
       final parts = <String>['[$componentName]', message];
@@ -411,7 +434,7 @@ class ComponentLogger {
       AppLogger.d(parts.join(' '));
     }
   }
-  
+
   void warning(String message, {Map<String, dynamic>? properties}) {
     if (kDebugMode) {
       final parts = <String>['[$componentName]', message];
@@ -423,7 +446,7 @@ class ComponentLogger {
       AppLogger.d(parts.join(' '));
     }
   }
-  
+
   void error(String message, {Object? error, StackTrace? stackTrace}) {
     if (kDebugMode) {
       final parts = <String>['[$componentName]', message];
@@ -432,9 +455,17 @@ class ComponentLogger {
     }
   }
 
-  void performance(String operation, Duration duration, {Map<String, dynamic>? metadata}) {
+  void performance(
+    String operation,
+    Duration duration, {
+    Map<String, dynamic>? metadata,
+  }) {
     if (kDebugMode) {
-      final parts = <String>['[$componentName]', operation, '${duration.inMilliseconds}ms'];
+      final parts = <String>[
+        '[$componentName]',
+        operation,
+        '${duration.inMilliseconds}ms',
+      ];
       if (metadata != null) {
         metadata.forEach((key, value) {
           parts.add('$key:$value');
@@ -467,25 +498,27 @@ extension DebugLogExtension on String {
       debugLog.debug(this, tag: tag);
     }
   }
-  
+
   void logInfo({String? tag}) {
     if (kDebugMode) {
       debugLog.info(this, tag: tag);
     }
   }
-  
+
   void logWarning({String? tag}) {
     if (kDebugMode) {
       debugLog.warning(this, tag: tag);
     }
   }
-  
+
   void logError({String? tag, Object? error, StackTrace? stackTrace}) {
     if (kDebugMode) {
-      debugLog.error(this, 
-        tag: tag, 
-        errorObj: error, 
-        stackTraceObj: stackTrace);
+      debugLog.error(
+        this,
+        tag: tag,
+        errorObj: error,
+        stackTraceObj: stackTrace,
+      );
     }
   }
 }

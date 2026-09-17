@@ -121,11 +121,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer> {
                   color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 24),
               ),
             ),
           ),
@@ -155,9 +151,8 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer> {
           : CachedNetworkImage(
               imageUrl: path,
               fit: BoxFit.contain,
-              placeholder: (context, url) => const CircularProgressIndicator(
-                color: Colors.white54,
-              ),
+              placeholder: (context, url) =>
+                  const CircularProgressIndicator(color: Colors.white54),
               errorWidget: (context, url, error) => const Icon(
                 Icons.broken_image,
                 color: Colors.white54,
@@ -169,9 +164,7 @@ class _FullscreenMediaViewerState extends State<FullscreenMediaViewer> {
 
   Widget _buildVideo() {
     if (_videoController == null || !_isInitialized) {
-      return const CircularProgressIndicator(
-        color: Colors.white54,
-      );
+      return const CircularProgressIndicator(color: Colors.white54);
     }
 
     return AspectRatio(

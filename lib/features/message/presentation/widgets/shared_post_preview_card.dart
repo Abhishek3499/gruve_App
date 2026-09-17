@@ -201,7 +201,9 @@ class _SharedPostPreviewCardState extends State<SharedPostPreviewCard> {
         }
 
         if (snapshot.hasError || !snapshot.hasData) {
-          AppLogger.d('❌ [SharedPostPreviewCard] FutureBuilder error: ${snapshot.error}, hasData: ${snapshot.hasData}');
+          AppLogger.d(
+            '❌ [SharedPostPreviewCard] FutureBuilder error: ${snapshot.error}, hasData: ${snapshot.hasData}',
+          );
           return _ErrorCard(
             maxWidth: maxWidth,
             postId: widget.postId,
@@ -222,7 +224,9 @@ class _SharedPostPreviewCardState extends State<SharedPostPreviewCard> {
           displayName: widget.senderDisplayName,
           fallbackProfilePicture: widget.senderAvatar,
         );
-        AppLogger.d('✅ [SharedPostPreviewCard] Loaded post: ${post.id}, media: ${post.media}, isVideo: ${post.isVideo}, gridPreviewUrl: ${post.gridPreviewUrl}');
+        AppLogger.d(
+          '✅ [SharedPostPreviewCard] Loaded post: ${post.id}, media: ${post.media}, isVideo: ${post.isVideo}, gridPreviewUrl: ${post.gridPreviewUrl}',
+        );
         return _PostCard(
           post: post,
           maxWidth: maxWidth,
@@ -270,9 +274,7 @@ class _PostCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.22),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.12),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,14 +404,13 @@ class _PreviewImage extends StatelessWidget {
   final Post post;
   final String? fallbackUrl;
 
-  const _PreviewImage({
-    required this.post,
-    this.fallbackUrl,
-  });
+  const _PreviewImage({required this.post, this.fallbackUrl});
 
   @override
   Widget build(BuildContext context) {
-    AppLogger.d('🎨 [_PreviewImage] post.id: ${post.id}, isVideo: ${post.isVideo}, media: ${post.media}, gridPreviewUrl: ${post.gridPreviewUrl}, fallbackUrl: $fallbackUrl');
+    AppLogger.d(
+      '🎨 [_PreviewImage] post.id: ${post.id}, isVideo: ${post.isVideo}, media: ${post.media}, gridPreviewUrl: ${post.gridPreviewUrl}, fallbackUrl: $fallbackUrl',
+    );
 
     final fallback = fallbackUrl?.trim() ?? '';
     if (fallback.isNotEmpty && MediaUrlThumbnail.isHttpUrl(fallback)) {
@@ -429,11 +430,7 @@ class _PreviewImage extends StatelessWidget {
     return const ColoredBox(
       color: Color(0xFF1A0A22),
       child: Center(
-        child: Icon(
-          Icons.play_circle_outline,
-          color: Colors.white54,
-          size: 48,
-        ),
+        child: Icon(Icons.play_circle_outline, color: Colors.white54, size: 48),
       ),
     );
   }
@@ -472,10 +469,7 @@ class _LoadingCard extends StatelessWidget {
   final double maxWidth;
   final String? previewUrl;
 
-  const _LoadingCard({
-    required this.maxWidth,
-    this.previewUrl,
-  });
+  const _LoadingCard({required this.maxWidth, this.previewUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -583,9 +577,7 @@ class _ErrorCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            isTaggedPost
-                                ? 'Tagged post'
-                                : 'Shared post',
+                            isTaggedPost ? 'Tagged post' : 'Shared post',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -628,10 +620,7 @@ class _ErrorCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );

@@ -15,10 +15,7 @@ class ActivityHeader extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: BackButton(
-              color: Colors.white,
-              onPressed: onBackPressed,
-            ),
+            child: BackButton(color: Colors.white, onPressed: onBackPressed),
           ),
           const Text(
             "ACTIVITY",

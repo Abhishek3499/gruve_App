@@ -5,12 +5,12 @@ import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
 class StoryTextEditor extends StatefulWidget {
   final StickerData? initialSticker;
 
-  const StoryTextEditor({
-    super.key,
-    this.initialSticker,
-  });
+  const StoryTextEditor({super.key, this.initialSticker});
 
-  static Future<StickerData?> open(BuildContext context, {StickerData? initialSticker}) {
+  static Future<StickerData?> open(
+    BuildContext context, {
+    StickerData? initialSticker,
+  }) {
     return showGeneralDialog<StickerData>(
       context: context,
       barrierDismissible: true,
@@ -117,20 +117,35 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
   }
 
   TextStyle _getTextStyle() {
-    TextStyle style = const TextStyle(fontSize: 36, fontWeight: FontWeight.bold);
+    TextStyle style = const TextStyle(
+      fontSize: 36,
+      fontWeight: FontWeight.bold,
+    );
 
     switch (_fontFamily) {
       case 'Syncopate':
-        style = style.copyWith(fontFamily: 'Syncopate', fontWeight: FontWeight.w700);
+        style = style.copyWith(
+          fontFamily: 'Syncopate',
+          fontWeight: FontWeight.w700,
+        );
         break;
       case 'montserrat':
-        style = style.copyWith(fontFamily: 'montserrat', fontWeight: FontWeight.w600);
+        style = style.copyWith(
+          fontFamily: 'montserrat',
+          fontWeight: FontWeight.w600,
+        );
         break;
       case 'Courier':
-        style = style.copyWith(fontFamily: 'Courier', fontWeight: FontWeight.bold);
+        style = style.copyWith(
+          fontFamily: 'Courier',
+          fontWeight: FontWeight.bold,
+        );
         break;
       case 'Serif':
-        style = style.copyWith(fontFamily: 'Serif', fontStyle: FontStyle.italic);
+        style = style.copyWith(
+          fontFamily: 'Serif',
+          fontStyle: FontStyle.italic,
+        );
         break;
       case 'Raleway':
       default:
@@ -147,19 +162,22 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
       return;
     }
 
-    final result = (widget.initialSticker ?? StickerData(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: '',
-      position: const Offset(100, 200),
-    )).copyWith(
-      text: _controller.text,
-      isText: true,
-      textColor: _textColor,
-      backgroundColor: _backgroundColor,
-      fontFamily: _fontFamily,
-      hasBackground: _hasBackground,
-      textAlign: _textAlign,
-    );
+    final result =
+        (widget.initialSticker ??
+                StickerData(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  text: '',
+                  position: const Offset(100, 200),
+                ))
+            .copyWith(
+              text: _controller.text,
+              isText: true,
+              textColor: _textColor,
+              backgroundColor: _backgroundColor,
+              fontFamily: _fontFamily,
+              hasBackground: _hasBackground,
+              textAlign: _textAlign,
+            );
 
     Navigator.pop(context, result);
   }
@@ -170,8 +188,8 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
     final alignmentIcon = _textAlign == TextAlign.center
         ? Icons.format_align_center
         : _textAlign == TextAlign.left
-            ? Icons.format_align_left
-            : Icons.format_align_right;
+        ? Icons.format_align_left
+        : Icons.format_align_right;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -195,13 +213,20 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
               children: [
                 // Top controls toolbar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Alignment Toggle
                       IconButton(
-                        icon: Icon(alignmentIcon, color: Colors.white, size: 28),
+                        icon: Icon(
+                          alignmentIcon,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                         onPressed: _toggleAlignment,
                       ),
 
@@ -211,8 +236,12 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                           // Background highlight toggle
                           IconButton(
                             icon: Icon(
-                              _hasBackground ? Icons.font_download : Icons.font_download_outlined,
-                              color: _hasBackground ? const Color(0xFFC358D7) : Colors.white,
+                              _hasBackground
+                                  ? Icons.font_download
+                                  : Icons.font_download_outlined,
+                              color: _hasBackground
+                                  ? const Color(0xFFC358D7)
+                                  : Colors.white,
                               size: 28,
                             ),
                             onPressed: _toggleBackground,
@@ -222,7 +251,10 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                           GestureDetector(
                             onTap: _onDone,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFC358D7),
                                 borderRadius: BorderRadius.circular(20),
@@ -250,7 +282,10 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: IntrinsicWidth(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           decoration: _hasBackground
                               ? BoxDecoration(
                                   color: _backgroundColor,
@@ -269,7 +304,10 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.zero,
                               hintText: 'Type something...',
-                              hintStyle: TextStyle(color: Colors.white38, fontSize: 32),
+                              hintStyle: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 32,
+                              ),
                             ),
                             onSubmitted: (_) => _onDone(),
                           ),
@@ -311,15 +349,23 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                                 });
                               },
                               child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 6),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
                                 width: 34,
                                 height: 34,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: color,
                                   border: isSelected
-                                      ? Border.all(color: Colors.white, width: 3)
-                                      : Border.all(color: Colors.white24, width: 1.5),
+                                      ? Border.all(
+                                          color: Colors.white,
+                                          width: 3,
+                                        )
+                                      : Border.all(
+                                          color: Colors.white24,
+                                          width: 1.5,
+                                        ),
                                 ),
                               ),
                             );
@@ -341,18 +387,29 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
 
                             // Get simple font styles for the preview buttons
                             TextStyle itemStyle = TextStyle(
-                              color: isSelected ? const Color(0xFFC358D7) : Colors.white,
+                              color: isSelected
+                                  ? const Color(0xFFC358D7)
+                                  : Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             );
                             if (font['family'] == 'Syncopate') {
-                              itemStyle = itemStyle.copyWith(fontFamily: 'Syncopate');
+                              itemStyle = itemStyle.copyWith(
+                                fontFamily: 'Syncopate',
+                              );
                             } else if (font['family'] == 'montserrat') {
-                              itemStyle = itemStyle.copyWith(fontFamily: 'montserrat');
+                              itemStyle = itemStyle.copyWith(
+                                fontFamily: 'montserrat',
+                              );
                             } else if (font['family'] == 'Courier') {
-                              itemStyle = itemStyle.copyWith(fontFamily: 'Courier');
+                              itemStyle = itemStyle.copyWith(
+                                fontFamily: 'Courier',
+                              );
                             } else if (font['family'] == 'Serif') {
-                              itemStyle = itemStyle.copyWith(fontFamily: 'Serif', fontStyle: FontStyle.italic);
+                              itemStyle = itemStyle.copyWith(
+                                fontFamily: 'Serif',
+                                fontStyle: FontStyle.italic,
+                              );
                             }
 
                             return GestureDetector(
@@ -363,20 +420,26 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                               },
                               child: Container(
                                 alignment: Alignment.center,
-                                margin: const EdgeInsets.symmetric(horizontal: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? Colors.white : Colors.white10,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.white10,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: isSelected ? const Color(0xFFC358D7) : Colors.transparent,
+                                    color: isSelected
+                                        ? const Color(0xFFC358D7)
+                                        : Colors.transparent,
                                     width: 1,
                                   ),
                                 ),
-                                child: Text(
-                                  font['name']!,
-                                  style: itemStyle,
-                                ),
+                                child: Text(font['name']!, style: itemStyle),
                               ),
                             );
                           },

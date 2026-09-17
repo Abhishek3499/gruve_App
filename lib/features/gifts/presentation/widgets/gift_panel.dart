@@ -164,26 +164,19 @@ class _GiftPanelState extends State<GiftPanel> {
 
           // Flash sale section
           FlashSaleSection(
-            timeRemaining: const Duration(
-              hours: 10,
-              minutes: 24,
-              seconds: 0,
-            ),
+            timeRemaining: const Duration(hours: 10, minutes: 24, seconds: 0),
           ),
 
           // Gift grid
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 14,
+                childAspectRatio: 0.70, // 👈 alignment fix
               ),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 0.70, // 👈 alignment fix
-                  ),
               itemCount: _gifts.length,
               itemBuilder: (context, index) {
                 final gift = _gifts[index];
@@ -210,10 +203,7 @@ class _GiftPanelState extends State<GiftPanel> {
             controller: _searchController,
             onSearch: () {
               HapticFeedback.lightImpact();
-              _showGiftSnackBar(
-                'Search functionality coming soon!',
-                context,
-              );
+              _showGiftSnackBar('Search functionality coming soon!', context);
             },
           ),
           SizedBox(height: bottomInset),

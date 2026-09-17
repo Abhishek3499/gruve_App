@@ -40,7 +40,7 @@ class VideoService {
 
   int _getDelay(double progress) {
     if (progress < 15) return 120; // Fast initial ticks
-    if (progress < 50) return 40;  // Very fast ticks
+    if (progress < 50) return 40; // Very fast ticks
     return 15; // Super fast ticks
   }
 

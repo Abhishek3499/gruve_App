@@ -18,28 +18,48 @@ class UserModel {
   });
 
   static bool readIsSubscribedFromJson(Map<String, dynamic> json) {
-    final raw = json['is_subscribed'] ??
-        json['is_subscrribed'] ??
-        json['isSubscribed'];
+    final raw =
+        json['is_subscribed'] ?? json['is_subscrribed'] ?? json['isSubscribed'];
     if (raw is bool) return raw;
     return true;
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     AppLogger.d('👤 [UserModel] 🔍 Starting user parsing');
-    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '👤 UserModel.fromJson');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(
+      json,
+      context: '👤 UserModel.fromJson',
+    );
     AppLogger.d('👤 [UserModel] 🗺️ User keys: ${safeJson.keys.toList()}');
-    
-    final fullName = SafeParsingHelpers.safeString(safeJson, const ['full_name', 'fullName', 'name'], fallback: '');
-    final username = SafeParsingHelpers.safeString(safeJson, const ['username', 'user_name', 'handle'], fallback: '');
+
+    final fullName = SafeParsingHelpers.safeString(safeJson, const [
+      'full_name',
+      'fullName',
+      'name',
+    ], fallback: '');
+    final username = SafeParsingHelpers.safeString(safeJson, const [
+      'username',
+      'user_name',
+      'handle',
+    ], fallback: '');
     final finalUsername = username.isNotEmpty ? username : fullName;
-    
+
     AppLogger.d('👤 [UserModel] 📝 Parsing user: ${safeJson['user_id']}');
     return UserModel(
-      userId: SafeParsingHelpers.safeString(safeJson, const ['user_id', 'userId', 'id', 'pk'], fallback: ''),
+      userId: SafeParsingHelpers.safeString(safeJson, const [
+        'user_id',
+        'userId',
+        'id',
+        'pk',
+      ], fallback: ''),
       username: finalUsername,
       fullName: fullName,
-      profilePicture: SafeParsingHelpers.safeNullableString(safeJson, const ['profile_picture', 'profileImage', 'avatar', 'photo']),
+      profilePicture: SafeParsingHelpers.safeNullableString(safeJson, const [
+        'profile_picture',
+        'profileImage',
+        'avatar',
+        'photo',
+      ]),
       isSubscribed: readIsSubscribedFromJson(safeJson),
     );
   }
@@ -66,11 +86,21 @@ class PaginatedUserResponse {
   });
 
   factory PaginatedUserResponse.fromJson(Map<String, dynamic> json) {
-    AppLogger.d('📦 [PaginatedUserResponse] 🔍 Starting paginated response parsing');
-    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📦 PaginatedUserResponse.fromJson');
-    AppLogger.d('📦 [PaginatedUserResponse] 🗺️ Response keys: ${safeJson.keys.toList()}');
-    
-    final data = SafeParsingHelpers.safeMapParse(safeJson['data'], context: '📦 PaginatedUserResponse.data');
+    AppLogger.d(
+      '📦 [PaginatedUserResponse] 🔍 Starting paginated response parsing',
+    );
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(
+      json,
+      context: '📦 PaginatedUserResponse.fromJson',
+    );
+    AppLogger.d(
+      '📦 [PaginatedUserResponse] 🗺️ Response keys: ${safeJson.keys.toList()}',
+    );
+
+    final data = SafeParsingHelpers.safeMapParse(
+      safeJson['data'],
+      context: '📦 PaginatedUserResponse.data',
+    );
     if (data.isEmpty) {
       AppLogger.d('❌ [PaginatedUserResponse] 🚫 No data field in response');
       return PaginatedUserResponse(
@@ -81,33 +111,52 @@ class PaginatedUserResponse {
       );
     }
 
-    final resultsList = SafeParsingHelpers.safeListParse(data['results'], context: '📦 PaginatedUserResponse.results');
+    final resultsList = SafeParsingHelpers.safeListParse(
+      data['results'],
+      context: '📦 PaginatedUserResponse.results',
+    );
     final users = <UserModel>[];
-    
-    AppLogger.d('📦 [PaginatedUserResponse] 📝 Processing ${resultsList.length} users');
+
+    AppLogger.d(
+      '📦 [PaginatedUserResponse] 📝 Processing ${resultsList.length} users',
+    );
     for (int i = 0; i < resultsList.length; i++) {
       try {
-        final userJson = SafeParsingHelpers.safeMapParse(resultsList[i], context: '📦 PaginatedUserResponse[$i]');
+        final userJson = SafeParsingHelpers.safeMapParse(
+          resultsList[i],
+          context: '📦 PaginatedUserResponse[$i]',
+        );
         if (userJson.isNotEmpty) {
           final user = UserModel.fromJson(userJson);
           if (user.isSubscribed) {
             users.add(user);
-            AppLogger.d('✅ [PaginatedUserResponse] ✨ Successfully parsed user at index $i');
+            AppLogger.d(
+              '✅ [PaginatedUserResponse] ✨ Successfully parsed user at index $i',
+            );
           } else {
-            AppLogger.d('⏭️ [PaginatedUserResponse] Skipped unsubscribed user at index $i');
+            AppLogger.d(
+              '⏭️ [PaginatedUserResponse] Skipped unsubscribed user at index $i',
+            );
           }
         }
       } catch (e) {
-        AppLogger.d('💥 [PaginatedUserResponse] ❌ Failed to parse user at index $i: $e');
+        AppLogger.d(
+          '💥 [PaginatedUserResponse] ❌ Failed to parse user at index $i: $e',
+        );
       }
     }
-    
-    AppLogger.d('📦 [PaginatedUserResponse] 🏆 Parsed ${users.length}/${resultsList.length} users from page ${data['page']}');
-    
+
+    AppLogger.d(
+      '📦 [PaginatedUserResponse] 🏆 Parsed ${users.length}/${resultsList.length} users from page ${data['page']}',
+    );
+
     return PaginatedUserResponse(
       users: users,
       page: SafeParsingHelpers.safeInt(data, const ['page'], fallback: 1),
-      hasNext: SafeParsingHelpers.safeBool(data, const ['has_next', 'hasNext'], fallback: false),
+      hasNext: SafeParsingHelpers.safeBool(data, const [
+        'has_next',
+        'hasNext',
+      ], fallback: false),
       limit: SafeParsingHelpers.safeInt(data, const ['limit'], fallback: 20),
     );
   }

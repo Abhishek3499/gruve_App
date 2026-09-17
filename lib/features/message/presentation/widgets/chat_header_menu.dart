@@ -109,7 +109,10 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
         return FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
           child: ScaleTransition(
-            scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutBack,
+            ),
             child: child,
           ),
         );

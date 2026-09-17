@@ -47,9 +47,7 @@ class _ModeSelectorState extends State<ModeSelector> {
       CameraLogger.logUserAction('Gallery opened');
 
       // Story and Gruve can be either video or image — gallery shows both.
-      final XFile? pickedFile = await _imagePicker.pickMedia(
-        imageQuality: 85,
-      );
+      final XFile? pickedFile = await _imagePicker.pickMedia(imageQuality: 85);
 
       if (pickedFile != null) {
         AppLogger.d('Selected gallery file path: ${pickedFile.path}');
@@ -172,9 +170,7 @@ class _ModeSelectorState extends State<ModeSelector> {
               CameraLogger.logUserAction('Idea icon clicked');
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const IdeasScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const IdeasScreen()),
               );
             },
             icon: Image.asset(AppAssets.idea, width: 32, height: 32),

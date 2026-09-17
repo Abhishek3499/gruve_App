@@ -39,7 +39,9 @@ String _redactSocketUri(Uri uri) {
     final previewLength = token.length < 10 ? token.length : 10;
     params['token'] = '${token.substring(0, previewLength)}...redacted';
   }
-  return uri.replace(queryParameters: params.isEmpty ? null : params).toString();
+  return uri
+      .replace(queryParameters: params.isEmpty ? null : params)
+      .toString();
 }
 
 /// PRODUCTION OPTIMIZATION: Memory-efficient socket management
@@ -85,7 +87,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
   static int _activeInstances = 0;
   static int get activeInstances => _activeInstances;
 
-  // 🚀 PRODUCTION FIX: Use environment config for WebSocket URL                                                                                                                                          
+  // 🚀 PRODUCTION FIX: Use environment config for WebSocket URL
   static String get _baseUrl {
     return EnvironmentConfig.wsUrl;
   }
@@ -141,7 +143,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
 
   Stream<SocketEvent> get events => _eventController.stream;
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
-
 
   Future<void> connect([String? accessToken]) async {
     _socketPrint(
@@ -360,7 +361,9 @@ class SocketReconnectManager with WidgetsBindingObserver {
       }
 
       _connectionTimeoutTimer = Timer(_connectionTimeout, () {
-        _socketPrint('connection timeout after ${_connectionTimeout.inSeconds}s');
+        _socketPrint(
+          'connection timeout after ${_connectionTimeout.inSeconds}s',
+        );
         debugLog.socket(
           'WEBSOCKET_TIMEOUT',
           properties: {
@@ -430,7 +433,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
       if (data == null) return;
       _socketPrint('incoming decoded message', data: _safeJson(data));
       SocketLogger.logIncoming(message, data);
-
 
       // Handle errors
       if (data['type'] == 'error') {
@@ -627,7 +629,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
         : exponentialDelay;
   }
 
-
   void _initializeConnectivityListener() {
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       result,
@@ -649,7 +650,10 @@ class SocketReconnectManager with WidgetsBindingObserver {
       // _isAuthenticated. Without this, coming online while on the login
       // screen resets _reconnectAttempts to 0 and restarts the 5-attempt
       // loop indefinitely.
-      if (_isOnline && isDisconnected && !_manualDisconnect && _isAuthenticated) {
+      if (_isOnline &&
+          isDisconnected &&
+          !_manualDisconnect &&
+          _isAuthenticated) {
         _reconnectAttempts = 0;
         _scheduleReconnect();
       } else if (!_isOnline) {
@@ -692,7 +696,10 @@ class SocketReconnectManager with WidgetsBindingObserver {
     // I-3: Same auth guard for the lifecycle-triggered counter reset.
     // Foregrounding the app while on the login screen previously reset
     // _reconnectAttempts to 0 and restarted the missing-token loop.
-    if (!wasInForeground && !_manualDisconnect && !isConnected && _isAuthenticated) {
+    if (!wasInForeground &&
+        !_manualDisconnect &&
+        !isConnected &&
+        _isAuthenticated) {
       _reconnectAttempts = 0;
       _scheduleReconnect();
     }
@@ -752,7 +759,6 @@ class SocketReconnectManager with WidgetsBindingObserver {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
   }
-
 
   void _clearConnectionTimeoutTimer() {
     _connectionTimeoutTimer?.cancel();
@@ -938,10 +944,7 @@ class SocketReconnectManager with WidgetsBindingObserver {
     return configuredUri.replace(
       scheme: scheme,
       path: path,
-      queryParameters: {
-        ...configuredUri.queryParameters,
-        'token': token,
-      },
+      queryParameters: {...configuredUri.queryParameters, 'token': token},
     );
   }
 

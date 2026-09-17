@@ -8,10 +8,7 @@ import 'package:gruve_app/core/utils/responsive_extensions.dart';
 class ShareBottomSheet extends ConsumerStatefulWidget {
   final String postId;
 
-  const ShareBottomSheet({
-    super.key,
-    required this.postId,
-  });
+  const ShareBottomSheet({super.key, required this.postId});
 
   @override
   ConsumerState<ShareBottomSheet> createState() => _ShareBottomSheetState();
@@ -34,7 +31,10 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
 
     return Padding(
       key: const ValueKey('send'),
-      padding: EdgeInsets.symmetric(horizontal: context.rw(20), vertical: context.rh(12)),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.rw(20),
+        vertical: context.rh(12),
+      ),
       child: GestureDetector(
         onTap: () async {
           final success = await ref
@@ -93,7 +93,9 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
     final selectedUsers = shareState.selectedUsers;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.55,
         decoration: const BoxDecoration(
@@ -120,10 +122,7 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
             SizedBox(height: context.rh(20)),
 
             // User grid with search
-            const Expanded(
-              flex: 3,
-              child: ShareUserGrid(),
-            ),
+            const Expanded(flex: 3, child: ShareUserGrid()),
 
             // Social share buttons or send button with smooth flow transition
             AnimatedSwitcher(
@@ -134,10 +133,7 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
                     begin: const Offset(0, 0.2),
                     end: Offset.zero,
                   ).animate(animation),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
+                  child: FadeTransition(opacity: animation, child: child),
                 );
               },
               child: selectedUsers.isNotEmpty

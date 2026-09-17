@@ -67,7 +67,8 @@ class LoginNotifier extends Notifier<LoginUiState> {
   void setErrorsNow({String? emailError, String? passwordError}) {
     _debounceTimers.remove('email')?.cancel();
     _debounceTimers.remove('password')?.cancel();
-    if (state.emailError == emailError && state.passwordError == passwordError) {
+    if (state.emailError == emailError &&
+        state.passwordError == passwordError) {
       return;
     }
     state = LoginUiState(
@@ -115,7 +116,10 @@ class LoginNotifier extends Notifier<LoginUiState> {
       passwordError: state.passwordError,
     );
     try {
-      return await _controller.signIn(identifier: identifier, password: password);
+      return await _controller.signIn(
+        identifier: identifier,
+        password: password,
+      );
     } finally {
       state = LoginUiState(
         isLoading: false,

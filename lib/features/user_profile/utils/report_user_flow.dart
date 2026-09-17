@@ -36,17 +36,13 @@ class ReportUserFlow {
 
       final message = response.success
           ? (response.message.trim().isNotEmpty
-              ? response.message
-              : 'User reported successfully.')
+                ? response.message
+                : 'User reported successfully.')
           : (response.error?.trim().isNotEmpty == true
-              ? response.error!.trim()
-              : 'Failed to report user.');
+                ? response.error!.trim()
+                : 'Failed to report user.');
 
-      _showSnackBar(
-        context,
-        message: message,
-        isError: !response.success,
-      );
+      _showSnackBar(context, message: message, isError: !response.success);
     } on DioException catch (e) {
       if (!context.mounted) return;
       _showSnackBar(

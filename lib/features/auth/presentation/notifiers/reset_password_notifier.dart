@@ -51,5 +51,5 @@ class ResetPasswordNotifier extends Notifier<ResetPasswordUiState> {
 
 final resetPasswordNotifierProvider =
     NotifierProvider<ResetPasswordNotifier, ResetPasswordUiState>(
-  ResetPasswordNotifier.new,
-);
+      ResetPasswordNotifier.new,
+    );

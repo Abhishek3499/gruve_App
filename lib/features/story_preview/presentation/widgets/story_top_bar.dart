@@ -11,12 +11,7 @@ class StoryTopBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 25),
         child: Row(
-          children: [
-            BackButton(
-              color: Colors.white,
-              onPressed: onClose,
-            ),
-          ],
+          children: [BackButton(color: Colors.white, onPressed: onClose)],
         ),
       ),
     );

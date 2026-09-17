@@ -41,8 +41,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (index >= widget.allPosts.length) return;
 
     final post = widget.allPosts[index];
-    if (post.isVideo &&
-        _videoControllers[index] == null) {
+    if (post.isVideo && _videoControllers[index] == null) {
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(post.media),
       );
@@ -177,7 +176,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ],
               ),
             ),
-            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(40), context.rw(16), context.rh(16)),
+            padding: EdgeInsets.fromLTRB(
+              context.rw(16),
+              context.rh(40),
+              context.rw(16),
+              context.rh(16),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -249,17 +253,23 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     Consumer(
                       builder: (context, ref, _) {
                         final isSaved = ref.watch(
-                          savePostNotifierProvider.select((state) => state.isSaved(post.id)),
+                          savePostNotifierProvider.select(
+                            (state) => state.isSaved(post.id),
+                          ),
                         );
                         final isLoading = ref.watch(
-                          savePostNotifierProvider.select((state) => state.isLoading(post.id)),
+                          savePostNotifierProvider.select(
+                            (state) => state.isLoading(post.id),
+                          ),
                         );
 
                         return GestureDetector(
                           onTap: isLoading
                               ? null
                               : () {
-                                  ref.read(savePostNotifierProvider.notifier).toggleSavePost(post.id);
+                                  ref
+                                      .read(savePostNotifierProvider.notifier)
+                                      .toggleSavePost(post.id);
                                 },
                           child: Container(
                             padding: EdgeInsets.all(context.rw(8)),
@@ -325,7 +335,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildImagePlayer(String imageUrl) {
     if (imageUrl.isEmpty) {
       return Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: context.rw(48)),
+        child: Icon(
+          Icons.broken_image,
+          color: Colors.white54,
+          size: context.rw(48),
+        ),
       );
     }
 
@@ -337,7 +351,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       placeholder: (context, url) =>
           const Center(child: CircularProgressIndicator(color: Colors.white)),
       errorWidget: (context, url, error) => Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: context.rw(48)),
+        child: Icon(
+          Icons.broken_image,
+          color: Colors.white54,
+          size: context.rw(48),
+        ),
       ),
     );
   }

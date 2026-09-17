@@ -49,7 +49,6 @@ class HighlightController extends ChangeNotifier {
 
   void _log(String message) {
     AppLogger.d(message);
-    
   }
 
   Future<void> reset() async {
@@ -71,7 +70,9 @@ class HighlightController extends ChangeNotifier {
       message = '';
       notifyListeners();
 
-      final response = await _service.fetchMyHighlights(cancelToken: _getCancelToken());
+      final response = await _service.fetchMyHighlights(
+        cancelToken: _getCancelToken(),
+      );
 
       _log('[HighlightController] API success: ${response.success}');
       _log(
@@ -185,6 +186,7 @@ class HighlightController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   @override
   void dispose() {
     cancelActiveRequests();

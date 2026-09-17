@@ -16,11 +16,13 @@ class SlantedCardClipper extends CustomClipper<Path> {
     final double w = size.width;
     final double h = size.height;
 
-    final double activeSlant =
-        (h < 90.0) ? (slantOffset * h / 90.0) : slantOffset;
+    final double activeSlant = (h < 90.0)
+        ? (slantOffset * h / 90.0)
+        : slantOffset;
     final double activeRadius = (h < 90.0) ? (radius * h / 90.0) : radius;
-    final double activeObtuseRadius =
-        (h < 90.0) ? (obtuseRadius * h / 90.0) : obtuseRadius;
+    final double activeObtuseRadius = (h < 90.0)
+        ? (obtuseRadius * h / 90.0)
+        : obtuseRadius;
 
     final path = Path();
     path.moveTo(activeRadius, 0);

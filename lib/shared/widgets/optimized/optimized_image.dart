@@ -208,12 +208,7 @@ class OptimizedProfileImage extends StatelessWidget {
               ),
             ),
           ),
-          if (overlay != null)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: overlay!,
-            ),
+          if (overlay != null) Positioned(bottom: 0, right: 0, child: overlay!),
         ],
       ),
     );
@@ -304,11 +299,7 @@ class _ShimmerBox extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade900,
       highlightColor: Colors.grey.shade700,
-      child: Container(
-        width: width,
-        height: height,
-        color: Colors.white,
-      ),
+      child: Container(width: width, height: height, color: Colors.white),
     );
   }
 }

@@ -3,7 +3,8 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Service for automatic cache invalidation based on user actions
 class CacheInvalidationService {
-  static final CacheInvalidationService _instance = CacheInvalidationService._internal();
+  static final CacheInvalidationService _instance =
+      CacheInvalidationService._internal();
   factory CacheInvalidationService() => _instance;
   CacheInvalidationService._internal();
 
@@ -69,7 +70,10 @@ class CacheInvalidationService {
   Future<void> onHighlightUpdated(String highlightId) async {
     AppLogger.d('⭐ [CacheInvalidation] Highlight updated: $highlightId');
     await _helper.invalidateOnAction(
-      CacheAction(type: CacheActionType.highlightUpdate, resourceId: highlightId),
+      CacheAction(
+        type: CacheActionType.highlightUpdate,
+        resourceId: highlightId,
+      ),
     );
   }
 

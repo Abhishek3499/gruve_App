@@ -162,7 +162,7 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
 
     // 2. General Users List Mode (Initial/Cached List)
     final provider = context.watch<UserProvider>();
-    
+
     if (provider.isLoading && provider.users.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
@@ -224,7 +224,8 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
           id: user.userId,
           name: user.fullName,
           username: user.username,
-          avatar: (user.profilePicture != null && user.profilePicture!.isNotEmpty)
+          avatar:
+              (user.profilePicture != null && user.profilePicture!.isNotEmpty)
               ? user.profilePicture!
               : '',
         );

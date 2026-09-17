@@ -28,8 +28,9 @@ class SignupUiState {
   final String? passwordError;
   final String? confirmPasswordError;
 
-  String? get genderError =>
-      genderTouched && selectedGender == null ? 'Please select your gender' : null;
+  String? get genderError => genderTouched && selectedGender == null
+      ? 'Please select your gender'
+      : null;
 }
 
 /// Owns Signup's loading/field-error/contact-mode/gender state and delegates
@@ -54,20 +55,21 @@ class SignupNotifier extends Notifier<SignupUiState> {
   }
 
   void setNameError(String? error) => _setDebounced('name', error, (e) {
-        if (state.nameError == e) return;
-        state = SignupUiState(
-          isLoading: state.isLoading,
-          useEmail: state.useEmail,
-          selectedGender: state.selectedGender,
-          genderTouched: state.genderTouched,
-          nameError: e,
-          identifierError: state.identifierError,
-          passwordError: state.passwordError,
-          confirmPasswordError: state.confirmPasswordError,
-        );
-      });
+    if (state.nameError == e) return;
+    state = SignupUiState(
+      isLoading: state.isLoading,
+      useEmail: state.useEmail,
+      selectedGender: state.selectedGender,
+      genderTouched: state.genderTouched,
+      nameError: e,
+      identifierError: state.identifierError,
+      passwordError: state.passwordError,
+      confirmPasswordError: state.confirmPasswordError,
+    );
+  });
 
-  void setIdentifierError(String? error) => _setDebounced('identifier', error, (e) {
+  void setIdentifierError(String? error) =>
+      _setDebounced('identifier', error, (e) {
         if (state.identifierError == e) return;
         state = SignupUiState(
           isLoading: state.isLoading,
@@ -82,18 +84,18 @@ class SignupNotifier extends Notifier<SignupUiState> {
       });
 
   void setPasswordError(String? error) => _setDebounced('password', error, (e) {
-        if (state.passwordError == e) return;
-        state = SignupUiState(
-          isLoading: state.isLoading,
-          useEmail: state.useEmail,
-          selectedGender: state.selectedGender,
-          genderTouched: state.genderTouched,
-          nameError: state.nameError,
-          identifierError: state.identifierError,
-          passwordError: e,
-          confirmPasswordError: state.confirmPasswordError,
-        );
-      });
+    if (state.passwordError == e) return;
+    state = SignupUiState(
+      isLoading: state.isLoading,
+      useEmail: state.useEmail,
+      selectedGender: state.selectedGender,
+      genderTouched: state.genderTouched,
+      nameError: state.nameError,
+      identifierError: state.identifierError,
+      passwordError: e,
+      confirmPasswordError: state.confirmPasswordError,
+    );
+  });
 
   void setConfirmPasswordError(String? error) =>
       _setDebounced('confirmPassword', error, (e) {
@@ -127,7 +129,12 @@ class SignupNotifier extends Notifier<SignupUiState> {
     String? passwordError,
     String? confirmPasswordError,
   }) {
-    for (final key in const ['name', 'identifier', 'password', 'confirmPassword']) {
+    for (final key in const [
+      'name',
+      'identifier',
+      'password',
+      'confirmPassword',
+    ]) {
       _debounceTimers.remove(key)?.cancel();
     }
     state = SignupUiState(

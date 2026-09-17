@@ -60,8 +60,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     _confirmPasswordController.addListener(_validatePasswords);
   }
 
-
-
   bool _validatePasswords() {
     final password = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
@@ -237,7 +235,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) =>
                               _resetButtonController.submit(),
-                          errorText: _confirmPasswordTouched ? _confirmPasswordError : null,
+                          errorText: _confirmPasswordTouched
+                              ? _confirmPasswordError
+                              : null,
                         ),
 
                         SizedBox(height: context.rh(40)),

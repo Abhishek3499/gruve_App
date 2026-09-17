@@ -13,7 +13,9 @@ class BlockToggleResponseModel {
     return BlockToggleResponseModel(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      data: json['data'] != null ? BlockToggleData.fromJson(json['data']) : null,
+      data: json['data'] != null
+          ? BlockToggleData.fromJson(json['data'])
+          : null,
     );
   }
 }
@@ -24,8 +26,6 @@ class BlockToggleData {
   BlockToggleData({required this.isBlocked});
 
   factory BlockToggleData.fromJson(Map<String, dynamic> json) {
-    return BlockToggleData(
-      isBlocked: json['is_blocked'] ?? false,
-    );
+    return BlockToggleData(isBlocked: json['is_blocked'] ?? false);
   }
 }

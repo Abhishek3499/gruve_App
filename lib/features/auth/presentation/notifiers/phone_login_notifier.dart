@@ -70,4 +70,6 @@ class PhoneLoginNotifier extends Notifier<PhoneLoginUiState> {
 }
 
 final phoneLoginNotifierProvider =
-    NotifierProvider<PhoneLoginNotifier, PhoneLoginUiState>(PhoneLoginNotifier.new);
+    NotifierProvider<PhoneLoginNotifier, PhoneLoginUiState>(
+      PhoneLoginNotifier.new,
+    );

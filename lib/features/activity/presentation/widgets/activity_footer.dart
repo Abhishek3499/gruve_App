@@ -20,10 +20,7 @@ class ActivityFooter extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             'Powered by Hardcore Tech',
-            style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF95A5A6),
-            ),
+            style: TextStyle(fontSize: 12, color: Color(0xFF95A5A6)),
           ),
         ],
       ),

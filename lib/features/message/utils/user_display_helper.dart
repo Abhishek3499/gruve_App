@@ -4,82 +4,96 @@ import 'package:gruve_app/features/profile/domain/entities/user_profile_model.da
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Centralized user display utility to ensure consistent naming across the entire chat module
-/// 
+///
 /// This helper ensures the EXACT same display name logic used on Profile Screen
 /// is applied consistently across all chat module components.
-/// 
+///
 /// DISPLAY NAME PRIORITY (matches Profile Screen):
 /// 1. fullName (primary - same as profile screen)
 /// 2. username (fallback)
 /// 3. user ID (final fallback)
-/// 
+///
 /// USAGE LOCATIONS:
 /// - message avatar list
-/// - conversation list  
+/// - conversation list
 /// - chat header
 /// - message tiles
 /// - followers/following lists
-/// 
+///
 /// NULL SAFETY:
 /// - All methods handle null/empty values gracefully
 /// - Comprehensive debug logging for troubleshooting
 /// - Production-level error handling
 class UserDisplayHelper {
   /// Get display name for UserEntity (from message avatar list)
-  /// 
+  ///
   /// Uses the same priority logic as Profile Screen:
   /// fullName -> username -> user ID
   static String getDisplayNameForUserEntity(UserEntity user) {
     if (user.fullName.trim().isNotEmpty) {
-      AppLogger.d('👤 [UserDisplayHelper] UserEntity displayName: "${user.fullName}" (using fullName)');
+      AppLogger.d(
+        '👤 [UserDisplayHelper] UserEntity displayName: "${user.fullName}" (using fullName)',
+      );
       return user.fullName.trim();
     }
-    
+
     if (user.username.trim().isNotEmpty) {
-      AppLogger.d('👤 [UserDisplayHelper] UserEntity displayName: "${user.username}" (using username fallback)');
+      AppLogger.d(
+        '👤 [UserDisplayHelper] UserEntity displayName: "${user.username}" (using username fallback)',
+      );
       return user.username.trim();
     }
-    
+
     final fallback = 'User ${user.userId}';
-    AppLogger.d('👤 [UserDisplayHelper] UserEntity displayName: "$fallback" (using ID fallback)');
+    AppLogger.d(
+      '👤 [UserDisplayHelper] UserEntity displayName: "$fallback" (using ID fallback)',
+    );
     return fallback;
   }
 
   /// Get display name for ConversationModel (from conversation list/chat header)
-  /// 
+  ///
   /// Uses the same priority logic as Profile Screen:
   /// fullName -> username -> user ID
   static String getDisplayNameForConversation(ConversationModel conversation) {
     final name = conversation.otherUserName.trim();
-    
+
     if (name.isNotEmpty && name != 'Unknown') {
-      AppLogger.d('👤 [UserDisplayHelper] Conversation displayName: "$name" (using otherUserName)');
+      AppLogger.d(
+        '👤 [UserDisplayHelper] Conversation displayName: "$name" (using otherUserName)',
+      );
       return name;
     }
-    
+
     final fallback = 'User ${conversation.otherUser.id}';
-    AppLogger.d('👤 [UserDisplayHelper] Conversation displayName: "$fallback" (using ID fallback)');
+    AppLogger.d(
+      '👤 [UserDisplayHelper] Conversation displayName: "$fallback" (using ID fallback)',
+    );
     return fallback;
   }
 
   /// Get display name for UserProfile (from profile screens)
-  /// 
+  ///
   /// This matches exactly what Profile Screen displays
   static String getDisplayNameForUserProfile(UserProfile profile) {
     final name = profile.fullName.trim();
-    
+
     if (name.isNotEmpty) {
-      AppLogger.d('👤 [UserDisplayHelper] UserProfile displayName: "$name" (using fullName)');
+      AppLogger.d(
+        '👤 [UserDisplayHelper] UserProfile displayName: "$name" (using fullName)',
+      );
       return name;
     }
-    
+
     final fallback = 'User ${profile.userId}';
-    AppLogger.d('👤 [UserDisplayHelper] UserProfile displayName: "$fallback" (using ID fallback)');
+    AppLogger.d(
+      '👤 [UserDisplayHelper] UserProfile displayName: "$fallback" (using ID fallback)',
+    );
     return fallback;
   }
 
   /// Get display username with @ prefix (for Profile Screen style display)
-  /// 
+  ///
   /// Matches Profile Screen's _displayUsername logic exactly
   static String getDisplayUsername(String? rawUsername) {
     final value = (rawUsername ?? '').trim();
@@ -88,83 +102,103 @@ class UserDisplayHelper {
   }
 
   /// Get display name for legacy dynamic user objects
-  /// 
+  ///
   /// Handles various legacy user object formats with same priority logic
   static String getDisplayNameForLegacyUser(dynamic user) {
     if (user == null) {
-      AppLogger.d('⚠️ [UserDisplayHelper] Legacy user is null, returning fallback');
+      AppLogger.d(
+        '⚠️ [UserDisplayHelper] Legacy user is null, returning fallback',
+      );
       return 'Unknown User';
     }
-    
+
     try {
-      AppLogger.d('🔍 [UserDisplayHelper] Processing legacy user: ${user.runtimeType}');
-      
+      AppLogger.d(
+        '🔍 [UserDisplayHelper] Processing legacy user: ${user.runtimeType}',
+      );
+
       // Handle ConversationModel specifically
       if (user is ConversationModel) {
         final name = user.otherUserName.trim();
         if (name.isNotEmpty && name != 'Unknown') {
-          AppLogger.d('👤 [UserDisplayHelper] ConversationModel displayName: "$name" (using otherUserName)');
+          AppLogger.d(
+            '👤 [UserDisplayHelper] ConversationModel displayName: "$name" (using otherUserName)',
+          );
           return name;
         }
         final fallback = 'User ${user.otherUser.id}';
-        AppLogger.d('👤 [UserDisplayHelper] ConversationModel displayName: "$fallback" (using ID fallback)');
+        AppLogger.d(
+          '👤 [UserDisplayHelper] ConversationModel displayName: "$fallback" (using ID fallback)',
+        );
         return fallback;
       }
-      
+
       // Try fullName first (for UserEntity, UserProfile, etc.)
       final fullName = user.fullName?.toString().trim();
       if (fullName != null && fullName.isNotEmpty && fullName != 'Unknown') {
-        AppLogger.d('👤 [UserDisplayHelper] LegacyUser displayName: "$fullName" (using fullName)');
+        AppLogger.d(
+          '👤 [UserDisplayHelper] LegacyUser displayName: "$fullName" (using fullName)',
+        );
         return fullName;
       }
-      
+
       // Try name field
       final name = user.name?.toString().trim();
       if (name != null && name.isNotEmpty && name != 'Unknown') {
-        AppLogger.d('👤 [UserDisplayHelper] LegacyUser displayName: "$name" (using name)');
+        AppLogger.d(
+          '👤 [UserDisplayHelper] LegacyUser displayName: "$name" (using name)',
+        );
         return name;
       }
-      
+
       // Fallback to ID
       final id = user.id?.toString();
       final fallback = 'User ${id ?? 'Unknown'}';
-      AppLogger.d('👤 [UserDisplayHelper] LegacyUser displayName: "$fallback" (using ID fallback)');
+      AppLogger.d(
+        '👤 [UserDisplayHelper] LegacyUser displayName: "$fallback" (using ID fallback)',
+      );
       return fallback;
     } catch (e) {
-      AppLogger.d('❌ [UserDisplayHelper] Error getting legacy user display name: $e');
+      AppLogger.d(
+        '❌ [UserDisplayHelper] Error getting legacy user display name: $e',
+      );
       return 'Unknown User';
     }
   }
 
   /// Get user ID safely from various user object types
-  /// 
+  ///
   /// Centralized ID extraction with null safety
   static String getUserIdForUser(dynamic user) {
     if (user == null) {
-      AppLogger.d('⚠️ [UserDisplayHelper] User is null in getUserIdForUser, returning empty ID');
+      AppLogger.d(
+        '⚠️ [UserDisplayHelper] User is null in getUserIdForUser, returning empty ID',
+      );
       return '';
     }
-    
+
     try {
       if (user is UserEntity) {
         return user.userId.trim();
       }
-      
+
       if (user is ConversationModel) {
         return user.otherUser.id.trim();
       }
-      
+
       if (user is UserProfile) {
         return user.userId.trim();
       }
-      
+
       // Legacy dynamic user
       final id = user.id?.toString();
       if (id != null && id.isNotEmpty) {
         return id.trim();
       }
-      
-      AppLogger.d('⚠️ [UserDisplayHelper] Could not extract user ID from: ${user.runtimeType}');
+
+      AppLogger.d(
+        '⚠️ [UserDisplayHelper] Could not extract user ID from: ${user.runtimeType}',
+      );
       return '';
     } catch (e) {
       AppLogger.d('❌ [UserDisplayHelper] Error extracting user ID: $e');
@@ -173,31 +207,32 @@ class UserDisplayHelper {
   }
 
   /// Get profile image URL safely from various user object types
-  /// 
+  ///
   /// Centralized profile image extraction with null safety
   static String? getProfileImageForUser(dynamic user) {
     if (user == null) {
       return null;
     }
-    
+
     try {
       if (user is UserEntity) {
         return user.profilePicture?.trim();
       }
-      
+
       if (user is ConversationModel) {
         return user.otherUserAvatar?.trim();
       }
-      
+
       if (user is UserProfile) {
         final pic = user.profilePicture.trim();
         return pic.isEmpty ? null : pic;
       }
-      
+
       // Legacy dynamic user
-      final avatar = user.avatar?.toString() ?? 
-                   user.profilePicture?.toString() ?? 
-                   user.profileImage?.toString();
+      final avatar =
+          user.avatar?.toString() ??
+          user.profilePicture?.toString() ??
+          user.profileImage?.toString();
       return avatar?.trim();
     } catch (e) {
       AppLogger.d('❌ [UserDisplayHelper] Error extracting profile image: $e');
@@ -206,15 +241,15 @@ class UserDisplayHelper {
   }
 
   /// Validate if a display name is valid and meaningful
-  /// 
+  ///
   /// Used to filter out placeholder names
   static bool isValidDisplayName(String? name) {
     if (name == null) return false;
-    
+
     final trimmed = name.trim();
-    return trimmed.isNotEmpty && 
-           trimmed.toLowerCase() != 'unknown' &&
-           !trimmed.startsWith('User ') &&
-           trimmed.length > 1;
+    return trimmed.isNotEmpty &&
+        trimmed.toLowerCase() != 'unknown' &&
+        !trimmed.startsWith('User ') &&
+        trimmed.length > 1;
   }
 }

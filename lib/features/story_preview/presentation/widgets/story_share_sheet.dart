@@ -33,7 +33,11 @@ class StoryShareSheet extends StatefulWidget {
 
   const StoryShareSheet({super.key, this.mediaPath, this.isMuted = false});
 
-  static void show(BuildContext context, {String? mediaPath, bool isMuted = false}) {
+  static void show(
+    BuildContext context, {
+    String? mediaPath,
+    bool isMuted = false,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -280,7 +284,10 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -288,7 +295,11 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.redAccent,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

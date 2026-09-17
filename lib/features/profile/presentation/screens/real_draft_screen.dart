@@ -26,7 +26,9 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
   }
 
   void _editDraft(PostDraft draft) async {
-    AppLogger.d("📝 [ReelsDraftsScreen] Editing draft with ID: '${draft.id}', caption: '${draft.caption}', mediaUrl: '${draft.mediaUrl}'");
+    AppLogger.d(
+      "📝 [ReelsDraftsScreen] Editing draft with ID: '${draft.id}', caption: '${draft.caption}', mediaUrl: '${draft.mediaUrl}'",
+    );
     if (draft.mediaUrl == null || draft.mediaUrl!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -77,11 +79,17 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white54),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.redAccent),
+              ),
             ),
           ],
         );
@@ -171,16 +179,15 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.refresh, color: Colors.white),
-                      onPressed: () => context.read<DraftsProvider>().fetchDrafts(),
+                      onPressed: () =>
+                          context.read<DraftsProvider>().fetchDrafts(),
                     ),
                   ],
                 ),
               ),
 
               // --- Draft List ---
-              Expanded(
-                child: _buildBody(draftsProvider),
-              ),
+              Expanded(child: _buildBody(draftsProvider)),
             ],
           ),
         ),

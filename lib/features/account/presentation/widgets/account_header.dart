@@ -29,14 +29,14 @@ class AccountHeader extends StatelessWidget {
             Positioned(
               left: 16,
               top: 10,
-                    child: BackButton(
-                      color: Colors.white,
-                      onPressed: () {
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                      },
-                    ),
+              child: BackButton(
+                color: Colors.white,
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
             ),
             Positioned(
               top: 25,
@@ -46,8 +46,8 @@ class AccountHeader extends StatelessWidget {
                 isLoading
                     ? 'Loading...'
                     : fullName.isEmpty
-                        ? 'Hey, User'
-                        : 'Hey, $fullName',
+                    ? 'Hey, User'
+                    : 'Hey, $fullName',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,

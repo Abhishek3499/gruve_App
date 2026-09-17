@@ -16,16 +16,17 @@ class BlockedUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNetworkImage = image.startsWith('http://') || image.startsWith('https://');
-    
+    final isNetworkImage =
+        image.startsWith('http://') || image.startsWith('https://');
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundImage: isNetworkImage 
-                ? NetworkImage(image) 
+            backgroundImage: isNetworkImage
+                ? NetworkImage(image)
                 : AssetImage(image) as ImageProvider,
           ),
           const SizedBox(width: 16),

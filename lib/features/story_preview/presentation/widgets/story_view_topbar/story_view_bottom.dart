@@ -215,7 +215,9 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
   /// Build the Highlight button (only shown for own profile)
   Widget _buildHighlightButton() {
     if (!widget.isOwnProfile) {
-      AppLogger.d('[StoryViewBottom] Highlight button hidden - not own profile');
+      AppLogger.d(
+        '[StoryViewBottom] Highlight button hidden - not own profile',
+      );
       return const SizedBox.shrink();
     }
 
@@ -295,7 +297,9 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
                       builder: (_) => const StorySettingsScreen(),
                     ),
                   );
-                  playbackController.resumeStory(reason: 'Settings Screen Closed');
+                  playbackController.resumeStory(
+                    reason: 'Settings Screen Closed',
+                  );
                 } else if (result == 'highlight') {
                   if (!context.mounted) return;
                   showInstagramHighlightSheet(context);

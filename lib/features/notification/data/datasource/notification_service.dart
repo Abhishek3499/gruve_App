@@ -37,7 +37,12 @@ class NotificationService {
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
         AppLogger.d('🚫 [NotificationService] fetchNotifications cancelled');
-        return NotificationListResponse(code: 0, success: false, message: 'Cancelled', data: null);
+        return NotificationListResponse(
+          code: 0,
+          success: false,
+          message: 'Cancelled',
+          data: null,
+        );
       }
       AppLogger.d('❌ DioException fetching notifications: ${e.message}');
       throw ApiException.fromDio(e, fallback: 'Failed to fetch notifications');
@@ -51,7 +56,10 @@ class NotificationService {
   /// Get current unread notification count.
   Future<int> getUnreadCount({CancelToken? cancelToken}) async {
     try {
-      final response = await _dio.get(ApiConstants.notificationsUnreadCount, cancelToken: cancelToken);
+      final response = await _dio.get(
+        ApiConstants.notificationsUnreadCount,
+        cancelToken: cancelToken,
+      );
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         if (data is Map) {

@@ -147,7 +147,9 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
           try {
             await _activePlayer!.pause();
           } catch (e) {
-            AppLogger.d('💥 [VoiceMessagePlayer] Error pausing previous player: $e');
+            AppLogger.d(
+              '💥 [VoiceMessagePlayer] Error pausing previous player: $e',
+            );
           }
         }
         _activePlayer = _audioPlayer;
@@ -182,7 +184,10 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     final double maxVal = _duration.inMilliseconds.toDouble();
     final double currVal = _isDragging
         ? _dragValue
-        : _position.inMilliseconds.toDouble().clamp(0.0, maxVal > 0 ? maxVal : 0.0);
+        : _position.inMilliseconds.toDouble().clamp(
+            0.0,
+            maxVal > 0 ? maxVal : 0.0,
+          );
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -215,8 +220,12 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                 SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 3.0,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 6.0,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 12.0,
+                    ),
                     activeTrackColor: Colors.white,
                     inactiveTrackColor: Colors.white24,
                     thumbColor: Colors.white,
@@ -224,24 +233,32 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                   child: Slider(
                     value: currVal,
                     max: maxVal > 0 ? maxVal : 1.0,
-                    onChangeStart: _duration == Duration.zero ? null : (value) {
-                      setState(() {
-                        _isDragging = true;
-                        _dragValue = value;
-                      });
-                    },
-                    onChanged: _duration == Duration.zero ? null : (value) {
-                      setState(() {
-                        _dragValue = value;
-                      });
-                    },
-                    onChangeEnd: _duration == Duration.zero ? null : (value) async {
-                      await _audioPlayer.seek(Duration(milliseconds: value.toInt()));
-                      if (!mounted) return;
-                      setState(() {
-                        _isDragging = false;
-                      });
-                    },
+                    onChangeStart: _duration == Duration.zero
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _isDragging = true;
+                              _dragValue = value;
+                            });
+                          },
+                    onChanged: _duration == Duration.zero
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _dragValue = value;
+                            });
+                          },
+                    onChangeEnd: _duration == Duration.zero
+                        ? null
+                        : (value) async {
+                            await _audioPlayer.seek(
+                              Duration(milliseconds: value.toInt()),
+                            );
+                            if (!mounted) return;
+                            setState(() {
+                              _isDragging = false;
+                            });
+                          },
                   ),
                 ),
                 Padding(
@@ -250,16 +267,20 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _formatDuration(_isDragging
-                            ? Duration(milliseconds: _dragValue.toInt())
-                            : _position),
+                        _formatDuration(
+                          _isDragging
+                              ? Duration(milliseconds: _dragValue.toInt())
+                              : _position,
+                        ),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 10,
                         ),
                       ),
                       Text(
-                        _duration != Duration.zero ? _formatDuration(_duration) : '0:00',
+                        _duration != Duration.zero
+                            ? _formatDuration(_duration)
+                            : '0:00',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 10,

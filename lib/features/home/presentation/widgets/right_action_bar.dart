@@ -114,9 +114,10 @@ class _ActionIconState extends State<_ActionIcon>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
   }
 
   @override
@@ -143,7 +144,11 @@ class _ActionIconState extends State<_ActionIcon>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(widget.iconPath, height: widget.size, width: widget.size),
+            Image.asset(
+              widget.iconPath,
+              height: widget.size,
+              width: widget.size,
+            ),
 
             if (widget.count != null) ...[
               const SizedBox(height: 4),

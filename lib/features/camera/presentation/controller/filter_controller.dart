@@ -42,5 +42,6 @@ class FilterController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool get hasActiveFilter => _selectedFilter.type != FilterType.none || _faceFilterEnabled;
+  bool get hasActiveFilter =>
+      _selectedFilter.type != FilterType.none || _faceFilterEnabled;
 }

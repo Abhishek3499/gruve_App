@@ -11,9 +11,7 @@ class ProfileCountRefreshBridge {
   static String? _pendingReason;
   static const _debounceDuration = Duration(milliseconds: 1500);
 
-  static Future<void> notifyCountsChanged({
-    String reason = 'unknown',
-  }) async {
+  static Future<void> notifyCountsChanged({String reason = 'unknown'}) async {
     AppLogger.d('🔔 Profile count refresh requested. reason=$reason');
 
     final callback = onRefreshRequested;

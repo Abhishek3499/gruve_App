@@ -53,7 +53,12 @@ class ModeService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateSticker(String id, Offset position, double scale, double rotation) {
+  void updateSticker(
+    String id,
+    Offset position,
+    double scale,
+    double rotation,
+  ) {
     final index = _stickers.indexWhere((s) => s.id == id);
     if (index != -1) {
       _stickers[index].position = position;

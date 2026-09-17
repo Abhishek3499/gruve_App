@@ -5,7 +5,7 @@ class ProfileRepository {
   final ProfileService _service;
 
   ProfileRepository({ProfileService? service})
-      : _service = service ?? ProfileService();
+    : _service = service ?? ProfileService();
 
   Future<Map<String, dynamic>> fetchProfileData({
     int? allPage,

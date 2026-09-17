@@ -14,7 +14,8 @@ class CommentUser {
   factory CommentUser.fromJson(Map<String, dynamic> json) {
     return CommentUser(
       id: json['id']?.toString() ?? '',
-      username: json['username']?.toString() ??
+      username:
+          json['username']?.toString() ??
           json['name']?.toString() ??
           'Unknown User',
       isSubscribed: json['is_subscribed'] ?? false,

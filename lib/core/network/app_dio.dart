@@ -49,9 +49,15 @@ class AppDio {
     final dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 45), // Increased for slow networks
-        receiveTimeout: const Duration(minutes: 3), // Increased for large videos
-        sendTimeout: const Duration(minutes: 2), // Keep send timeout for large uploads
+        connectTimeout: const Duration(
+          seconds: 45,
+        ), // Increased for slow networks
+        receiveTimeout: const Duration(
+          minutes: 3,
+        ), // Increased for large videos
+        sendTimeout: const Duration(
+          minutes: 2,
+        ), // Keep send timeout for large uploads
       ),
     );
 
@@ -66,7 +72,9 @@ class AppDio {
               options.headers.containsKey('Authorization') &&
               (options.headers['Authorization']?.toString().trim().isNotEmpty ??
                   false);
-          final isExternal = (options.path.startsWith('http://') || options.path.startsWith('https://')) &&
+          final isExternal =
+              (options.path.startsWith('http://') ||
+                  options.path.startsWith('https://')) &&
               !options.path.startsWith(baseUrl);
           final skipAuth =
               options.extra['skipAuth'] == true ||
@@ -98,8 +106,9 @@ class AppDio {
 
           // 📊 Log response size in debug mode to track GZIP decompression/payloads
           if (kDebugMode) {
-            final contentLength = response.headers.value(Headers.contentLengthHeader) ??
-                                  response.headers.value('content-length');
+            final contentLength =
+                response.headers.value(Headers.contentLengthHeader) ??
+                response.headers.value('content-length');
             int sizeInBytes = 0;
             if (contentLength != null) {
               sizeInBytes = int.tryParse(contentLength) ?? 0;
@@ -108,7 +117,9 @@ class AppDio {
                 sizeInBytes = response.data.toString().length;
               } catch (_) {}
             }
-            AppLogger.d('📊 [Response Size] ${response.requestOptions.method} ${response.requestOptions.path} | Size: ${(sizeInBytes / 1024).toStringAsFixed(2)} KB ($sizeInBytes bytes)');
+            AppLogger.d(
+              '📊 [Response Size] ${response.requestOptions.method} ${response.requestOptions.path} | Size: ${(sizeInBytes / 1024).toStringAsFixed(2)} KB ($sizeInBytes bytes)',
+            );
           }
 
           handler.next(response);
@@ -170,22 +181,27 @@ class RetryInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    AppLogger.d('DEBUG: RetryInterceptor.onError CALLED for ${err.requestOptions.method} ${err.requestOptions.path} with type ${err.type}');
+    AppLogger.d(
+      'DEBUG: RetryInterceptor.onError CALLED for ${err.requestOptions.method} ${err.requestOptions.path} with type ${err.type}',
+    );
 
     final requestOptions = err.requestOptions;
-    
+
     // Check if request is explicitly marked for no retries
     final noRetry = requestOptions.extra['noRetry'] == true;
     if (noRetry) {
-      AppLogger.d('⏭️ [RetryInterceptor] Skipping retry as noRetry is set for ${requestOptions.method} ${requestOptions.path}');
+      AppLogger.d(
+        '⏭️ [RetryInterceptor] Skipping retry as noRetry is set for ${requestOptions.method} ${requestOptions.path}',
+      );
       return super.onError(err, handler);
     }
-    
+
     // Prevent infinite retry loops by checking current retry count
     final attempts = requestOptions.extra['retry_attempts'] as int? ?? 0;
 
     // Retry only on timeouts or connection/network errors, or specific transient server errors
-    final isTransient = err.type == DioExceptionType.connectionTimeout ||
+    final isTransient =
+        err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.connectionError ||
@@ -195,14 +211,16 @@ class RetryInterceptor extends Interceptor {
 
     if (isTransient && attempts < maxRetries) {
       requestOptions.extra['retry_attempts'] = attempts + 1;
-      
+
       if (kDebugMode) {
-        AppLogger.d('🔄 [RetryInterceptor] Failed with ${err.type} (Status: ${err.response?.statusCode}). Retrying ${requestOptions.method} ${requestOptions.path} (Attempt ${attempts + 1}/$maxRetries) in 1s...');
+        AppLogger.d(
+          '🔄 [RetryInterceptor] Failed with ${err.type} (Status: ${err.response?.statusCode}). Retrying ${requestOptions.method} ${requestOptions.path} (Attempt ${attempts + 1}/$maxRetries) in 1s...',
+        );
       }
-      
+
       // Delay 1 second before retry
       await Future<void>.delayed(const Duration(seconds: 1));
-      
+
       try {
         final response = await dio.fetch(requestOptions);
         return handler.resolve(response);
@@ -211,7 +229,10 @@ class RetryInterceptor extends Interceptor {
           // Pass the new DioException down the chain
           return super.onError(e, handler);
         }
-        return super.onError(DioException(requestOptions: requestOptions, error: e), handler);
+        return super.onError(
+          DioException(requestOptions: requestOptions, error: e),
+          handler,
+        );
       }
     }
 

@@ -39,8 +39,8 @@ class SubscribeModel {
       userId: json['userId'],
       username: json['username'],
       isSubscribed: json['isSubscribed'],
-      subscribedAt: json['subscribedAt'] != null 
-          ? DateTime.parse(json['subscribedAt']) 
+      subscribedAt: json['subscribedAt'] != null
+          ? DateTime.parse(json['subscribedAt'])
           : null,
     );
   }

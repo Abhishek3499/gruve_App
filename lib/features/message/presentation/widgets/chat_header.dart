@@ -62,8 +62,9 @@ class ChatHeader extends ConsumerWidget {
   void showChatHeaderMenu(BuildContext context, WidgetRef ref) {
     OverlayEntry? overlayEntry;
     // Capture live block state from the widget-tree context BEFORE entering overlay
-    final bool currentIsBlocked =
-        ref.read(blockNotifierProvider.notifier).isBlocked(_userId);
+    final bool currentIsBlocked = ref
+        .read(blockNotifierProvider.notifier)
+        .isBlocked(_userId);
 
     overlayEntry = OverlayEntry(
       builder: (overlayContext) => GestureDetector(
@@ -131,10 +132,7 @@ class ChatHeader extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          BackButton(
-            color: Colors.white,
-            onPressed: onBack,
-          ),
+          BackButton(color: Colors.white, onPressed: onBack),
           const SizedBox(width: 16),
           GestureDetector(
             onTap: () => _navigateToUserProfile(context),

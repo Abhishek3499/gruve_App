@@ -20,8 +20,7 @@ class StoryUtils {
     bool isOwnProfile = false,
   }) async {
     AppLogger.d("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
-      AppLogger.d("🧭 userId: ${userId ?? 'me'} | displayName: $displayName");
-    
+    AppLogger.d("🧭 userId: ${userId ?? 'me'} | displayName: $displayName");
 
     // Show loading dialog immediately
     showDialog(
@@ -118,7 +117,6 @@ class StoryUtils {
             Navigator.pop(context); // Close loading dialog
           }
           AppLogger.d("⚠️ No stories found");
-          
         }
       }
     } catch (e) {
@@ -126,11 +124,9 @@ class StoryUtils {
         Navigator.pop(context); // Close loading dialog
       }
       AppLogger.d("❌ Error navigating to story: $e");
-      
     }
 
     AppLogger.d("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
-    
   }
 
   static void _navigateToStoryScreen(
@@ -146,10 +142,9 @@ class StoryUtils {
     bool isOwnProfile = false,
   }) {
     AppLogger.d("🧭 [StoryUtils] _navigateToStoryScreen called");
-      AppLogger.d(
-        "🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile",
-      );
-    
+    AppLogger.d(
+      "🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile",
+    );
 
     Navigator.push(
       context,
@@ -189,7 +184,6 @@ class StoryUtils {
       }
     } catch (e) {
       AppLogger.d("⚠️ Background refresh failed: $e");
-      
     }
   }
 

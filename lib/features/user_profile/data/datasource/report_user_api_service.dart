@@ -38,17 +38,10 @@ class ReportUserApiService {
 
       final response = await _dio.post(
         _endpoint,
-        data: {
-          'user_id': trimmedUserId,
-          'reason_key': trimmedReason,
-        },
+        data: {'user_id': trimmedUserId, 'reason_key': trimmedReason},
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
-          extra: {
-            'skipCache': true,
-            'bypassCache': true,
-            'noCache': true,
-          },
+          extra: {'skipCache': true, 'bypassCache': true, 'noCache': true},
         ),
       );
 
@@ -57,7 +50,9 @@ class ReportUserApiService {
         Map<String, dynamic>.from(response.data as Map),
       );
     } on DioException catch (e) {
-      _log('DioException status=${e.response?.statusCode} data=${e.response?.data}');
+      _log(
+        'DioException status=${e.response?.statusCode} data=${e.response?.data}',
+      );
       rethrow;
     }
   }

@@ -16,7 +16,9 @@ class NotificationListResponse {
       code: json['code'] ?? 0,
       success: json['success'] ?? false,
       message: json['message'] ?? '',
-      data: json['data'] != null ? NotificationPageData.fromJson(json['data']) : null,
+      data: json['data'] != null
+          ? NotificationPageData.fromJson(json['data'])
+          : null,
     );
   }
 }
@@ -87,8 +89,11 @@ class AppNotification {
       commentPreview: json['comment_preview']?.toString(),
       isRead: json['is_read'] ?? false,
       createdAt: json['created_at'] ?? '',
-      actor: json['actor'] != null ? NotificationActor.fromJson(json['actor']) : null,
-      postImage: json['post_image']?.toString() ??
+      actor: json['actor'] != null
+          ? NotificationActor.fromJson(json['actor'])
+          : null,
+      postImage:
+          json['post_image']?.toString() ??
           json['post_thumbnail']?.toString() ??
           json['post_thumbnail_url']?.toString() ??
           json['thumbnail_url']?.toString() ??

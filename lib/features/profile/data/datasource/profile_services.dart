@@ -6,8 +6,7 @@ import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileService {
-  ProfileService()
-    : _dio = AppDio.getInstance();
+  ProfileService() : _dio = AppDio.getInstance();
 
   final Dio _dio;
 
@@ -47,7 +46,9 @@ class ProfileService {
 
     AppLogger.d("[ProfileService] GET user/profile_data/");
     AppLogger.d("[ProfileService] Query params: $queryParams");
-    AppLogger.d("[ProfileService] 🔄 [DEDUP TEST] Request will be deduplicated if duplicate");
+    AppLogger.d(
+      "[ProfileService] 🔄 [DEDUP TEST] Request will be deduplicated if duplicate",
+    );
     const maxAttempts = 1;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -134,10 +135,10 @@ class ProfileService {
 
         // Enhanced debugging for connection errors
         if (e.type == DioExceptionType.connectionError) {
-            AppLogger.d("[ProfileService] CONNECTION ERROR DETAILS:");
-            AppLogger.d(
-              "  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}",
-            );
+          AppLogger.d("[ProfileService] CONNECTION ERROR DETAILS:");
+          AppLogger.d(
+            "  - Host lookup failed: ${e.message?.contains('Failed host lookup') == true}",
+          );
           AppLogger.d("  - Network available: Checking...");
 
           // Check if it's a host lookup issue

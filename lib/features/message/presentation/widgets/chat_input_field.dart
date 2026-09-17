@@ -83,11 +83,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 32,
-              ),
+              Icon(icon, color: Colors.white, size: 32),
               const SizedBox(height: 8),
               Text(
                 label,
@@ -295,7 +291,9 @@ class _ChatInputFieldState extends State<ChatInputField> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Microphone permission is required to record voice messages.'),
+              content: Text(
+                'Microphone permission is required to record voice messages.',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -304,7 +302,8 @@ class _ChatInputFieldState extends State<ChatInputField> {
       }
 
       final tempDir = Directory.systemTemp;
-      final filePath = '${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final filePath =
+          '${tempDir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
       await _audioRecorder.start(
         const RecordConfig(
@@ -358,7 +357,9 @@ class _ChatInputFieldState extends State<ChatInputField> {
         _isRecording = false;
         _recordingSeconds = 0;
       });
-      AppLogger.d('🎙️ [ChatInputField] Voice recording cancelled and discarded');
+      AppLogger.d(
+        '🎙️ [ChatInputField] Voice recording cancelled and discarded',
+      );
     } catch (e) {
       AppLogger.d('💥 [ChatInputField] Failed to cancel voice recording: $e');
     }
@@ -447,10 +448,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
               child: SizedBox(
                 height: 20,
                 width: 20,
-                child: Image.asset(
-                  AppAssets.send,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset(AppAssets.send, fit: BoxFit.contain),
               ),
             ),
           ),
@@ -500,11 +498,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
           padding: const EdgeInsets.only(bottom: 11),
           child: GestureDetector(
             onTap: _toggleRecording,
-            child: const Icon(
-              Icons.mic,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: const Icon(Icons.mic, color: Colors.white, size: 24),
           ),
         ),
         const SizedBox(width: 12),
@@ -540,10 +534,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
                     child: SizedBox(
                       height: 20,
                       width: 20,
-                      child: Image.asset(
-                        AppAssets.send,
-                        fit: BoxFit.contain,
-                      ),
+                      child: Image.asset(AppAssets.send, fit: BoxFit.contain),
                     ),
                   ),
           ),
@@ -558,12 +549,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
       color: Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 18,
-          top: 6,
-          bottom: 6,
-        ),
+        padding: const EdgeInsets.only(left: 16, right: 18, top: 6, bottom: 6),
         decoration: BoxDecoration(
           color: const Color.fromARGB(255, 171, 20, 209), // Solid purple
           borderRadius: BorderRadius.circular(30),

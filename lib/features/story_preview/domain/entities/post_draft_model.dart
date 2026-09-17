@@ -41,16 +41,33 @@ class PostDraft {
     return PostDraft(
       id: json['id']?.toString() ?? "",
       caption: json['caption']?.toString(),
-      mediaUrl: _normalizeUrl(json['file'] ?? json['media_url'] ?? json['media']),
+      mediaUrl: _normalizeUrl(
+        json['file'] ?? json['media_url'] ?? json['media'],
+      ),
       locationName: json['location_name']?.toString(),
-      audienceEveryone: json['audience_everyone'] == true || json['audience_everyone'] == 'true' || json['audience_everyone'] == null,
-      audienceCloseFriends: json['audience_close_friends'] == true || json['audience_close_friends'] == 'true',
-      scheduleReel: json['schedule_reel'] == true || json['schedule_reel'] == 'true',
-      uploadHighQuality: json['upload_high_quality'] == true || json['upload_high_quality'] == 'true',
-      hideLikeCount: json['hide_like_count'] == true || json['hide_like_count'] == 'true',
-      hideShareCount: json['hide_share_count'] == true || json['hide_share_count'] == 'true',
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'].toString()) : null,
+      audienceEveryone:
+          json['audience_everyone'] == true ||
+          json['audience_everyone'] == 'true' ||
+          json['audience_everyone'] == null,
+      audienceCloseFriends:
+          json['audience_close_friends'] == true ||
+          json['audience_close_friends'] == 'true',
+      scheduleReel:
+          json['schedule_reel'] == true || json['schedule_reel'] == 'true',
+      uploadHighQuality:
+          json['upload_high_quality'] == true ||
+          json['upload_high_quality'] == 'true',
+      hideLikeCount:
+          json['hide_like_count'] == true || json['hide_like_count'] == 'true',
+      hideShareCount:
+          json['hide_share_count'] == true ||
+          json['hide_share_count'] == 'true',
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
+          : null,
     );
   }
 
@@ -99,11 +116,19 @@ class PaginatedDraftsResponse {
   factory PaginatedDraftsResponse.fromJson(Map<String, dynamic> json) {
     final resultsList = json['results'] as List<dynamic>? ?? [];
     return PaginatedDraftsResponse(
-      count: json['count'] is int ? json['count'] as int : (int.tryParse(json['count']?.toString() ?? '') ?? 0),
-      page: json['page'] is int ? json['page'] as int : (int.tryParse(json['page']?.toString() ?? '') ?? 1),
-      limit: json['limit'] is int ? json['limit'] as int : (int.tryParse(json['limit']?.toString() ?? '') ?? 20),
+      count: json['count'] is int
+          ? json['count'] as int
+          : (int.tryParse(json['count']?.toString() ?? '') ?? 0),
+      page: json['page'] is int
+          ? json['page'] as int
+          : (int.tryParse(json['page']?.toString() ?? '') ?? 1),
+      limit: json['limit'] is int
+          ? json['limit'] as int
+          : (int.tryParse(json['limit']?.toString() ?? '') ?? 20),
       hasNext: json['has_next'] == true || json['has_next'] == 'true',
-      results: resultsList.map((e) => PostDraft.fromJson(Map<String, dynamic>.from(e))).toList(),
+      results: resultsList
+          .map((e) => PostDraft.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }

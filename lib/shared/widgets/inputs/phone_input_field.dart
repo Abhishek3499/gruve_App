@@ -116,10 +116,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF43184D),
-                Color(0xFF2A0D33),
-              ],
+              colors: [Color(0xFF43184D), Color(0xFF2A0D33)],
             ),
             border: Border.all(
               color: effectiveErrorText != null
@@ -138,19 +135,35 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                     favorite: const <String>['IN', 'US', 'GB'],
                     countryListTheme: CountryListThemeData(
                       backgroundColor: const Color(0xFF2A0D33),
-                      textStyle: const TextStyle(color: Colors.white, fontSize: 15),
-                      searchTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
+                      textStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                      ),
+                      searchTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                      ),
                       inputDecoration: InputDecoration(
                         hintText: 'Search country',
-                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFFB86AD0)),
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Color(0xFFB86AD0),
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(color: Color(0xFFB86AD0)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFB86AD0),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(color: Color(0xFFB86AD0), width: 1.5),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFB86AD0),
+                            width: 1.5,
+                          ),
                         ),
                       ),
                       borderRadius: const BorderRadius.only(

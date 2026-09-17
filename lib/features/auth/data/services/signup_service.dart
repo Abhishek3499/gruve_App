@@ -96,7 +96,9 @@ class SignupService {
       return result;
     }
     throw AuthApiException(
-      result.message.isNotEmpty ? result.message : 'Signup failed. Please try again.',
+      result.message.isNotEmpty
+          ? result.message
+          : 'Signup failed. Please try again.',
       statusCode: response.statusCode,
     );
   }

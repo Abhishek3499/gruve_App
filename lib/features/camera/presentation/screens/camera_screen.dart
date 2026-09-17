@@ -139,7 +139,11 @@ class _CameraScreenState extends State<CameraScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(seconds == 0 ? 'Timer turned off' : 'Timer set for $label shooting'),
+            content: Text(
+              seconds == 0
+                  ? 'Timer turned off'
+                  : 'Timer set for $label shooting',
+            ),
             backgroundColor: const Color(0xFFC358D7),
             duration: const Duration(seconds: 1),
           ),
@@ -205,11 +209,18 @@ class _CameraScreenState extends State<CameraScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
                 ),
                 child: const Text(
                   'Cancel Timer',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -423,8 +434,7 @@ class _CameraZoomSelectorState extends State<_CameraZoomSelector>
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized ||
-        !_cameraService.isBackCamera) {
+    if (!_isInitialized || !_cameraService.isBackCamera) {
       return const SizedBox.shrink();
     }
 

@@ -84,9 +84,8 @@ class RecentSearchShimmer extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: itemCount,
-            itemBuilder: (_, index) => _SearchRowSkeleton(
-              nameWidth: 100.0 + (index * 15.0),
-            ),
+            itemBuilder: (_, index) =>
+                _SearchRowSkeleton(nameWidth: 100.0 + (index * 15.0)),
           ),
         ],
       ),

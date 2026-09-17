@@ -12,7 +12,6 @@ class TokenStorage {
 
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    
   );
 
   static SharedPreferences? _prefs;
@@ -20,14 +19,16 @@ class TokenStorage {
   static Future<void> init() async {
     try {
       _prefs = await SharedPreferences.getInstance();
-      
+
       // Eagerly sync user ID from secure storage to SharedPreferences if not already done
       final syncUserId = _prefs?.getString(_currentUserIdKey);
       if (syncUserId == null) {
         final secureUserId = await _readSecure(_currentUserIdKey);
         if (secureUserId != null && secureUserId.isNotEmpty) {
           await _prefs?.setString(_currentUserIdKey, secureUserId);
-          _log('Synced current user ID from secure storage to SharedPreferences: $secureUserId');
+          _log(
+            'Synced current user ID from secure storage to SharedPreferences: $secureUserId',
+          );
         }
       }
     } catch (e) {
@@ -162,7 +163,9 @@ class TokenStorage {
     if (jsonStr == null || jsonStr.isEmpty) return {};
     try {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-      return map.map((key, value) => MapEntry(key, int.tryParse(value.toString()) ?? 0));
+      return map.map(
+        (key, value) => MapEntry(key, int.tryParse(value.toString()) ?? 0),
+      );
     } catch (_) {
       return {};
     }

@@ -5,11 +5,7 @@ class ApiException implements Exception {
   final int? statusCode;
   final String? type;
 
-  const ApiException(
-    this.message, {
-    this.statusCode,
-    this.type,
-  });
+  const ApiException(this.message, {this.statusCode, this.type});
 
   factory ApiException.fromDio(
     DioException error, {
@@ -98,7 +94,8 @@ class ApiException implements Exception {
     }
 
     final lower = message.toLowerCase();
-    final isTechnical = lower == 'null' ||
+    final isTechnical =
+        lower == 'null' ||
         lower.contains('request failed') ||
         lower.contains('dioexception') ||
         lower.contains('http status') ||

@@ -6,8 +6,7 @@ import 'package:gruve_app/features/profile/domain/entities/user_profile_model.da
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProfileService {
-  UserProfileService()
-    : _dio = AppDio.getInstance();
+  UserProfileService() : _dio = AppDio.getInstance();
 
   final Dio _dio;
 
@@ -115,7 +114,11 @@ class UserProfileService {
 
     throw StateError('UserProfileService.getUserProfile: exhausted attempts');
   }
-  Future<UserProfile> getUserProfileModel(String userId, {CancelToken? cancelToken}) async {
+
+  Future<UserProfile> getUserProfileModel(
+    String userId, {
+    CancelToken? cancelToken,
+  }) async {
     final data = await getUserProfile(userId: userId, cancelToken: cancelToken);
     return UserProfile.fromJson(data['data'] ?? data);
   }

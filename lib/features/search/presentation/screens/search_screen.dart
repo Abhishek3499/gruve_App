@@ -65,9 +65,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
               SizedBox(height: context.rh(12)),
-              Expanded(
-                child: ExploreReelsGrid(controller: _exploreController),
-              ),
+              Expanded(child: ExploreReelsGrid(controller: _exploreController)),
             ],
           ),
         ),

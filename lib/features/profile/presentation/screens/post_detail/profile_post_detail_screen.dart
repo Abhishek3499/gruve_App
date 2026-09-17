@@ -227,10 +227,8 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => PostActionSheet(
-        post: post,
-        isOwnProfile: widget.isOwnProfile,
-      ),
+      builder: (context) =>
+          PostActionSheet(post: post, isOwnProfile: widget.isOwnProfile),
     );
 
     if (!mounted) return;
@@ -248,19 +246,33 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: context.rw(28)),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.redAccent,
+              size: context.rw(28),
+            ),
             SizedBox(width: context.rw(10)),
             const Text(
               'Delete Post',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to permanently delete this post? This action cannot be undone.',
-          style: TextStyle(color: Colors.white70, fontSize: context.rf(14), height: 1.4),
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: context.rf(14),
+            height: 1.4,
+          ),
         ),
-        actionsPadding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(12)),
+        actionsPadding: EdgeInsets.symmetric(
+          horizontal: context.rw(16),
+          vertical: context.rh(12),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -275,8 +287,13 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: context.rw(16),
+                vertical: context.rh(8),
+              ),
             ),
             onPressed: () {
               Navigator.pop(dialogContext);
@@ -284,7 +301,10 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
             },
             child: const Text(
               'Delete',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -297,9 +317,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.loaderDark,
-        ),
+        child: CircularProgressIndicator(color: AppColors.loaderDark),
       ),
     );
 
@@ -323,7 +341,9 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
           ),
           backgroundColor: const Color(0xFF1E092D),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
 
@@ -340,7 +360,9 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
           ),
           backgroundColor: const Color(0xFF1E092D),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
@@ -421,8 +443,9 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     final isVideo = post.isVideo && mediaUrl.isNotEmpty;
     final videoController = _videoControllers[index];
     final liked = _isLiked[post.id] ?? post.isLiked;
-    final displayName =
-        post.resolveUsername(fallback: widget.fallbackDisplayName);
+    final displayName = post.resolveUsername(
+      fallback: widget.fallbackDisplayName,
+    );
     final avatarUrl = post.resolveProfilePicture(
       fallback: widget.fallbackProfilePicture,
     );
@@ -449,8 +472,8 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                     posterUrl: post.gridPreviewUrl,
                   )
                 : showResolving
-                    ? const _PostMediaSkeleton()
-                    : _buildImagePlayer(mediaUrl),
+                ? const _PostMediaSkeleton()
+                : _buildImagePlayer(mediaUrl),
           ),
         ),
         Positioned(
@@ -470,7 +493,12 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                 ],
               ),
             ),
-            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(60), context.rw(16), context.rh(16)),
+            padding: EdgeInsets.fromLTRB(
+              context.rw(16),
+              context.rh(60),
+              context.rw(16),
+              context.rh(16),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -552,10 +580,14 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                     Consumer(
                       builder: (context, ref, _) {
                         final isSaved = ref.watch(
-                          savePostNotifierProvider.select((state) => state.isSaved(post.id)),
+                          savePostNotifierProvider.select(
+                            (state) => state.isSaved(post.id),
+                          ),
                         );
                         return GestureDetector(
-                          onTap: () => ref.read(savePostNotifierProvider.notifier).toggleSavePost(post.id),
+                          onTap: () => ref
+                              .read(savePostNotifierProvider.notifier)
+                              .toggleSavePost(post.id),
                           child: Container(
                             padding: EdgeInsets.all(context.rw(8)),
                             child: Icon(
@@ -623,7 +655,11 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       fadeOutDuration: Duration.zero,
       placeholder: (context, url) => const _PostMediaSkeleton(),
       errorWidget: (context, url, error) => Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: context.rw(48)),
+        child: Icon(
+          Icons.broken_image,
+          color: Colors.white54,
+          size: context.rw(48),
+        ),
       ),
     );
   }
@@ -659,10 +695,7 @@ class _DetailVideoPlayer extends StatefulWidget {
   final VideoPlayerController? controller;
   final String posterUrl;
 
-  const _DetailVideoPlayer({
-    required this.controller,
-    required this.posterUrl,
-  });
+  const _DetailVideoPlayer({required this.controller, required this.posterUrl});
 
   @override
   State<_DetailVideoPlayer> createState() => _DetailVideoPlayerState();
@@ -703,8 +736,7 @@ class _DetailVideoPlayerState extends State<_DetailVideoPlayer> {
 
   void _syncFrameState() {
     final ctrl = widget.controller;
-    _hasRenderedFrame =
-        ctrl != null && _computeHasRenderedFrame(ctrl.value);
+    _hasRenderedFrame = ctrl != null && _computeHasRenderedFrame(ctrl.value);
   }
 
   void _onControllerUpdate() {
@@ -747,8 +779,7 @@ class _DetailVideoPlayerState extends State<_DetailVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
-    final showVideo =
-        controller != null && controller.value.isInitialized;
+    final showVideo = controller != null && controller.value.isInitialized;
     final hidePoster = showVideo && _hasRenderedFrame;
 
     return Stack(

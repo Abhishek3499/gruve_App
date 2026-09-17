@@ -4,7 +4,7 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 /// Provides structured debug logging with consistent formatting
 class CameraLogger {
   static const String _tag = '📷 CameraFeature';
-  
+
   /// Log camera initialization start
   static void logInitializationStart() {
     _log('INIT', 'Camera initialization started');

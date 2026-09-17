@@ -92,20 +92,21 @@ class MessageModel {
         'profileImage',
       ],
     );
-    final senderName = SafeParsingHelpers.safeNullableString(
-      senderObj,
-      const ['name', 'username', 'full_name', 'fullName'],
-    );
+    final senderName = SafeParsingHelpers.safeNullableString(senderObj, const [
+      'name',
+      'username',
+      'full_name',
+      'fullName',
+    ]);
 
     final isSent = currentUserId != null && currentUserId.isNotEmpty
         ? senderId == currentUserId
         : receiverUserId != null && receiverUserId.isNotEmpty
         ? senderId != receiverUserId
-        : SafeParsingHelpers.safeBool(
-            safeJson,
-            const ['is_sent', 'isSent'],
-            fallback: false,
-          );
+        : SafeParsingHelpers.safeBool(safeJson, const [
+            'is_sent',
+            'isSent',
+          ], fallback: false);
 
     final explicitIsRead = _resolveIsRead(safeJson);
     final status = _resolveStatus(safeJson, explicitIsRead);
@@ -121,7 +122,8 @@ class MessageModel {
           )
         : null;
 
-    final sharedPostMap = safeJson['shared_post'] ??
+    final sharedPostMap =
+        safeJson['shared_post'] ??
         safeJson['tagged_post'] ??
         safeJson['post'] ??
         safeJson['attachment'];
@@ -149,18 +151,19 @@ class MessageModel {
       id: _resolveMessageId(safeJson),
       text: messageText,
       timestamp: _parseDateTime(
-        safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
+        safeJson['created_at'] ??
+            safeJson['createdAt'] ??
+            safeJson['timestamp'],
       ),
       isSent: isSent,
       senderId: senderId,
       imagePath: mediaUrl,
       mediaKind: resolvedMediaKind,
       replyPreview: replyPreview,
-      isPinned: SafeParsingHelpers.safeBool(
-        safeJson,
-        const ['is_pinned', 'isPinned'],
-        fallback: false,
-      ),
+      isPinned: SafeParsingHelpers.safeBool(safeJson, const [
+        'is_pinned',
+        'isPinned',
+      ], fallback: false),
       isRead: status == MessageStatus.read,
       senderAvatar: senderAvatar,
       senderName: senderName,
@@ -168,11 +171,10 @@ class MessageModel {
       sharedPostId: sharedPostId,
       sharedPostPreviewUrl: sharedPostPreviewUrl,
       sharedPost: sharedPost,
-      isEdited: SafeParsingHelpers.safeBool(
-        safeJson,
-        const ['is_edited', 'isEdited'],
-        fallback: false,
-      ),
+      isEdited: SafeParsingHelpers.safeBool(safeJson, const [
+        'is_edited',
+        'isEdited',
+      ], fallback: false),
     );
   }
 
@@ -209,10 +211,7 @@ class MessageModel {
 
   bool get isSharedPost => sharedPostId != null && sharedPostId!.isNotEmpty;
   bool get isEditable =>
-      isSent &&
-      !hasMedia &&
-      !isSharedPost &&
-      !id.startsWith('local-');
+      isSent && !hasMedia && !isSharedPost && !id.startsWith('local-');
 
   String? get sharedPostCompanionText {
     if (!isSharedPost) return null;
@@ -262,13 +261,14 @@ class MessageModel {
       replyTo: replyTo ?? this.replyTo,
       replyPreview: replyPreview ?? this.replyPreview,
       isPinned: isPinned ?? this.isPinned,
-      isRead: isRead ?? (status != null ? status == MessageStatus.read : this.isRead),
+      isRead:
+          isRead ??
+          (status != null ? status == MessageStatus.read : this.isRead),
       senderAvatar: senderAvatar ?? this.senderAvatar,
       senderName: senderName ?? this.senderName,
       status: status ?? this.status,
       sharedPostId: sharedPostId ?? this.sharedPostId,
-      sharedPostPreviewUrl:
-          sharedPostPreviewUrl ?? this.sharedPostPreviewUrl,
+      sharedPostPreviewUrl: sharedPostPreviewUrl ?? this.sharedPostPreviewUrl,
       sharedPost: sharedPost ?? this.sharedPost,
       isEdited: isEdited ?? this.isEdited,
     );
@@ -278,37 +278,36 @@ class MessageModel {
     Map<String, dynamic> json,
     Map<String, dynamic> senderObj,
   ) {
-    final nestedSenderId = SafeParsingHelpers.safeString(
-      senderObj,
-      const ['id', 'user_id', 'userId'],
-      fallback: '',
-    );
+    final nestedSenderId = SafeParsingHelpers.safeString(senderObj, const [
+      'id',
+      'user_id',
+      'userId',
+    ], fallback: '');
     if (nestedSenderId.isNotEmpty) return nestedSenderId;
 
-    return SafeParsingHelpers.safeString(
-      json,
-      const ['sender_id', 'senderId', 'user_id', 'userId'],
-      fallback: '',
-    );
+    return SafeParsingHelpers.safeString(json, const [
+      'sender_id',
+      'senderId',
+      'user_id',
+      'userId',
+    ], fallback: '');
   }
 
   static String _resolveMessageId(Map<String, dynamic> json) {
-    final explicitId = SafeParsingHelpers.safeString(
-      json,
-      const [
-        'id',
-        '_id',
-        'message_id',
-        'messageId',
-        'client_message_id',
-        'clientMessageId',
-      ],
-      fallback: '',
-    );
+    final explicitId = SafeParsingHelpers.safeString(json, const [
+      'id',
+      '_id',
+      'message_id',
+      'messageId',
+      'client_message_id',
+      'clientMessageId',
+    ], fallback: '');
     if (explicitId.isNotEmpty) return explicitId;
 
-    final timestamp = json['created_at'] ?? json['createdAt'] ?? json['timestamp'];
-    final sender = json['sender_id'] ?? json['senderId'] ?? json['sender'] ?? '';
+    final timestamp =
+        json['created_at'] ?? json['createdAt'] ?? json['timestamp'];
+    final sender =
+        json['sender_id'] ?? json['senderId'] ?? json['sender'] ?? '';
     final content = _resolveMessageText(json);
     final seed = '$timestamp|$sender|$content';
     return 'realtime_${seed.hashCode.abs()}';
@@ -318,19 +317,19 @@ class MessageModel {
     final content = json['content'];
     if (content is Map) {
       final contentMap = Map<String, dynamic>.from(content);
-      final text = SafeParsingHelpers.safeString(
-        contentMap,
-        const ['text', 'message', 'value'],
-        fallback: '',
-      );
+      final text = SafeParsingHelpers.safeString(contentMap, const [
+        'text',
+        'message',
+        'value',
+      ], fallback: '');
       if (text.isNotEmpty) return text;
     }
 
-    return SafeParsingHelpers.safeString(
-      json,
-      const ['content', 'text', 'message'],
-      fallback: '',
-    );
+    return SafeParsingHelpers.safeString(json, const [
+      'content',
+      'text',
+      'message',
+    ], fallback: '');
   }
 
   static String? _resolveMediaUrl(Map<String, dynamic> json) {
@@ -356,7 +355,8 @@ class MessageModel {
       final contentMap = Map<String, dynamic>.from(content);
       final type = contentMap['type']?.toString().toLowerCase();
       if (type == 'image' || type == 'video') {
-        final directUrl = contentMap['url'] ??
+        final directUrl =
+            contentMap['url'] ??
             contentMap['media_url'] ??
             contentMap['image_url'];
         final url = directUrl?.toString().trim();
@@ -370,10 +370,12 @@ class MessageModel {
       }
     }
 
-    return SafeParsingHelpers.safeNullableString(
-      json,
-      const ['image', 'image_url', 'media_url', 'file'],
-    );
+    return SafeParsingHelpers.safeNullableString(json, const [
+      'image',
+      'image_url',
+      'media_url',
+      'file',
+    ]);
   }
 
   static String? _resolveMediaKind(Map<String, dynamic> json) {
@@ -399,8 +401,9 @@ class MessageModel {
       if (type != null && type.isNotEmpty && type != 'text') return type;
       final metadata = contentMap['metadata'];
       if (metadata is Map) {
-        final kind =
-            Map<String, dynamic>.from(metadata)['media_kind']?.toString();
+        final kind = Map<String, dynamic>.from(
+          metadata,
+        )['media_kind']?.toString();
         if (kind != null && kind.isNotEmpty) return kind;
       }
     }
@@ -415,11 +418,10 @@ class MessageModel {
   }
 
   static bool _resolveIsRead(Map<String, dynamic> json) {
-    final explicit = SafeParsingHelpers.safeBool(
-      json,
-      const ['is_read', 'isRead'],
-      fallback: false,
-    );
+    final explicit = SafeParsingHelpers.safeBool(json, const [
+      'is_read',
+      'isRead',
+    ], fallback: false);
     if (explicit) return true;
 
     final deliveryStatus = json['delivery_status'];
@@ -432,7 +434,10 @@ class MessageModel {
     return false;
   }
 
-  static MessageStatus _resolveStatus(Map<String, dynamic> json, bool fallbackIsRead) {
+  static MessageStatus _resolveStatus(
+    Map<String, dynamic> json,
+    bool fallbackIsRead,
+  ) {
     final statusStr = json['status']?.toString();
     if (statusStr != null && statusStr.isNotEmpty) {
       return MessageStatus.fromString(statusStr);
@@ -445,7 +450,8 @@ class MessageModel {
       if (readAt != null && readAt.toString().trim().isNotEmpty) {
         return MessageStatus.read;
       }
-      final deliveredAt = deliveryMap['delivered_at'] ?? deliveryMap['deliveredAt'];
+      final deliveredAt =
+          deliveryMap['delivered_at'] ?? deliveryMap['deliveredAt'];
       if (deliveredAt != null && deliveredAt.toString().trim().isNotEmpty) {
         return MessageStatus.delivered;
       }
@@ -464,7 +470,9 @@ class MessageModel {
       try {
         return DateTime.parse(value).toLocal();
       } catch (error) {
-        AppLogger.d('[MessageModel] Failed to parse timestamp "$value": $error');
+        AppLogger.d(
+          '[MessageModel] Failed to parse timestamp "$value": $error',
+        );
       }
     }
     return DateTime.now();

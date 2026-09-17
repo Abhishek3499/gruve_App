@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// 🚀 PRODUCTION OPTIMIZED: Cached avatar widget
-/// 
+///
 /// Performance improvements:
 /// - Uses CachedNetworkImage for disk + memory caching
 /// - Decodes images off main thread (no UI jank)
 /// - Shows fallback immediately (no blank circle)
 /// - Respects 2x pixel ratio for retina displays
 /// - Configurable cache sizes
-/// 
+///
 /// Expected performance:
 /// - First load: 1-2s
 /// - Cached load: 50-100ms (instant)
@@ -19,7 +19,7 @@ class CachedAvatar extends StatelessWidget {
   final String username;
   final double radius;
   final Color backgroundColor;
-  
+
   const CachedAvatar({
     super.key,
     this.imageUrl,
@@ -27,11 +27,11 @@ class CachedAvatar extends StatelessWidget {
     this.radius = 13,
     this.backgroundColor = const Color(0x1FFFFFFF), // Colors.white12
   });
-  
+
   @override
   Widget build(BuildContext context) {
     final trimmed = imageUrl?.trim() ?? '';
-    
+
     if (trimmed.startsWith('http')) {
       return CircleAvatar(
         radius: radius,
@@ -57,25 +57,21 @@ class CachedAvatar extends StatelessWidget {
         ),
       );
     }
-    
+
     return CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor,
       child: _buildFallback(),
     );
   }
-  
+
   Widget _buildFallback() {
     final fallbackLetter = username.isNotEmpty ? username[0].toUpperCase() : '';
-    
+
     if (fallbackLetter.isEmpty) {
-      return Icon(
-        Icons.person,
-        color: Colors.white54,
-        size: radius * 1.2,
-      );
+      return Icon(Icons.person, color: Colors.white54, size: radius * 1.2);
     }
-    
+
     return Text(
       fallbackLetter,
       style: TextStyle(

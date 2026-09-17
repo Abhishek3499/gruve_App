@@ -5,7 +5,7 @@ import 'package:gruve_app/features/auth/data/services/forgot_password_service.da
 /// errors are owned by the Forgot Password Riverpod notifier, not here.
 class ForgotPasswordController {
   ForgotPasswordController({ForgotPasswordService? service})
-      : _service = service ?? ForgotPasswordService();
+    : _service = service ?? ForgotPasswordService();
 
   final ForgotPasswordService _service;
 

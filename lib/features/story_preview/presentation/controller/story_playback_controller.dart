@@ -21,7 +21,7 @@ class StoryPlaybackController extends ChangeNotifier {
   /// Initialize the controller
   void initialize() {
     AppLogger.d("🎬 [StoryPlaybackController] Initialized");
-    
+
     _isInitialized = true;
     _isPaused = false;
   }
@@ -30,17 +30,17 @@ class StoryPlaybackController extends ChangeNotifier {
   void pauseStory({String? reason}) {
     if (!_isInitialized) {
       AppLogger.d(
-          "⚠️ [StoryPlaybackController] Cannot pause - not initialized",
-        );
-      
+        "⚠️ [StoryPlaybackController] Cannot pause - not initialized",
+      );
+
       return;
     }
 
     if (_isPaused) {
       AppLogger.d(
-          "⚠️ [StoryPlaybackController] Already paused - ignoring duplicate call",
-        );
-      
+        "⚠️ [StoryPlaybackController] Already paused - ignoring duplicate call",
+      );
+
       return;
     }
 
@@ -48,26 +48,25 @@ class StoryPlaybackController extends ChangeNotifier {
     notifyListeners();
 
     AppLogger.d(
-        "⏸️ [StoryPlaybackController] Story Paused${reason != null ? ' - $reason' : ''}",
-      );
-    
+      "⏸️ [StoryPlaybackController] Story Paused${reason != null ? ' - $reason' : ''}",
+    );
   }
 
   /// Resume story playback
   void resumeStory({String? reason}) {
     if (!_isInitialized) {
       AppLogger.d(
-          "⚠️ [StoryPlaybackController] Cannot resume - not initialized",
-        );
-      
+        "⚠️ [StoryPlaybackController] Cannot resume - not initialized",
+      );
+
       return;
     }
 
     if (!_isPaused) {
       AppLogger.d(
-          "⚠️ [StoryPlaybackController] Already playing - ignoring duplicate call",
-        );
-      
+        "⚠️ [StoryPlaybackController] Already playing - ignoring duplicate call",
+      );
+
       return;
     }
 
@@ -75,15 +74,14 @@ class StoryPlaybackController extends ChangeNotifier {
     notifyListeners();
 
     AppLogger.d(
-        "▶️ [StoryPlaybackController] Story Resumed${reason != null ? ' - $reason' : ''}",
-      );
-    
+      "▶️ [StoryPlaybackController] Story Resumed${reason != null ? ' - $reason' : ''}",
+    );
   }
 
   /// Reset controller state
   void reset() {
     AppLogger.d("🔄 [StoryPlaybackController] Resetting controller");
-    
+
     _isPaused = false;
     _isInitialized = false;
     notifyListeners();

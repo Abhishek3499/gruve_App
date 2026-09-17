@@ -27,11 +27,11 @@ class MessageMediaPayload {
   }
 
   Map<String, dynamic> toApiPayload() => {
-        'media_url': mediaUrl,
-        'media_key': mediaKey,
-        'media_mime_type': mediaMimeType,
-        'media_kind': mediaKind,
-      };
+    'media_url': mediaUrl,
+    'media_key': mediaKey,
+    'media_mime_type': mediaMimeType,
+    'media_kind': mediaKind,
+  };
 
   @Deprecated('Use toApiPayload')
   Map<String, dynamic> toSocketPayload() => toApiPayload();

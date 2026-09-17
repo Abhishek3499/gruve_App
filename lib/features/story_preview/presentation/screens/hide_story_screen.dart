@@ -45,8 +45,15 @@ class HideStoryScreen extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              prefixIcon: Icon(Icons.search, color: Colors.white, size: context.rw(23)),
-              hintStyle: TextStyle(color: Colors.white, fontSize: context.rf(14)),
+              prefixIcon: Icon(
+                Icons.search,
+                color: Colors.white,
+                size: context.rw(23),
+              ),
+              hintStyle: TextStyle(
+                color: Colors.white,
+                fontSize: context.rf(14),
+              ),
             ),
 
             SizedBox(height: context.rh(20)),

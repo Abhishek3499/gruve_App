@@ -78,7 +78,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
 
   Future<void> _initializeMedia() async {
     try {
-      final resolved = await LocalMediaUtils.resolveForPreview(widget.mediaPath);
+      final resolved = await LocalMediaUtils.resolveForPreview(
+        widget.mediaPath,
+      );
       if (!mounted) return;
 
       if (resolved.kind != LocalMediaKind.video) {
@@ -102,7 +104,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           final position = _videoController!.value.position;
           final duration = _videoController!.value.duration;
 
-          if (_videoController!.value.isPlaying && duration.inMilliseconds > 0 && !_isSeeking) {
+          if (_videoController!.value.isPlaying &&
+              duration.inMilliseconds > 0 &&
+              !_isSeeking) {
             final currentMs = position.inMilliseconds;
             final startMs = (duration.inMilliseconds * _startTrim).toInt();
             final endMs = (duration.inMilliseconds * _endTrim).toInt();
@@ -274,664 +278,687 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF33093C), Color(0xFF1B071F), Color(0xFF000000)],
-            stops: [0.0, 0.4, 1.0],
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF33093C), Color(0xFF1B071F), Color(0xFF000000)],
+              stops: [0.0, 0.4, 1.0],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 1. TOP HEADER (Chevrons)
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: context.rw(16.0),
-                  vertical: context.rh(8.0),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Back button
-                    BackButton(
-                      color: Colors.white,
-                      onPressed: () {
-                        Navigator.pop(
-                          context,
-                          VideoEditorResult(
-                            stickers: _stickers,
-                            filter: _activeFilter,
-                            isMuted: _isMuted,
-                          ),
-                        );
-                      },
-                    ),
-                    // Next / Forward button in white circle
-                    GestureDetector(
-                      onTap: () async {
-                        // 1. Show simple visual loader dialog
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (context) => const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFFC358D7),
-                            ),
-                          ),
-                        );
-
-                        // 2. Perform programmatic video trim/export
-                        String? trimmedPath;
-                        try {
-                          final durationMs = _duration.inMilliseconds.toDouble();
-                          final startMs = durationMs * _startTrim;
-                          final endMs = durationMs * _endTrim;
-
-                          trimmedPath = await VideoTrimHelper.trimVideo(
-                            originalPath: widget.mediaPath,
-                            startMs: startMs,
-                            endMs: endMs,
-                          );
-                        } catch (e) {
-                          AppLogger.d('❌ [VideoEditorScreen] Trim execution error: $e');
-                        }
-
-                        // 3. Dismiss loading dialog
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                        }
-
-                        // 4. Return results with fallback (or null if export failed)
-                        if (context.mounted) {
+          child: SafeArea(
+            child: Column(
+              children: [
+                // 1. TOP HEADER (Chevrons)
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.rw(16.0),
+                    vertical: context.rh(8.0),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Back button
+                      BackButton(
+                        color: Colors.white,
+                        onPressed: () {
                           Navigator.pop(
                             context,
                             VideoEditorResult(
                               stickers: _stickers,
                               filter: _activeFilter,
                               isMuted: _isMuted,
-                              trimmedPath: trimmedPath,
                             ),
                           );
-                        }
-                      },
-                      child: Container(
-                        width: context.rw(36),
-                        height: context.rh(36),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.arrow_forward_ios,
-                          color: const Color(0xFF6B1D7C),
-                          size: context.rw(16),
-                        ),
+                        },
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      // Next / Forward button in white circle
+                      GestureDetector(
+                        onTap: () async {
+                          // 1. Show simple visual loader dialog
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFFC358D7),
+                              ),
+                            ),
+                          );
 
-              // 2. VIDEO PREVIEW (Center section)
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.rw(40.0),
-                    vertical: context.rh(10.0),
-                  ),
-                  child: Center(
-                    child: AspectRatio(
-                      aspectRatio: 9 / 16,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              blurRadius: 16,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (_isInitialized) ...[
-                                Positioned.fill(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedStickerId = null;
-                                      });
-                                    },
-                                    child: _buildMediaWidget(),
-                                  ),
-                                ),
-                                ..._stickers.map((sticker) {
-                                  return StickerOverlay(
-                                    key: ValueKey(sticker.id),
-                                    sticker: sticker,
-                                    isSelected:
-                                        _selectedStickerId == sticker.id,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedStickerId = sticker.id;
-                                      });
-                                    },
-                                    onDelete: () {
-                                      setState(() {
-                                        _stickers.removeWhere(
-                                          (s) => s.id == sticker.id,
-                                        );
-                                        if (_selectedStickerId == sticker.id) {
-                                          _selectedStickerId = null;
-                                        }
-                                      });
-                                    },
-                                    onUpdate: (position, scale, rotation) {
-                                      setState(() {
-                                        sticker.position = position;
-                                        sticker.scale = scale;
-                                        sticker.rotation = rotation;
-                                      });
-                                    },
-                                    onEdit: () async {
-                                      if (_isPickerOrEditorOpen) return;
-                                      _isPickerOrEditorOpen = true;
-                                      try {
-                                        if (sticker.isMusic) {
-                                          final updated =
-                                              await StoryMusicPicker.open(
-                                                context,
-                                                initialSticker: sticker,
-                                              );
-                                          if (updated != null && mounted) {
-                                            setState(() {
-                                              final index = _stickers
-                                                  .indexWhere(
-                                                    (s) => s.id == sticker.id,
-                                                  );
-                                              if (index != -1) {
-                                                _stickers[index] = updated;
-                                              }
-                                            });
-                                          }
-                                        } else if (sticker.isText) {
-                                          final updated =
-                                              await StoryTextEditor.open(
-                                                context,
-                                                initialSticker: sticker,
-                                              );
-                                          if (updated != null && mounted) {
-                                            setState(() {
-                                              final index = _stickers
-                                                  .indexWhere(
-                                                    (s) => s.id == sticker.id,
-                                                  );
-                                              if (index != -1) {
-                                                _stickers[index] = updated;
-                                              }
-                                            });
-                                          }
-                                        }
-                                      } finally {
-                                        _isPickerOrEditorOpen = false;
-                                      }
-                                    },
-                                  );
-                                }),
-                              ] else
-                                const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+                          // 2. Perform programmatic video trim/export
+                          String? trimmedPath;
+                          try {
+                            final durationMs = _duration.inMilliseconds
+                                .toDouble();
+                            final startMs = durationMs * _startTrim;
+                            final endMs = durationMs * _endTrim;
 
-              // 3. PLAY/PAUSE CONTROLS & TIMESTAMPS
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: context.rw(24.0),
-                  vertical: context.rh(12.0),
-                ),
-                child: SizedBox(
-                  height: context.rh(50),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Play/Pause button on the left
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: _togglePlayPause,
-                          child: Container(
-                            width: context.rw(50),
-                            height: context.rh(50),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.15),
-                            ),
-                            child: Icon(
-                              _isPlaying ? Icons.pause : Icons.play_arrow,
-                              color: Colors.white,
-                              size: context.rw(24),
-                            ),
+                            trimmedPath = await VideoTrimHelper.trimVideo(
+                              originalPath: widget.mediaPath,
+                              startMs: startMs,
+                              endMs: endMs,
+                            );
+                          } catch (e) {
+                            AppLogger.d(
+                              '❌ [VideoEditorScreen] Trim execution error: $e',
+                            );
+                          }
+
+                          // 3. Dismiss loading dialog
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                          }
+
+                          // 4. Return results with fallback (or null if export failed)
+                          if (context.mounted) {
+                            Navigator.pop(
+                              context,
+                              VideoEditorResult(
+                                stickers: _stickers,
+                                filter: _activeFilter,
+                                isMuted: _isMuted,
+                                trimmedPath: trimmedPath,
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: context.rw(36),
+                          height: context.rh(36),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
                           ),
-                        ),
-                      ),
-                      // Duration Text centered
-                      Text(
-                        '${_formatDuration(_currentPosition)} / ${_formatDuration(_duration)}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: context.rf(14),
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            color: const Color(0xFF6B1D7C),
+                            size: context.rw(16),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              // 4. TIMELINE SECTION (Middle section)
-              Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.rw(16.0),
-                    vertical: context.rh(8.0),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final timelineWidth = constraints.maxWidth;
-                      final cursorOffset = timelineWidth * progressFraction;
-
-                      return Stack(
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Timestamp markers (• 1s •) aligned with trim bounds
-                              SizedBox(
-                                width: timelineWidth,
-                                height: 20,
-                                child: Stack(
-                                  children: [
-                                    // Left dot aligned with left handle
-                                    Positioned(
-                                      left: timelineWidth * _startTrim - 2,
-                                      top: 8,
-                                      child: Container(
-                                        width: 4,
-                                        height: 4,
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ),
-                                    // Centered duration text between handles
-                                    Positioned(
-                                      left: timelineWidth * _startTrim,
-                                      right: timelineWidth * (1 - _endTrim),
-                                      top: 0,
-                                      bottom: 0,
-                                      child: Center(
-                                        child: Text(
-                                          '${_duration.inSeconds > 0 ? _duration.inSeconds : 1}s',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // Right dot aligned with right handle
-                                    Positioned(
-                                      left: timelineWidth * _endTrim - 2,
-                                      top: 8,
-                                      child: Container(
-                                        width: 4,
-                                        height: 4,
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                // 2. VIDEO PREVIEW (Center section)
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.rw(40.0),
+                      vertical: context.rh(10.0),
+                    ),
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: 9 / 16,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                blurRadius: 16,
+                                spreadRadius: 2,
                               ),
-                              SizedBox(height: context.rh(12)),
-
-                              // Timeline video track & trim handles
-                              SizedBox(
-                                height: 50,
-                                child: Stack(
-                                  children: [
-                                    // Main strip representing video
-                                    Positioned(
-                                      left: timelineWidth * _startTrim,
-                                      right: timelineWidth * (1 - _endTrim),
-                                      top: 4,
-                                      bottom: 4,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 1.5,
-                                          ),
-                                          image: const DecorationImage(
-                                            image: AssetImage(AppAssets.img2),
-                                            fit: BoxFit.cover,
-                                            colorFilter: ColorFilter.mode(
-                                              Colors.black26,
-                                              BlendMode.darken,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(28),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (_isInitialized) ...[
+                                  Positioned.fill(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedStickerId = null;
+                                        });
+                                      },
+                                      child: _buildMediaWidget(),
                                     ),
-                                    // Trim handles
-                                    // Left Handle
-                                    Positioned(
-                                      left: timelineWidth * _startTrim - 6,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: GestureDetector(
-                                        onHorizontalDragStart: (details) {
-                                          if (_videoController != null) {
-                                            _wasPlayingBeforeDrag =
-                                                _videoController!.value.isPlaying;
-                                            _videoController!.pause();
+                                  ),
+                                  ..._stickers.map((sticker) {
+                                    return StickerOverlay(
+                                      key: ValueKey(sticker.id),
+                                      sticker: sticker,
+                                      isSelected:
+                                          _selectedStickerId == sticker.id,
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedStickerId = sticker.id;
+                                        });
+                                      },
+                                      onDelete: () {
+                                        setState(() {
+                                          _stickers.removeWhere(
+                                            (s) => s.id == sticker.id,
+                                          );
+                                          if (_selectedStickerId ==
+                                              sticker.id) {
+                                            _selectedStickerId = null;
                                           }
-                                        },
-                                        onHorizontalDragUpdate: (details) {
-                                          setState(() {
-                                            double delta =
-                                                details.primaryDelta! /
-                                                timelineWidth;
-                                            _startTrim = (_startTrim + delta)
-                                                .clamp(0.0, _endTrim - 0.1);
-                                          });
-                                          if (!_isSeeking && _videoController != null) {
-                                            _isSeeking = true;
-                                            final targetDuration = _duration * _startTrim;
-                                            _videoController!.seekTo(targetDuration).then((_) {
-                                              _isSeeking = false;
-                                            });
-                                          }
-                                        },
-                                        onHorizontalDragEnd: (details) async {
-                                          if (_videoController != null) {
-                                            final targetDuration = _duration * _startTrim;
-                                            await _videoController!.seekTo(targetDuration);
-                                            if (_wasPlayingBeforeDrag) {
-                                              _videoController!.play();
+                                        });
+                                      },
+                                      onUpdate: (position, scale, rotation) {
+                                        setState(() {
+                                          sticker.position = position;
+                                          sticker.scale = scale;
+                                          sticker.rotation = rotation;
+                                        });
+                                      },
+                                      onEdit: () async {
+                                        if (_isPickerOrEditorOpen) return;
+                                        _isPickerOrEditorOpen = true;
+                                        try {
+                                          if (sticker.isMusic) {
+                                            final updated =
+                                                await StoryMusicPicker.open(
+                                                  context,
+                                                  initialSticker: sticker,
+                                                );
+                                            if (updated != null && mounted) {
+                                              setState(() {
+                                                final index = _stickers
+                                                    .indexWhere(
+                                                      (s) => s.id == sticker.id,
+                                                    );
+                                                if (index != -1) {
+                                                  _stickers[index] = updated;
+                                                }
+                                              });
+                                            }
+                                          } else if (sticker.isText) {
+                                            final updated =
+                                                await StoryTextEditor.open(
+                                                  context,
+                                                  initialSticker: sticker,
+                                                );
+                                            if (updated != null && mounted) {
+                                              setState(() {
+                                                final index = _stickers
+                                                    .indexWhere(
+                                                      (s) => s.id == sticker.id,
+                                                    );
+                                                if (index != -1) {
+                                                  _stickers[index] = updated;
+                                                }
+                                              });
                                             }
                                           }
-                                        },
-                                        child: Container(
-                                          width: 12,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              3,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Container(
-                                            width: 1.5,
-                                            height: 12,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // Right Handle
-                                    Positioned(
-                                      left: timelineWidth * _endTrim - 6,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: GestureDetector(
-                                        onHorizontalDragStart: (details) {
-                                          if (_videoController != null) {
-                                            _wasPlayingBeforeDrag =
-                                                _videoController!.value.isPlaying;
-                                            _videoController!.pause();
-                                          }
-                                        },
-                                        onHorizontalDragUpdate: (details) {
-                                          setState(() {
-                                            double delta =
-                                                details.primaryDelta! /
-                                                timelineWidth;
-                                            _endTrim = (_endTrim + delta).clamp(
-                                              _startTrim + 0.1,
-                                              1.0,
-                                            );
-                                          });
-                                          if (!_isSeeking && _videoController != null) {
-                                            _isSeeking = true;
-                                            final targetDuration = _duration * _endTrim;
-                                            _videoController!.seekTo(targetDuration).then((_) {
-                                              _isSeeking = false;
-                                            });
-                                          }
-                                        },
-                                        onHorizontalDragEnd: (details) async {
-                                          if (_videoController != null) {
-                                            final targetDuration = _duration * _endTrim;
-                                            await _videoController!.seekTo(targetDuration);
-                                            if (_wasPlayingBeforeDrag) {
-                                              _videoController!.play();
-                                            }
-                                          }
-                                        },
-                                        child: Container(
-                                          width: 12,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              3,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Container(
-                                            width: 1.5,
-                                            height: 12,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: context.rh(16)),
-
-                              // Tap tp add music & text horizontal cards
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildActionPill(
-                                    leading: Icon(
-                                      Icons.music_note,
+                                        } finally {
+                                          _isPickerOrEditorOpen = false;
+                                        }
+                                      },
+                                    );
+                                  }),
+                                ] else
+                                  const Center(
+                                    child: CircularProgressIndicator(
                                       color: Colors.white,
-                                      size: context.rw(18),
                                     ),
-                                    label: 'Tap tp add music',
-                                    onTap: _addMusicSticker,
                                   ),
-                                ],
-                              ),
-                              SizedBox(height: context.rh(10)),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildActionPill(
-                                    leading: Text(
-                                      'Aa',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: context.rf(16),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    label: 'Tap tp add text',
-                                    onTap: _addTextSticker,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          // Vertical cursor line
-                          Positioned(
-                            left: cursorOffset.clamp(0.0, timelineWidth - 2.0),
-                            top: 25,
-                            bottom: 10,
-                            child: Container(width: 1.5, color: Colors.white),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-              // 5. BOTTOM ACTION TOOLBAR
-              Container(
-                height: context.rh(80),
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: context.rw(20),
-                        vertical: context.rh(16),
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.8),
-                      ),
-                      child: Center(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              GestureDetector(
-                                onTap: _toggleMute,
-                                child: _buildBottomIconButton(
-                                  Icon(
-                                    _isMuted
-                                        ? Icons.volume_off
-                                        : Icons.volume_up,
-                                    color: Colors.white,
-                                    size: context.rw(24),
-                                  ),
-                                  'Volume',
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _addTextSticker,
-                                child: _buildBottomIconButton(
-                                  Image.asset(
-                                    AppAssets.text,
-                                    color: Colors.white,
-                                    width: context.rw(22),
-                                    height: context.rh(22),
-                                  ),
-                                  'Text',
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _addMusicSticker,
-                                child: _buildBottomIconButton(
-                                  Image.asset(
-                                    AppAssets.musics,
-                                    color: Colors.white,
-                                    width: context.rw(22),
-                                    height: context.rh(22),
-                                  ),
-                                  'Music',
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _openFilterPicker,
-                                child: _buildBottomIconButton(
-                                  Image.asset(
-                                    AppAssets.filter,
-                                    color: Colors.white,
-                                    width: context.rw(22),
-                                    height: context.rh(22),
-                                  ),
-                                  'Filter',
-                                ),
-                              ),
-                              // _buildBottomIconButton(
-                              //   Image.asset(AppAssets.cuts, color: Colors.white, width: 22, height: 22),
-                              //   'Trim',
-                              // ),
-                              // _buildBottomIconButton(
-                              //   Image.asset(
-                              //     AppAssets.download2,
-                              //     color: Colors.white,
-                              //     width: 22,
-                              //     height: 22,
-                              //   ),
-                              //   'Download',
-                              // ),
-                              // _buildBottomIconButton(
-                              //   Image.asset(
-                              //     AppAssets.gallery2,
-                              //     color: Colors.white,
-                              //     width: 22,
-                              //     height: 22,
-                              //   ),
-                              //   'Gallery',
-                              // ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+
+                // 3. PLAY/PAUSE CONTROLS & TIMESTAMPS
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.rw(24.0),
+                    vertical: context.rh(12.0),
+                  ),
+                  child: SizedBox(
+                    height: context.rh(50),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Play/Pause button on the left
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: GestureDetector(
+                            onTap: _togglePlayPause,
+                            child: Container(
+                              width: context.rw(50),
+                              height: context.rh(50),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                              child: Icon(
+                                _isPlaying ? Icons.pause : Icons.play_arrow,
+                                color: Colors.white,
+                                size: context.rw(24),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Duration Text centered
+                        Text(
+                          '${_formatDuration(_currentPosition)} / ${_formatDuration(_duration)}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: context.rf(14),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 4. TIMELINE SECTION (Middle section)
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.rw(16.0),
+                      vertical: context.rh(8.0),
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final timelineWidth = constraints.maxWidth;
+                        final cursorOffset = timelineWidth * progressFraction;
+
+                        return Stack(
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Timestamp markers (• 1s •) aligned with trim bounds
+                                SizedBox(
+                                  width: timelineWidth,
+                                  height: 20,
+                                  child: Stack(
+                                    children: [
+                                      // Left dot aligned with left handle
+                                      Positioned(
+                                        left: timelineWidth * _startTrim - 2,
+                                        top: 8,
+                                        child: Container(
+                                          width: 4,
+                                          height: 4,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                      // Centered duration text between handles
+                                      Positioned(
+                                        left: timelineWidth * _startTrim,
+                                        right: timelineWidth * (1 - _endTrim),
+                                        top: 0,
+                                        bottom: 0,
+                                        child: Center(
+                                          child: Text(
+                                            '${_duration.inSeconds > 0 ? _duration.inSeconds : 1}s',
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Right dot aligned with right handle
+                                      Positioned(
+                                        left: timelineWidth * _endTrim - 2,
+                                        top: 8,
+                                        child: Container(
+                                          width: 4,
+                                          height: 4,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: context.rh(12)),
+
+                                // Timeline video track & trim handles
+                                SizedBox(
+                                  height: 50,
+                                  child: Stack(
+                                    children: [
+                                      // Main strip representing video
+                                      Positioned(
+                                        left: timelineWidth * _startTrim,
+                                        right: timelineWidth * (1 - _endTrim),
+                                        top: 4,
+                                        bottom: 4,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 1.5,
+                                            ),
+                                            image: const DecorationImage(
+                                              image: AssetImage(AppAssets.img2),
+                                              fit: BoxFit.cover,
+                                              colorFilter: ColorFilter.mode(
+                                                Colors.black26,
+                                                BlendMode.darken,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Trim handles
+                                      // Left Handle
+                                      Positioned(
+                                        left: timelineWidth * _startTrim - 6,
+                                        top: 0,
+                                        bottom: 0,
+                                        child: GestureDetector(
+                                          onHorizontalDragStart: (details) {
+                                            if (_videoController != null) {
+                                              _wasPlayingBeforeDrag =
+                                                  _videoController!
+                                                      .value
+                                                      .isPlaying;
+                                              _videoController!.pause();
+                                            }
+                                          },
+                                          onHorizontalDragUpdate: (details) {
+                                            setState(() {
+                                              double delta =
+                                                  details.primaryDelta! /
+                                                  timelineWidth;
+                                              _startTrim = (_startTrim + delta)
+                                                  .clamp(0.0, _endTrim - 0.1);
+                                            });
+                                            if (!_isSeeking &&
+                                                _videoController != null) {
+                                              _isSeeking = true;
+                                              final targetDuration =
+                                                  _duration * _startTrim;
+                                              _videoController!
+                                                  .seekTo(targetDuration)
+                                                  .then((_) {
+                                                    _isSeeking = false;
+                                                  });
+                                            }
+                                          },
+                                          onHorizontalDragEnd: (details) async {
+                                            if (_videoController != null) {
+                                              final targetDuration =
+                                                  _duration * _startTrim;
+                                              await _videoController!.seekTo(
+                                                targetDuration,
+                                              );
+                                              if (_wasPlayingBeforeDrag) {
+                                                _videoController!.play();
+                                              }
+                                            }
+                                          },
+                                          child: Container(
+                                            width: 12,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(3),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Container(
+                                              width: 1.5,
+                                              height: 12,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Right Handle
+                                      Positioned(
+                                        left: timelineWidth * _endTrim - 6,
+                                        top: 0,
+                                        bottom: 0,
+                                        child: GestureDetector(
+                                          onHorizontalDragStart: (details) {
+                                            if (_videoController != null) {
+                                              _wasPlayingBeforeDrag =
+                                                  _videoController!
+                                                      .value
+                                                      .isPlaying;
+                                              _videoController!.pause();
+                                            }
+                                          },
+                                          onHorizontalDragUpdate: (details) {
+                                            setState(() {
+                                              double delta =
+                                                  details.primaryDelta! /
+                                                  timelineWidth;
+                                              _endTrim = (_endTrim + delta)
+                                                  .clamp(_startTrim + 0.1, 1.0);
+                                            });
+                                            if (!_isSeeking &&
+                                                _videoController != null) {
+                                              _isSeeking = true;
+                                              final targetDuration =
+                                                  _duration * _endTrim;
+                                              _videoController!
+                                                  .seekTo(targetDuration)
+                                                  .then((_) {
+                                                    _isSeeking = false;
+                                                  });
+                                            }
+                                          },
+                                          onHorizontalDragEnd: (details) async {
+                                            if (_videoController != null) {
+                                              final targetDuration =
+                                                  _duration * _endTrim;
+                                              await _videoController!.seekTo(
+                                                targetDuration,
+                                              );
+                                              if (_wasPlayingBeforeDrag) {
+                                                _videoController!.play();
+                                              }
+                                            }
+                                          },
+                                          child: Container(
+                                            width: 12,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(3),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Container(
+                                              width: 1.5,
+                                              height: 12,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: context.rh(16)),
+
+                                // Tap tp add music & text horizontal cards
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildActionPill(
+                                      leading: Icon(
+                                        Icons.music_note,
+                                        color: Colors.white,
+                                        size: context.rw(18),
+                                      ),
+                                      label: 'Tap tp add music',
+                                      onTap: _addMusicSticker,
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: context.rh(10)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildActionPill(
+                                      leading: Text(
+                                        'Aa',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: context.rf(16),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      label: 'Tap tp add text',
+                                      onTap: _addTextSticker,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            // Vertical cursor line
+                            Positioned(
+                              left: cursorOffset.clamp(
+                                0.0,
+                                timelineWidth - 2.0,
+                              ),
+                              top: 25,
+                              bottom: 10,
+                              child: Container(width: 1.5, color: Colors.white),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                // 5. BOTTOM ACTION TOOLBAR
+                Container(
+                  height: context.rh(80),
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(20),
+                          vertical: context.rh(16),
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.8),
+                        ),
+                        child: Center(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                GestureDetector(
+                                  onTap: _toggleMute,
+                                  child: _buildBottomIconButton(
+                                    Icon(
+                                      _isMuted
+                                          ? Icons.volume_off
+                                          : Icons.volume_up,
+                                      color: Colors.white,
+                                      size: context.rw(24),
+                                    ),
+                                    'Volume',
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: _addTextSticker,
+                                  child: _buildBottomIconButton(
+                                    Image.asset(
+                                      AppAssets.text,
+                                      color: Colors.white,
+                                      width: context.rw(22),
+                                      height: context.rh(22),
+                                    ),
+                                    'Text',
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: _addMusicSticker,
+                                  child: _buildBottomIconButton(
+                                    Image.asset(
+                                      AppAssets.musics,
+                                      color: Colors.white,
+                                      width: context.rw(22),
+                                      height: context.rh(22),
+                                    ),
+                                    'Music',
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: _openFilterPicker,
+                                  child: _buildBottomIconButton(
+                                    Image.asset(
+                                      AppAssets.filter,
+                                      color: Colors.white,
+                                      width: context.rw(22),
+                                      height: context.rh(22),
+                                    ),
+                                    'Filter',
+                                  ),
+                                ),
+                                // _buildBottomIconButton(
+                                //   Image.asset(AppAssets.cuts, color: Colors.white, width: 22, height: 22),
+                                //   'Trim',
+                                // ),
+                                // _buildBottomIconButton(
+                                //   Image.asset(
+                                //     AppAssets.download2,
+                                //     color: Colors.white,
+                                //     width: 22,
+                                //     height: 22,
+                                //   ),
+                                //   'Download',
+                                // ),
+                                // _buildBottomIconButton(
+                                //   Image.asset(
+                                //     AppAssets.gallery2,
+                                //     color: Colors.white,
+                                //     width: 22,
+                                //     height: 22,
+                                //   ),
+                                //   'Gallery',
+                                // ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 

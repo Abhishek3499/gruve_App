@@ -58,7 +58,8 @@ class AuthDio {
           },
           onResponse: (response, handler) {
             final startTime =
-                response.requestOptions.extra['request_start_time'] as DateTime?;
+                response.requestOptions.extra['request_start_time']
+                    as DateTime?;
             if (startTime != null) {
               final ms = DateTime.now().difference(startTime).inMilliseconds;
               AppLogger.d(

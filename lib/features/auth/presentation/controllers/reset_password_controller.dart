@@ -5,7 +5,7 @@ import 'package:gruve_app/features/auth/data/services/reset_password_service.dar
 /// Riverpod notifier, not here.
 class ResetPasswordController {
   ResetPasswordController({ResetPasswordService? service})
-      : _service = service ?? ResetPasswordService();
+    : _service = service ?? ResetPasswordService();
 
   final ResetPasswordService _service;
 

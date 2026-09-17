@@ -27,7 +27,9 @@ class AppCachedImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cleanUrl = imageUrl.trim();
-    if (cleanUrl.isEmpty || cleanUrl.toLowerCase() == 'null' || !cleanUrl.startsWith('http')) {
+    if (cleanUrl.isEmpty ||
+        cleanUrl.toLowerCase() == 'null' ||
+        !cleanUrl.startsWith('http')) {
       return _buildErrorWidget();
     }
 
@@ -63,7 +65,9 @@ class AppCachedImage extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black,
             shape: shape,
-            borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(borderRadius),
+            borderRadius: shape == BoxShape.circle
+                ? null
+                : BorderRadius.circular(borderRadius),
           ),
         ),
       ),
@@ -77,7 +81,9 @@ class AppCachedImage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey[900],
         shape: shape,
-        borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(borderRadius),
+        borderRadius: shape == BoxShape.circle
+            ? null
+            : BorderRadius.circular(borderRadius),
       ),
       alignment: Alignment.center,
       child: const Icon(

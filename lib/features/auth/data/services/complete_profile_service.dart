@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
-import 'package:gruve_app/features/auth/data/services/token_storage.dart' show TokenStorage;
+import 'package:gruve_app/features/auth/data/services/token_storage.dart'
+    show TokenStorage;
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
 import 'package:gruve_app/features/auth/data/services/auth_api_logger.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,8 +11,7 @@ import 'package:gruve_app/features/auth/data/dto/complete_profile_response.dart'
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
 
 class CompleteProfileService {
-  CompleteProfileService()
-    : dio = AppDio.getInstance();
+  CompleteProfileService() : dio = AppDio.getInstance();
 
   final Dio dio;
 

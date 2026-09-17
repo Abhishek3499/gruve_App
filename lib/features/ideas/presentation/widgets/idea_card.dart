@@ -6,10 +6,7 @@ import 'package:gruve_app/features/ideas/domain/entities/idea_item.dart';
 class IdeaCard extends StatelessWidget {
   final IdeaItem item;
 
-  const IdeaCard({
-    super.key,
-    required this.item,
-  });
+  const IdeaCard({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +24,7 @@ class IdeaCard extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     if (item.solidColor != null) {
-      return Container(
-        color: item.solidColor,
-      );
+      return Container(color: item.solidColor);
     }
 
     if (item.imageUrl != null) {
@@ -46,7 +41,11 @@ class IdeaCard extends StatelessWidget {
             ),
             errorWidget: (context, url, error) => Container(
               color: Colors.purple.shade900,
-              child: const Icon(Icons.broken_image, color: Colors.white38, size: 24),
+              child: const Icon(
+                Icons.broken_image,
+                color: Colors.white38,
+                size: 24,
+              ),
             ),
           ),
           if (item.label != null)

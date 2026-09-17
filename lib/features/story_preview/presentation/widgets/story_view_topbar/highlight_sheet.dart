@@ -15,7 +15,6 @@ import 'package:gruve_app/features/home/presentation/controllers/post_share_flow
 
 void _log(String message) {
   AppLogger.d(message);
-  
 }
 
 void showInstagramHighlightSheet(BuildContext context) {
@@ -272,7 +271,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                     strokeWidth: 2.4,
                   ),
                 ),
-               ),
+              ),
             ),
           ),
       ],

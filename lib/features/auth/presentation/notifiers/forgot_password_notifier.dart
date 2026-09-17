@@ -48,7 +48,10 @@ class ForgotPasswordNotifier extends Notifier<ForgotPasswordUiState> {
 
   void _applyEmailError(String? error) {
     if (state.emailError == error) return;
-    state = ForgotPasswordUiState(isLoading: state.isLoading, emailError: error);
+    state = ForgotPasswordUiState(
+      isLoading: state.isLoading,
+      emailError: error,
+    );
   }
 
   /// Clears Forgot Password's state when the screen mounts, matching the
@@ -60,16 +63,22 @@ class ForgotPasswordNotifier extends Notifier<ForgotPasswordUiState> {
   }
 
   Future<ForgotPasswordResult> sendResetLink(String identifier) async {
-    state = ForgotPasswordUiState(isLoading: true, emailError: state.emailError);
+    state = ForgotPasswordUiState(
+      isLoading: true,
+      emailError: state.emailError,
+    );
     try {
       return await _controller.sendResetLink(identifier);
     } finally {
-      state = ForgotPasswordUiState(isLoading: false, emailError: state.emailError);
+      state = ForgotPasswordUiState(
+        isLoading: false,
+        emailError: state.emailError,
+      );
     }
   }
 }
 
 final forgotPasswordNotifierProvider =
     NotifierProvider<ForgotPasswordNotifier, ForgotPasswordUiState>(
-  ForgotPasswordNotifier.new,
-);
+      ForgotPasswordNotifier.new,
+    );

@@ -64,7 +64,7 @@ class SubscriptionCard extends StatelessWidget {
                             ),
                           ],
                         ),
- 
+
                         /// Right side
                         Text(
                           price,
@@ -77,7 +77,7 @@ class SubscriptionCard extends StatelessWidget {
                       ],
                     ),
                   ),
- 
+
                   /// Center image
                   if (centerImage != null)
                     Image.asset(centerImage!, height: 40),
@@ -109,9 +109,13 @@ class SubscriptionCardPainter extends CustomPainter {
     final double w = size.width;
     final double h = size.height;
 
-    final double activeSlant = (h < 90.0) ? (slantOffset * h / 90.0) : slantOffset;
+    final double activeSlant = (h < 90.0)
+        ? (slantOffset * h / 90.0)
+        : slantOffset;
     final double activeRadius = (h < 90.0) ? (radius * h / 90.0) : radius;
-    final double activeObtuseRadius = (h < 90.0) ? (obtuseRadius * h / 90.0) : obtuseRadius;
+    final double activeObtuseRadius = (h < 90.0)
+        ? (obtuseRadius * h / 90.0)
+        : obtuseRadius;
 
     final path = Path();
     path.moveTo(activeRadius, 0);
@@ -154,13 +158,15 @@ class SubscriptionCardPainter extends CustomPainter {
     if (isSelected) {
       canvas.save();
       canvas.clipPath(path);
-      
+
       final insetPaint = Paint()
-        ..color = const Color(0xE572008D) // #72008DE5
+        ..color =
+            const Color(0xE572008D) // #72008DE5
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 25.0 // Matches 25px blur
+        ..strokeWidth =
+            25.0 // Matches 25px blur
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12.5);
-      
+
       canvas.drawPath(path.shift(const Offset(-2, -2)), insetPaint);
       canvas.restore();
     }

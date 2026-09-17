@@ -30,7 +30,10 @@ class MessageReplyPreview {
     );
   }
 
-  factory MessageReplyPreview.fromMessage(MessageModel message, {String? senderName}) {
+  factory MessageReplyPreview.fromMessage(
+    MessageModel message, {
+    String? senderName,
+  }) {
     return MessageReplyPreview(
       messageId: message.id,
       senderId: message.senderId,
@@ -38,20 +41,22 @@ class MessageReplyPreview {
       contentPreview: message.text.isNotEmpty
           ? message.text
           : (message.isVideo
-              ? 'Video'
-              : message.isAudio
-                  ? 'Voice message'
-                  : message.hasMedia
-                      ? 'Photo'
-                      : ''),
+                ? 'Video'
+                : message.isAudio
+                ? 'Voice message'
+                : message.hasMedia
+                ? 'Photo'
+                : ''),
       messageKind: message.isVideo
           ? 'video'
           : (message.isAudio
-              ? 'audio'
-              : message.hasMedia
-                  ? 'image'
-                  : 'text'),
-      mediaUrl: message.hasMedia && !message.isLocalMedia ? message.imagePath : null,
+                ? 'audio'
+                : message.hasMedia
+                ? 'image'
+                : 'text'),
+      mediaUrl: message.hasMedia && !message.isLocalMedia
+          ? message.imagePath
+          : null,
     );
   }
 

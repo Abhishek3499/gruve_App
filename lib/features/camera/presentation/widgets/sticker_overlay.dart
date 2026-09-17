@@ -28,20 +28,35 @@ class _StickerOverlayState extends State<StickerOverlay> {
   late double _baseRotation;
 
   TextStyle _getTextStyle(StickerData sticker) {
-    TextStyle style = const TextStyle(fontSize: 32, fontWeight: FontWeight.bold);
+    TextStyle style = const TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.bold,
+    );
 
     switch (sticker.fontFamily) {
       case 'Syncopate':
-        style = style.copyWith(fontFamily: 'Syncopate', fontWeight: FontWeight.w700);
+        style = style.copyWith(
+          fontFamily: 'Syncopate',
+          fontWeight: FontWeight.w700,
+        );
         break;
       case 'montserrat':
-        style = style.copyWith(fontFamily: 'montserrat', fontWeight: FontWeight.w600);
+        style = style.copyWith(
+          fontFamily: 'montserrat',
+          fontWeight: FontWeight.w600,
+        );
         break;
       case 'Courier':
-        style = style.copyWith(fontFamily: 'Courier', fontWeight: FontWeight.bold);
+        style = style.copyWith(
+          fontFamily: 'Courier',
+          fontWeight: FontWeight.bold,
+        );
         break;
       case 'Serif':
-        style = style.copyWith(fontFamily: 'Serif', fontStyle: FontStyle.italic);
+        style = style.copyWith(
+          fontFamily: 'Serif',
+          fontStyle: FontStyle.italic,
+        );
         break;
       case 'Raleway':
       default:
@@ -119,11 +134,7 @@ class _StickerOverlayState extends State<StickerOverlay> {
               ),
             ),
             child: const Center(
-              child: Icon(
-                Icons.music_note,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: Icon(Icons.music_note, color: Colors.white, size: 20),
             ),
           ),
           const SizedBox(width: 12),
@@ -203,8 +214,11 @@ class _StickerOverlayState extends State<StickerOverlay> {
           children: [
             Transform(
               alignment: Alignment.center,
-              transform: Matrix4.diagonal3Values(sticker.scale, sticker.scale, 1.0)
-                ..rotateZ(sticker.rotation),
+              transform: Matrix4.diagonal3Values(
+                sticker.scale,
+                sticker.scale,
+                1.0,
+              )..rotateZ(sticker.rotation),
               child: Container(
                 decoration: BoxDecoration(
                   border: widget.isSelected
@@ -234,7 +248,7 @@ class _StickerOverlayState extends State<StickerOverlay> {
                           color: Colors.black26,
                           blurRadius: 4,
                           offset: Offset(0, 2),
-                        )
+                        ),
                       ],
                     ),
                     child: const Icon(

@@ -93,11 +93,7 @@ class SideToolbar extends StatelessWidget {
           _showComingSoon('Music');
         }
       },
-      child: const Icon(
-        Icons.music_note,
-        color: Colors.white,
-        size: 28,
-      ),
+      child: const Icon(Icons.music_note, color: Colors.white, size: 28),
     );
   }
 
@@ -150,7 +146,7 @@ class SideToolbar extends StatelessWidget {
           },
           child: Image.asset(AppAssets.emoji, width: 28, height: 28),
         );
-      }
+      },
     );
   }
 

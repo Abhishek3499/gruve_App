@@ -1,7 +1,8 @@
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
-import 'package:gruve_app/features/auth/data/services/token_storage.dart' show TokenStorage;
+import 'package:gruve_app/features/auth/data/services/token_storage.dart'
+    show TokenStorage;
 
 import 'package:gruve_app/features/auth/data/dto/verify_otp_response.dart';
 import 'package:gruve_app/features/auth/data/services/verify_otp_service.dart';
@@ -10,7 +11,8 @@ import 'package:gruve_app/features/auth/data/services/verify_otp_service.dart';
 /// save, profile identity priming, reset-token save). Loading state is owned
 /// by the OTP Riverpod notifier, not here.
 class VerifyotpController {
-  VerifyotpController({VerifyOtpService? service}) : _service = service ?? VerifyOtpService();
+  VerifyotpController({VerifyOtpService? service})
+    : _service = service ?? VerifyOtpService();
 
   final VerifyOtpService _service;
 
@@ -30,7 +32,8 @@ class VerifyotpController {
         return OtpVerificationResult.failure(
           AuthApiException.userFacingMessage(
             response.message,
-            fallback: 'OTP does not match. Please enter the valid OTP sent to you.',
+            fallback:
+                'OTP does not match. Please enter the valid OTP sent to you.',
           ),
         );
       }
@@ -61,7 +64,8 @@ class VerifyotpController {
       return OtpVerificationResult.failure(
         AuthApiException.userFacingMessage(
           e,
-          fallback: 'OTP does not match. Please enter the valid OTP sent to you.',
+          fallback:
+              'OTP does not match. Please enter the valid OTP sent to you.',
         ),
       );
     }

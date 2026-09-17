@@ -32,11 +32,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     super.initState();
     // Warm up Google sign-in configuration asynchronously so it's ready when the button is clicked
     try {
-      GoogleSignIn.instance.initialize(
-        serverClientId: EnvironmentConfig.googleWebClientId,
-      ).catchError((e) {
-        authLogger.d('Failed to warm up Google Sign In: $e');
-      });
+      GoogleSignIn.instance
+          .initialize(serverClientId: EnvironmentConfig.googleWebClientId)
+          .catchError((e) {
+            authLogger.d('Failed to warm up Google Sign In: $e');
+          });
     } catch (e) {
       authLogger.d('Failed to warm up Google Sign In: $e');
     }

@@ -1,4 +1,5 @@
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
+
 class ReplyMessageModel {
   final MessageModel originalMessage;
   final String username;

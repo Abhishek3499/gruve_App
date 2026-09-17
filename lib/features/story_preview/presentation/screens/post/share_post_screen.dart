@@ -452,7 +452,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
 
                       // Caption Area
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(24),
+                        ),
                         child: TextField(
                           controller: captionController,
                           style: const TextStyle(color: Colors.white),
@@ -467,7 +469,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
 
                       // Hashtag Chip (Reusable Component)
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.rw(24),
+                        ),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: ActionChip(
@@ -762,7 +766,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
             height: double.infinity,
             color: Colors.grey[800],
             child: Center(
-              child: Icon(Icons.error, color: Colors.white, size: context.rw(48)),
+              child: Icon(
+                Icons.error,
+                color: Colors.white,
+                size: context.rw(48),
+              ),
             ),
           );
         },
@@ -794,7 +802,11 @@ class _SharePostScreenState extends State<SharePostScreen> {
             height: double.infinity,
             color: Colors.grey[800],
             child: Center(
-              child: Icon(Icons.error, color: Colors.white, size: context.rw(48)),
+              child: Icon(
+                Icons.error,
+                color: Colors.white,
+                size: context.rw(48),
+              ),
             ),
           );
         },

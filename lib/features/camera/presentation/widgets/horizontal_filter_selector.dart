@@ -140,11 +140,13 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       final image = await _cameraService.captureImage();
       if (image != null && mounted) {
         final mode = ModeService().selectedMode;
-        Navigator.of(context).pop(CameraCaptureResult(
-          mediaPath: image.path,
-          mode: mode,
-          stickers: List.from(ModeService().stickers),
-        ));
+        Navigator.of(context).pop(
+          CameraCaptureResult(
+            mediaPath: image.path,
+            mode: mode,
+            stickers: List.from(ModeService().stickers),
+          ),
+        );
       }
     } catch (e) {
       CameraLogger.log('Failed to capture image: $e');
@@ -244,7 +246,9 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     await _beginVideoRecording(dragStartY: details.globalPosition.dy);
   }
 
-  Future<void> _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) async {
+  Future<void> _onLongPressMoveUpdate(
+    LongPressMoveUpdateDetails details,
+  ) async {
     if (!_cameraService.isRecordingVideo) return;
 
     final controller = _cameraService.controller;
@@ -305,13 +309,13 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
       final mode = ModeService().selectedMode;
       if (mode == CameraMode.story || mode == CameraMode.groove) {
-        Navigator.of(
-          context,
-        ).pop(CameraCaptureResult(
-          mediaPath: video.path,
-          mode: mode,
-          stickers: List.from(ModeService().stickers),
-        ));
+        Navigator.of(context).pop(
+          CameraCaptureResult(
+            mediaPath: video.path,
+            mode: mode,
+            stickers: List.from(ModeService().stickers),
+          ),
+        );
       }
     } catch (e) {
       CameraLogger.log('Failed to stop video recording: $e');

@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class SwipeDeleteBackground extends StatelessWidget {
   final VoidCallback onDelete;
 
-  const SwipeDeleteBackground({
-    super.key,
-    required this.onDelete,
-  });
+  const SwipeDeleteBackground({super.key, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -21,11 +18,7 @@ class SwipeDeleteBackground extends StatelessWidget {
           color: Color(0xFFF51829), // Red circular delete button
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: const Icon(Icons.delete, color: Colors.white, size: 24),
       ),
     );
   }

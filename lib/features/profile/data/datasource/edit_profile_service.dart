@@ -3,15 +3,15 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
-import 'package:gruve_app/features/auth/data/services/token_storage.dart' show TokenStorage;
+import 'package:gruve_app/features/auth/data/services/token_storage.dart'
+    show TokenStorage;
 
 import 'package:gruve_app/features/profile/data/dto/edit_profile_request.dart';
 import 'package:gruve_app/features/profile/data/dto/edit_profile_response.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class EditProfileService {
-  EditProfileService()
-    : dio = AppDio.getInstance();
+  EditProfileService() : dio = AppDio.getInstance();
 
   final Dio dio;
 
@@ -254,7 +254,9 @@ class EditProfileService {
       AppLogger.d('[EditProfileService] DioException caught');
       AppLogger.d('[EditProfileService] Error type: ${e.type}');
       AppLogger.d('[EditProfileService] Error message: ${e.message}');
-      AppLogger.d('[EditProfileService] Status code: ${e.response?.statusCode}');
+      AppLogger.d(
+        '[EditProfileService] Status code: ${e.response?.statusCode}',
+      );
       if (e.response?.data != null) {
         AppLogger.d(
           '[EditProfileService] Backend error response: ${e.response?.data}',

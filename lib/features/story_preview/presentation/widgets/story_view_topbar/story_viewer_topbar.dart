@@ -41,7 +41,9 @@ class StoryViewerTopBar extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundImage: avatarUrl.trim().isNotEmpty && avatarUrl.startsWith('http')
+                  backgroundImage:
+                      avatarUrl.trim().isNotEmpty &&
+                          avatarUrl.startsWith('http')
                       ? AppCachedImageProvider(avatarUrl)
                       : const AssetImage('assets/profile.png') as ImageProvider,
                 ),

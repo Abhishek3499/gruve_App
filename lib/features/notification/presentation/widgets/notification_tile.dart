@@ -29,7 +29,8 @@ class NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     ImageProvider? thumbnailProvider;
     if (postImage != null) {
-      if (postImage!.startsWith('http://') || postImage!.startsWith('https://')) {
+      if (postImage!.startsWith('http://') ||
+          postImage!.startsWith('https://')) {
         thumbnailProvider = NetworkImage(postImage!);
       } else {
         thumbnailProvider = AssetImage(postImage!);
@@ -64,7 +65,9 @@ class NotificationTile extends StatelessWidget {
                       builder: (context) => UserProfileScreen(
                         profileUserId: userId!,
                         userName: username,
-                        profileImageUrl: profileImage.isNotEmpty ? profileImage : null,
+                        profileImageUrl: profileImage.isNotEmpty
+                            ? profileImage
+                            : null,
                       ),
                     ),
                   );
@@ -86,7 +89,9 @@ class NotificationTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isRead ? Colors.white.withValues(alpha: 0.85) : Colors.white,
+                      color: isRead
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : Colors.white,
                       fontSize: 12,
                       height: 1.15,
                       fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,

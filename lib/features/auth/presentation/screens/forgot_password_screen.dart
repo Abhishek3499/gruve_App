@@ -233,11 +233,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                                         if (!nav.mounted) return;
                                         nav.push(
                                           MaterialPageRoute(
-                                            builder: (_) =>
-                                                ResetPasswordScreen(
-                                                  identifier: email,
-                                                  otp: token,
-                                                ),
+                                            builder: (_) => ResetPasswordScreen(
+                                              identifier: email,
+                                              otp: token,
+                                            ),
                                           ),
                                         );
                                       },

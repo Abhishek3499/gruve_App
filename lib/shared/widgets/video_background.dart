@@ -108,10 +108,7 @@ class VideoBackgroundState extends State<VideoBackground>
                     child: VideoPlayer(_sharedController!),
                   ),
                 )
-              : const ColoredBox(
-                  color: Colors.black,
-                  child: SizedBox.expand(),
-                ),
+              : const ColoredBox(color: Colors.black, child: SizedBox.expand()),
         ),
 
         // OVERLAY (only if opacity > 0)

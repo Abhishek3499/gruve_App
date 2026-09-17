@@ -101,7 +101,8 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
 
   Future<void> _openProfile(BuildContext context) async {
     final loggedInUserId = _lastLoggedInUserId;
-    final isDirectOwnProfile = loggedInUserId != null &&
+    final isDirectOwnProfile =
+        loggedInUserId != null &&
         loggedInUserId.isNotEmpty &&
         loggedInUserId.trim() == widget.userId.trim();
 
@@ -159,10 +160,14 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
     return '${widget.username.substring(0, 15)}...';
   }
 
-  Future<void> _openTaggedUserProfile(BuildContext context, TaggedUser user) async {
+  Future<void> _openTaggedUserProfile(
+    BuildContext context,
+    TaggedUser user,
+  ) async {
     Navigator.pop(context);
 
-    final resolution = await ProfileIdentityService.instance.resolveProfileIdentity(user.id);
+    final resolution = await ProfileIdentityService.instance
+        .resolveProfileIdentity(user.id);
 
     if (!context.mounted) {
       return;
@@ -264,7 +269,10 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                   onTap: () => _openTaggedUserProfile(context, user),
                   borderRadius: BorderRadius.circular(15),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(15),
@@ -464,10 +472,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                     imageUrl: widget.profilePicture,
                     radius: 17.5,
                     name: widget.username,
-                    fallback: Image.asset(
-                      AppAssets.user,
-                      fit: BoxFit.cover,
-                    ),
+                    fallback: Image.asset(AppAssets.user, fit: BoxFit.cover),
                   ),
                 ),
               ),
@@ -534,7 +539,10 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                   final position = textPainter.getPositionForOffset(
                     Offset(constraints.maxWidth, textPainter.height),
                   );
-                  int endIndex = position.offset.clamp(0, widget.caption.length);
+                  int endIndex = position.offset.clamp(
+                    0,
+                    widget.caption.length,
+                  );
 
                   const linkText = '... more';
                   // Decrement endIndex until the combined text fits in 2 lines
@@ -578,9 +586,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                     text: TextSpan(
                       style: captionTextStyle,
                       children: [
-                        TextSpan(
-                          text: widget.caption.substring(0, endIndex),
-                        ),
+                        TextSpan(text: widget.caption.substring(0, endIndex)),
                         TextSpan(
                           text: linkText,
                           style: const TextStyle(
@@ -604,9 +610,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                     text: TextSpan(
                       style: captionTextStyle,
                       children: [
-                        TextSpan(
-                          text: widget.caption,
-                        ),
+                        TextSpan(text: widget.caption),
                         if (isLongText && _isExpanded) ...[
                           TextSpan(
                             text: ' less',

@@ -930,9 +930,7 @@ class PostService {
 
     // Backend only supports GET posts/get-post/?post_id= (GET posts/{id}/ → 405).
     try {
-      AppLogger.d(
-        '🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId',
-      );
+      AppLogger.d('🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId');
       final res = await _dio.get(
         ApiConstants.getPost,
         queryParameters: {"post_id": cleanPostId},

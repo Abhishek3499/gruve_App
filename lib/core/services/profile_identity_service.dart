@@ -22,7 +22,8 @@ class ProfileIdentityResolution {
 
   bool get shouldShowSubscribeButton => hasProfileUserId && !isOwnProfile;
 
-  static bool _hasValue(String? value) => value != null && value.trim().isNotEmpty;
+  static bool _hasValue(String? value) =>
+      value != null && value.trim().isNotEmpty;
 }
 
 class ProfileIdentityService {

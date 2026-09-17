@@ -85,15 +85,11 @@ class ProfileGrid extends StatelessWidget {
       return [SliverToBoxAdapter(child: _buildEmptyPostsState())];
     }
 
-    return _withPagingFooterSlivers(
-      _buildPostsSlivers(filteredPosts, context),
-    );
+    return _withPagingFooterSlivers(_buildPostsSlivers(filteredPosts, context));
   }
 
   Widget _buildLoadingSliverGrid() {
-    return const SliverToBoxAdapter(
-      child: ProfileGridShimmer(itemCount: 6),
-    );
+    return const SliverToBoxAdapter(child: ProfileGridShimmer(itemCount: 6));
   }
 
   List<Widget> _buildPostsSlivers(List<Post> posts, BuildContext context) {
@@ -102,15 +98,12 @@ class ProfileGrid extends StatelessWidget {
         padding: gridPadding,
         sliver: SliverGrid(
           gridDelegate: gridDelegate,
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final post = posts[index];
-              return RepaintBoundary(
-                child: _buildPostItem(post, context, posts, index),
-              );
-            },
-            childCount: posts.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final post = posts[index];
+            return RepaintBoundary(
+              child: _buildPostItem(post, context, posts, index),
+            );
+          }, childCount: posts.length),
         ),
       ),
     ];
@@ -122,18 +115,15 @@ class ProfileGrid extends StatelessWidget {
         padding: gridPadding,
         sliver: SliverGrid(
           gridDelegate: gridDelegate,
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              if (index == 0) {
-                return RepaintBoundary(child: _buildDraftsTile(context));
-              }
-              final post = posts[index - 1];
-              return RepaintBoundary(
-                child: _buildPostItem(post, context, posts, index - 1),
-              );
-            },
-            childCount: posts.length + 1,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            if (index == 0) {
+              return RepaintBoundary(child: _buildDraftsTile(context));
+            }
+            final post = posts[index - 1];
+            return RepaintBoundary(
+              child: _buildPostItem(post, context, posts, index - 1),
+            );
+          }, childCount: posts.length + 1),
         ),
       ),
     ];
@@ -144,9 +134,7 @@ class ProfileGrid extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ReelsDraftsScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ReelsDraftsScreen()),
         );
       },
       child: ProfileGridTile(
@@ -185,11 +173,7 @@ class ProfileGrid extends StatelessWidget {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.favorite_border_rounded,
-            color: Colors.white,
-            size: 34,
-          ),
+          Icon(Icons.favorite_border_rounded, color: Colors.white, size: 34),
           SizedBox(height: 12),
           Text(
             'No liked posts',
@@ -225,9 +209,7 @@ class ProfileGrid extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            selectedTab == 1
-                ? Icons.trending_up
-                : Icons.video_library_outlined,
+            selectedTab == 1 ? Icons.trending_up : Icons.video_library_outlined,
             color: Colors.white,
             size: 34,
           ),
@@ -267,65 +249,65 @@ class ProfileGrid extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             PostGridThumbnail(post: post),
-          if (post.isVideo)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-            ),
-          if (selectedTab == 1 && post.likesCount > 10)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.72),
-                      Colors.transparent,
-                    ],
+            if (post.isVideo)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 14,
                   ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.local_fire_department,
-                        color: Colors.white,
-                        size: 12,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        post.likesCount > 999
-                            ? '${(post.likesCount / 1000).toStringAsFixed(1)}K'
-                            : '${post.likesCount}',
-                        style: const TextStyle(
+              ),
+            if (selectedTab == 1 && post.likesCount > 10)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.72),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department,
                           color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          size: 12,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          post.likesCount > 999
+                              ? '${(post.likesCount / 1000).toStringAsFixed(1)}K'
+                              : '${post.likesCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
         ),
       ),
     );
@@ -368,9 +350,7 @@ class ProfileGrid extends StatelessWidget {
             initialIndex: index,
             isOwnProfile: true,
             profileController: controller,
-            onResolveMedia: needsResolve
-                ? () => _resolvePostMedia(post)
-                : null,
+            onResolveMedia: needsResolve ? () => _resolvePostMedia(post) : null,
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

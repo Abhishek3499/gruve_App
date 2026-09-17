@@ -65,11 +65,7 @@ class _CommentSkeletonRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 7),
                 // Comment text line 1
-                ShimmerBox(
-                  width: double.infinity,
-                  height: 13,
-                  borderRadius: 5,
-                ),
+                ShimmerBox(width: double.infinity, height: 13, borderRadius: 5),
                 const SizedBox(height: 5),
                 // Comment text line 2 (shorter)
                 ShimmerBox(width: captionWidth, height: 13, borderRadius: 5),

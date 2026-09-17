@@ -394,16 +394,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
 
                   child: Row(
                     children: [
-                      BackButton(
-                        color: Colors.white,
-                        onPressed: _popFromOtp,
-                      ),
+                      BackButton(color: Colors.white, onPressed: _popFromOtp),
 
                       SizedBox(width: context.rw(55)),
 
                       // Progress Bar with Fixed Width
                       SizedBox(
-                        width: context.rw(210), // ✅ Width yahan se control karein
+                        width: context.rw(
+                          210,
+                        ), // ✅ Width yahan se control karein
 
                         child: Container(
                           height: context.rh(9),
@@ -485,7 +484,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
 
                             textAlign: TextAlign.center,
 
-                            style: TextStyle(color: Colors.white, fontSize: context.rf(13)),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: context.rf(13),
+                            ),
                           ),
 
                           SizedBox(height: context.rh(10)),
@@ -558,7 +560,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                             alignment: Alignment.centerRight,
 
                             child: TextButton(
-                              onPressed: (isLoading || isResending) ? null : _resendOtp,
+                              onPressed: (isLoading || isResending)
+                                  ? null
+                                  : _resendOtp,
 
                               child: isResending
                                   ? SizedBox(

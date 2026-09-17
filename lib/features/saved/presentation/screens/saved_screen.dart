@@ -82,7 +82,9 @@ class _SavedScreenContent extends StatelessWidget {
                             SizedBox(height: context.rh(16)),
                             ElevatedButton(
                               onPressed: () {
-                                ref.read(savePostNotifierProvider.notifier).fetchSavedPosts();
+                                ref
+                                    .read(savePostNotifierProvider.notifier)
+                                    .fetchSavedPosts();
                               },
                               child: const Text('Retry'),
                             ),

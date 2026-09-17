@@ -70,10 +70,7 @@ class AuthApiException extends ApiException {
       authLogger.d('[AuthApiException] User facing check: $error');
     }
 
-    return mapErrorToProductionMessage(
-      error: error,
-      fallback: fallback,
-    );
+    return mapErrorToProductionMessage(error: error, fallback: fallback);
   }
 
   /// Maps technical error details and transient status codes directly to
@@ -88,18 +85,20 @@ class AuthApiException extends ApiException {
 
     final rawString = error is AuthApiException
         ? error.message
-        : (error is DioException ? (error.message ?? error.toString()) : error.toString());
+        : (error is DioException
+              ? (error.message ?? error.toString())
+              : error.toString());
     final lower = rawString.toLowerCase();
 
     // 1. Connection / Request Timeout
-    final isTimeout = errorTypeName == 'connectionTimeout' ||
+    final isTimeout =
+        errorTypeName == 'connectionTimeout' ||
         errorTypeName == 'receiveTimeout' ||
         errorTypeName == 'sendTimeout' ||
-        (error is DioException && (
-            error.type == DioExceptionType.connectionTimeout ||
-            error.type == DioExceptionType.receiveTimeout ||
-            error.type == DioExceptionType.sendTimeout
-        )) ||
+        (error is DioException &&
+            (error.type == DioExceptionType.connectionTimeout ||
+                error.type == DioExceptionType.receiveTimeout ||
+                error.type == DioExceptionType.sendTimeout)) ||
         lower.contains('timeout') ||
         lower.contains('time out');
 
@@ -108,8 +107,10 @@ class AuthApiException extends ApiException {
     }
 
     // 2. No Internet
-    final isNetwork = errorTypeName == 'connectionError' ||
-        (error is DioException && error.type == DioExceptionType.connectionError) ||
+    final isNetwork =
+        errorTypeName == 'connectionError' ||
+        (error is DioException &&
+            error.type == DioExceptionType.connectionError) ||
         (error is DioException && error.error is SocketException) ||
         lower.contains('socketexception') ||
         lower.contains('failed host lookup') ||
@@ -124,9 +125,18 @@ class AuthApiException extends ApiException {
     }
 
     // 3. Server Temporarily Unavailable (502/503/504/5xx)
-    final isServerDown = (statusCode != null && (statusCode == 502 || statusCode == 503 || statusCode == 504 || statusCode == 500)) ||
-        (error is DioException && error.response?.statusCode != null &&
-            (error.response!.statusCode == 502 || error.response!.statusCode == 503 || error.response!.statusCode == 504 || error.response!.statusCode == 500)) ||
+    final isServerDown =
+        (statusCode != null &&
+            (statusCode == 502 ||
+                statusCode == 503 ||
+                statusCode == 504 ||
+                statusCode == 500)) ||
+        (error is DioException &&
+            error.response?.statusCode != null &&
+            (error.response!.statusCode == 502 ||
+                error.response!.statusCode == 503 ||
+                error.response!.statusCode == 504 ||
+                error.response!.statusCode == 500)) ||
         lower.contains('502 bad gateway') ||
         lower.contains('503 service unavailable') ||
         lower.contains('504 gateway timeout') ||
@@ -141,7 +151,8 @@ class AuthApiException extends ApiException {
     // check below, since backend OTP-failure text often also contains "expired"
     // or comes back with a 401/403 status, which would otherwise be misread as
     // a session timeout instead of a bad OTP).
-    final isOtpError = lower.contains('otp') &&
+    final isOtpError =
+        lower.contains('otp') &&
         (lower.contains('invalid') ||
             lower.contains('incorrect') ||
             lower.contains('wrong') ||
@@ -155,8 +166,12 @@ class AuthApiException extends ApiException {
     }
 
     // 5. Session Expired
-    final isSessionExpired = statusCode == 401 || statusCode == 403 ||
-        (error is DioException && (error.response?.statusCode == 401 || error.response?.statusCode == 403)) ||
+    final isSessionExpired =
+        statusCode == 401 ||
+        statusCode == 403 ||
+        (error is DioException &&
+            (error.response?.statusCode == 401 ||
+                error.response?.statusCode == 403)) ||
         lower.contains('expired') ||
         lower.contains('token_not_valid') ||
         lower.contains('unauthorized') ||
@@ -170,7 +185,8 @@ class AuthApiException extends ApiException {
     }
 
     // 6. Invalid Credentials (Precise matching to avoid blocking field validation)
-    final isCredentialsError = lower.contains('invalid credentials') ||
+    final isCredentialsError =
+        lower.contains('invalid credentials') ||
         lower.contains('incorrect credentials') ||
         lower.contains('wrong password') ||
         lower.contains('incorrect password') ||
@@ -201,7 +217,10 @@ class AuthApiException extends ApiException {
         lower.contains('httpexception') ||
         lower.contains('failed host lookup');
 
-    if (isTechnical || cleanMessage.isEmpty || cleanMessage.contains('{') || cleanMessage.contains('}')) {
+    if (isTechnical ||
+        cleanMessage.isEmpty ||
+        cleanMessage.contains('{') ||
+        cleanMessage.contains('}')) {
       return "Something went wrong. Please try again.";
     }
 

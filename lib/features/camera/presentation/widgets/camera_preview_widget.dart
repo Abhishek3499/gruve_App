@@ -237,7 +237,10 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
       key: ValueKey('camera-warming'),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1E002C), Color(0xFF0A0010)], // Deep premium dark violet/black gradient
+          colors: [
+            Color(0xFF1E002C),
+            Color(0xFF0A0010),
+          ], // Deep premium dark violet/black gradient
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

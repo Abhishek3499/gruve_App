@@ -128,19 +128,16 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
             padding: ProfileGridStyle.gridPadding,
             sliver: SliverGrid(
               gridDelegate: ProfileGridStyle.gridDelegate,
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final reel = controller.reels[index];
-                  return RepaintBoundary(
-                    child: _ExploreReelTile(
-                      reel: reel,
-                      post: controller.displayPost(reel),
-                      onTap: () => _openReel(context, reel),
-                    ),
-                  );
-                },
-                childCount: controller.reels.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final reel = controller.reels[index];
+                return RepaintBoundary(
+                  child: _ExploreReelTile(
+                    reel: reel,
+                    post: controller.displayPost(reel),
+                    onTap: () => _openReel(context, reel),
+                  ),
+                );
+              }, childCount: controller.reels.length),
             ),
           ),
           if (controller.isLoadingMore)
@@ -307,8 +304,7 @@ class _ExploreReelThumbnail extends StatelessWidget {
     final mediaUrl = _mediaUrl;
     final imagePoster = post.gridPreviewUrl.trim();
 
-    if (imagePoster.isNotEmpty &&
-        !Post.mediaUrlLooksLikeVideo(imagePoster)) {
+    if (imagePoster.isNotEmpty && !Post.mediaUrlLooksLikeVideo(imagePoster)) {
       return MediaUrlThumbnail(url: imagePoster);
     }
 

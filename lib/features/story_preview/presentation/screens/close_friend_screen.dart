@@ -117,7 +117,10 @@ class _CloseFriendScreenState extends State<CloseFriendScreen> {
                 color: Colors.white,
                 size: context.rw(23),
               ),
-              hintStyle: TextStyle(color: Colors.white, fontSize: context.rf(14)),
+              hintStyle: TextStyle(
+                color: Colors.white,
+                fontSize: context.rf(14),
+              ),
               onChanged: _onSearchChanged,
             ),
 

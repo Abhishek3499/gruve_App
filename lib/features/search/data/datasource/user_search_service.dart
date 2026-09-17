@@ -23,9 +23,26 @@ class SearchUser {
 
   factory SearchUser.fromJson(Map<String, dynamic> json) {
     final id = _firstString(json, const ['id', '_id', 'user_id', 'uuid']);
-    final username = _firstString(json, const ['username', 'user_name', 'handle', 'email']);
-    final name = _firstString(json, const ['name', 'full_name', 'display_name', 'first_name', 'username']);
-    final avatar = _firstString(json, const ['avatar', 'profile_picture', 'profile_image', 'image', 'photo']);
+    final username = _firstString(json, const [
+      'username',
+      'user_name',
+      'handle',
+      'email',
+    ]);
+    final name = _firstString(json, const [
+      'name',
+      'full_name',
+      'display_name',
+      'first_name',
+      'username',
+    ]);
+    final avatar = _firstString(json, const [
+      'avatar',
+      'profile_picture',
+      'profile_image',
+      'image',
+      'photo',
+    ]);
 
     return SearchUser(
       id: id.isNotEmpty ? id : username,

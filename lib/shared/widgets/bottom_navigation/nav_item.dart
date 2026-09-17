@@ -33,21 +33,29 @@ class NavItem extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              transform: Matrix4.translationValues(0, isActive ? -8 : 0, 0), // Increased from -4 to -8
+              transform: Matrix4.translationValues(
+                0,
+                isActive ? -8 : 0,
+                0,
+              ), // Increased from -4 to -8
               child: icon != null
-                ? Icon(
-                    icon, 
-                    size: isActive ? 28 : 26, // Larger when active
-                    color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.7)
-                  )
-                : Image.asset(
-                    imagePath!, // 🔥 yahin se image aayegi
-                    width: isActive ? 32 : 30, // Larger when active
-                    height: isActive ? 32 : 30, // Larger when active
-                    color: isActive 
-                      ? Colors.white 
-                      : const Color(0xABFFFFFF), // PNG ko white banane ke liye
-                  ),
+                  ? Icon(
+                      icon,
+                      size: isActive ? 28 : 26, // Larger when active
+                      color: isActive
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.7),
+                    )
+                  : Image.asset(
+                      imagePath!, // 🔥 yahin se image aayegi
+                      width: isActive ? 32 : 30, // Larger when active
+                      height: isActive ? 32 : 30, // Larger when active
+                      color: isActive
+                          ? Colors.white
+                          : const Color(
+                              0xABFFFFFF,
+                            ), // PNG ko white banane ke liye
+                    ),
             ),
 
             const SizedBox(height: 2),
@@ -55,12 +63,15 @@ class NavItem extends StatelessWidget {
             /// WHITE DOT with scale and position animation
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              transform: Matrix4.translationValues(0.0, isActive ? -10.0 : -5.0, 0.0)
-                ..multiply(Matrix4.diagonal3Values(
-                  isActive ? 1.2 : 1.0,
-                  isActive ? 1.2 : 1.0,
-                  1.0,
-                )),
+              transform:
+                  Matrix4.translationValues(0.0, isActive ? -10.0 : -5.0, 0.0)
+                    ..multiply(
+                      Matrix4.diagonal3Values(
+                        isActive ? 1.2 : 1.0,
+                        isActive ? 1.2 : 1.0,
+                        1.0,
+                      ),
+                    ),
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
                 opacity: isActive ? 1 : 0,
@@ -70,13 +81,15 @@ class NavItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
-                    boxShadow: isActive ? [
-                      BoxShadow(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      )
-                    ] : null,
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
               ),

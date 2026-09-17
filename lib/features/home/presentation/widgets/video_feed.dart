@@ -57,7 +57,10 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
     _controller.isBlockedUser = (userId) => blockNotifier.isBlocked(userId);
 
     // Listen to BlockNotifier for immediate feed removal of blocked users
-    _blockSubscription = ref.listenManual(blockNotifierProvider, (previous, next) {
+    _blockSubscription = ref.listenManual(blockNotifierProvider, (
+      previous,
+      next,
+    ) {
       if (!mounted) return;
       final blockedUserIds = _controller.posts
           .map((post) => post.userId)
@@ -80,8 +83,10 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_pageController.hasClients) return;
         if (_controller.mediaUrls.isEmpty) return;
-        final target = _controller.currentIndex.value
-            .clamp(0, _controller.mediaUrls.length - 1);
+        final target = _controller.currentIndex.value.clamp(
+          0,
+          _controller.mediaUrls.length - 1,
+        );
         final currentPage = _pageController.page?.round();
         if (currentPage != target) {
           _pageController.jumpToPage(target);
@@ -95,7 +100,8 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
       widget.onControllerReady?.call(_controller);
       if (mounted) {
         final savePostNotifier = ref.read(savePostNotifierProvider.notifier);
-        if (savePostNotifier.savedPosts.isEmpty || savePostNotifier.isSavedPostsStale) {
+        if (savePostNotifier.savedPosts.isEmpty ||
+            savePostNotifier.isSavedPostsStale) {
           savePostNotifier.fetchSavedPosts();
         }
         final route = ModalRoute.of(context);
@@ -261,8 +267,6 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
       _pageController.jumpToPage(0);
     }
   }
-
-
 
   Widget _buildInitialLoader() {
     // ✅ PRODUCTION SHIMMER — shows exact layout of what's loading
@@ -434,7 +438,8 @@ class PlayPauseAnimationOverlay extends StatefulWidget {
   const PlayPauseAnimationOverlay({super.key, required this.isPlaying});
 
   @override
-  State<PlayPauseAnimationOverlay> createState() => _PlayPauseAnimationOverlayState();
+  State<PlayPauseAnimationOverlay> createState() =>
+      _PlayPauseAnimationOverlayState();
 }
 
 class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
@@ -453,30 +458,42 @@ class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.5, end: 1.2).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(
+          begin: 0.5,
+          end: 1.2,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.2, end: 1.0).chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween<double>(
+          begin: 1.2,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.8).chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.8,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 50,
       ),
     ]).animate(_animController);
 
     _opacityAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 0.9).chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 0.9,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.9, end: 0.9), weight: 30),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.9, end: 0.9),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.9, end: 0.0).chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween<double>(
+          begin: 0.9,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 40,
       ),
     ]).animate(_animController);
@@ -509,7 +526,9 @@ class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    widget.isPlaying ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    widget.isPlaying
+                        ? Icons.play_arrow_rounded
+                        : Icons.pause_rounded,
                     color: Colors.white,
                     size: 45,
                   ),
@@ -550,7 +569,9 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
 
   void _onVideoTap() {
     widget.controller.togglePlayPause();
-    final videoController = widget.controller.controllerForMediaIndex(widget.index);
+    final videoController = widget.controller.controllerForMediaIndex(
+      widget.index,
+    );
     final isPlaying = videoController?.value.isPlaying ?? false;
     setState(() {
       _isPausedByUser = !isPlaying;
@@ -588,7 +609,9 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
     final post = widget.controller.posts[widget.index];
     final effectiveVideo = post.isVideo || Post.mediaUrlLooksLikeVideo(url);
     final isValidNetworkUrl = _isNetworkMediaUrl(url);
-    final videoController = widget.controller.controllerForMediaIndex(widget.index);
+    final videoController = widget.controller.controllerForMediaIndex(
+      widget.index,
+    );
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -633,7 +656,9 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
                       key: ValueKey(_overlayTriggerCounter),
                       isPlaying: _overlayIsPlayingIcon,
                     ),
-                  if (_isPausedByUser && effectiveVideo && videoController != null)
+                  if (_isPausedByUser &&
+                      effectiveVideo &&
+                      videoController != null)
                     ValueListenableBuilder<VideoPlayerValue>(
                       valueListenable: videoController,
                       builder: (context, value, child) {
@@ -719,7 +744,8 @@ class FeedPosterImage extends StatelessWidget {
         fadeOutDuration: Duration.zero,
         useOldImageOnUrlChange: true,
         placeholder: (context, url) => const FeedPosterShimmer(),
-        errorWidget: (context, url, error) => const ColoredBox(color: Colors.black),
+        errorWidget: (context, url, error) =>
+            const ColoredBox(color: Colors.black),
       ),
     );
   }
@@ -797,7 +823,8 @@ class _FeedCachedVideoPosterState extends State<FeedCachedVideoPoster> {
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    final ready = controller != null &&
+    final ready =
+        controller != null &&
         controller.value.isInitialized &&
         controller.value.size.width > 0 &&
         controller.value.size.height > 0;
@@ -890,11 +917,13 @@ class FeedVideoPlayer extends StatefulWidget {
 class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   VideoPlayerController? _boundController;
   bool _initialized = false;
+
   /// Sticky — once the first frame is shown, never fall back to shimmer on
   /// transient buffering or decoder surface recovery (Exynos freeAllBuffers).
   bool _hasEverRenderedFrame = false;
   bool _showPlaybackBufferSpinner = false;
   Timer? _bufferingShowTimer;
+
   /// True once this item is known to be off-screen with a controller already
   /// bound (i.e. it was preloaded). Only that case needs the defensive
   /// texture-recovery rebuild in [_onCurrentIndexChanged] — a controller that
@@ -902,6 +931,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   /// [_syncController], so a second blanket rebuild right after would be
   /// redundant.
   bool _needsCurrentIndexRebuildKick = false;
+
   /// Last state [_syncController] observed, so it can skip rebuilding when
   /// nothing relevant to this item actually changed on a global
   /// [VideoFeedController.videoControllersRevision] tick caused by some other
@@ -909,15 +939,15 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   bool _lastObservedFailed = false;
   bool _lastObservedInitializing = false;
 
-  static const Duration _bufferingSpinnerShowDelay = Duration(milliseconds: 400);
+  static const Duration _bufferingSpinnerShowDelay = Duration(
+    milliseconds: 400,
+  );
 
   bool get _isCurrentItem =>
       widget.controller.currentIndex.value == widget.index;
 
   bool _hasVisibleFrame(VideoPlayerValue value) {
-    return value.isInitialized &&
-        value.size.width > 0 &&
-        value.size.height > 0;
+    return value.isInitialized && value.size.width > 0 && value.size.height > 0;
   }
 
   void _cancelBufferingShowTimer() {
@@ -934,8 +964,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       return;
     }
 
-    final awaitingFirstFrame =
-        !value.isInitialized || !_hasEverRenderedFrame;
+    final awaitingFirstFrame = !value.isInitialized || !_hasEverRenderedFrame;
     if (awaitingFirstFrame) {
       _cancelBufferingShowTimer();
       if (_showPlaybackBufferSpinner) {
@@ -945,7 +974,8 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     }
 
     if (value.isBuffering) {
-      if (_showPlaybackBufferSpinner || (_bufferingShowTimer?.isActive ?? false)) {
+      if (_showPlaybackBufferSpinner ||
+          (_bufferingShowTimer?.isActive ?? false)) {
         return;
       }
       _bufferingShowTimer = Timer(_bufferingSpinnerShowDelay, () {
@@ -1049,9 +1079,12 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   void _syncController() {
     final failed = widget.controller.hasVideoLoadFailed(widget.index);
     final initializing = widget.controller.isVideoInitializing(widget.index);
-    final next = failed ? null : widget.controller.controllerForMediaIndex(widget.index);
+    final next = failed
+        ? null
+        : widget.controller.controllerForMediaIndex(widget.index);
 
-    final relevantStateChanged = failed != _lastObservedFailed ||
+    final relevantStateChanged =
+        failed != _lastObservedFailed ||
         initializing != _lastObservedInitializing ||
         !identical(next, _boundController);
 
@@ -1136,7 +1169,10 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
             child: GestureDetector(
               onTap: widget.controller.togglePlayPause,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(24),
@@ -1197,10 +1233,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                   ? Duration.zero
                   : const Duration(milliseconds: 120),
               curve: Curves.easeOut,
-              child: _buildPoster(
-                context,
-                allowShimmer: _awaitingFirstFrame,
-              ),
+              child: _buildPoster(context, allowShimmer: _awaitingFirstFrame),
             ),
           ),
           if (_isCurrentItem &&
@@ -1244,4 +1277,3 @@ class FeedShimmerLoader extends StatelessWidget {
     return const FeedShimmer();
   }
 }
-

@@ -446,9 +446,7 @@ class Post {
         if (item is String) {
           normalized = _normalizeUrl(item);
         } else if (item is Map) {
-          final m = Map<String, dynamic>.from(
-            Map<Object?, Object?>.from(item),
-          );
+          final m = Map<String, dynamic>.from(Map<Object?, Object?>.from(item));
           raw =
               m['url'] ??
               m['src'] ??
@@ -468,9 +466,7 @@ class Post {
       if (video is String) {
         normalized = _normalizeUrl(video);
       } else if (video is Map) {
-        final m = Map<String, dynamic>.from(
-          Map<Object?, Object?>.from(video),
-        );
+        final m = Map<String, dynamic>.from(Map<Object?, Object?>.from(video));
         raw =
             m['url'] ??
             m['src'] ??

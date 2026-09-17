@@ -149,7 +149,10 @@ class VideoFrameCache {
   }
 
   /// Pauses every cached controller so only one clip can output audio at a time.
-  static Future<void> pauseAll({String? activeUrl, double activeVolume = 1.0}) async {
+  static Future<void> pauseAll({
+    String? activeUrl,
+    double activeVolume = 1.0,
+  }) async {
     final activeKey = activeUrl?.trim() ?? '';
 
     for (final entry in _cache.entries) {
@@ -227,7 +230,9 @@ class VideoFrameCache {
 
   static void _evictIfNeeded() {
     var guard = 0;
-    while (_cache.length > _maxEntries && _lru.isNotEmpty && guard < _cache.length + 4) {
+    while (_cache.length > _maxEntries &&
+        _lru.isNotEmpty &&
+        guard < _cache.length + 4) {
       guard++;
       final oldest = _lru.first;
       final entry = _cache[oldest];
@@ -236,8 +241,8 @@ class VideoFrameCache {
         continue;
       }
 
-      final isProtected = entry.refs > 0 ||
-          entry.protectedUntil.isAfter(DateTime.now());
+      final isProtected =
+          entry.refs > 0 || entry.protectedUntil.isAfter(DateTime.now());
       if (isProtected) {
         _lru.removeFirst();
         _lru.addLast(oldest);
@@ -261,5 +266,5 @@ class _CacheEntry {
     this.refs = 0,
     DateTime? protectedUntil,
   }) : protectedUntil =
-            protectedUntil ?? DateTime.fromMillisecondsSinceEpoch(0);
+           protectedUntil ?? DateTime.fromMillisecondsSinceEpoch(0);
 }

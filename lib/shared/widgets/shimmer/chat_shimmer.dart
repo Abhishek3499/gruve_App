@@ -34,10 +34,7 @@ class _ChatRowSkeleton extends StatelessWidget {
   final double nameWidth;
   final double messageWidth;
 
-  const _ChatRowSkeleton({
-    required this.nameWidth,
-    required this.messageWidth,
-  });
+  const _ChatRowSkeleton({required this.nameWidth, required this.messageWidth});
 
   @override
   Widget build(BuildContext context) {
@@ -109,8 +106,9 @@ class _BubbleSkeleton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment:
-            isSent ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isSent
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!isSent) ...[
             const ShimmerCircle(radius: 16),

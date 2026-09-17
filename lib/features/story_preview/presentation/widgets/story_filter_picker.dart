@@ -102,7 +102,7 @@ class _StoryFilterPickerState extends State<StoryFilterPicker> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: Row(
@@ -163,11 +163,15 @@ class _StoryFilterPickerState extends State<StoryFilterPicker> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected ? Colors.white : Colors.white24,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white24,
                                 width: isSelected ? 3 : 1.5,
                               ),
                               color: isSelected
-                                  ? _getFilterColor(filter.type).withValues(alpha: 0.4)
+                                  ? _getFilterColor(
+                                      filter.type,
+                                    ).withValues(alpha: 0.4)
                                   : Colors.transparent,
                             ),
                             child: Icon(
@@ -183,7 +187,9 @@ class _StoryFilterPickerState extends State<StoryFilterPicker> {
                           style: TextStyle(
                             color: isSelected ? Colors.white : Colors.white60,
                             fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ],

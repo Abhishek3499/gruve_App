@@ -30,8 +30,7 @@ class PaginationScrollTrigger {
     if (position.pixels < position.maxScrollExtent - threshold) return false;
 
     final now = DateTime.now();
-    if (_lastTriggerAt != null &&
-        now.difference(_lastTriggerAt!) < debounce) {
+    if (_lastTriggerAt != null && now.difference(_lastTriggerAt!) < debounce) {
       return false;
     }
 
@@ -49,8 +48,7 @@ class PaginationScrollTrigger {
     if (metrics.pixels < metrics.maxScrollExtent - threshold) return false;
 
     final now = DateTime.now();
-    if (_lastTriggerAt != null &&
-        now.difference(_lastTriggerAt!) < debounce) {
+    if (_lastTriggerAt != null && now.difference(_lastTriggerAt!) < debounce) {
       return false;
     }
 

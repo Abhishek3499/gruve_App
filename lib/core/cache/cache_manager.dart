@@ -10,10 +10,8 @@ class CacheEntry<T> {
   final DateTime createdAt;
   final Duration ttl;
 
-  CacheEntry({
-    required this.data,
-    required this.ttl,
-  }) : createdAt = DateTime.now();
+  CacheEntry({required this.data, required this.ttl})
+    : createdAt = DateTime.now();
 
   CacheEntry._({
     required this.data,
@@ -67,8 +65,6 @@ class CacheConfig {
     this.enableStaleWhileRevalidate = true,
     this.maxMemoryEntries = 100,
   });
-
-
 }
 
 /// Predefined cache configurations
@@ -121,7 +117,7 @@ class CacheConfigs {
     } else if (path.contains('/search')) {
       return search;
     }
-    
+
     // Default config
     return const CacheConfig(
       memoryTTL: Duration(minutes: 2),
@@ -167,18 +163,26 @@ class CacheManager {
     final memoryEntry = _memoryCache[key];
     if (memoryEntry != null) {
       if (memoryEntry.isValid) {
-        debugLog.cache('GET', key, 
-          type: 'MEMORY', 
-          hit: true, 
-          size: _getDataSize(memoryEntry.data));
+        debugLog.cache(
+          'GET',
+          key,
+          type: 'MEMORY',
+          hit: true,
+          size: _getDataSize(memoryEntry.data),
+        );
         return memoryEntry.data as T;
       } else {
-        AppLogger.d('⏰ [CacheManager] Memory cache entry expired for $key (age: ${memoryEntry.age.inSeconds}s, ttl: ${memoryEntry.ttl.inSeconds}s)');
+        AppLogger.d(
+          '⏰ [CacheManager] Memory cache entry expired for $key (age: ${memoryEntry.age.inSeconds}s, ttl: ${memoryEntry.ttl.inSeconds}s)',
+        );
         if (config.enableStaleWhileRevalidate) {
-          debugLog.cache('GET', key, 
-            type: 'STALE', 
+          debugLog.cache(
+            'GET',
+            key,
+            type: 'STALE',
             hit: false,
-            size: _getDataSize(memoryEntry.data));
+            size: _getDataSize(memoryEntry.data),
+          );
           return memoryEntry.data as T;
         }
       }
@@ -191,13 +195,18 @@ class CacheManager {
     if (diskEntry != null && diskEntry.isValid) {
       // Promote to memory cache
       _memoryCache[key] = diskEntry;
-      debugLog.cache('GET', key, 
-        type: 'DISK', 
-        hit: true, 
-        size: _getDataSize(diskEntry.data));
+      debugLog.cache(
+        'GET',
+        key,
+        type: 'DISK',
+        hit: true,
+        size: _getDataSize(diskEntry.data),
+      );
       return diskEntry.data;
     } else if (diskEntry != null) {
-      AppLogger.d('⏰ [CacheManager] Disk cache entry expired for $key (age: ${diskEntry.age.inSeconds}s, ttl: ${diskEntry.ttl.inSeconds}s)');
+      AppLogger.d(
+        '⏰ [CacheManager] Disk cache entry expired for $key (age: ${diskEntry.age.inSeconds}s, ttl: ${diskEntry.ttl.inSeconds}s)',
+      );
       if (config.enableStaleWhileRevalidate) {
         // Promote stale disk entry to memory cache so that synchronous checks (like _isStale) can detect it
         _memoryCache[key] = diskEntry;
@@ -210,10 +219,13 @@ class CacheManager {
     if (config.enableStaleWhileRevalidate) {
       final staleData = memoryEntry?.data ?? diskEntry?.data;
       if (staleData != null) {
-        debugLog.cache('GET', key, 
-          type: 'STALE', 
+        debugLog.cache(
+          'GET',
+          key,
+          type: 'STALE',
           hit: memoryEntry?.isValid == true || diskEntry?.isValid == true,
-          size: _getDataSize(staleData));
+          size: _getDataSize(staleData),
+        );
         return staleData as T;
       }
     }
@@ -232,23 +244,30 @@ class CacheManager {
     await initialize();
 
     final dataSize = _getDataSize(data);
-    
+
     // Memory optimization: Check if we're approaching limits
     if (_memoryCache.length >= config.maxMemoryEntries) {
-      AppLogger.d('⚠️ [CacheManager] Memory cache full (${_memoryCache.length}/${config.maxMemoryEntries}), triggering cleanup before put');
+      AppLogger.d(
+        '⚠️ [CacheManager] Memory cache full (${_memoryCache.length}/${config.maxMemoryEntries}), triggering cleanup before put',
+      );
       _cleanupMemoryCache(config.maxMemoryEntries - 1); // Make space
     }
 
     final entry = CacheEntry<T>(data: data, ttl: config.memoryTTL);
     _memoryCache[key] = entry;
 
-    AppLogger.d('💾 [CacheManager] PUT $key (MEMORY, size: ${dataSize}B, entries: ${_memoryCache.length})');
+    AppLogger.d(
+      '💾 [CacheManager] PUT $key (MEMORY, size: ${dataSize}B, entries: ${_memoryCache.length})',
+    );
 
     // Store to disk if serializer is provided and data is not too large
-    if (toJson != null && dataSize < 1024 * 1024) { // 1MB limit for disk cache
+    if (toJson != null && dataSize < 1024 * 1024) {
+      // 1MB limit for disk cache
       await _putToDisk(key, entry, toJson);
     } else if (dataSize >= 1024 * 1024) {
-      AppLogger.d('⚠️ [CacheManager] Skipping disk cache for large data (${(dataSize / 1024 / 1024).toStringAsFixed(2)}MB): $key');
+      AppLogger.d(
+        '⚠️ [CacheManager] Skipping disk cache for large data (${(dataSize / 1024 / 1024).toStringAsFixed(2)}MB): $key',
+      );
     }
 
     // Cleanup old entries
@@ -304,7 +323,7 @@ class CacheManager {
   Future<void> invalidatePattern(String pattern) async {
     await initialize();
     final keysToRemove = <String>[];
-    
+
     // Remove from memory cache
     _memoryCache.removeWhere((key, value) {
       if (key.contains(pattern)) {
@@ -324,7 +343,9 @@ class CacheManager {
       }
     }
 
-    AppLogger.d('🗑️ [CacheManager] Invalidated pattern "$pattern": ${keysToRemove.length} entries');
+    AppLogger.d(
+      '🗑️ [CacheManager] Invalidated pattern "$pattern": ${keysToRemove.length} entries',
+    );
   }
 
   /// Clear all cache
@@ -341,7 +362,9 @@ class CacheManager {
         await _prefs!.remove(key);
       }
     }
-    AppLogger.d('🧹 [CacheManager] Cleared all cache starting with http_cache_');
+    AppLogger.d(
+      '🧹 [CacheManager] Cleared all cache starting with http_cache_',
+    );
   }
 
   /// Get comprehensive cache statistics
@@ -349,16 +372,20 @@ class CacheManager {
     final totalMemorySize = _memoryCache.entries
         .map((e) => _getDataSize(e.value.data))
         .fold<int>(0, (sum, size) => sum + size);
-    
+
     final expiredEntries = _memoryCache.entries
         .where((e) => !e.value.isValid)
         .length;
-    
-    final averageAge = _memoryCache.isEmpty 
-        ? Duration.zero 
-        : Duration(milliseconds: _memoryCache.entries
-            .map((e) => e.value.age.inMilliseconds)
-            .reduce((a, b) => a + b) ~/ _memoryCache.length);
+
+    final averageAge = _memoryCache.isEmpty
+        ? Duration.zero
+        : Duration(
+            milliseconds:
+                _memoryCache.entries
+                    .map((e) => e.value.age.inMilliseconds)
+                    .reduce((a, b) => a + b) ~/
+                _memoryCache.length,
+          );
 
     return CacheStats(
       memorySize: _memoryCache.length,
@@ -395,10 +422,7 @@ class CacheManager {
   ) async {
     try {
       final json = entry.toJson();
-      final jsonString = jsonEncode({
-        ...json,
-        'data': toJson(entry.data),
-      });
+      final jsonString = jsonEncode({...json, 'data': toJson(entry.data)});
       await _prefs?.setString(_getPrefixedKey(key), jsonString);
     } catch (e) {
       AppLogger.d('❌ [CacheManager] Disk cache write error for $key: $e');
@@ -407,7 +431,9 @@ class CacheManager {
 
   void _cleanupMemoryCache(int maxEntries) {
     if (_memoryCache.length <= maxEntries) {
-      AppLogger.d('🧹 [CacheManager] No cleanup needed (${_memoryCache.length}/$maxEntries entries)');
+      AppLogger.d(
+        '🧹 [CacheManager] No cleanup needed (${_memoryCache.length}/$maxEntries entries)',
+      );
       return;
     }
 
@@ -417,17 +443,21 @@ class CacheManager {
 
     final toRemove = sortedEntries.length - maxEntries;
     final removedKeys = <String>[];
-    
+
     for (int i = 0; i < toRemove; i++) {
       final entry = sortedEntries[i];
       final age = entry.value.age;
       final size = _getDataSize(entry.value.data);
       removedKeys.add(entry.key);
       _memoryCache.remove(entry.key);
-      AppLogger.d('🗑️ [CacheManager] Removed old entry: ${entry.key} (age: ${age.inSeconds}s, size: ${size}B)');
+      AppLogger.d(
+        '🗑️ [CacheManager] Removed old entry: ${entry.key} (age: ${age.inSeconds}s, size: ${size}B)',
+      );
     }
 
-    AppLogger.d('🧹 [CacheManager] Cleaned up $toRemove old memory entries. Remaining: ${_memoryCache.length}/$maxEntries');
+    AppLogger.d(
+      '🧹 [CacheManager] Cleaned up $toRemove old memory entries. Remaining: ${_memoryCache.length}/$maxEntries',
+    );
     AppLogger.d('🧹 [CacheManager] Removed keys: ${removedKeys.join(', ')}');
   }
 
@@ -452,7 +482,9 @@ class CacheManager {
       await put(key, freshData, config, toJson: toJson);
       AppLogger.d('✅ [CacheManager] Background refresh completed: $key');
     } catch (e) {
-      AppLogger.d('❌ [CacheManager] Background refresh failed: $key, error: $e');
+      AppLogger.d(
+        '❌ [CacheManager] Background refresh failed: $key, error: $e',
+      );
     } finally {
       _backgroundRefreshes.remove(key);
       refreshCompleter.complete();
@@ -465,10 +497,10 @@ class CacheManager {
       AppLogger.d('📏 [CacheManager] Data is null, size: 0 bytes');
       return 0;
     }
-    
+
     int size;
     String type;
-    
+
     try {
       if (data is String) {
         size = data.length;
@@ -491,13 +523,17 @@ class CacheManager {
         size = stringRep.length;
         type = data.runtimeType.toString();
       }
-      
-      AppLogger.d('📏 [CacheManager] Data size calculated: $size bytes for type $type');
+
+      AppLogger.d(
+        '📏 [CacheManager] Data size calculated: $size bytes for type $type',
+      );
       return size;
     } catch (e) {
       // Fallback to string length if serialization fails
       final fallbackSize = data.toString().length;
-      AppLogger.d('⚠️ [CacheManager] Size calculation failed for ${data.runtimeType}: $e, using fallback: $fallbackSize bytes');
+      AppLogger.d(
+        '⚠️ [CacheManager] Size calculation failed for ${data.runtimeType}: $e, using fallback: $fallbackSize bytes',
+      );
       return fallbackSize;
     }
   }
@@ -509,11 +545,7 @@ class CacheResult<T> {
   final bool isFromCache;
   final bool isStale;
 
-  CacheResult({
-    this.data,
-    required this.isFromCache,
-    required this.isStale,
-  });
+  CacheResult({this.data, required this.isFromCache, required this.isStale});
 
   bool get hasData => data != null;
 }
@@ -539,25 +571,27 @@ class CacheStats {
   /// Get memory size in human readable format
   String get memorySizeFormatted {
     if (totalMemorySizeBytes < 1024) return '${totalMemorySizeBytes}B';
-    if (totalMemorySizeBytes < 1024 * 1024) return '${(totalMemorySizeBytes / 1024).toStringAsFixed(1)}KB';
+    if (totalMemorySizeBytes < 1024 * 1024)
+      return '${(totalMemorySizeBytes / 1024).toStringAsFixed(1)}KB';
     return '${(totalMemorySizeBytes / 1024 / 1024).toStringAsFixed(1)}MB';
   }
 
   /// Get average age in human readable format
   String get averageAgeFormatted {
     if (averageAge.inSeconds < 60) return '${averageAge.inSeconds}s';
-    if (averageAge.inMinutes < 60) return '${averageAge.inMinutes}m ${averageAge.inSeconds % 60}s';
+    if (averageAge.inMinutes < 60)
+      return '${averageAge.inMinutes}m ${averageAge.inSeconds % 60}s';
     return '${averageAge.inHours}h ${averageAge.inMinutes % 60}m';
   }
 
   @override
   String toString() {
     return 'CacheStats('
-           'entries: $memorySize, '
-           'size: $memorySizeFormatted, '
-           'expired: $expiredEntries, '
-           'avgAge: $averageAgeFormatted, '
-           'refreshing: $backgroundRefreshes, '
-           'inFlight: ${inFlightRequests.length})';
+        'entries: $memorySize, '
+        'size: $memorySizeFormatted, '
+        'expired: $expiredEntries, '
+        'avgAge: $averageAgeFormatted, '
+        'refreshing: $backgroundRefreshes, '
+        'inFlight: ${inFlightRequests.length})';
   }
 }

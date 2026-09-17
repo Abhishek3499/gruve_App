@@ -19,17 +19,16 @@ class UserRemoteDataSource {
         cancelToken: cancelToken,
         skipCache: skipCache,
       );
-      
+
       final response = PaginatedUserResponse.fromJson(rawResponse);
       AppLogger.d(
-          '[UserRemoteDataSource] Page ${response.page} loaded: ${response.users.length} users',
-        );
-      
-      
+        '[UserRemoteDataSource] Page ${response.page} loaded: ${response.users.length} users',
+      );
+
       return response;
     } catch (e) {
       AppLogger.d('[UserRemoteDataSource] Exception on page $page: $e');
-      
+
       rethrow;
     }
   }

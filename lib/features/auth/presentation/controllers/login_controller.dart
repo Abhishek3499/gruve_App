@@ -8,7 +8,7 @@ import 'package:gruve_app/features/auth/data/services/login_service.dart';
 /// validation errors are owned by `AuthUiProvider`, not here.
 class LoginController {
   LoginController({EmailSignInService? service})
-      : _service = service ?? EmailSignInService();
+    : _service = service ?? EmailSignInService();
 
   final EmailSignInService _service;
 
@@ -46,9 +46,9 @@ class LoginController {
   }
 
   String _errorMessage(Object? error) => AuthApiException.userFacingMessage(
-        error,
-        fallback: 'The provided credentials are incorrect.',
-      );
+    error,
+    fallback: 'The provided credentials are incorrect.',
+  );
 }
 
 class LoginResult {

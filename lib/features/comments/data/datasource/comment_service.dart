@@ -107,7 +107,9 @@ class CommentService {
         }
       }
 
-      AppLogger.d('[CommentService] First comment attempt failed: $e. Retrying in 1s...');
+      AppLogger.d(
+        '[CommentService] First comment attempt failed: $e. Retrying in 1s...',
+      );
       await Future<void>.delayed(const Duration(seconds: 1));
 
       comment = await _tryAddComment(
@@ -161,7 +163,8 @@ class CommentService {
       requestOptions: res.requestOptions,
       response: res,
       type: DioExceptionType.badResponse,
-      message: 'Failed to add comment: server returned status ${res.statusCode}',
+      message:
+          'Failed to add comment: server returned status ${res.statusCode}',
     );
   }
 

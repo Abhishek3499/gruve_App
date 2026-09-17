@@ -12,93 +12,81 @@ class ProfileStatsModel {
   });
 
   const ProfileStatsModel.empty()
-      : subscribersCount = 0,
-        likesCount = 0,
-        videosCount = 0;
+    : subscribersCount = 0,
+      likesCount = 0,
+      videosCount = 0;
 
   factory ProfileStatsModel.fromJson(Map<String, dynamic> json) {
     AppLogger.d("🔍 [ProfileStatsModel] parsing stats from: $json");
     AppLogger.d("🔍 [ProfileStatsModel] JSON KEYS: ${json.keys.toList()}");
 
-    final subscribersCount = _findCount(
-      json,
-      const [
-        'subscribers_count',
-        'subscriber_count',
-        'subscribers',
-        'subscriber',
-        'subscribersCount',
-        'subscriberCount',
-        'followers_count',
-        'follower_count',
-        'followers',
-        'followersCount',
-        'followerCount',
-        'total_subscribers',
-        'total_followers',
-        'fans_count',
-        'fan_count',
-        'data.user.stats.subscribers_count',
-        'data.user.stats.subscriber_count',
-        'data.user.stats.subscribers',
-        'data.user.stats.subscriber',
-        'data.user.stats.followers_count',
-        'data.user.stats.follower_count',
-        'data.user.stats.followers',
-        'data.user.stats.follower',
-        'user.stats.subscribers_count',
-        'user.stats.subscriber_count',
-        'user.stats.subscribers',
-        'user.stats.subscriber',
-        'user.stats.followers_count',
-        'user.stats.follower_count',
-        'user.stats.followers',
-        'user.stats.follower',
-      ],
+    final subscribersCount = _findCount(json, const [
+      'subscribers_count',
+      'subscriber_count',
       'subscribers',
-    );
-    final likesCount = _findCount(
-      json,
-      const [
-        'likes_count',
-        'like_count',
-        'likes',
-        'total_likes',
-        'data.user.stats.likes_count',
-        'data.user.stats.like_count',
-        'data.user.stats.likes',
-        'data.user.stats.total_likes',
-        'user.stats.likes_count',
-        'user.stats.like_count',
-        'user.stats.likes',
-        'user.stats.total_likes',
-      ],
+      'subscriber',
+      'subscribersCount',
+      'subscriberCount',
+      'followers_count',
+      'follower_count',
+      'followers',
+      'followersCount',
+      'followerCount',
+      'total_subscribers',
+      'total_followers',
+      'fans_count',
+      'fan_count',
+      'data.user.stats.subscribers_count',
+      'data.user.stats.subscriber_count',
+      'data.user.stats.subscribers',
+      'data.user.stats.subscriber',
+      'data.user.stats.followers_count',
+      'data.user.stats.follower_count',
+      'data.user.stats.followers',
+      'data.user.stats.follower',
+      'user.stats.subscribers_count',
+      'user.stats.subscriber_count',
+      'user.stats.subscribers',
+      'user.stats.subscriber',
+      'user.stats.followers_count',
+      'user.stats.follower_count',
+      'user.stats.followers',
+      'user.stats.follower',
+    ], 'subscribers');
+    final likesCount = _findCount(json, const [
+      'likes_count',
+      'like_count',
       'likes',
-    );
-    final videosCount = _findCount(
-      json,
-      const [
-        'videos_count',
-        'video_count',
-        'videos',
-        'posts_count',
-        'post_count',
-        'posts',
-        'data.user.stats.videos_count',
-        'data.user.stats.video_count',
-        'data.user.stats.videos',
-        'data.user.stats.posts_count',
-        'data.user.stats.post_count',
-        'data.user.stats.posts',
-        'user.stats.videos_count',
-        'user.stats.video_count',
-        'user.stats.videos',
-        'user.stats.posts_count',
-        'user.stats.post_count',
-        'user.stats.posts',
-      ],
+      'total_likes',
+      'data.user.stats.likes_count',
+      'data.user.stats.like_count',
+      'data.user.stats.likes',
+      'data.user.stats.total_likes',
+      'user.stats.likes_count',
+      'user.stats.like_count',
+      'user.stats.likes',
+      'user.stats.total_likes',
+    ], 'likes');
+    final videosCount = _findCount(json, const [
+      'videos_count',
+      'video_count',
       'videos',
-    );
+      'posts_count',
+      'post_count',
+      'posts',
+      'data.user.stats.videos_count',
+      'data.user.stats.video_count',
+      'data.user.stats.videos',
+      'data.user.stats.posts_count',
+      'data.user.stats.post_count',
+      'data.user.stats.posts',
+      'user.stats.videos_count',
+      'user.stats.video_count',
+      'user.stats.videos',
+      'user.stats.posts_count',
+      'user.stats.post_count',
+      'user.stats.posts',
+    ], 'videos');
 
     AppLogger.d(
       "🔍 [ProfileStatsModel] FINAL RESULT -> subscribers: $subscribersCount, likes: $likesCount, videos: $videosCount",
@@ -112,7 +100,9 @@ class ProfileStatsModel {
   }
 
   static int _findCount(dynamic source, List<String> keys, String fieldName) {
-    AppLogger.d("🔍 [ProfileStatsModel] Searching for $fieldName count in ${keys.length} possible keys");
+    AppLogger.d(
+      "🔍 [ProfileStatsModel] Searching for $fieldName count in ${keys.length} possible keys",
+    );
     final normalizedKeys = keys.map(_normalizeKey).toSet();
     final visited = <Object>{};
 
@@ -128,7 +118,9 @@ class ProfileStatsModel {
 
         final map = Map<String, dynamic>.from(value);
         final currentPath = path.isEmpty ? 'root' : path;
-        AppLogger.d("🔍 [ProfileStatsModel] Searching in map at $currentPath with keys: ${map.keys.toList()}");
+        AppLogger.d(
+          "🔍 [ProfileStatsModel] Searching in map at $currentPath with keys: ${map.keys.toList()}",
+        );
 
         for (final entry in map.entries) {
           final normalizedKey = _normalizeKey(entry.key);
@@ -140,7 +132,9 @@ class ProfileStatsModel {
               );
               return parsed;
             } else {
-              AppLogger.d("⚠️ [ProfileStatsModel] $fieldName found key `${entry.key}` but couldn't parse value: ${entry.value}");
+              AppLogger.d(
+                "⚠️ [ProfileStatsModel] $fieldName found key `${entry.key}` but couldn't parse value: ${entry.value}",
+              );
             }
           }
         }
@@ -157,7 +151,9 @@ class ProfileStatsModel {
       }
 
       if (value is List) {
-        AppLogger.d("🔍 [ProfileStatsModel] Searching in list at $path with ${value.length} items");
+        AppLogger.d(
+          "🔍 [ProfileStatsModel] Searching in list at $path with ${value.length} items",
+        );
         for (int i = 0; i < value.length; i++) {
           final item = value[i];
           final nestedPath = '$path[$i]';

@@ -94,10 +94,7 @@ class LocalMediaUtils {
   }
 
   static Future<({LocalMediaKind kind, VideoPlayerController? controller})>
-  resolveForPreview(
-    String path, {
-    String? mimeType,
-  }) async {
+  resolveForPreview(String path, {String? mimeType}) async {
     final trimmed = path.trim();
     if (trimmed.isEmpty) {
       return (kind: LocalMediaKind.unknown, controller: null);
@@ -125,10 +122,7 @@ class LocalMediaUtils {
 
   /// Reliable detection before upload. Gallery picks often omit extensions;
   /// misclassifying video as image runs JPEG compression and corrupts the file.
-  static Future<bool> isVideoForUpload(
-    String path, {
-    String? mimeType,
-  }) async {
+  static Future<bool> isVideoForUpload(String path, {String? mimeType}) async {
     final trimmed = path.trim();
     if (trimmed.isEmpty) return false;
 

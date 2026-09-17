@@ -56,29 +56,41 @@ class LogoutWidget extends ConsumerWidget {
                           logoutNotifierProvider.select((s) => s.isLoading),
                         );
                         return GestureDetector(
-                          onTap: isLoading ? null : () {
-                            authLogger.d("🔥 YES CLICKED");
-                            final notifier = ref.read(
-                              logoutNotifierProvider.notifier,
-                            );
-                            notifier.clearError(); // Clear any previous logout error
+                          onTap: isLoading
+                              ? null
+                              : () {
+                                  authLogger.d("🔥 YES CLICKED");
+                                  final notifier = ref.read(
+                                    logoutNotifierProvider.notifier,
+                                  );
+                                  notifier
+                                      .clearError(); // Clear any previous logout error
 
-                            // Start logout ASAP; it will continue in background after navigation.
-                            final providerContext =
-                                rootNavigatorKey.currentContext ?? context;
-                            notifier.logout(context: providerContext);
+                                  // Start logout ASAP; it will continue in background after navigation.
+                                  final providerContext =
+                                      rootNavigatorKey.currentContext ??
+                                      context;
+                                  notifier.logout(context: providerContext);
 
-                            authLogger.d("🚀 [LogoutWidget] Navigating to SignIn immediately...");
-                            Navigator.of(context).pop(); // Close dialog immediately
+                                  authLogger.d(
+                                    "🚀 [LogoutWidget] Navigating to SignIn immediately...",
+                                  );
+                                  Navigator.of(
+                                    context,
+                                  ).pop(); // Close dialog immediately
 
-                            rootNavigatorKey.currentState?.pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (context) => const SignInScreen(),
-                              ),
-                              (route) => false,
-                            );
-                            authLogger.d("🚀 [LogoutWidget] Instant navigation completed.");
-                          },
+                                  rootNavigatorKey.currentState
+                                      ?.pushAndRemoveUntil(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SignInScreen(),
+                                        ),
+                                        (route) => false,
+                                      );
+                                  authLogger.d(
+                                    "🚀 [LogoutWidget] Instant navigation completed.",
+                                  );
+                                },
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -89,11 +101,16 @@ class LogoutWidget extends ConsumerWidget {
                                       colors: [Colors.grey, Colors.grey],
                                     )
                                   : const LinearGradient(
-                                      colors: [Color(0xFF8E2DE2), Color(0xFF72008D)],
+                                      colors: [
+                                        Color(0xFF8E2DE2),
+                                        Color(0xFF72008D),
+                                      ],
                                     ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.purpleAccent.withValues(alpha: 0.6),
+                                  color: Colors.purpleAccent.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   blurRadius: 20,
                                   offset: const Offset(0, 10),
                                 ),
@@ -106,7 +123,10 @@ class LogoutWidget extends ConsumerWidget {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFBB86FC)),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Color(0xFFBB86FC),
+                                            ),
                                       ),
                                     )
                                   : const Text(

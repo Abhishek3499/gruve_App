@@ -12,7 +12,7 @@ class ForgotPasswordService {
     try {
       const endpoint = ApiConstants.forgotPassword;
       final requestData = {"identifier": identifier};
-      
+
       AuthApiLogger.request(
         'ForgotPassword',
         dio: _dio,

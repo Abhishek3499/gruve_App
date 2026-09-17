@@ -101,7 +101,9 @@ class _SplashScreenState extends State<SplashScreen> {
         final profileProvider = context.read<ProfileProvider>();
         if (profileProvider.user == null) {
           unawaited(
-            profileProvider.fetchProfileData(fetchUserReason: 'splash_eager_load'),
+            profileProvider.fetchProfileData(
+              fetchUserReason: 'splash_eager_load',
+            ),
           );
         }
       } catch (e) {
@@ -112,7 +114,9 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    AppLogger.d('[Splash] No authenticated session, navigating to Intro screen');
+    AppLogger.d(
+      '[Splash] No authenticated session, navigating to Intro screen',
+    );
     _navigateTo(const IntroScreen());
   }
 
@@ -129,12 +133,13 @@ class _SplashScreenState extends State<SplashScreen> {
         pageBuilder: (_, _, _) => screen,
         transitionsBuilder: (_, animation, _, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
             child: child,
           );
         },

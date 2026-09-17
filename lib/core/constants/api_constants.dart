@@ -25,8 +25,7 @@ class ApiConstants {
   static const String logout = 'auth/logout/';
   static const String completeProfile = 'auth/complete-profile/';
   static const String refreshToken = '/auth/refresh';
-  static const String passwordResetVerifyOtp =
-      'auth/password-reset/verify-otp';
+  static const String passwordResetVerifyOtp = 'auth/password-reset/verify-otp';
   static const String passwordResetConfirm = 'auth/password/reset/confirm';
 
   // ---- User / Profile ----
@@ -68,10 +67,8 @@ class ApiConstants {
       '/conversations/$conversationId/messages/media/';
   static String conversationMessagesRead(String conversationId) =>
       '/conversations/$conversationId/messages/read';
-  static String conversationMessage(
-    String conversationId,
-    String messageId,
-  ) => '/conversations/$conversationId/messages/$messageId';
+  static String conversationMessage(String conversationId, String messageId) =>
+      '/conversations/$conversationId/messages/$messageId';
 
   // ---- Stories ----
   static const String stories = 'stories/';

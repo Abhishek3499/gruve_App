@@ -5,7 +5,6 @@ import 'package:gruve_app/features/story_preview/presentation/screens/post/post_
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_screen.dart';
 import 'package:gruve_app/features/video_editor/presentation/screens/video_editor_screen.dart';
 
-
 import 'package:gruve_app/features/story_preview/presentation/widgets/post/post_action_buttons.dart';
 
 import 'package:flutter/rendering.dart';
@@ -130,7 +129,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
       // Allow frame to render without selection border
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final boundary = _boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          _boundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) return _mediaPath;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -139,9 +140,13 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
 
       final bytes = byteData.buffer.asUint8List();
       final tempDir = Directory.systemTemp;
-      final file = File('${tempDir.path}/post_flattened_${DateTime.now().millisecondsSinceEpoch}.png');
+      final file = File(
+        '${tempDir.path}/post_flattened_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       await file.writeAsBytes(bytes);
-      AppLogger.d('📸 [PostPreviewScreen] Flattened canvas captured: ${file.path}');
+      AppLogger.d(
+        '📸 [PostPreviewScreen] Flattened canvas captured: ${file.path}',
+      );
       return file.path;
     } catch (e) {
       AppLogger.d('❌ [PostPreviewScreen] Error flattening canvas: $e');
@@ -300,7 +305,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 },
                                 onDelete: () {
                                   setState(() {
-                                    _stickers.removeWhere((s) => s.id == sticker.id);
+                                    _stickers.removeWhere(
+                                      (s) => s.id == sticker.id,
+                                    );
                                     if (_selectedStickerId == sticker.id) {
                                       _selectedStickerId = null;
                                     }
@@ -318,26 +325,32 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                   _isPickerOrEditorOpen = true;
                                   try {
                                     if (sticker.isMusic) {
-                                      final updated = await StoryMusicPicker.open(
-                                        context,
-                                        initialSticker: sticker,
-                                      );
+                                      final updated =
+                                          await StoryMusicPicker.open(
+                                            context,
+                                            initialSticker: sticker,
+                                          );
                                       if (updated != null && mounted) {
                                         setState(() {
-                                          final index = _stickers.indexWhere((s) => s.id == sticker.id);
+                                          final index = _stickers.indexWhere(
+                                            (s) => s.id == sticker.id,
+                                          );
                                           if (index != -1) {
                                             _stickers[index] = updated;
                                           }
                                         });
                                       }
                                     } else if (sticker.isText) {
-                                      final updated = await StoryTextEditor.open(
-                                        context,
-                                        initialSticker: sticker,
-                                      );
+                                      final updated =
+                                          await StoryTextEditor.open(
+                                            context,
+                                            initialSticker: sticker,
+                                          );
                                       if (updated != null && mounted) {
                                         setState(() {
-                                          final index = _stickers.indexWhere((s) => s.id == sticker.id);
+                                          final index = _stickers.indexWhere(
+                                            (s) => s.id == sticker.id,
+                                          );
                                           if (index != -1) {
                                             _stickers[index] = updated;
                                           }
@@ -361,9 +374,13 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                       child: BackButton(
                         color: Colors.white,
                         onPressed: () async {
-                          final shouldDiscard = await _showDiscardDialog(context);
+                          final shouldDiscard = await _showDiscardDialog(
+                            context,
+                          );
                           if (shouldDiscard && context.mounted) {
-                            Navigator.of(context).pop(const PostPreviewBackToCamera());
+                            Navigator.of(
+                              context,
+                            ).pop(const PostPreviewBackToCamera());
                           }
                         },
                       ),
@@ -382,7 +399,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                             if (_isPickerOrEditorOpen) return;
                             _isPickerOrEditorOpen = true;
                             try {
-                              final newTextSticker = await StoryTextEditor.open(context);
+                              final newTextSticker = await StoryTextEditor.open(
+                                context,
+                              );
                               if (newTextSticker != null && mounted) {
                                 setState(() {
                                   _stickers.add(newTextSticker);
@@ -397,7 +416,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                             if (_isPickerOrEditorOpen) return;
                             _isPickerOrEditorOpen = true;
                             try {
-                              final musicSticker = await StoryMusicPicker.open(context);
+                              final musicSticker = await StoryMusicPicker.open(
+                                context,
+                              );
                               if (musicSticker != null && mounted) {
                                 setState(() {
                                   _stickers.add(musicSticker);
@@ -460,20 +481,22 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                           GestureDetector(
                             onTap: () async {
                               try {
-                                final result = await Navigator.push<VideoEditorResult>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => VideoEditorScreen(
-                                      mediaPath: _mediaPath,
-                                      initialStickers: _stickers,
-                                      initialFilter: _activeFilter,
-                                      initialMuted: _isMuted,
-                                    ),
-                                  ),
-                                );
+                                final result =
+                                    await Navigator.push<VideoEditorResult>(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => VideoEditorScreen(
+                                          mediaPath: _mediaPath,
+                                          initialStickers: _stickers,
+                                          initialFilter: _activeFilter,
+                                          initialMuted: _isMuted,
+                                        ),
+                                      ),
+                                    );
                                 if (result != null && mounted) {
                                   setState(() {
-                                    _mediaPath = result.trimmedPath ?? _mediaPath;
+                                    _mediaPath =
+                                        result.trimmedPath ?? _mediaPath;
                                     _stickers.clear();
                                     _stickers.addAll(result.stickers);
                                     _activeFilter = result.filter;
@@ -484,7 +507,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                   _initializeMedia();
                                 }
                               } catch (e) {
-                                AppLogger.d('Error navigating to video editor: $e');
+                                AppLogger.d(
+                                  'Error navigating to video editor: $e',
+                                );
                               }
                             },
                             child: SizedBox(
@@ -493,7 +518,12 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 height: context.rh(42),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(24),
-                                  color: const ui.Color.fromARGB(155, 120, 2, 99),
+                                  color: const ui.Color.fromARGB(
+                                    155,
+                                    120,
+                                    2,
+                                    99,
+                                  ),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
@@ -517,14 +547,19 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                   context: context,
                                   barrierDismissible: false,
                                   builder: (context) => const Center(
-                                    child: CircularProgressIndicator(color: Color(0xFFC358D7)),
+                                    child: CircularProgressIndicator(
+                                      color: Color(0xFFC358D7),
+                                    ),
                                   ),
                                 );
 
-                                final finalPath = await _captureFlattenedImage();
+                                final finalPath =
+                                    await _captureFlattenedImage();
 
                                 if (context.mounted) {
-                                  Navigator.pop(context); // Dismiss loading dialog
+                                  Navigator.pop(
+                                    context,
+                                  ); // Dismiss loading dialog
                                 }
 
                                 if (!context.mounted) return;
@@ -569,7 +604,12 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 height: context.rh(42),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(24),
-                                  color: const ui.Color.fromARGB(155, 120, 2, 99),
+                                  color: const ui.Color.fromARGB(
+                                    155,
+                                    120,
+                                    2,
+                                    99,
+                                  ),
                                 ),
                                 alignment: Alignment.center,
                                 child: const Text("Next"),
@@ -592,7 +632,11 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   Widget _buildMediaPreview() {
     if (_mediaLoadFailed) {
       return Center(
-        child: Icon(Icons.videocam_off_outlined, color: Colors.white54, size: context.rw(48)),
+        child: Icon(
+          Icons.videocam_off_outlined,
+          color: Colors.white54,
+          size: context.rw(48),
+        ),
       );
     }
 

@@ -39,7 +39,11 @@ class OtpNotifier extends Notifier<OtpUiState> {
   }) async {
     state = OtpUiState(isLoading: true, isResending: state.isResending);
     try {
-      return await _controller.verifyOtp(identifier: identifier, otp: otp, purpose: purpose);
+      return await _controller.verifyOtp(
+        identifier: identifier,
+        otp: otp,
+        purpose: purpose,
+      );
     } finally {
       state = OtpUiState(isLoading: false, isResending: state.isResending);
     }
@@ -51,11 +55,16 @@ class OtpNotifier extends Notifier<OtpUiState> {
   }) async {
     state = OtpUiState(isLoading: state.isLoading, isResending: true);
     try {
-      return await _controller.resendOtp(identifier: identifier, purpose: purpose);
+      return await _controller.resendOtp(
+        identifier: identifier,
+        purpose: purpose,
+      );
     } finally {
       state = OtpUiState(isLoading: state.isLoading, isResending: false);
     }
   }
 }
 
-final otpNotifierProvider = NotifierProvider<OtpNotifier, OtpUiState>(OtpNotifier.new);
+final otpNotifierProvider = NotifierProvider<OtpNotifier, OtpUiState>(
+  OtpNotifier.new,
+);

@@ -18,8 +18,9 @@ class UserProvider extends ChangeNotifier {
   UserProvider(this.repository) {
     AppLogger.d('🔥 UserProvider CONSTRUCTOR CALLED');
     _trackedAuthUserId = AuthStateManager().currentUserId;
-    _localSubscribedUserIds =
-        _collectLocalSubscribedUserIds(SubscribeNotifier());
+    _localSubscribedUserIds = _collectLocalSubscribedUserIds(
+      SubscribeNotifier(),
+    );
     _listenToSubscriptions();
     AuthStateManager().addListener(_onAuthStateChanged);
   }
@@ -74,10 +75,12 @@ class UserProvider extends ChangeNotifier {
   void _onSubscriptionChanged() {
     final controller = SubscribeNotifier();
     final currentLocalSubscribed = _collectLocalSubscribedUserIds(controller);
-    final newlySubscribed =
-        currentLocalSubscribed.difference(_localSubscribedUserIds);
-    final newlyUnsubscribed =
-        _localSubscribedUserIds.difference(currentLocalSubscribed);
+    final newlySubscribed = currentLocalSubscribed.difference(
+      _localSubscribedUserIds,
+    );
+    final newlyUnsubscribed = _localSubscribedUserIds.difference(
+      currentLocalSubscribed,
+    );
 
     if (newlySubscribed.isEmpty && newlyUnsubscribed.isEmpty) {
       return;
@@ -91,10 +94,9 @@ class UserProvider extends ChangeNotifier {
     _lastFetchTime = null;
     _subscriptionListDirty = true;
 
-    unawaited(HiveService().evictCachedData(
-      HiveService.userCacheBoxName,
-      'users_list',
-    ));
+    unawaited(
+      HiveService().evictCachedData(HiveService.userCacheBoxName, 'users_list'),
+    );
     unawaited(CacheManager().invalidatePattern(ApiConstants.users));
 
     var changed = false;
@@ -131,7 +133,9 @@ class UserProvider extends ChangeNotifier {
 
   /// Call when the Messages tab becomes visible.
   Future<void> refreshOnTabVisible() async {
-    AppLogger.d('🔄 [UserProvider] Tab visible — refreshing subscribed user list');
+    AppLogger.d(
+      '🔄 [UserProvider] Tab visible — refreshing subscribed user list',
+    );
     _lastFetchTime = null;
     await _invalidateUserListCaches();
     await fetchUsers(loadMore: false, reason: 'tab_visible');
@@ -176,7 +180,8 @@ class UserProvider extends ChangeNotifier {
     'tab_visible',
   };
 
-  bool _shouldBypassCache(String reason) => _cacheBypassReasons.contains(reason);
+  bool _shouldBypassCache(String reason) =>
+      _cacheBypassReasons.contains(reason);
 
   Future<void> _invalidateUserListCaches() async {
     await HiveService().evictCachedData(
@@ -224,10 +229,15 @@ class UserProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get hasInitialized => _hasInitialized;
 
-  Future<void> fetchUsers({bool loadMore = false, String reason = 'initial'}) async {
+  Future<void> fetchUsers({
+    bool loadMore = false,
+    String reason = 'initial',
+  }) async {
     if (loadMore) {
       if (_loadMoreInFlight != null) {
-        AppLogger.d('⏳ [UserProvider] Joining in-flight loadMore (reason=$reason)');
+        AppLogger.d(
+          '⏳ [UserProvider] Joining in-flight loadMore (reason=$reason)',
+        );
         return _loadMoreInFlight!;
       }
       if (_isFetchingMore || !_hasNext) {
@@ -287,11 +297,15 @@ class UserProvider extends ChangeNotifier {
         'users_list',
       );
       if (cachedData is List) {
-        AppLogger.d('📦 [UserProvider] Cache HIT. Restoring users from Hive Cache first.');
+        AppLogger.d(
+          '📦 [UserProvider] Cache HIT. Restoring users from Hive Cache first.',
+        );
         try {
           _users = _usersFromApi(
-            cachedData
-                .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)).toEntity()),
+            cachedData.map(
+              (e) =>
+                  UserModel.fromJson(Map<String, dynamic>.from(e)).toEntity(),
+            ),
           );
           _hasInitialized = true;
           notifyListeners();
@@ -364,12 +378,16 @@ class UserProvider extends ChangeNotifier {
 
       // Save initial page list to Hive cache
       if (!loadMore) {
-        final usersJson = response.users.map((e) => {
-          'user_id': e.userId,
-          'username': e.username,
-          'full_name': e.fullName,
-          'profile_picture': e.profilePicture,
-        }).toList();
+        final usersJson = response.users
+            .map(
+              (e) => {
+                'user_id': e.userId,
+                'username': e.username,
+                'full_name': e.fullName,
+                'profile_picture': e.profilePicture,
+              },
+            )
+            .toList();
         await HiveService().cacheData(
           HiveService.userCacheBoxName,
           'users_list',

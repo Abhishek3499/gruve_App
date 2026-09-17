@@ -33,21 +33,19 @@ class ProfileMenuDrawer extends ConsumerWidget {
           return ProfileMenuDrawer(profileImage: profileImage);
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final slideTransition = Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
-            ),
-          );
+          final slideTransition =
+              Tween<Offset>(
+                begin: const Offset(1.0, 0.0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                  reverseCurve: Curves.easeInCubic,
+                ),
+              );
 
-          return SlideTransition(
-            position: slideTransition,
-            child: child,
-          );
+          return SlideTransition(position: slideTransition, child: child);
         },
       ),
     );
@@ -87,319 +85,330 @@ class ProfileMenuDrawer extends ConsumerWidget {
                     ],
                   ),
                 ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-
-                /// Close Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Image.asset(
-                        AppAssets.close,
-                        color: Colors.white,
-                        height: 16,
-                        width: 16,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                /// MENU LIST
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _menuItem(
-                        AppAssets.account,
-                        "Account",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AccountScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.insight,
-                        "Insight",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const ProfessionalDashboardScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.wallet,
-                        "Wallet",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WalletScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.blocked,
-                        "Blocked",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BlockedScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        Icons.lock,
-                        "Account & Privacy",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AccountPrivacyScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.archive,
-                        "Archive",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ArchiveScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.saved,
-                        "Saved",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SavedScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.language,
-                        "Language",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LanguageScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        Icons.help_outline,
-                        "Help Center",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HelpCenterScreen(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      _menuItem(
-                        AppAssets.terms,
-                        "Terms & Conditions",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const TermAndConditionScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _menuItem(
-                        Icons.subscriptions_outlined,
-                        "Subscription",
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SubscriptionScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                /// 🔥 LOGOUT + FOOTER SECTION (BOTTOM FIXED)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: SafeArea(
                   child: Column(
                     children: [
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 20),
 
-                      /// Logout
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final isLoading = ref.watch(
-                            logoutNotifierProvider.select((s) => s.isLoading),
-                          );
-                          return GestureDetector(
-                            onTap: isLoading ? null : () {
-                              AppLogger.d("🔥 LOGOUT CLICKED");
-
-                              Navigator.pop(context); // 👈 close drawer first
-                              ref
-                                  .read(logoutNotifierProvider.notifier)
-                                  .clearError(); // Clear previous errors
-
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (dialogContext) => LogoutWidget(),
-                              );
-                            },
-
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isLoading
-                                      ? Icons.hourglass_empty
-                                      : Icons.logout,
-                                  color: isLoading
-                                      ? Colors.grey
-                                      : Colors.white,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 16),
-                                Text(
-                                  isLoading
-                                      ? "Logging out..."
-                                      : "Log out",
-                                  style: TextStyle(
-                                    color: isLoading
-                                        ? Colors.grey
-                                        : Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                      /// Close Button
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Image.asset(
+                              AppAssets.close,
+                              color: Colors.white,
+                              height: 16,
+                              width: 16,
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
 
                       const SizedBox(height: 30),
 
-                      /// Made in India
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/splash_screen_logo/image 43.png',
-                            width: 16,
-                            height: 16,
-                          ),
-                          const SizedBox(width: 3),
-                          const Text(
-                            'Made in India',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontFamily: 'Syncopate',
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      /// Powered by
-                      RichText(
-                        text: const TextSpan(
+                      /// MENU LIST
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.zero,
                           children: [
-                            TextSpan(
-                              text: 'Powered by  ',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontFamily: 'Syncopate',
-                                fontWeight: FontWeight.w700,
-                              ),
+                            _menuItem(
+                              AppAssets.account,
+                              "Account",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const AccountScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                            TextSpan(
-                              text: 'Hardkore Tech',
-                              style: TextStyle(
-                                color: Color(0xFF72008D),
-                                fontSize: 11,
-                                fontFamily: 'Syncopate',
-                                fontWeight: FontWeight.w700,
-                              ),
+
+                            _menuItem(
+                              AppAssets.insight,
+                              "Insight",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ProfessionalDashboardScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              AppAssets.wallet,
+                              "Wallet",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => WalletScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              AppAssets.blocked,
+                              "Blocked",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BlockedScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              Icons.lock,
+                              "Account & Privacy",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AccountPrivacyScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              AppAssets.archive,
+                              "Archive",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ArchiveScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              AppAssets.saved,
+                              "Saved",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SavedScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              AppAssets.language,
+                              "Language",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const LanguageScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              Icons.help_outline,
+                              "Help Center",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const HelpCenterScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            _menuItem(
+                              AppAssets.terms,
+                              "Terms & Conditions",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const TermAndConditionScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            _menuItem(
+                              Icons.subscriptions_outlined,
+                              "Subscription",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SubscriptionScreen(),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      /// 🔥 LOGOUT + FOOTER SECTION (BOTTOM FIXED)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+
+                            /// Logout
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final isLoading = ref.watch(
+                                  logoutNotifierProvider.select(
+                                    (s) => s.isLoading,
+                                  ),
+                                );
+                                return GestureDetector(
+                                  onTap: isLoading
+                                      ? null
+                                      : () {
+                                          AppLogger.d("🔥 LOGOUT CLICKED");
+
+                                          Navigator.pop(
+                                            context,
+                                          ); // 👈 close drawer first
+                                          ref
+                                              .read(
+                                                logoutNotifierProvider.notifier,
+                                              )
+                                              .clearError(); // Clear previous errors
+
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (dialogContext) =>
+                                                LogoutWidget(),
+                                          );
+                                        },
+
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isLoading
+                                            ? Icons.hourglass_empty
+                                            : Icons.logout,
+                                        color: isLoading
+                                            ? Colors.grey
+                                            : Colors.white,
+                                        size: 22,
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Text(
+                                        isLoading
+                                            ? "Logging out..."
+                                            : "Log out",
+                                        style: TextStyle(
+                                          color: isLoading
+                                              ? Colors.grey
+                                              : Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            /// Made in India
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/splash_screen_logo/image 43.png',
+                                  width: 16,
+                                  height: 16,
+                                ),
+                                const SizedBox(width: 3),
+                                const Text(
+                                  'Made in India',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontFamily: 'Syncopate',
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            /// Powered by
+                            RichText(
+                              text: const TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'Powered by  ',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontFamily: 'Syncopate',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: 'Hardkore Tech',
+                                    style: TextStyle(
+                                      color: Color(0xFF72008D),
+                                      fontSize: 11,
+                                      fontFamily: 'Syncopate',
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
-    ),
-  ),
-],
-);
-}
+      ],
+    );
+  }
 
   Widget _menuItem(dynamic icon, String title, {VoidCallback? onTap}) {
     return GestureDetector(

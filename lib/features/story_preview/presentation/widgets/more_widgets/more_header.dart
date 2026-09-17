@@ -32,10 +32,7 @@ class MoreHeader extends StatelessWidget {
               top: 0,
               bottom: 0,
               child: Center(
-                child: BackButton(
-                  color: Colors.white,
-                  onPressed: onBack,
-                ),
+                child: BackButton(color: Colors.white, onPressed: onBack),
               ),
             ),
           ],

@@ -70,7 +70,11 @@ class FeedShimmer extends StatelessWidget {
                   ),
                   SizedBox(height: 12),
                   // Caption line 1
-                  ShimmerBox(width: double.infinity, height: 12, borderRadius: 5),
+                  ShimmerBox(
+                    width: double.infinity,
+                    height: 12,
+                    borderRadius: 5,
+                  ),
                   SizedBox(height: 6),
                   // Caption line 2 (shorter — realistic text shape)
                   ShimmerBox(width: 200, height: 12, borderRadius: 5),

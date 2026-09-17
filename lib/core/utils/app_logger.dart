@@ -72,8 +72,7 @@ class AppLogger {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      e(message, tag: tag, error: error, stackTrace: stackTrace);
+  }) => e(message, tag: tag, error: error, stackTrace: stackTrace);
 
   /// Success log.
   static void success(String message, {String? tag}) {
@@ -82,7 +81,11 @@ class AppLogger {
   }
 
   /// API request log.
-  static void api(String method, String endpoint, {Map<String, dynamic>? params}) {
+  static void api(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? params,
+  }) {
     var message = '📡 API: $method $endpoint';
     if (params != null && params.isNotEmpty) {
       message += '\nParams: $params';

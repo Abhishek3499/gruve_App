@@ -3,14 +3,11 @@
 class CursorModel {
   /// ISO formatted timestamp for cursor position
   final String? createdAt;
-  
+
   /// Integer ID for cursor position (NOT post.id)
   final int? id;
 
-  const CursorModel({
-    this.createdAt,
-    this.id,
-  });
+  const CursorModel({this.createdAt, this.id});
 
   /// Create from JSON response
   factory CursorModel.fromJson(Map<String, dynamic> json) {
@@ -23,11 +20,8 @@ class CursorModel {
   /// Convert to JSON for API request
   Map<String, dynamic> toJson() {
     if (createdAt == null || id == null) return {};
-    
-    return {
-      'cursor_created_at': createdAt,
-      'cursor_id': id,
-    };
+
+    return {'cursor_created_at': createdAt, 'cursor_id': id};
   }
 
   /// Check if cursor is valid (has both values)

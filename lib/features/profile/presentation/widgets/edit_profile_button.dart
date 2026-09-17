@@ -9,11 +9,7 @@ class EditProfileButton extends StatelessWidget {
   final ProfileModel? profile;
   final ValueChanged<EditProfileResponse>? onProfileUpdated;
 
-  const EditProfileButton({
-    super.key,
-    this.profile,
-    this.onProfileUpdated,
-  });
+  const EditProfileButton({super.key, this.profile, this.onProfileUpdated});
 
   @override
   Widget build(BuildContext context) {

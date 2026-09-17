@@ -37,7 +37,9 @@ class StoryService {
       isVideo: isVideo,
     );
 
-    AppLogger.d('🎞️ [StoryService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName');
+    AppLogger.d(
+      '🎞️ [StoryService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
+    );
 
     File uploadFile = file;
     if (!isVideo) {
@@ -133,7 +135,9 @@ class StoryService {
   }) async {
     try {
       AppLogger.d('\n🚀 [StoryService] ===== FETCH STORIES START =====');
-      AppLogger.d('👤 [StoryService] userId: ${userId ?? 'me'} | page: $page | limit: $limit');
+      AppLogger.d(
+        '👤 [StoryService] userId: ${userId ?? 'me'} | page: $page | limit: $limit',
+      );
 
       final token = await TokenStorage.getAccessToken();
       final endpoint = userId == null

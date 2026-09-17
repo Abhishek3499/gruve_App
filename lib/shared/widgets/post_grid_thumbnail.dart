@@ -316,8 +316,8 @@ class _PostGridThumbnailBodyState extends State<_PostGridThumbnailBody> {
       final imageUrl = post.isVideo
           ? post.gridPreviewUrl.trim()
           : (post.gridPreviewUrl.trim().isNotEmpty
-              ? post.gridPreviewUrl.trim()
-              : post.media.trim());
+                ? post.gridPreviewUrl.trim()
+                : post.media.trim());
       return CachedNetworkImage(
         imageUrl: imageUrl,
         fit: BoxFit.cover,
@@ -499,8 +499,8 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
     final aspectRatio = hasSize
         ? size.width / size.height
         : (controller.value.aspectRatio > 0
-            ? controller.value.aspectRatio
-            : 9 / 16);
+              ? controller.value.aspectRatio
+              : 9 / 16);
 
     final frame = hasSize
         ? FittedBox(
@@ -522,11 +522,7 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
           );
 
     if (widget.width != null || widget.height != null) {
-      return SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: frame,
-      );
+      return SizedBox(width: widget.width, height: widget.height, child: frame);
     }
 
     return SizedBox.expand(child: frame);
@@ -567,24 +563,15 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(
-          child: widget.placeholder ?? _defaultPlaceholder(),
-        ),
-        if (isReady)
-          Positioned.fill(
-            child: _buildFrame(controller),
-          ),
+        Positioned.fill(child: widget.placeholder ?? _defaultPlaceholder()),
+        if (isReady) Positioned.fill(child: _buildFrame(controller)),
       ],
     );
   }
 }
 
 Widget _defaultPlaceholder() {
-  return AppShimmer(
-    child: Container(
-      color: AppColors.skeletonPlaceholder,
-    ),
-  );
+  return AppShimmer(child: Container(color: AppColors.skeletonPlaceholder));
 }
 
 class _ThumbnailFallback extends StatelessWidget {

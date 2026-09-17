@@ -10,7 +10,7 @@ import 'package:gruve_app/features/auth/data/dto/complete_profile_response.dart'
 /// here.
 class CompleteProfileController {
   CompleteProfileController({CompleteProfileService? service})
-      : _service = service ?? CompleteProfileService();
+    : _service = service ?? CompleteProfileService();
 
   final CompleteProfileService _service;
 

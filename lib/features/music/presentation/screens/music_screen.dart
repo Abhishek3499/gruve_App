@@ -220,7 +220,10 @@ class MusicScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: isBlack ? Colors.black : const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 0.5,
+        ),
       ),
       child: Stack(
         children: [

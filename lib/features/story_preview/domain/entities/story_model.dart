@@ -68,11 +68,16 @@ class StoryItem {
       mediaMimeType: json['media_mime_type']?.toString() ?? '',
       mediaKind: json['media_kind']?.toString() ?? '',
       caption: json['caption']?.toString(),
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
-      expiresAt: DateTime.parse(json['expires_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
+      expiresAt: DateTime.parse(
+        json['expires_at'] ?? DateTime.now().toIso8601String(),
+      ),
       userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
-      avatarUrl: json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
+      avatarUrl:
+          json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
       isHighlighted: json['is_highlighted'] == true,
     );
   }
@@ -141,9 +146,12 @@ class StoriesData {
     AppLogger.d("➡️ [StoriesData] Has Next: ${json['has_next']}");
 
     final storiesList = json['stories'] as List?;
-    AppLogger.d("📚 [StoriesData] Stories count in list: ${storiesList?.length ?? 0}");
+    AppLogger.d(
+      "📚 [StoriesData] Stories count in list: ${storiesList?.length ?? 0}",
+    );
 
-    final stories = storiesList?.map((item) => StoryItem.fromJson(item)).toList() ?? [];
+    final stories =
+        storiesList?.map((item) => StoryItem.fromJson(item)).toList() ?? [];
 
     AppLogger.d("✅ [StoriesData] Parsed ${stories.length} stories");
 

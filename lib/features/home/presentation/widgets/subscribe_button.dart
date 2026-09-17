@@ -85,47 +85,48 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                 ? null
                 : () async {
                     final optimisticStatus = !isSubscribed;
-              _showSubscriptionSnackBar(optimisticStatus);
+                    _showSubscriptionSnackBar(optimisticStatus);
 
-              setState(() {
-                _isProcessing = true;
-              });
+                    setState(() {
+                      _isProcessing = true;
+                    });
 
-              try {
-                await widget.subscribeController
-                    .toggleSubscription(widget.userId);
-              } catch (e) {
-                _log('❌ button error userId=${widget.userId} error=$e');
+                    try {
+                      await widget.subscribeController.toggleSubscription(
+                        widget.userId,
+                      );
+                    } catch (e) {
+                      _log('❌ button error userId=${widget.userId} error=$e');
 
-                if (!context.mounted) return;
+                      if (!context.mounted) return;
 
-                String errorMessage =
-                    'Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} ${widget.username}';
+                      String errorMessage =
+                          'Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} ${widget.username}';
 
-                if (e.toString().contains('subscribe to yourself')) {
-                  errorMessage = 'You cannot subscribe to yourself';
-                } else if (e.toString().contains('405') ||
-                    e.toString().contains('Method Not Allowed')) {
-                  errorMessage =
-                      'Subscription service unavailable. Please try again later.';
-                }
+                      if (e.toString().contains('subscribe to yourself')) {
+                        errorMessage = 'You cannot subscribe to yourself';
+                      } else if (e.toString().contains('405') ||
+                          e.toString().contains('Method Not Allowed')) {
+                        errorMessage =
+                            'Subscription service unavailable. Please try again later.';
+                      }
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(errorMessage),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _isProcessing = false;
-                  });
-                }
-              }
-            },
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(errorMessage),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          _isProcessing = false;
+                        });
+                      }
+                    }
+                  },
             child: Text(
               isSubscribed ? 'Subscribed' : 'Subscribe',
               style: TextStyle(

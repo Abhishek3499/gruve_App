@@ -6,10 +6,8 @@ class UserProfileRepository extends ProfileRepository {
   final String userId;
   final UserProfileService _service;
 
-  UserProfileRepository({
-    required this.userId,
-    UserProfileService? service,
-  }) : _service = service ?? UserProfileService();
+  UserProfileRepository({required this.userId, UserProfileService? service})
+    : _service = service ?? UserProfileService();
 
   @override
   Future<Map<String, dynamic>> fetchProfileData({

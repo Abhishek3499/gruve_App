@@ -6,7 +6,7 @@ import 'package:gruve_app/features/auth/data/services/login_service.dart';
 /// owned by the Phone Login Riverpod notifier, not here.
 class PhoneSignInController {
   PhoneSignInController({EmailSignInService? service})
-      : _service = service ?? EmailSignInService();
+    : _service = service ?? EmailSignInService();
 
   final EmailSignInService _service;
 
@@ -38,7 +38,8 @@ class PhoneSignInController {
 class PhoneLoginResult {
   const PhoneLoginResult._({required this.isSuccess, this.errorMessage});
 
-  factory PhoneLoginResult.success() => const PhoneLoginResult._(isSuccess: true);
+  factory PhoneLoginResult.success() =>
+      const PhoneLoginResult._(isSuccess: true);
 
   factory PhoneLoginResult.failure(String message) =>
       PhoneLoginResult._(isSuccess: false, errorMessage: message);

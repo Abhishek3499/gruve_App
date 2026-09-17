@@ -19,7 +19,7 @@ class ViewsAccountReached extends StatelessWidget {
               const Text(
                 'Account reached',
                 style: TextStyle(
-                  color:  Color(0xFFFFFFFF),
+                  color: Color(0xFFFFFFFF),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

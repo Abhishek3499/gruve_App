@@ -74,7 +74,10 @@ class MessageBubble extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          _SenderAvatar(avatarUrl: message.senderAvatar, name: message.senderName),
+          _SenderAvatar(
+            avatarUrl: message.senderAvatar,
+            name: message.senderName,
+          ),
           const SizedBox(width: 8),
           _buildAudioBubble(context, isSent: false),
         ],
@@ -86,7 +89,10 @@ class MessageBubble extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          _SenderAvatar(avatarUrl: message.senderAvatar, name: message.senderName),
+          _SenderAvatar(
+            avatarUrl: message.senderAvatar,
+            name: message.senderName,
+          ),
           const SizedBox(width: 8),
           _buildMediaBubble(context, isSent: false),
         ],
@@ -97,7 +103,10 @@ class MessageBubble extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _SenderAvatar(avatarUrl: message.senderAvatar, name: message.senderName),
+        _SenderAvatar(
+          avatarUrl: message.senderAvatar,
+          name: message.senderName,
+        ),
         const SizedBox(width: 8),
         CustomPaint(
           painter: ChatBubblePainter(
@@ -133,9 +142,7 @@ class MessageBubble extends StatelessWidget {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _buildAudioBubble(context, isSent: true),
-        ],
+        children: [_buildAudioBubble(context, isSent: true)],
       );
     }
 
@@ -143,9 +150,7 @@ class MessageBubble extends StatelessWidget {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _buildMediaBubble(context, isSent: true),
-        ],
+        children: [_buildMediaBubble(context, isSent: true)],
       );
     }
 
@@ -199,8 +204,9 @@ class MessageBubble extends StatelessWidget {
           10,
         ),
         child: Column(
-          crossAxisAlignment:
-              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSent
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (message.hasReply) _buildReplyQuote(),
@@ -235,15 +241,11 @@ class MessageBubble extends StatelessWidget {
       ),
       child: Container(
         constraints: BoxConstraints(maxWidth: mediaWidth + 12),
-        padding: EdgeInsets.fromLTRB(
-          isSent ? 4 : 8,
-          4,
-          isSent ? 8 : 4,
-          4,
-        ),
+        padding: EdgeInsets.fromLTRB(isSent ? 4 : 8, 4, isSent ? 8 : 4, 4),
         child: Column(
-          crossAxisAlignment:
-              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isSent
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (message.hasReply) _buildReplyQuote(),
@@ -307,16 +309,8 @@ class MessageBubble extends StatelessWidget {
         fit: StackFit.expand,
         alignment: Alignment.center,
         children: [
-          VideoThumbnailWidget(
-            videoPath: path,
-            width: width,
-            height: height,
-          ),
-          const Icon(
-            Icons.play_arrow,
-            color: Colors.white,
-            size: 48,
-          ),
+          VideoThumbnailWidget(videoPath: path, width: width, height: height),
+          const Icon(Icons.play_arrow, color: Colors.white, size: 48),
         ],
       );
     }
@@ -365,8 +359,9 @@ class MessageBubble extends StatelessWidget {
     if (message.isSharedPost) {
       final companion = message.sharedPostCompanionText;
       return Column(
-        crossAxisAlignment:
-            message.isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: message.isSent
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           if (companion != null) ...[
             Text(
@@ -376,9 +371,7 @@ class MessageBubble extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           SharedPostPreviewCard(
-            key: ValueKey(
-              'shared_post_${message.id}_${message.sharedPostId}',
-            ),
+            key: ValueKey('shared_post_${message.id}_${message.sharedPostId}'),
             postId: message.sharedPostId!,
             isSent: message.isSent,
             initialPreviewUrl: message.sharedPostPreviewUrl,
@@ -481,10 +474,7 @@ class MessageBubble extends StatelessWidget {
             fontSize: 10,
           ),
         ),
-        if (!isReceived) ...[
-          const SizedBox(width: 4),
-          _buildTickIcon(),
-        ],
+        if (!isReceived) ...[const SizedBox(width: 4), _buildTickIcon()],
       ],
     );
   }
@@ -510,11 +500,7 @@ class MessageBubble extends StatelessWidget {
           color: Color(0xFF34B7F1), // Sleek WhatsApp double blue tick color
         );
       case MessageStatus.failed:
-        return const Icon(
-          Icons.error_outline,
-          size: 14,
-          color: Colors.red,
-        );
+        return const Icon(Icons.error_outline, size: 14, color: Colors.red);
     }
   }
 
@@ -523,8 +509,8 @@ class MessageBubble extends StatelessWidget {
     final hour = localTime.hour > 12
         ? localTime.hour - 12
         : localTime.hour == 0
-            ? 12
-            : localTime.hour;
+        ? 12
+        : localTime.hour;
     final minute = localTime.minute.toString().padLeft(2, '0');
     final period = localTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -637,7 +623,9 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         });
       }
     } catch (e) {
-      AppLogger.d('💥 [VideoThumbnailWidget] Error initializing video thumbnail: $e');
+      AppLogger.d(
+        '💥 [VideoThumbnailWidget] Error initializing video thumbnail: $e',
+      );
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -669,7 +657,10 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         height: widget.height,
         color: Colors.white12,
         child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white54,
+          ),
         ),
       );
     }
@@ -681,8 +672,12 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         fit: BoxFit.cover,
         clipBehavior: Clip.hardEdge,
         child: SizedBox(
-          width: _controller!.value.size.width > 0 ? _controller!.value.size.width : widget.width,
-          height: _controller!.value.size.height > 0 ? _controller!.value.size.height : widget.height,
+          width: _controller!.value.size.width > 0
+              ? _controller!.value.size.width
+              : widget.width,
+          height: _controller!.value.size.height > 0
+              ? _controller!.value.size.height
+              : widget.height,
           child: VideoPlayer(_controller!),
         ),
       ),
@@ -708,10 +703,8 @@ class _SenderAvatar extends StatelessWidget {
 
     return CachedNetworkImage(
       imageUrl: url,
-      imageBuilder: (_, imageProvider) => CircleAvatar(
-        radius: radius,
-        backgroundImage: imageProvider,
-      ),
+      imageBuilder: (_, imageProvider) =>
+          CircleAvatar(radius: radius, backgroundImage: imageProvider),
       placeholder: (context, url) => Shimmer.fromColors(
         baseColor: Colors.white12,
         highlightColor: Colors.white24,
@@ -733,7 +726,11 @@ class _SenderAvatar extends StatelessWidget {
       backgroundColor: const Color(0xFF6A008A),
       child: Text(
         initial,
-        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

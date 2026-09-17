@@ -16,12 +16,10 @@ class StoryList extends StatelessWidget {
 
   void _log(String message) {
     AppLogger.d(message);
-    
   }
 
   @override
   Widget build(BuildContext context) {
-
     // Show error state
     if (provider.errorMessage != null) {
       return _buildErrorState(context);

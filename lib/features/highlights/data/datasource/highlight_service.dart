@@ -14,10 +14,11 @@ class HighlightService {
 
   void _log(String message) {
     AppLogger.d(message);
-    
   }
 
-  Future<HighlightsResponse> fetchMyHighlights({CancelToken? cancelToken}) async {
+  Future<HighlightsResponse> fetchMyHighlights({
+    CancelToken? cancelToken,
+  }) async {
     try {
       _log('[HighlightService] fetchMyHighlights called');
 
@@ -53,7 +54,10 @@ class HighlightService {
     }
   }
 
-  Future<HighlightResponse> fetchHighlightStories(String highlightId, {CancelToken? cancelToken}) async {
+  Future<HighlightResponse> fetchHighlightStories(
+    String highlightId, {
+    CancelToken? cancelToken,
+  }) async {
     try {
       _log('[HighlightService] fetchHighlightStories called');
       _log('[HighlightService] highlightId: $highlightId');

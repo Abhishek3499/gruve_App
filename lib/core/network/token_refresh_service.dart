@@ -16,8 +16,6 @@ class TokenRefreshService {
   /// Prevents multiple simultaneous refresh requests
   Completer<Map<String, String>?>? _refreshCompleter;
 
-
-
   /// Whether a refresh is currently in progress
   bool get isRefreshing => _refreshCompleter != null;
 
@@ -51,7 +49,9 @@ class TokenRefreshService {
 
       final dio = AuthDio.getInstance();
 
-      AppLogger.d('🔄 [TokenRefresh] Sending refresh request to: /auth/refresh');
+      AppLogger.d(
+        '🔄 [TokenRefresh] Sending refresh request to: /auth/refresh',
+      );
 
       final response = await dio.post(
         ApiConstants.refreshToken,

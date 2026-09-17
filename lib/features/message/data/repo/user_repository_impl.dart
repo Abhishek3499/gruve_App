@@ -12,8 +12,13 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<List<UserEntity>> getUsers({CancelToken? cancelToken}) async {
     try {
-      final response = await dataSource.fetchUsers(page: 1, cancelToken: cancelToken);
-      AppLogger.d('🧠 [UserRepositoryImpl] Initial load: ${response.users.length} users');
+      final response = await dataSource.fetchUsers(
+        page: 1,
+        cancelToken: cancelToken,
+      );
+      AppLogger.d(
+        '🧠 [UserRepositoryImpl] Initial load: ${response.users.length} users',
+      );
       return response.users.map((m) => m.toEntity()).toList();
     } catch (e) {
       AppLogger.d('💥 [UserRepositoryImpl] Error in initial load: $e');
@@ -33,7 +38,9 @@ class UserRepositoryImpl implements UserRepository {
         cancelToken: cancelToken,
         skipCache: skipCache,
       );
-      AppLogger.d('✅ [UserRepositoryImpl] Page $page fetched: ${response.users.length} users');
+      AppLogger.d(
+        '✅ [UserRepositoryImpl] Page $page fetched: ${response.users.length} users',
+      );
       return response;
     } catch (e) {
       AppLogger.d('💥 [UserRepositoryImpl] Error fetching page $page: $e');

@@ -23,12 +23,12 @@ class MockTrack {
 class StoryMusicPicker extends StatefulWidget {
   final StickerData? initialSticker;
 
-  const StoryMusicPicker({
-    super.key,
-    this.initialSticker,
-  });
+  const StoryMusicPicker({super.key, this.initialSticker});
 
-  static Future<StickerData?> open(BuildContext context, {StickerData? initialSticker}) {
+  static Future<StickerData?> open(
+    BuildContext context, {
+    StickerData? initialSticker,
+  }) {
     return showModalBottomSheet<StickerData>(
       context: context,
       isScrollControlled: true,
@@ -56,7 +56,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Abhishek',
       durationStr: '3:05',
       totalDurationSeconds: 185.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFFC358D7), Color(0xFF72008D)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFFC358D7), Color(0xFF72008D)],
+      ),
     ),
     MockTrack(
       id: '2',
@@ -64,7 +66,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Lofi Vibes',
       durationStr: '2:40',
       totalDurationSeconds: 160.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFFFF2D55), Color(0xFFFF9500)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFFFF2D55), Color(0xFFFF9500)],
+      ),
     ),
     MockTrack(
       id: '3',
@@ -72,7 +76,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Synthwave Kid',
       durationStr: '3:50',
       totalDurationSeconds: 230.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFF00FFCC), Color(0xFF5AC8FA)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFF00FFCC), Color(0xFF5AC8FA)],
+      ),
     ),
     MockTrack(
       id: '4',
@@ -80,7 +86,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Tropic Beats',
       durationStr: '2:15',
       totalDurationSeconds: 135.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFFFFCC00), Color(0xFFFF9500)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFFFFCC00), Color(0xFFFF9500)],
+      ),
     ),
     MockTrack(
       id: '5',
@@ -88,7 +96,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Dance Floor',
       durationStr: '3:12',
       totalDurationSeconds: 192.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFF4CD964), Color(0xFF5AC8FA)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFF4CD964), Color(0xFF5AC8FA)],
+      ),
     ),
     MockTrack(
       id: '6',
@@ -96,7 +106,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Cosmic Mind',
       durationStr: '4:20',
       totalDurationSeconds: 260.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFF72008D), Color(0xFF000000)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFF72008D), Color(0xFF000000)],
+      ),
     ),
     MockTrack(
       id: '7',
@@ -104,7 +116,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: 'Guitar Hero',
       durationStr: '2:55',
       totalDurationSeconds: 175.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFFFF2D85), Color(0xFFFFCC00)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFFFF2D85), Color(0xFFFFCC00)],
+      ),
     ),
     MockTrack(
       id: '8',
@@ -112,7 +126,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       artist: '80s Fever',
       durationStr: '3:33',
       totalDurationSeconds: 213.0,
-      coverGradient: const LinearGradient(colors: [Color(0xFF5AC8FA), Color(0xFFC358D7)]),
+      coverGradient: const LinearGradient(
+        colors: [Color(0xFF5AC8FA), Color(0xFFC358D7)],
+      ),
     ),
   ];
 
@@ -137,7 +153,8 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
         orElse: () => _allTracks.first,
       );
       _selectedTrack = matchedTrack;
-      _selectedDurationSeconds = (initialSticker.musicTrimDuration ?? 15.0).toInt();
+      _selectedDurationSeconds = (initialSticker.musicTrimDuration ?? 15.0)
+          .toInt();
       final totalSec = matchedTrack.totalDurationSeconds;
       final startSec = initialSticker.musicTrimStart ?? 0.0;
       _trimStartPercent = (startSec / totalSec).clamp(0.0, 1.0);
@@ -147,9 +164,11 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
   void _onSearch(String value) {
     setState(() {
       _filteredTracks = _allTracks
-          .where((track) =>
-              track.title.toLowerCase().contains(value.toLowerCase()) ||
-              track.artist.toLowerCase().contains(value.toLowerCase()))
+          .where(
+            (track) =>
+                track.title.toLowerCase().contains(value.toLowerCase()) ||
+                track.artist.toLowerCase().contains(value.toLowerCase()),
+          )
           .toList();
     });
   }
@@ -159,17 +178,20 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
 
     final startSec = _trimStartPercent * _selectedTrack!.totalDurationSeconds;
 
-    final result = (widget.initialSticker ?? StickerData(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: '🎵 ${_selectedTrack!.title}',
-      position: const Offset(100, 200),
-    )).copyWith(
-      isMusic: true,
-      musicTitle: _selectedTrack!.title,
-      musicArtist: _selectedTrack!.artist,
-      musicTrimStart: startSec,
-      musicTrimDuration: _selectedDurationSeconds.toDouble(),
-    );
+    final result =
+        (widget.initialSticker ??
+                StickerData(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  text: '🎵 ${_selectedTrack!.title}',
+                  position: const Offset(100, 200),
+                ))
+            .copyWith(
+              isMusic: true,
+              musicTitle: _selectedTrack!.title,
+              musicArtist: _selectedTrack!.artist,
+              musicTrimStart: startSec,
+              musicTrimDuration: _selectedDurationSeconds.toDouble(),
+            );
 
     Navigator.pop(context, result);
   }
@@ -203,7 +225,8 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    if (_selectedTrack != null && widget.initialSticker == null) {
+                    if (_selectedTrack != null &&
+                        widget.initialSticker == null) {
                       setState(() {
                         _selectedTrack = null;
                       });
@@ -212,8 +235,14 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                     }
                   },
                   child: Text(
-                    (_selectedTrack != null && widget.initialSticker == null) ? 'Back' : 'Cancel',
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    (_selectedTrack != null && widget.initialSticker == null)
+                        ? 'Back'
+                        : 'Cancel',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Text(
@@ -244,7 +273,9 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
           const Divider(color: Colors.white12, height: 1),
 
           Expanded(
-            child: _selectedTrack != null ? _buildTrimmerView() : _buildSelectionView(),
+            child: _selectedTrack != null
+                ? _buildTrimmerView()
+                : _buildSelectionView(),
           ),
         ],
       ),
@@ -305,12 +336,20 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                     gradient: track.coverGradient,
                   ),
                   child: const Center(
-                    child: Icon(Icons.music_note, color: Colors.white, size: 20),
+                    child: Icon(
+                      Icons.music_note,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
                 title: Text(
                   track.title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
                 subtitle: Text(
                   track.artist,
@@ -321,13 +360,20 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                   children: [
                     Text(
                       track.durationStr,
-                      style: const TextStyle(color: Colors.white30, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white30,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     IconButton(
                       icon: Icon(
-                        isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                        color: isPlaying ? const Color(0xFFC358D7) : Colors.white70,
+                        isPlaying
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_filled,
+                        color: isPlaying
+                            ? const Color(0xFFC358D7)
+                            : Colors.white70,
                         size: 30,
                       ),
                       onPressed: () {
@@ -381,7 +427,7 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                     color: Colors.black45,
                     blurRadius: 16,
                     offset: const Offset(0, 8),
-                  )
+                  ),
                 ],
               ),
               child: const Center(
@@ -391,7 +437,11 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
             const SizedBox(height: 24),
             Text(
               track.title,
-              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
@@ -415,11 +465,16 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                   },
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isSel ? const Color(0xFFC358D7) : Colors.white10,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isSel ? Colors.white24 : Colors.transparent),
+                      border: Border.all(
+                        color: isSel ? Colors.white24 : Colors.transparent,
+                      ),
                     ),
                     child: Text(
                       '${duration}s',
@@ -458,7 +513,10 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                 final screenWidth = box.size.width - 48; // padding adjusted
                 final deltaPercent = details.primaryDelta! / screenWidth;
                 setState(() {
-                  _trimStartPercent = (_trimStartPercent + deltaPercent).clamp(0.0, 1.0 - (_selectedDurationSeconds / totalSec));
+                  _trimStartPercent = (_trimStartPercent + deltaPercent).clamp(
+                    0.0,
+                    1.0 - (_selectedDurationSeconds / totalSec),
+                  );
                 });
               },
               child: Container(
@@ -474,7 +532,8 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                     final width = constraints.maxWidth;
                     // Segment highlight math
                     final highlightLeft = _trimStartPercent * width;
-                    final highlightWidth = (_selectedDurationSeconds / totalSec) * width;
+                    final highlightWidth =
+                        (_selectedDurationSeconds / totalSec) * width;
 
                     return Stack(
                       children: [
@@ -508,8 +567,13 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                           width: max(highlightWidth, 30.0),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFC358D7).withValues(alpha: 0.25),
-                              border: Border.all(color: const Color(0xFFC358D7), width: 2),
+                              color: const Color(
+                                0xFFC358D7,
+                              ).withValues(alpha: 0.25),
+                              border: Border.all(
+                                color: const Color(0xFFC358D7),
+                                width: 2,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
@@ -523,7 +587,10 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
             const SizedBox(height: 10),
             Text(
               'Drag the highlight box to trim the song segment',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 11,
+              ),
             ),
             const SizedBox(height: 24),
           ],

@@ -8,52 +8,47 @@ class OtherUser {
   final String name;
   final String? avatar;
 
-  const OtherUser({
-    required this.id,
-    required this.name,
-    this.avatar,
-  });
+  const OtherUser({required this.id, required this.name, this.avatar});
 
   factory OtherUser.fromJson(Map<String, dynamic> json) {
     AppLogger.d('👤 [OtherUser] 🔍 Starting user parsing');
-    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '👤 OtherUser.fromJson');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(
+      json,
+      context: '👤 OtherUser.fromJson',
+    );
     final flat = _flattenUserJson(safeJson);
     AppLogger.d('👤 [OtherUser] 🗺️ Flattened keys: ${flat.keys.toList()}');
-    
+
     return OtherUser(
-      id: SafeParsingHelpers.safeString(flat, const ['id', 'user_id', '_id', 'pk'], fallback: ''),
-      name: SafeParsingHelpers.safeString(
-        flat,
-        const ['name', 'full_name', 'fullname', 'username', 'display_name'],
-        fallback: 'Unknown',
-      ),
-      avatar: SafeParsingHelpers.safeNullableString(
-        flat,
-        const [
-          'avatar',
-          'profile_picture',
-          'profileImage',
-          'profile_image',
-          'photo',
-          'image',
-        ],
-      ),
+      id: SafeParsingHelpers.safeString(flat, const [
+        'id',
+        'user_id',
+        '_id',
+        'pk',
+      ], fallback: ''),
+      name: SafeParsingHelpers.safeString(flat, const [
+        'name',
+        'full_name',
+        'fullname',
+        'username',
+        'display_name',
+      ], fallback: 'Unknown'),
+      avatar: SafeParsingHelpers.safeNullableString(flat, const [
+        'avatar',
+        'profile_picture',
+        'profileImage',
+        'profile_image',
+        'photo',
+        'image',
+      ]),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'avatar': avatar,
-    };
+    return {'id': id, 'name': name, 'avatar': avatar};
   }
 
-  OtherUser copyWith({
-    String? id,
-    String? name,
-    String? avatar,
-  }) {
+  OtherUser copyWith({String? id, String? name, String? avatar}) {
     return OtherUser(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -86,8 +81,8 @@ Map<String, dynamic> _flattenUserJson(Map<String, dynamic> json) {
     for (final entry in map.entries) {
       final value = entry.value;
       final existing = base[entry.key];
-      final existingEmpty = existing == null ||
-          (existing is String && existing.trim().isEmpty);
+      final existingEmpty =
+          existing == null || (existing is String && existing.trim().isEmpty);
       if (existingEmpty && value != null) {
         base[entry.key] = value;
       }
@@ -106,8 +101,6 @@ Map<String, dynamic> _flattenUserJson(Map<String, dynamic> json) {
   return base;
 }
 
-
-
 /// Model representing the last message in a conversation
 class LastMessage {
   final String content;
@@ -122,15 +115,27 @@ class LastMessage {
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
     AppLogger.d('📨 [LastMessage] 🔍 Starting message parsing');
-    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '📨 LastMessage.fromJson');
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(
+      json,
+      context: '📨 LastMessage.fromJson',
+    );
     AppLogger.d('📨 [LastMessage] 🗺️ Message keys: ${safeJson.keys.toList()}');
-    
+
     return LastMessage(
-      content: SafeParsingHelpers.safeString(safeJson, const ['content', 'text', 'message'], fallback: ''),
+      content: SafeParsingHelpers.safeString(safeJson, const [
+        'content',
+        'text',
+        'message',
+      ], fallback: ''),
       createdAt: _parseDateTime(
-        safeJson['created_at'] ?? safeJson['createdAt'] ?? safeJson['timestamp'],
+        safeJson['created_at'] ??
+            safeJson['createdAt'] ??
+            safeJson['timestamp'],
       ),
-      messageKind: SafeParsingHelpers.safeNullableString(safeJson, const ['message_kind', 'messageKind']),
+      messageKind: SafeParsingHelpers.safeNullableString(safeJson, const [
+        'message_kind',
+        'messageKind',
+      ]),
     );
   }
 
@@ -145,7 +150,7 @@ class LastMessage {
   /// Parse DateTime from ISO string with fallback
   static DateTime _parseDateTime(dynamic dateTime) {
     if (dateTime == null) return DateTime.now();
-    
+
     if (dateTime is String) {
       try {
         return DateTime.parse(dateTime).toLocal();
@@ -153,7 +158,7 @@ class LastMessage {
         return DateTime.now();
       }
     }
-    
+
     return DateTime.now();
   }
 
@@ -161,12 +166,12 @@ class LastMessage {
   String get timeAgo {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
-    
+
     // Handle very recent messages
     if (difference.inSeconds < 60) {
       return 'just now';
     }
-    
+
     // Use timeago for proper formatting
     return timeago.format(createdAt, allowFromNow: true);
   }
@@ -193,10 +198,12 @@ class LastMessage {
   }
 
   @override
-  int get hashCode => content.hashCode ^ createdAt.hashCode ^ messageKind.hashCode;
+  int get hashCode =>
+      content.hashCode ^ createdAt.hashCode ^ messageKind.hashCode;
 
   @override
-  String toString() => 'LastMessage(content: $content, createdAt: $createdAt, messageKind: $messageKind)';
+  String toString() =>
+      'LastMessage(content: $content, createdAt: $createdAt, messageKind: $messageKind)';
 }
 
 /// Model representing a conversation
@@ -223,9 +230,14 @@ class ConversationModel {
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
     AppLogger.d('💬 [ConversationModel] 🔍 Starting conversation parsing');
-    final safeJson = SafeParsingHelpers.validateAndCleanMap(json, context: '💬 ConversationModel.fromJson');
-    AppLogger.d('💬 [ConversationModel] 🗺️ Conversation keys: ${safeJson.keys.toList()}');
-    
+    final safeJson = SafeParsingHelpers.validateAndCleanMap(
+      json,
+      context: '💬 ConversationModel.fromJson',
+    );
+    AppLogger.d(
+      '💬 [ConversationModel] 🗺️ Conversation keys: ${safeJson.keys.toList()}',
+    );
+
     // Safely extract nested objects
     final otherUserData = SafeParsingHelpers.safeMapParse(
       safeJson['other_user'] ??
@@ -233,29 +245,48 @@ class ConversationModel {
           safeJson['user'] ??
           safeJson['participant'] ??
           {},
-      context: '💬 ConversationModel.otherUser'
+      context: '💬 ConversationModel.otherUser',
     );
-    
+
     final rawLastMessage = safeJson['last_message'] ?? safeJson['lastMessage'];
     final lastMessageData = SafeParsingHelpers.safeMapParse(
       rawLastMessage ?? {},
-      context: '💬 ConversationModel.lastMessage'
+      context: '💬 ConversationModel.lastMessage',
     );
-    
-    AppLogger.d('💬 [ConversationModel] 👤 Other user keys: ${otherUserData.keys.toList()}');
-    AppLogger.d('💬 [ConversationModel] 📨 Last message keys: ${lastMessageData.keys.toList()}');
-    
+
+    AppLogger.d(
+      '💬 [ConversationModel] 👤 Other user keys: ${otherUserData.keys.toList()}',
+    );
+    AppLogger.d(
+      '💬 [ConversationModel] 📨 Last message keys: ${lastMessageData.keys.toList()}',
+    );
+
     return ConversationModel(
-      id: SafeParsingHelpers.safeString(safeJson, const ['id', '_id', 'conversation_id'], fallback: ''),
+      id: SafeParsingHelpers.safeString(safeJson, const [
+        'id',
+        '_id',
+        'conversation_id',
+      ], fallback: ''),
       otherUser: OtherUser.fromJson(otherUserData),
       lastMessage: LastMessage.fromJson(lastMessageData),
       hasLastMessage: rawLastMessage is Map && lastMessageData.isNotEmpty,
       updatedAt: _parseDateTime(
-        safeJson['updated_at'] ?? safeJson['updatedAt'] ?? safeJson['last_message_at'],
+        safeJson['updated_at'] ??
+            safeJson['updatedAt'] ??
+            safeJson['last_message_at'],
       ),
-      unreadCount: SafeParsingHelpers.safeInt(safeJson, const ['unread_count', 'unreadCount'], fallback: 0),
-      participant1Id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_1_id', 'participant1Id']),
-      participant2Id: SafeParsingHelpers.safeNullableString(safeJson, const ['participant_2_id', 'participant2Id']),
+      unreadCount: SafeParsingHelpers.safeInt(safeJson, const [
+        'unread_count',
+        'unreadCount',
+      ], fallback: 0),
+      participant1Id: SafeParsingHelpers.safeNullableString(safeJson, const [
+        'participant_1_id',
+        'participant1Id',
+      ]),
+      participant2Id: SafeParsingHelpers.safeNullableString(safeJson, const [
+        'participant_2_id',
+        'participant2Id',
+      ]),
     );
   }
 
@@ -274,7 +305,7 @@ class ConversationModel {
   /// Parse DateTime from ISO string with fallback
   static DateTime _parseDateTime(dynamic dateTime) {
     if (dateTime == null) return DateTime.now();
-    
+
     if (dateTime is String) {
       try {
         return DateTime.parse(dateTime).toLocal();
@@ -282,7 +313,7 @@ class ConversationModel {
         return DateTime.now();
       }
     }
-    
+
     return DateTime.now();
   }
 

@@ -35,7 +35,8 @@ class EmailSignInData {
     return EmailSignInData(
       accessToken: json['access_token']?.toString() ?? "",
       refreshToken: json['refresh_token']?.toString() ?? "",
-      userId: json['user_id']?.toString() ?? json['user']?['id']?.toString() ?? "",
+      userId:
+          json['user_id']?.toString() ?? json['user']?['id']?.toString() ?? "",
     );
   }
 }

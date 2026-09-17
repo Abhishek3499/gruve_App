@@ -6,10 +6,7 @@ enum ReportSheetTarget { user, post }
 class SimpleReportSheet extends StatelessWidget {
   final ReportSheetTarget target;
 
-  const SimpleReportSheet({
-    super.key,
-    this.target = ReportSheetTarget.user,
-  });
+  const SimpleReportSheet({super.key, this.target = ReportSheetTarget.user});
 
   String get _title {
     switch (target) {

@@ -432,7 +432,10 @@ class _EditProfileFormShimmer extends StatelessWidget {
         ),
         child: AppShimmer(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.rw(10), vertical: context.rh(5)),
+            padding: EdgeInsets.symmetric(
+              horizontal: context.rw(10),
+              vertical: context.rh(5),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -225,7 +225,9 @@ class MessageController extends ChangeNotifier {
       return false;
     }
 
-    AppLogger.d('🗑️ [MessageController] 🚀 Starting delete for message: $messageId');
+    AppLogger.d(
+      '🗑️ [MessageController] 🚀 Starting delete for message: $messageId',
+    );
     AppLogger.d('💬 [MessageController] 🆔 Conversation: $conversationId');
 
     // Store original message for rollback
@@ -236,10 +238,14 @@ class MessageController extends ChangeNotifier {
     }
 
     final originalMessage = _messages[messageIndex];
-    AppLogger.d('💾 [MessageController] 📝 Stored original message for rollback');
+    AppLogger.d(
+      '💾 [MessageController] 📝 Stored original message for rollback',
+    );
 
     // Optimistic UI update - remove immediately
-    AppLogger.d('⚡ [MessageController] 🗑️ Optimistic delete - removing from UI');
+    AppLogger.d(
+      '⚡ [MessageController] 🗑️ Optimistic delete - removing from UI',
+    );
     _messages.removeAt(messageIndex);
     _notify();
     AppLogger.d('✅ [MessageController] 👀 UI updated - message removed');
@@ -253,16 +259,24 @@ class MessageController extends ChangeNotifier {
       );
 
       if (success) {
-        AppLogger.d('✅ [MessageController] 🎉 Message deleted successfully from backend');
-        AppLogger.d('📊 [MessageController] 📉 Total messages: ${_messages.length}');
+        AppLogger.d(
+          '✅ [MessageController] 🎉 Message deleted successfully from backend',
+        );
+        AppLogger.d(
+          '📊 [MessageController] 📉 Total messages: ${_messages.length}',
+        );
         return true;
       } else {
-        AppLogger.d('❌ [MessageController] ⚠️ Backend delete failed - rolling back');
+        AppLogger.d(
+          '❌ [MessageController] ⚠️ Backend delete failed - rolling back',
+        );
         // Rollback - restore message
         _messages.insert(messageIndex, originalMessage);
         _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _notify();
-        AppLogger.d('🔄 [MessageController] ✅ Rollback complete - message restored');
+        AppLogger.d(
+          '🔄 [MessageController] ✅ Rollback complete - message restored',
+        );
         return false;
       }
     } catch (e) {
@@ -271,13 +285,17 @@ class MessageController extends ChangeNotifier {
         return false;
       }
       AppLogger.d('💥 [MessageController] ❌ Error deleting message: $e');
-      AppLogger.d('🔄 [MessageController] 🔙 Rolling back optimistic update...');
+      AppLogger.d(
+        '🔄 [MessageController] 🔙 Rolling back optimistic update...',
+      );
 
       // Rollback - restore message
       _messages.insert(messageIndex, originalMessage);
       _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       _notify();
-      AppLogger.d('✅ [MessageController] 🔄 Rollback complete - message restored');
+      AppLogger.d(
+        '✅ [MessageController] 🔄 Rollback complete - message restored',
+      );
 
       rethrow;
     }
@@ -286,7 +304,7 @@ class MessageController extends ChangeNotifier {
   void replaceMessage(MessageModel message) {
     final index = _messages.indexWhere((item) => item.id == message.id);
     if (index == -1) return;
-    
+
     _messages[index] = message;
     _notify();
 
@@ -341,11 +359,11 @@ class MessageController extends ChangeNotifier {
   }
 
   void handleMessageEdited(Map<String, dynamic> payload) {
-    final messageId = SafeParsingHelpers.safeString(
-      payload,
-      const ['message_id', 'messageId', 'id'],
-      fallback: '',
-    );
+    final messageId = SafeParsingHelpers.safeString(payload, const [
+      'message_id',
+      'messageId',
+      'id',
+    ], fallback: '');
     if (messageId.isEmpty) return;
 
     final index = _messages.indexWhere((m) => m.id == messageId);
@@ -354,10 +372,7 @@ class MessageController extends ChangeNotifier {
     final newText = MessageModel.fromJson(payload).text;
     if (newText.isEmpty) return;
 
-    _messages[index] = _messages[index].copyWith(
-      text: newText,
-      isEdited: true,
-    );
+    _messages[index] = _messages[index].copyWith(text: newText, isEdited: true);
     _notify();
     AppLogger.d('📡 [MessageController] Message edited: $messageId');
   }
@@ -452,7 +467,9 @@ class MessageController extends ChangeNotifier {
     }
     if (changed) {
       _notify();
-      AppLogger.d('📡 [MessageController] Message read statuses updated for: $messageIds');
+      AppLogger.d(
+        '📡 [MessageController] Message read statuses updated for: $messageIds',
+      );
     }
   }
 
@@ -472,7 +489,9 @@ class MessageController extends ChangeNotifier {
     }
 
     // Fallback: REST API
-    AppLogger.d('📡 [MessageController] WebSocket unavailable. Calling REST markAsRead fallback.');
+    AppLogger.d(
+      '📡 [MessageController] WebSocket unavailable. Calling REST markAsRead fallback.',
+    );
     try {
       await _messageService.markConversationAsRead(conversationId);
     } catch (e) {
@@ -509,9 +528,7 @@ class MessageController extends ChangeNotifier {
 
     conversationId = conversation.id;
     onConversationIdChanged?.call(conversation.id);
-    AppLogger.d(
-      '[MessageController] Conversation resolved: $conversationId',
-    );
+    AppLogger.d('[MessageController] Conversation resolved: $conversationId');
   }
 
   /// Upload chat media (image/video) before POST .../messages/.
@@ -595,14 +612,18 @@ class MessageController extends ChangeNotifier {
         if (receiverUserId.isEmpty) {
           throw Exception('Receiver user ID is missing');
         }
-        AppLogger.d('📡 [MessageController] Conversation ID is empty, fetching/creating from backend...');
+        AppLogger.d(
+          '📡 [MessageController] Conversation ID is empty, fetching/creating from backend...',
+        );
         final conversation = await _messageService.createOrGetConversation(
           receiverUserId,
           cancelToken: _cancelToken,
         );
         conversationId = conversation.id;
         onConversationIdChanged?.call(conversation.id);
-        AppLogger.d('📡 [MessageController] Conversation ID resolved: $conversationId');
+        AppLogger.d(
+          '📡 [MessageController] Conversation ID resolved: $conversationId',
+        );
       }
 
       AppLogger.d(
@@ -670,7 +691,9 @@ class MessageController extends ChangeNotifier {
   /// Returns true when the message list changed.
   bool _upsertMessage(MessageModel message, {String? replaceLocalId}) {
     if (replaceLocalId != null && replaceLocalId.isNotEmpty) {
-      final localIndex = _messages.indexWhere((item) => item.id == replaceLocalId);
+      final localIndex = _messages.indexWhere(
+        (item) => item.id == replaceLocalId,
+      );
       if (localIndex != -1) {
         _messages[localIndex] = _mergeWithExisting(
           _messages[localIndex],
@@ -719,7 +742,10 @@ class MessageController extends ChangeNotifier {
     return true;
   }
 
-  MessageModel _mergeWithExisting(MessageModel existing, MessageModel incoming) {
+  MessageModel _mergeWithExisting(
+    MessageModel existing,
+    MessageModel incoming,
+  ) {
     final incomingMedia = incoming.imagePath?.trim();
     final existingMedia = existing.imagePath?.trim();
 

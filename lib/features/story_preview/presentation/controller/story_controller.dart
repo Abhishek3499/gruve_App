@@ -46,10 +46,9 @@ class StoryController extends ChangeNotifier {
   }) async {
     try {
       AppLogger.d("\n🎬 ===== CONTROLLER START =====");
-        AppLogger.d("⏳ Loading started...");
-        AppLogger.d("📝 Caption: $caption");
-        AppLogger.d("📁 Media Path: $mediaPath");
-      
+      AppLogger.d("⏳ Loading started...");
+      AppLogger.d("📝 Caption: $caption");
+      AppLogger.d("📁 Media Path: $mediaPath");
 
       isLoading = true;
       isSuccess = false;
@@ -63,7 +62,6 @@ class StoryController extends ChangeNotifier {
       );
 
       AppLogger.d("📥 API Response: ${response.message}");
-      
 
       message = response.message;
       isSuccess = response.success;
@@ -77,7 +75,6 @@ class StoryController extends ChangeNotifier {
       }
     } catch (e) {
       AppLogger.d("💥 Controller error: $e");
-      
 
       message = "Something went wrong 😓";
       isSuccess = false;
@@ -86,7 +83,6 @@ class StoryController extends ChangeNotifier {
       notifyListeners();
 
       AppLogger.d("🏁 ===== CONTROLLER END =====\n");
-      
     }
   }
 
@@ -97,12 +93,11 @@ class StoryController extends ChangeNotifier {
   }) async {
     try {
       AppLogger.d("\n🎬 ===== FETCH STORIES CONTROLLER START =====");
-        AppLogger.d("🧠 FetchStories:");
-        AppLogger.d("➡️ userId: ${userId ?? 'me (own stories)'}");
-        AppLogger.d("⏳ Loading started...");
-        AppLogger.d("📄 Page: $page");
-        AppLogger.d("📏 Limit: $limit");
-      
+      AppLogger.d("🧠 FetchStories:");
+      AppLogger.d("➡️ userId: ${userId ?? 'me (own stories)'}");
+      AppLogger.d("⏳ Loading started...");
+      AppLogger.d("📄 Page: $page");
+      AppLogger.d("📏 Limit: $limit");
 
       isLoading = true;
       isSuccess = false;
@@ -116,14 +111,12 @@ class StoryController extends ChangeNotifier {
       );
 
       AppLogger.d("📥 API Response: ${response.message}");
-      
 
       message = response.message;
       isSuccess = response.success;
 
       if (isSuccess) {
         AppLogger.d("✅ Stories fetched successfully 🎉");
-        
 
         stories = response.data.stories;
         totalCount = response.data.count;
@@ -137,17 +130,14 @@ class StoryController extends ChangeNotifier {
         }
 
         AppLogger.d("📚 Total stories: ${stories.length}");
-          AppLogger.d("🔢 Total count: $totalCount");
-          AppLogger.d("📄 Current page: $currentPage");
-          AppLogger.d("➡️ Has next: $hasNext");
-        
+        AppLogger.d("🔢 Total count: $totalCount");
+        AppLogger.d("📄 Current page: $currentPage");
+        AppLogger.d("➡️ Has next: $hasNext");
       } else {
         AppLogger.d("❌ Stories fetch failed: ${response.message}");
-        
       }
     } catch (e) {
       AppLogger.d("💥 Controller error: $e");
-      
 
       message = "Something went wrong 😓";
       isSuccess = false;
@@ -156,7 +146,6 @@ class StoryController extends ChangeNotifier {
       notifyListeners();
 
       AppLogger.d("🏁 ===== FETCH STORIES CONTROLLER END =====\n");
-      
     }
   }
 }

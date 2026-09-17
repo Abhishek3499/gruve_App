@@ -51,7 +51,8 @@ class MessageCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            if (conversation.lastMessage.messageKind == 'audio') ...[
+                            if (conversation.lastMessage.messageKind ==
+                                'audio') ...[
                               const Icon(
                                 Icons.mic,
                                 color: Colors.white70,
@@ -80,9 +81,7 @@ class MessageCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 8, right: 12),
                     child: Container(
-                      constraints: const BoxConstraints(
-                        maxWidth: 100,
-                      ),
+                      constraints: const BoxConstraints(maxWidth: 100),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [

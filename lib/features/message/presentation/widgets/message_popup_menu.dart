@@ -125,7 +125,8 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
                     label: 'Delete',
                     color: const Color(0xFFF51829),
                     isSelected: widget.selectedAction == MessageAction.delete,
-                    onTap: () => widget.onActionSelected?.call(MessageAction.delete),
+                    onTap: () =>
+                        widget.onActionSelected?.call(MessageAction.delete),
                   ),
               ],
             ),

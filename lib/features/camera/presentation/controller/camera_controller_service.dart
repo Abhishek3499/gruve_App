@@ -105,7 +105,7 @@ class CameraControllerService {
 
     try {
       CameraLogger.logInitializationStart();
-      
+
       // 🚀 OPTIMIZATION 1: Use permanently cached cameras if available (lenses never change during app session)
       if (_cachedCameras != null && _cachedCameras!.isNotEmpty) {
         _cameras = _cachedCameras!;
@@ -121,9 +121,9 @@ class CameraControllerService {
       }
 
       _prepareCameraIndexes();
-      
+
       await _initializeControllerAt(_defaultBackCameraIndex);
-      
+
       // 🚀 OPTIMIZATION 3: Set zoom asynchronously (don't block)
       unawaited(setZoomLevel(1.0));
 
@@ -179,7 +179,7 @@ class CameraControllerService {
 
   Future<void> _initializeControllerAt(int cameraIndex) async {
     _currentCameraIndex = cameraIndex;
-    
+
     // 🚀 OPTIMIZATION 4: Use medium resolution for faster initialization
     _controller = CameraController(
       _cameras[_currentCameraIndex],
@@ -189,7 +189,7 @@ class CameraControllerService {
     );
 
     await _controller!.initialize();
-    
+
     // 🚀 OPTIMIZATION: Run camera settings and zoom queries in the background
     // so the preview stream starts rendering immediately without any delay!
     unawaited(() async {
@@ -203,7 +203,7 @@ class CameraControllerService {
           _controller!.getMinZoomLevel(),
           _controller!.getMaxZoomLevel(),
         ]);
-        
+
         _minZoom = zoomLevels[0];
         _maxZoom = zoomLevels[1];
         _currentZoom = _minZoom;

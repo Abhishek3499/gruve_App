@@ -18,10 +18,7 @@ class HideStoryHeader extends StatelessWidget {
             /// BACK BUTTON
             Positioned(
               left: 20,
-              child: BackButton(
-                color: Colors.white,
-                onPressed: onBack,
-              ),
+              child: BackButton(color: Colors.white, onPressed: onBack),
             ),
 
             /// TITLE

@@ -25,11 +25,7 @@ class VerifyOtpService {
       authLogger.d('Verify OTP purpose=$purpose identifier=$identifier');
 
       const endpoint = ApiConstants.verifyOtp;
-      final body = {
-        'identifier': identifier,
-        'otp': otp,
-        'purpose': purpose,
-      };
+      final body = {'identifier': identifier, 'otp': otp, 'purpose': purpose};
 
       AuthApiLogger.request(
         'VerifyOtp',
@@ -68,10 +64,7 @@ class VerifyOtpService {
     required String purpose,
   }) async {
     try {
-      final body = {
-        'identifier': identifier,
-        'purpose': purpose,
-      };
+      final body = {'identifier': identifier, 'purpose': purpose};
 
       AuthApiLogger.request(
         'ResendOtp',

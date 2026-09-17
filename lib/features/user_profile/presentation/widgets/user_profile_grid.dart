@@ -65,11 +65,7 @@ class UserProfileGrid extends StatelessWidget {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.video_library_outlined,
-            color: Colors.white,
-            size: 34,
-          ),
+          Icon(Icons.video_library_outlined, color: Colors.white, size: 34),
           SizedBox(height: 12),
           Text(
             'No posts yet',
@@ -86,9 +82,7 @@ class UserProfileGrid extends StatelessWidget {
   }
 
   Widget _buildLoadingSliverGrid() {
-    return const SliverToBoxAdapter(
-      child: ProfileGridShimmer(itemCount: 6),
-    );
+    return const SliverToBoxAdapter(child: ProfileGridShimmer(itemCount: 6));
   }
 
   List<Widget> _buildPostsSlivers(List<Post> posts, BuildContext context) {
@@ -97,23 +91,22 @@ class UserProfileGrid extends StatelessWidget {
         padding: gridPadding,
         sliver: SliverGrid(
           gridDelegate: gridDelegate,
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final post = posts[index];
-              final enrichedPost = _enrichPostWithUserData(post);
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final post = posts[index];
+            final enrichedPost = _enrichPostWithUserData(post);
 
-              return GestureDetector(
-                onTap: () => _openPost(
-                  context,
-                  enrichedPost,
-                  posts.map((p) => _enrichPostWithUserData(p)).toList(),
-                  index,
-                ),
-                child: ProfileGridTile(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      PostGridThumbnail(post: enrichedPost),
+            return GestureDetector(
+              onTap: () => _openPost(
+                context,
+                enrichedPost,
+                posts.map((p) => _enrichPostWithUserData(p)).toList(),
+                index,
+              ),
+              child: ProfileGridTile(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PostGridThumbnail(post: enrichedPost),
                     if (enrichedPost.isVideo)
                       Positioned(
                         top: 6,
@@ -131,13 +124,11 @@ class UserProfileGrid extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
-              );
-            },
-            childCount: posts.length,
-          ),
+              ),
+            );
+          }, childCount: posts.length),
         ),
       ),
     ];
@@ -196,9 +187,7 @@ class UserProfileGrid extends StatelessWidget {
             allPosts: allPosts,
             initialIndex: index,
             isOwnProfile: false,
-            onResolveMedia: needsResolve
-                ? () => _resolvePostMedia(post)
-                : null,
+            onResolveMedia: needsResolve ? () => _resolvePostMedia(post) : null,
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

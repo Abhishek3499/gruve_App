@@ -121,7 +121,9 @@ class ExploreReelsController extends ChangeNotifier {
       if (generation != _loadGeneration) return;
 
       final existingIds = _reels.map((reel) => reel.id).toSet();
-      final unique = page.results.where((reel) => !existingIds.contains(reel.id));
+      final unique = page.results.where(
+        (reel) => !existingIds.contains(reel.id),
+      );
       final uniqueList = unique.toList();
       _reels.addAll(uniqueList);
       _hasMore = page.hasMore;
@@ -157,7 +159,10 @@ class ExploreReelsController extends ChangeNotifier {
 
   Future<void> refresh() => loadInitial(refresh: true);
 
-  void _logDisplayPostUrls(Iterable<ExploreReel> reels, {required String prefix}) {
+  void _logDisplayPostUrls(
+    Iterable<ExploreReel> reels, {
+    required String prefix,
+  }) {
     for (final reel in reels) {
       final post = _service.displayPostFor(reel);
       AppLogger.d(

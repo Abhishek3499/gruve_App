@@ -58,7 +58,8 @@ class SharedPostMessageParser {
 
     final messageType = _messageType(json);
     final trimmedText = messageText.trim();
-    final isPostPayload = _postMessageTypes.contains(messageType) ||
+    final isPostPayload =
+        _postMessageTypes.contains(messageType) ||
         isTaggedPostMessage(trimmedText) ||
         _textPostIdRegex.hasMatch(trimmedText);
 
@@ -68,7 +69,10 @@ class SharedPostMessageParser {
     }
 
     final sharedPost =
-        json['shared_post'] ?? json['tagged_post'] ?? json['post'] ?? json['attachment'];
+        json['shared_post'] ??
+        json['tagged_post'] ??
+        json['post'] ??
+        json['attachment'];
     if (sharedPost is Map) {
       final map = Map<String, dynamic>.from(sharedPost);
       final nestedId = _readPostId(
@@ -105,9 +109,7 @@ class SharedPostMessageParser {
     String? postId,
   }) {
     final directPostId = _readPostId(json['post_id'] ?? json['postId']);
-    if (directPostId != null &&
-        postId != null &&
-        directPostId == postId) {
+    if (directPostId != null && postId != null && directPostId == postId) {
       final direct = _readPreviewUrl(json);
       if (direct != null) return direct;
     }
@@ -124,8 +126,9 @@ class SharedPostMessageParser {
       final nested = json[key];
       if (nested is Map) {
         final map = Map<String, dynamic>.from(nested);
-        final nestedId =
-            _readPostId(map['id'] ?? map['post_id'] ?? map['postId']);
+        final nestedId = _readPostId(
+          map['id'] ?? map['post_id'] ?? map['postId'],
+        );
         if (postId != null && nestedId != null && nestedId != postId) {
           continue;
         }
@@ -147,8 +150,9 @@ class SharedPostMessageParser {
     final content = json['content'];
     if (content is Map) {
       final map = Map<String, dynamic>.from(content);
-      final contentId =
-          _readPostId(map['post_id'] ?? map['postId'] ?? map['id']);
+      final contentId = _readPostId(
+        map['post_id'] ?? map['postId'] ?? map['id'],
+      );
       if (postId == null || contentId == null || contentId == postId) {
         final url = _readPreviewUrl(map);
         if (url != null) return url;
@@ -188,8 +192,12 @@ class SharedPostMessageParser {
     cleaned = cleaned.replaceAll(_taggedPostIdRegex, '').trim();
     cleaned = cleaned.replaceAll(_textPostIdRegex, '').trim();
     cleaned = cleaned.replaceAll(_taggedPostTextRegex, '').trim();
-    cleaned = cleaned.replaceAll(RegExp(r'\b' + RegExp.escape(postId) + r'\b'), '').trim();
-    cleaned = cleaned.replaceAll(RegExp('^${RegExp.escape(postId)}\$'), '').trim();
+    cleaned = cleaned
+        .replaceAll(RegExp(r'\b' + RegExp.escape(postId) + r'\b'), '')
+        .trim();
+    cleaned = cleaned
+        .replaceAll(RegExp('^${RegExp.escape(postId)}\$'), '')
+        .trim();
     cleaned = cleaned.replaceAll(_barePostIdRegex, '').trim();
 
     // Clean up any dangling colons or spaces

@@ -79,7 +79,9 @@ class SocketService {
 
   void _onFailed() {
     _setOnlineUsers(<String>{});
-    AppLogger.e("[SocketService] Connection failed — max reconnect attempts reached");
+    AppLogger.e(
+      "[SocketService] Connection failed — max reconnect attempts reached",
+    );
   }
 
   void _onError(String error) {
@@ -365,12 +367,16 @@ class SocketService {
   }) {
     final trimmedContent = content?.trim() ?? '';
     if (trimmedContent.isEmpty && media == null) {
-      AppLogger.w("[SocketService] sendMessage called with no content/media — nothing to send");
+      AppLogger.w(
+        "[SocketService] sendMessage called with no content/media — nothing to send",
+      );
       return false;
     }
 
     if (!_reconnectManager.isConnected) {
-      AppLogger.w("[SocketService] sendMessage called while disconnected — message not sent");
+      AppLogger.w(
+        "[SocketService] sendMessage called while disconnected — message not sent",
+      );
       return false;
     }
 
@@ -401,7 +407,9 @@ class SocketService {
   /// Send an event map directly via WebSocket (e.g. read receipt)
   bool sendEvent(Map<String, dynamic> eventData) {
     if (!_reconnectManager.isConnected) {
-      AppLogger.w("[SocketService] sendEvent called while disconnected — event not sent");
+      AppLogger.w(
+        "[SocketService] sendEvent called while disconnected — event not sent",
+      );
       return false;
     }
 

@@ -99,7 +99,7 @@ class _AudienceScreenState extends State<AudienceScreen> {
                     ),
 
                     SizedBox(height: context.rh(15)),
-  
+
                     // Close Friends Option
                     _buildAudienceTile(
                       icon: Icons.star_border,

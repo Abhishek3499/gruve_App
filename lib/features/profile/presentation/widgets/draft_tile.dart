@@ -28,10 +28,12 @@ class DraftTile extends StatelessWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     final month = months[dateTime.month - 1];
-    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : (dateTime.hour == 0 ? 12 : dateTime.hour);
+    final hour = dateTime.hour > 12
+        ? dateTime.hour - 12
+        : (dateTime.hour == 0 ? 12 : dateTime.hour);
     final ampm = dateTime.hour >= 12 ? 'PM' : 'AM';
     final minute = dateTime.minute.toString().padLeft(2, '0');
     return 'Edited on ${dateTime.day} $month at $hour:$minute $ampm';
@@ -60,9 +62,7 @@ class DraftTile extends StatelessWidget {
           Container(
             width: 75,
             height: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: (draft.mediaUrl != null && draft.mediaUrl!.isNotEmpty)
@@ -113,9 +113,9 @@ class DraftTile extends StatelessWidget {
 
           // Options Icon
           Theme(
-            data: Theme.of(context).copyWith(
-              cardColor: const Color(0xFF1E092D),
-            ),
+            data: Theme.of(
+              context,
+            ).copyWith(cardColor: const Color(0xFF1E092D)),
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.more_horiz, color: Colors.white),
               color: const Color(0xFF1E092D),
@@ -146,7 +146,11 @@ class DraftTile extends StatelessWidget {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                      Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
                       SizedBox(width: 12),
                       Text('Delete', style: TextStyle(color: Colors.redAccent)),
                     ],

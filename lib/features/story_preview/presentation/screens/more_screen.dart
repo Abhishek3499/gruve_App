@@ -83,7 +83,7 @@ class MoreScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               Divider(
                 color: Colors.white.withValues(alpha: 0.1),
                 thickness: 1,
@@ -105,7 +105,7 @@ class MoreScreen extends StatelessWidget {
                 thickness: 1,
                 height: 1,
               ),
-              
+
               _buildOption(
                 context,
                 "Archive",

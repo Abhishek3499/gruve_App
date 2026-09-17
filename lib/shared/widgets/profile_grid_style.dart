@@ -27,9 +27,6 @@ class ProfileGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: ProfileGridStyle.borderRadius,
-      child: child,
-    );
+    return ClipRRect(borderRadius: ProfileGridStyle.borderRadius, child: child);
   }
 }

@@ -16,7 +16,7 @@ class PostShareFlowBridge {
 
   /// Home registers: dismiss overlay + cleanup [VideoService] if upload fails.
   static Function(String? errorMessage)? onShareUploadError;
-  
+
   /// Home registers: show success snackbar with appropriate message
   static Function(bool isVideo)? onShowSuccessSnackbar;
 
@@ -45,19 +45,17 @@ class PostShareFlowBridge {
   static void setVideoController(dynamic controller) {
     _videoControllerRef = controller;
     AppLogger.d("🔔 Bridge: Video controller reference set");
-    
   }
 
   static void setVideoService(VideoService service) {
     _currentVideoService = service;
     AppLogger.d("🔔 Bridge: Video service reference set");
-    
   }
 
   static void markProcessingCompleted() {
     if (_currentVideoService != null) {
       AppLogger.d("🔔 Bridge: Marking processing as completed");
-      
+
       _currentVideoService!.markCompleted();
     }
   }
@@ -132,12 +130,14 @@ class PostShareFlowBridge {
               mimeType: mediaMimeType,
             )
           : false;
-      AppLogger.d("🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}");
+      AppLogger.d(
+        "🚀 [Bridge] Upload start: ${isVideo ? '🎥 VIDEO' : '🖼️ IMAGE'}",
+      );
       AppLogger.d("📁 [Bridge] Path: $mediaPath");
-      
+
       notifyShareStartProcessing(isVideo);
       await _waitForProcessingOverlayFrame();
-      
+
       final response = await PostService().createPost(
         caption: caption,
         mediaPath: mediaPath,
@@ -152,30 +152,33 @@ class PostShareFlowBridge {
         taggedUserIds: taggedUserIds,
         isMuted: isMuted,
       );
-      
+
       AppLogger.d("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");
-      
+
       if (draftId != null && draftId.isNotEmpty) {
-        AppLogger.d("🧹 [Bridge] Deleting draft after successful share: $draftId");
+        AppLogger.d(
+          "🧹 [Bridge] Deleting draft after successful share: $draftId",
+        );
         await PostService().deleteDraft(draftId);
       }
-      
+
       await notifyPostCreated(isVideo: isVideo, newPost: response.data);
-      
+
       AppLogger.d("🔔 [Bridge] Post created notification finished");
-      
     } catch (e) {
       AppLogger.d("❌ [Bridge] POST ERROR: $e");
-      
+
       String? errorMessage;
       if (e is DioException) {
         final resData = e.response?.data;
         if (resData != null && resData is Map) {
-          errorMessage = resData['message']?.toString() ?? resData['error']?.toString();
+          errorMessage =
+              resData['message']?.toString() ?? resData['error']?.toString();
         } else if (resData != null && resData is String) {
           errorMessage = resData;
         } else if (e.response?.statusMessage != null) {
-          errorMessage = "Server error: ${e.response?.statusCode} ${e.response?.statusMessage}";
+          errorMessage =
+              "Server error: ${e.response?.statusCode} ${e.response?.statusMessage}";
         } else {
           errorMessage = e.message;
         }
@@ -186,23 +189,33 @@ class PostShareFlowBridge {
     }
   }
 
-  static Future<void> notifyPostCreated({required bool isVideo, Post? newPost}) async {
-    AppLogger.d("🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo, newPost=${newPost != null})");
-    
+  static Future<void> notifyPostCreated({
+    required bool isVideo,
+    Post? newPost,
+  }) async {
+    AppLogger.d(
+      "🔔 [Bridge] notifyPostCreated called (isVideo=$isVideo, newPost=${newPost != null})",
+    );
 
     if (_videoControllerRef != null) {
       if (newPost != null) {
-        AppLogger.d("🔄 [Bridge] Instantly prepending new post ${newPost.id} to feed...");
+        AppLogger.d(
+          "🔄 [Bridge] Instantly prepending new post ${newPost.id} to feed...",
+        );
         _videoControllerRef!.prependPost(newPost);
         _videoControllerRef!.playVideo(0);
         _videoControllerRef!.onScrollToTop?.call();
         _needsRefresh = false;
       } else {
-        AppLogger.d("🔄 [Bridge] Refreshing feed to show new post (fallback)...");
+        AppLogger.d(
+          "🔄 [Bridge] Refreshing feed to show new post (fallback)...",
+        );
         final result = await _videoControllerRef!.initVideos(refresh: true);
         if (kDebugMode) {
           if (result == true) {
-            AppLogger.d("✅ [Bridge] Feed refreshed - new post should be visible");
+            AppLogger.d(
+              "✅ [Bridge] Feed refreshed - new post should be visible",
+            );
           } else if (result == false) {
             AppLogger.d("❌ [Bridge] Feed refresh failed");
           } else {
@@ -219,16 +232,14 @@ class PostShareFlowBridge {
       }
     } else {
       AppLogger.d("❌ [Bridge] No controller available, setting refresh flag");
-      AppLogger.d(
-        "🔄 [Bridge] Will refresh when home tab is accessed",
-      );
-      
+      AppLogger.d("🔄 [Bridge] Will refresh when home tab is accessed");
+
       _needsRefresh = true;
     }
 
     await ProfileCountRefreshBridge.notifyCountsChanged(reason: 'post_created');
     markProcessingCompleted();
-    
+
     // Show success snackbar
     onShowSuccessSnackbar?.call(isVideo);
   }
@@ -237,7 +248,7 @@ class PostShareFlowBridge {
     bool needed = _needsRefresh;
     if (needed) {
       AppLogger.d("🔄 Bridge: Refresh needed, clearing flag");
-      
+
       _needsRefresh = false;
     }
     return needed;
@@ -253,6 +264,5 @@ class PostShareFlowBridge {
     _currentVideoService = null;
     _needsRefresh = false;
     AppLogger.d("🔔 Bridge: All callbacks cleared");
-    
   }
 }

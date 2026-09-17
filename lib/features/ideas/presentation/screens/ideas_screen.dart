@@ -103,9 +103,7 @@ class IdeasScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4, top: 16, bottom: 8),
                 // Wrap in Material to support ink ripples on the back button
-                child: const BackButton(
-                  color: Colors.white,
-                ),
+                child: const BackButton(color: Colors.white),
               ),
 
               // Sticky Tabs Bar (Aligned with columns)
