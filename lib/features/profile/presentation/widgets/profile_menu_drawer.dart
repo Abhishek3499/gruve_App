@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/logout_widget.dart';
 import 'package:gruve_app/features/auth/presentation/notifiers/logout_notifier.dart';
 import 'package:gruve_app/features/archive/presentation/screens/archive_screen.dart';

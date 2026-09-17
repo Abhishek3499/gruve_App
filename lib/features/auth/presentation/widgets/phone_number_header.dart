@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 class PhoneNumberHeader extends StatelessWidget {
   final String title;

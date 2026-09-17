@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/search/domain/entities/search_navigation_type.dart';
 import 'package:gruve_app/features/search/presentation/screens/search_page.dart';
 import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';

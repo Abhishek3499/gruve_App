@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
-import '../../../../core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/option_button.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/option_item.dart';
 import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';

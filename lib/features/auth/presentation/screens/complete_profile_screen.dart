@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_text_field.dart';
 import 'package:gruve_app/shared/widgets/video_background.dart';

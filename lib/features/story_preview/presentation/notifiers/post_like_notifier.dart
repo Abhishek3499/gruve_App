@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';

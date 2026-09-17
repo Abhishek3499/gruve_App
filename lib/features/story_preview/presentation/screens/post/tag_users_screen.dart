@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';

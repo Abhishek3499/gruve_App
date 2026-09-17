@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
 
 class ShareUserItem extends StatelessWidget {

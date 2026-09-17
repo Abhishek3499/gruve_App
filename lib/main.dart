@@ -2,9 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:provider/provider.dart';
-import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
+import 'package:gruve_app/core/theme/app_theme.dart';
 import 'package:gruve_app/routes/app_routes.dart';
 import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
 import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
@@ -145,13 +146,7 @@ class MyApp extends StatelessWidget {
         navigatorKey: rootNavigatorKey,
         scaffoldMessengerKey: scaffoldMessengerKey,
 
-        theme: ThemeData(
-          scaffoldBackgroundColor: Colors.black,
-          colorScheme: const ColorScheme.dark(
-            primary: Colors.white,
-            secondary: Colors.white,
-          ),
-        ),
+        theme: AppTheme.darkTheme,
 
         initialRoute: AppRoutes.initialRoute,
         routes: AppRoutes.routes,

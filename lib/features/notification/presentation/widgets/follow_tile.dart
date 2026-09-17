@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/cached_avatar.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/features/message/utils/conversation_utils.dart';

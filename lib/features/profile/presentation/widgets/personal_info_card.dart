@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 /// Personal information card with editable profile fields
 class PersonalInfoCard extends StatelessWidget {

@@ -6,7 +6,7 @@ import 'package:gruve_app/features/auth/data/services/verify_otp_service.dart';
 
 import 'package:sms_autofill/sms_autofill.dart';
 
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 

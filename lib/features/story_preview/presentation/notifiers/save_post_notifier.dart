@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';

@@ -8,7 +8,7 @@ import 'package:gruve_app/features/auth/presentation/screens/phone_number_screen
 import 'package:gruve_app/features/auth/presentation/widgets/auth_header.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/auth_divider.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/social_login_row.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/auth/presentation/controllers/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/presentation/screens/email_login_screen.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';

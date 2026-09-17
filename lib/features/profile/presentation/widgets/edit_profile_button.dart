@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/profile/data/dto/edit_profile_response.dart';
 
 import 'package:gruve_app/features/profile/presentation/screens/edit_profile_screen.dart';

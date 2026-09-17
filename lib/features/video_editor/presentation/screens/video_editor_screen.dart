@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_screen.dart';
 
 /// Full-height bottom sheet with [SharePostScreen]; pops with same results as push.

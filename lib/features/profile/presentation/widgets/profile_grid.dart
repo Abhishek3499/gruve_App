@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';

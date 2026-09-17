@@ -1,4 +1,4 @@
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/archive/domain/entities/archive_item.dart';
 
 final List<ArchiveItem> archiveItems = [

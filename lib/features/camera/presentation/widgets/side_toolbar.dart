@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/camera/presentation/controller/camera_controller_service.dart';
 import 'package:gruve_app/features/camera/utils/camera_logger.dart';
 import 'package:gruve_app/features/camera/presentation/widgets/emoji_picker_sheet.dart';

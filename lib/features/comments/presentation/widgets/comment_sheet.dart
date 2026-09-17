@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/comments/domain/entities/comment_model.dart';

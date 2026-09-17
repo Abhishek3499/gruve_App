@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/more_option_screen.dart';
 
 class PostActionButtons extends StatelessWidget {

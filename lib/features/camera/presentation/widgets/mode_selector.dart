@@ -5,7 +5,7 @@ import 'package:gruve_app/features/story_preview/presentation/screens/post/post_
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_sheet.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_preview_screen.dart';
 import 'package:gruve_app/features/analytics/ideas/presentation/screens/ideas_screen.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +13,7 @@ import 'package:gruve_app/features/camera/utils/camera_logger.dart';
 import 'package:gruve_app/features/camera/data/datasource/mode_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
-import 'package:gruve_app/core/app_navigator.dart';
+import 'package:gruve_app/core/navigation/app_navigator.dart';
 
 /// Simple text mode selector (Story / Gruve)
 class ModeSelector extends StatefulWidget {

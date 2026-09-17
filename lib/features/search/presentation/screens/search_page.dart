@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/search/domain/entities/search_history_model.dart';
 import 'package:gruve_app/features/search/domain/entities/search_navigation_type.dart';
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';

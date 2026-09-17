@@ -5,7 +5,7 @@ import 'package:gruve_app/features/gifts/presentation/widgets/gift_category_tabs
 import 'package:gruve_app/features/gifts/presentation/widgets/flash_sale_section.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_item.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_search_bar.dart';
-import '../../../../core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import '../../../../core/utils/app_logger.dart';
 
 class GiftPanel extends StatefulWidget {

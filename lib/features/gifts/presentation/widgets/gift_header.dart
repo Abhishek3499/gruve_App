@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 class GiftHeader extends StatelessWidget {
   final int stonesCount;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 class SubscriptionHeader extends StatelessWidget {
   const SubscriptionHeader({super.key});

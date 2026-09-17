@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';
 import 'package:gruve_app/features/message/presentation/widgets/block/block_user_widget.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/assets.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/subscription/presentation/widgets/subscription_header.dart';
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 import 'package:gruve_app/features/subscription/presentation/widgets/subscription_card.dart';
