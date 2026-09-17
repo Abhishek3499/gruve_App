@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/search/domain/entities/search_history_model.dart';
@@ -8,13 +8,13 @@ import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 
 import 'package:gruve_app/features/search/data/datasource/recent_search_service.dart';
 import 'package:gruve_app/shared/widgets/shimmer/search_shimmer.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   final SearchNavigationType navigationType;
 
   const SearchPage({
@@ -23,10 +23,10 @@ class SearchPage extends StatefulWidget {
   });
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends ConsumerState<SearchPage> {
   SearchNavigationType get _navigationType => widget.navigationType;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -175,9 +175,9 @@ class _SearchPageState extends State<SearchPage> {
           '💬 [SearchPage] Opening chat for user: ${user.username} (ID: ${user.id})',
         );
 
-        final messageProvider = context.read<MessageProvider>();
+        final messageNotifier = ref.read(messageNotifierProvider.notifier);
 
-        final existingConversation = messageProvider.getConversationByUserId(
+        final existingConversation = messageNotifier.getConversationByUserId(
           user.id,
         );
 
@@ -201,7 +201,7 @@ class _SearchPageState extends State<SearchPage> {
           ).then((_) {
             _loadRecentSearches();
             if (mounted) {
-              context.read<MessageProvider>().fetchConversations(refresh: true);
+              messageNotifier.fetchConversations(refresh: true);
             }
           });
         } else {
@@ -222,7 +222,7 @@ class _SearchPageState extends State<SearchPage> {
           ).then((_) {
             _loadRecentSearches();
             if (mounted) {
-              context.read<MessageProvider>().fetchConversations(refresh: true);
+              messageNotifier.fetchConversations(refresh: true);
             }
           });
         }
@@ -269,10 +269,7 @@ class _SearchPageState extends State<SearchPage> {
                   padding: EdgeInsets.all(context.rw(16)),
                   child: Row(
                     children: [
-                      BackButton(
-                        color: Colors.white,
-                        onPressed: _closeSearch,
-                      ),
+                      BackButton(color: Colors.white, onPressed: _closeSearch),
                       SizedBox(width: context.rw(22)),
 
                       /// SEARCH BAR

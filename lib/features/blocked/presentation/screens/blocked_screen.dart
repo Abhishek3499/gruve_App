@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/blocked/presentation/widgets/blocked_footer.dart';
 import 'package:gruve_app/features/blocked/presentation/widgets/blocked_header.dart';
 import 'package:gruve_app/features/blocked/presentation/widgets/blocked_tile.dart';
@@ -8,19 +8,21 @@ import 'package:gruve_app/features/blocked/presentation/widgets/unblock_widget.d
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class BlockedScreen extends StatefulWidget {
+class BlockedScreen extends ConsumerStatefulWidget {
   const BlockedScreen({super.key});
 
   @override
-  State<BlockedScreen> createState() => _BlockedScreenState();
+  ConsumerState<BlockedScreen> createState() => _BlockedScreenState();
 }
 
-class _BlockedScreenState extends State<BlockedScreen> {
+class _BlockedScreenState extends ConsumerState<BlockedScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BlockProvider>().fetchBlockedUsers(forceRefresh: true);
+      ref
+          .read(blockNotifierProvider.notifier)
+          .fetchBlockedUsers(forceRefresh: true);
     });
   }
 
@@ -33,8 +35,9 @@ class _BlockedScreenState extends State<BlockedScreen> {
           children: [
             const BlockedHeader(),
             Expanded(
-              child: Consumer<BlockProvider>(
-                builder: (context, provider, _) {
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final provider = ref.watch(blockNotifierProvider);
                   if (provider.isLoadingList) {
                     return const Center(
                       child: CircularProgressIndicator(
@@ -65,12 +68,16 @@ class _BlockedScreenState extends State<BlockedScreen> {
                         name: user.name,
                         username: user.username,
                         onUnblock: () async {
-                          AppLogger.d('🟢 Unblock button tapped');
+                          AppLogger.d(' Unblock button tapped');
                           // Save references BEFORE async operations
-                          final blockProvider = context.read<BlockProvider>();
-                          final scaffoldMessenger = ScaffoldMessenger.of(context);
-                          
-                          AppLogger.d('🟢 Opening dialog...');
+                          final blockNotifier = ref.read(
+                            blockNotifierProvider.notifier,
+                          );
+                          final scaffoldMessenger = ScaffoldMessenger.of(
+                            context,
+                          );
+
+                          AppLogger.d(' Opening dialog...');
                           final result = await showDialog<bool>(
                             context: context,
                             barrierColor: Colors.black.withValues(alpha: 0.7),
@@ -79,7 +86,9 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 name: user.name,
                                 username: user.username,
                                 onConfirm: () {
-                                  AppLogger.d('🟢 Yes button clicked, popping with true');
+                                  AppLogger.d(
+                                    ' Yes button clicked, popping with true',
+                                  );
                                   Navigator.of(dialogContext).pop(true);
                                 },
                               );
@@ -87,10 +96,12 @@ class _BlockedScreenState extends State<BlockedScreen> {
                           );
 
                           AppLogger.d('🟢 Dialog result: $result');
-                          
+
                           if (result == true) {
-                            AppLogger.d('🟢 Result is true, showing loading snackbar...');
-                            
+                            AppLogger.d(
+                              '🟢 Result is true, showing loading snackbar...',
+                            );
+
                             // 🚀 INSTANT LOADING SNACKBAR
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
@@ -101,7 +112,10 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                       height: context.rh(20),
                                       child: const CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     ),
                                     SizedBox(width: context.rw(12)),
@@ -122,27 +136,36 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                margin: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(16)),
+                                margin: EdgeInsets.symmetric(
+                                  horizontal: context.rw(16),
+                                  vertical: context.rh(16),
+                                ),
                                 duration: const Duration(milliseconds: 500),
                                 elevation: 8,
                               ),
                             );
-                            
+
                             AppLogger.d('🟢 Calling API...');
                             try {
-                              await blockProvider.toggleBlockUser(
+                              await blockNotifier.toggleBlockUser(
                                 user.userId,
                                 refreshList: true,
                               );
 
                               if (!mounted) return;
 
-                              AppLogger.d('🟢 API success, showing success snackbar...');
+                              AppLogger.d(
+                                '🟢 API success, showing success snackbar...',
+                              );
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
                                   content: Row(
                                     children: [
-                                      Icon(Icons.check_circle, color: Colors.white, size: context.rw(20)),
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.white,
+                                        size: context.rw(20),
+                                      ),
                                       SizedBox(width: context.rw(12)),
                                       Expanded(
                                         child: Text(
@@ -161,7 +184,10 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  margin: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(16)),
+                                  margin: EdgeInsets.symmetric(
+                                    horizontal: context.rw(16),
+                                    vertical: context.rh(16),
+                                  ),
                                   duration: const Duration(milliseconds: 1500),
                                   elevation: 8,
                                 ),
@@ -177,7 +203,11 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                 SnackBar(
                                   content: Row(
                                     children: [
-                                      Icon(Icons.error_outline, color: Colors.white, size: context.rw(20)),
+                                      Icon(
+                                        Icons.error_outline,
+                                        color: Colors.white,
+                                        size: context.rw(20),
+                                      ),
                                       SizedBox(width: context.rw(12)),
                                       Expanded(
                                         child: Text(
@@ -196,14 +226,19 @@ class _BlockedScreenState extends State<BlockedScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  margin: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(16)),
+                                  margin: EdgeInsets.symmetric(
+                                    horizontal: context.rw(16),
+                                    vertical: context.rh(16),
+                                  ),
                                   duration: const Duration(milliseconds: 1500),
                                   elevation: 8,
                                 ),
                               );
                             }
                           } else {
-                            AppLogger.d('🟡 Dialog cancelled or result is: $result');
+                            AppLogger.d(
+                              '🟡 Dialog cancelled or result is: $result',
+                            );
                           }
                         },
                       );

@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/features/message/presentation/controller/message_controller.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
 import 'package:gruve_app/features/message/domain/entities/message_media_model.dart';
 import 'package:gruve_app/features/message/domain/entities/message_reply_preview.dart';
@@ -27,7 +27,7 @@ import 'package:gruve_app/shared/widgets/shimmer/chat_shimmer.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   // New explicit parameters for direct user data passing
   final String? conversationId;
   final String? receiverId;
@@ -45,15 +45,17 @@ class ChatScreen extends StatefulWidget {
     this.profileImage,
     this.userOrConversation,
   }) : assert(
-         conversationId != null || receiverId != null || userOrConversation != null,
+         conversationId != null ||
+             receiverId != null ||
+             userOrConversation != null,
          'Either conversationId, receiverId, or userOrConversation must be provided',
        );
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final MessageController _messageController;
   final ScrollController _scrollController = ScrollController();
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
@@ -192,14 +194,14 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       _currentUserId = await TokenStorage.getCurrentUserId();
       if (!mounted) return;
-      final blockProvider = context.read<BlockProvider>();
+      final blockNotifier = ref.read(blockNotifierProvider.notifier);
       try {
-        await blockProvider.fetchBlockedUsers();
+        await blockNotifier.fetchBlockedUsers();
         if (!mounted) return;
-        final isBlocked = blockProvider.blockedUsers.any(
+        final isBlocked = blockNotifier.blockedUsers.any(
           (user) => user.userId == _userId,
         );
-        blockProvider.setBlockState(_userId, isBlocked);
+        blockNotifier.setBlockState(_userId, isBlocked);
         AppLogger.d(
           '🔒 [ChatScreen] Block state synced from backend = $isBlocked',
         );
@@ -218,16 +220,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onMessageScroll() {
-    if (!_scrollController.hasClients ||
-        _messageController.isInitialLoading) {
+    if (!_scrollController.hasClients || _messageController.isInitialLoading) {
       return;
     }
 
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
-      isLoading:
-          _isLoadingOlderMessages ||
-          _messageController.isLoadingMore,
+      isLoading: _isLoadingOlderMessages || _messageController.isLoadingMore,
       hasMore: _messageController.hasMoreData,
     )) {
       return;
@@ -276,21 +275,25 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom(animated: true);
     }
 
-    // Optimistically update conversation details in MessageProvider for instant refresh on back navigation
+    // Optimistically update conversation details in MessageNotifier for instant refresh on back navigation
     if (!_messageController.isInitialLoading &&
         !_messageController.hasError &&
         _messageController.hasMessages) {
       final conversationId = _messageController.conversationId;
       if (conversationId.isNotEmpty) {
         final lastMsg = _messageController.messagesNewestFirst.first;
-        final messageProvider = context.read<MessageProvider>();
-        final existingConversation = messageProvider.getConversationById(conversationId);
-        
+        final messageNotifier = ref.read(messageNotifierProvider.notifier);
+        final existingConversation = messageNotifier.getConversationById(
+          conversationId,
+        );
+
         if (existingConversation != null) {
           final updated = existingConversation.copyWith(
             lastMessage: LastMessage(
               content: lastMsg.text.isEmpty && lastMsg.hasMedia
-                  ? (lastMsg.mediaKind == 'audio' ? 'Voice message' : lastMsg.mediaKind ?? 'Media')
+                  ? (lastMsg.mediaKind == 'audio'
+                        ? 'Voice message'
+                        : lastMsg.mediaKind ?? 'Media')
                   : lastMsg.text,
               createdAt: lastMsg.timestamp,
               messageKind: lastMsg.mediaKind,
@@ -299,7 +302,7 @@ class _ChatScreenState extends State<ChatScreen> {
             updatedAt: lastMsg.timestamp,
             unreadCount: 0,
           );
-          messageProvider.updateConversation(updated);
+          messageNotifier.updateConversation(updated);
         } else {
           final newConversation = ConversationModel(
             id: conversationId,
@@ -310,7 +313,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             lastMessage: LastMessage(
               content: lastMsg.text.isEmpty && lastMsg.hasMedia
-                  ? (lastMsg.mediaKind == 'audio' ? 'Voice message' : lastMsg.mediaKind ?? 'Media')
+                  ? (lastMsg.mediaKind == 'audio'
+                        ? 'Voice message'
+                        : lastMsg.mediaKind ?? 'Media')
                   : lastMsg.text,
               createdAt: lastMsg.timestamp,
               messageKind: lastMsg.mediaKind,
@@ -319,7 +324,7 @@ class _ChatScreenState extends State<ChatScreen> {
             updatedAt: lastMsg.timestamp,
             unreadCount: 0,
           );
-          messageProvider.updateConversation(newConversation);
+          messageNotifier.updateConversation(newConversation);
         }
       }
     }
@@ -409,20 +414,16 @@ class _ChatScreenState extends State<ChatScreen> {
         final content =
             messageData['content']?.toString() ??
             messageData['text']?.toString();
-        _messageController.handleMessageDelivered(
-          messageId,
-          content: content,
-        );
+        _messageController.handleMessageDelivered(messageId, content: content);
       }
       return;
     }
 
     if (_isReadEvent(type, event)) {
       final messageData = _extractMessagePayload(data);
-      final messageIds =
-          (messageData['message_ids'] as List?)
-              ?.map((e) => e.toString())
-              .toList();
+      final messageIds = (messageData['message_ids'] as List?)
+          ?.map((e) => e.toString())
+          .toList();
       _messageController.handleMessagesRead(messageIds);
       return;
     }
@@ -552,7 +553,11 @@ class _ChatScreenState extends State<ChatScreen> {
     final screenHeight = mediaQuery.size.height;
 
     // Calculate safe area height (where the Stack/Scaffold is visible)
-    final safeAreaHeight = screenHeight - topInset - keyboardHeight - (keyboardHeight > 0 ? 0.0 : bottomPadding);
+    final safeAreaHeight =
+        screenHeight -
+        topInset -
+        keyboardHeight -
+        (keyboardHeight > 0 ? 0.0 : bottomPadding);
 
     // Height of the popup menu: 5 items (isSent/own message) vs 4 items (received/other message).
     // Each item is 52px, container vertical padding is 4px.
@@ -573,7 +578,10 @@ class _ChatScreenState extends State<ChatScreen> {
       } else {
         // If it doesn't fit above either, clamp it or show it where it fits best.
         // We must ensure min <= max for the clamp method to avoid throwing an error.
-        final maxTop = (safeAreaHeight - menuHeight - 10.0).clamp(60.0, double.infinity);
+        final maxTop = (safeAreaHeight - menuHeight - 10.0).clamp(
+          60.0,
+          double.infinity,
+        );
         menuTop = menuTopAbove.clamp(60.0, maxTop);
       }
     }
@@ -822,10 +830,7 @@ class _ChatScreenState extends State<ChatScreen> {
       content: content,
       replyToMessageId: replyToMessageId,
       media: mediaPayload,
-    ).timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => false,
-    );
+    ).timeout(const Duration(seconds: 8), onTimeout: () => false);
 
     if (wsSuccess) {
       if (await _waitForLocalMessageConfirmation(localId)) return;
@@ -966,7 +971,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messageController.markMessageAsFailed(localId);
       if (mounted) {
         setState(() => _isUploadingMedia = false);
-        
+
         String errorMsg = e.toString();
         if (errorMsg.contains('413')) {
           errorMsg = 'File too large (> 10 MB)';
@@ -977,12 +982,9 @@ class _ChatScreenState extends State<ChatScreen> {
         } else {
           errorMsg = 'Failed to upload voice message: $e';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMsg),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
       }
     }
@@ -1176,7 +1178,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     if (confirmed == true && mounted) {
-      AppLogger.d('🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete');
+      AppLogger.d(
+        '🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete',
+      );
       await _deleteSingleMessage(message);
     } else {
       AppLogger.d(
@@ -1272,8 +1276,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _unblockUser() async {
-    final blockProvider = context.read<BlockProvider>();
-    final isBlocked = blockProvider.isBlocked(_userId);
+    final blockNotifier = ref.read(blockNotifierProvider.notifier);
+    final isBlocked = blockNotifier.isBlocked(_userId);
 
     await showGeneralDialog<bool>(
       context: context,
@@ -1293,7 +1297,10 @@ class _ChatScreenState extends State<ChatScreen> {
         return FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
           child: ScaleTransition(
-            scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutBack,
+            ),
             child: child,
           ),
         );
@@ -1354,13 +1361,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: ListenableBuilder(
                         listenable: _messageController,
-                        builder: (context, _) =>
-                            _buildMessageBody(_messageController.messagesNewestFirst),
+                        builder: (context, _) => _buildMessageBody(
+                          _messageController.messagesNewestFirst,
+                        ),
                       ),
                     ),
-                    Selector<BlockProvider, bool>(
-                      selector: (_, block) => block.isBlocked(_userId),
-                      builder: (context, isBlocked, _) {
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final isBlocked = ref.watch(
+                          blockNotifierProvider.select(
+                            (state) => state.isBlocked(_userId),
+                          ),
+                        );
                         return ListenableBuilder(
                           listenable: _messageController,
                           builder: (context, _) {
@@ -1462,7 +1474,8 @@ class _ChatScreenState extends State<ChatScreen> {
       itemCount:
           sortedMessages.length + (_messageController.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (_messageController.isLoadingMore && index == sortedMessages.length) {
+        if (_messageController.isLoadingMore &&
+            index == sortedMessages.length) {
           return const Padding(
             padding: EdgeInsets.only(top: 12, bottom: 12),
             child: Center(

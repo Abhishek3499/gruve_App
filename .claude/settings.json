@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find 'C:\\\\Users\\\\Acer' -iname ref.dart -path *riverpod*)",
+      "Bash(find 'C:\\\\Users\\\\Acer/AppData/Local/Pub/Cache' -maxdepth 2 -iname flutter_riverpod-*)",
+      "Bash(find 'C:\\\\Users\\\\Acer/AppData/Local/Pub/Cache' -maxdepth 2 -iname riverpod-*)"
+    ]
+  }
+}

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class SubscribeButton extends StatefulWidget {
   final String userId;
   final String username;
-  final SubscribeController subscribeController;
+  final SubscribeNotifier subscribeController;
   final bool initialIsSubscribed;
 
   const SubscribeButton({

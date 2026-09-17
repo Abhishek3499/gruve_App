@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
 import 'package:provider/provider.dart';
-import 'package:gruve_app/core/auth/current_user_provider.dart';
+import 'package:gruve_app/core/auth/current_user_notifier.dart';
 
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
@@ -19,16 +20,16 @@ import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   final String? userId;
 
   const ProfileScreen({super.key, this.userId});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int selectedTab = 0;
 
   static Color get _panelBackgroundColor =>
@@ -342,21 +343,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: ProfileHeader(
                             fullName: (user?.fullName ?? '').trim(),
                             username: () {
-                              final username =
-                                  _displayUsername(user?.username);
-                              return username.isEmpty
-                                  ? '@username'
-                                  : username;
+                              final username = _displayUsername(user?.username);
+                              return username.isEmpty ? '@username' : username;
                             }(),
                             profileImage: user?.profileImage ?? '',
                             hasActiveStory: hasActiveStory,
                             onProfileUpdated: (response) {
                               provider.applyUpdatedProfile(response);
-                              final newImageUrl =
-                                  response.data.profilePicture;
+                              final newImageUrl = response.data.profilePicture;
                               final newUsername = response.data.username;
-                              context
-                                  .read<CurrentUserProvider>()
+                              ref
+                                  .read(currentUserNotifierProvider.notifier)
                                   .updateProfileData(
                                     username: newUsername,
                                     imageUrl: newImageUrl,
@@ -368,9 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.rw(10),
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: context.rw(10)),
                     sliver: DecoratedSliver(
                       decoration: BoxDecoration(color: _panelBackgroundColor),
                       sliver: SliverMainAxisGroup(
@@ -467,8 +462,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   backgroundColor: userProfile.isFollowing
                                       ? Colors.grey
                                       : const Color(0xFFD42BC2),
-                                  minimumSize:
-                                      const Size(double.infinity, 45),
+                                  minimumSize: const Size(double.infinity, 45),
                                 ),
                                 child: Text(
                                   userProfile.isFollowing
@@ -592,32 +586,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: ProfileGrid.gridPadding,
         sliver: SliverGrid(
           gridDelegate: ProfileGrid.gridDelegate,
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final post = posts[index];
-              final media = (post.thumbnailUrl?.trim().isNotEmpty == true)
-                  ? post.thumbnailUrl!.trim()
-                  : post.mediaUrl.trim();
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final post = posts[index];
+            final media = (post.thumbnailUrl?.trim().isNotEmpty == true)
+                ? post.thumbnailUrl!.trim()
+                : post.mediaUrl.trim();
 
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: media.isEmpty
-                    ? Container(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.white54,
-                        ),
-                      )
-                    : MediaUrlThumbnail(
-                        url: media,
-                        memCacheWidth: 300,
-                        memCacheHeight: 400,
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: media.isEmpty
+                  ? Container(
+                      color: Colors.white.withValues(alpha: 0.10),
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: Colors.white54,
                       ),
-              );
-            },
-            childCount: posts.length,
-          ),
+                    )
+                  : MediaUrlThumbnail(
+                      url: media,
+                      memCacheWidth: 300,
+                      memCacheHeight: 400,
+                    ),
+            );
+          }, childCount: posts.length),
         ),
       ),
     ];

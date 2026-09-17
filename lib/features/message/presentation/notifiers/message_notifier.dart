@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
@@ -11,32 +12,111 @@ import 'dart:developer' as developer;
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
 
-/// Provider for managing conversation state
-///
-/// This provider handles:
-/// - Loading state management
-/// - Conversation list management
-/// - API calls and error handling
-/// - Real-time updates (socket-ready structure)
-/// - Pagination support (future enhancement)
-class MessageProvider extends ChangeNotifier {
-  final MessageService _messageService;
+/// Immutable state for [MessageNotifier]: the full fetched conversation list
+/// (including ones without a last message yet), loading/refresh/pagination
+/// flags and the last error.
+@immutable
+class MessageState {
+  const MessageState({
+    this.allConversations = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.isRefreshing = false,
+    this.isDeletingConversation = false,
+    this.error,
+    this.currentPage = 1,
+    this.hasMoreData = true,
+  });
+
+  final List<ConversationModel> allConversations;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final bool isRefreshing;
+  final bool isDeletingConversation;
+  final String? error;
+  final int currentPage;
+  final bool hasMoreData;
+
+  /// Renderable conversations — those with at least one message.
+  List<ConversationModel> get conversations =>
+      List.unmodifiable(allConversations.where((c) => c.hasLastMessage));
+
+  bool get hasError => error != null;
+  bool get hasConversations => conversations.isNotEmpty;
+  int get conversationCount => conversations.length;
+
+  int get totalUnreadCount => conversations.fold(
+    0,
+    (sum, conversation) => sum + conversation.unreadCount,
+  );
+
+  MessageState copyWith({
+    List<ConversationModel>? allConversations,
+    bool? isLoading,
+    bool? isLoadingMore,
+    bool? isRefreshing,
+    bool? isDeletingConversation,
+    String? error,
+    bool clearError = false,
+    int? currentPage,
+    bool? hasMoreData,
+  }) {
+    return MessageState(
+      allConversations: allConversations ?? this.allConversations,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      isDeletingConversation:
+          isDeletingConversation ?? this.isDeletingConversation,
+      error: clearError ? null : (error ?? this.error),
+      currentPage: currentPage ?? this.currentPage,
+      hasMoreData: hasMoreData ?? this.hasMoreData,
+    );
+  }
+}
+
+/// Replaces the previous `MessageProvider` (ChangeNotifier). Owns the
+/// conversation list, pagination, socket-driven realtime patching and
+/// unread-count bookkeeping synced to [TokenStorage].
+class MessageNotifier extends Notifier<MessageState> {
+  final MessageService _messageService = MessageService();
   final SocketService _socketService = SocketService();
 
   StreamSubscription? _socketSubscription;
+  CancelToken? _cancelToken;
+  DateTime? _lastFetchTime;
 
-  MessageProvider(this._messageService) {
-    AppLogger.d('🏗️ [MessageProvider] Provider initialized');
+  final Map<String, Future<void>> _inFlightFetches = {};
+  final Set<String> _seenRealtimeEventKeys = <String>{};
+  Timer? _refreshDebounceTimer;
+
+  static const int _pageSize = 20;
+
+  @override
+  MessageState build() {
+    AppLogger.d('🏗️ [MessageNotifier] Notifier initialized');
     _initializeSocketListener();
+
+    ref.onDispose(() {
+      _refreshDebounceTimer?.cancel();
+      _socketSubscription?.cancel();
+      _socketSubscription = null;
+      _cancelToken?.cancel('Notifier disposed');
+      AppLogger.d(
+        '🗑️ [MessageNotifier] Disposed and socket listener cancelled',
+      );
+    });
+
+    return const MessageState();
   }
 
   void _initializeSocketListener() {
     if (_socketSubscription != null) {
-      AppLogger.d('🎧 [MessageProvider] Socket listener already active');
+      AppLogger.d('🎧 [MessageNotifier] Socket listener already active');
       return;
     }
 
-    AppLogger.d('🎧 [MessageProvider] Socket listener initialized');
+    AppLogger.d('🎧 [MessageNotifier] Socket listener initialized');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
       if (!_isMessageSocketEvent(data)) return;
@@ -101,26 +181,24 @@ class MessageProvider extends ChangeNotifier {
     if (conversationId.isEmpty) return;
 
     final nested = data['data'];
-    final payload = nested is Map
-        ? Map<String, dynamic>.from(nested)
-        : data;
+    final payload = nested is Map ? Map<String, dynamic>.from(nested) : data;
 
     // Extract text cleanly, supporting nested maps or simple strings
     String contentStr = '';
     final rawContent = payload['content'];
     if (rawContent is Map) {
       final contentMap = Map<String, dynamic>.from(rawContent);
-      contentStr = SafeParsingHelpers.safeString(
-        contentMap,
-        const ['text', 'message', 'value'],
-        fallback: '',
-      );
+      contentStr = SafeParsingHelpers.safeString(contentMap, const [
+        'text',
+        'message',
+        'value',
+      ], fallback: '');
     } else {
-      contentStr = SafeParsingHelpers.safeString(
-        payload,
-        const ['content', 'text', 'message'],
-        fallback: '',
-      );
+      contentStr = SafeParsingHelpers.safeString(payload, const [
+        'content',
+        'text',
+        'message',
+      ], fallback: '');
     }
 
     // Extract message kind cleanly
@@ -131,16 +209,18 @@ class MessageProvider extends ChangeNotifier {
         const ['type'],
       );
     }
-    messageKind ??= SafeParsingHelpers.safeNullableString(
-      payload,
-      const ['message_kind', 'messageKind'],
-    );
+    messageKind ??= SafeParsingHelpers.safeNullableString(payload, const [
+      'message_kind',
+      'messageKind',
+    ]);
 
     final attachments = payload['attachments'];
     if (messageKind == null && attachments is List && attachments.isNotEmpty) {
       final first = attachments.first;
       if (first is Map) {
-        messageKind = Map<String, dynamic>.from(first)['media_kind']?.toString();
+        messageKind = Map<String, dynamic>.from(
+          first,
+        )['media_kind']?.toString();
       }
     }
 
@@ -156,21 +236,22 @@ class MessageProvider extends ChangeNotifier {
 
     if (contentStr.trim().isEmpty) return;
 
-    final index = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversations = [...state.allConversations];
+    final index = conversations.indexWhere((c) => c.id == conversationId);
     if (index == -1) return;
 
     final currentUserId = TokenStorage.getCurrentUserIdSync();
-    final senderId = SafeParsingHelpers.safeString(
-      payload,
-      const ['sender_id', 'senderId'],
-      fallback: '',
-    );
-    final isOutgoing = currentUserId != null &&
+    final senderId = SafeParsingHelpers.safeString(payload, const [
+      'sender_id',
+      'senderId',
+    ], fallback: '');
+    final isOutgoing =
+        currentUserId != null &&
         senderId.isNotEmpty &&
         currentUserId.trim() == senderId.trim();
 
     final now = DateTime.now();
-    final conversation = _conversations[index];
+    final conversation = conversations[index];
     final updated = conversation.copyWith(
       lastMessage: LastMessage(
         content: contentStr,
@@ -179,13 +260,15 @@ class MessageProvider extends ChangeNotifier {
       ),
       hasLastMessage: true,
       updatedAt: now,
-      unreadCount: isOutgoing ? conversation.unreadCount : conversation.unreadCount + 1,
+      unreadCount: isOutgoing
+          ? conversation.unreadCount
+          : conversation.unreadCount + 1,
     );
 
-    _conversations[index] = updated;
+    conversations[index] = updated;
     unawaited(TokenStorage.setUnreadCount(conversationId, updated.unreadCount));
-    _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    notifyListeners();
+    conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    state = state.copyWith(allConversations: conversations);
   }
 
   void _scheduleBackgroundRefresh() {
@@ -220,16 +303,6 @@ class MessageProvider extends ChangeNotifier {
     return '';
   }
 
-  // State variables
-  List<ConversationModel> _conversations = [];
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
-  bool _isRefreshing = false;
-  bool _isDeletingConversation = false;
-  String? _error;
-  DateTime? _lastFetchTime;
-  CancelToken? _cancelToken;
-
   CancelToken _getCancelToken() {
     _cancelToken ??= CancelToken();
     return _cancelToken!;
@@ -240,71 +313,14 @@ class MessageProvider extends ChangeNotifier {
     _cancelToken = null;
   }
 
-  final Map<String, Future<void>> _inFlightFetches = {};
-  final Set<String> _seenRealtimeEventKeys = <String>{};
-  Timer? _refreshDebounceTimer;
-
-  // Pagination support (for future implementation)
-  int _currentPage = 1;
-  bool _hasMoreData = true;
-  static const int _pageSize = 20;
-
-  // Getters
-  List<ConversationModel> get conversations =>
-      List.unmodifiable(_conversations.where((c) => c.hasLastMessage));
-  bool get isLoading => _isLoading;
-  bool get isLoadingMore => _isLoadingMore;
-  bool get isRefreshing => _isRefreshing;
-  bool get isDeletingConversation => _isDeletingConversation;
-  String? get error => _error;
-  bool get hasError => _error != null;
-  bool get hasMoreData => _hasMoreData;
-  int get currentPage => _currentPage;
-
-  /// Get conversations count
-  int get conversationCount => conversations.length;
-
-  /// Get total unread count across all conversations
-  int get totalUnreadCount {
-    return conversations.fold(
-      0,
-      (sum, conversation) => sum + conversation.unreadCount,
-    );
-  }
-
-  /// Check if there are any conversations
-  bool get hasConversations => conversations.isNotEmpty;
-
   /// Get conversation by user ID (other user)
   ConversationModel? getConversationByUserId(String userId) {
     final normalizedUserId = userId.trim();
-    AppLogger.d(
-      '🔍 [MessageProvider] 🔎 Searching conversation by userId: $normalizedUserId',
-    );
-    AppLogger.d(
-      '📊 [MessageProvider] 💬 Total conversations to search: ${_conversations.length}',
-    );
-
     try {
-      final conversation = _conversations.firstWhere(
+      return state.allConversations.firstWhere(
         (conversation) => conversation.otherUser.id.trim() == normalizedUserId,
       );
-      AppLogger.d('✅ [MessageProvider] 🎉 Conversation found!');
-      AppLogger.d('💬 [MessageProvider] 🆔 Conversation ID: ${conversation.id}');
-      AppLogger.d(
-        '👤 [MessageProvider] 👥 Other user: ${conversation.otherUser.name}',
-      );
-      AppLogger.d(
-        '📨 [MessageProvider] 💭 Last message: ${conversation.lastMessage.content}',
-      );
-      return conversation;
     } catch (e) {
-      AppLogger.d(
-        '❌ [MessageProvider] 🚫 No conversation found with userId: $userId',
-      );
-      AppLogger.d(
-        '📊 [MessageProvider] 📉 Searched through ${_conversations.length} conversations',
-      );
       return null;
     }
   }
@@ -312,7 +328,9 @@ class MessageProvider extends ChangeNotifier {
   /// Get conversation by ID
   ConversationModel? getConversationById(String id) {
     try {
-      return _conversations.firstWhere((conversation) => conversation.id == id);
+      return state.allConversations.firstWhere(
+        (conversation) => conversation.id == id,
+      );
     } catch (e) {
       return null;
     }
@@ -320,47 +338,15 @@ class MessageProvider extends ChangeNotifier {
 
   /// Clear any existing error
   void clearError() {
-    if (_error != null) {
-      _error = null;
-      notifyListeners();
+    if (state.error != null) {
+      state = state.copyWith(clearError: true);
     }
   }
 
-  /// Set loading state for initial load
-  void _setLoading(bool loading) {
-    if (_isLoading != loading) {
-      _isLoading = loading;
-      AppLogger.d('⏳ [MessageProvider] Loading state changed: $loading');
-      notifyListeners();
-    }
-  }
-
-  /// Set loading state for pagination.
-  void _setLoadingMore(bool loadingMore) {
-    if (_isLoadingMore != loadingMore) {
-      _isLoadingMore = loadingMore;
-      AppLogger.d(
-        '⬇️ [MessageProvider] Loading more state changed: $loadingMore',
-      );
-      notifyListeners();
-    }
-  }
-
-  /// Set loading state for refresh
-  void _setRefreshing(bool refreshing) {
-    if (_isRefreshing != refreshing) {
-      _isRefreshing = refreshing;
-      AppLogger.d('🔄 [MessageProvider] Refresh state changed: $refreshing');
-      notifyListeners();
-    }
-  }
-
-  /// Set error state
   void _setError(String? error) {
-    if (_error != error) {
-      _error = error;
-      AppLogger.d('❌ [MessageProvider] Error state changed: $error');
-      notifyListeners();
+    if (state.error != error) {
+      state = state.copyWith(error: error, clearError: error == null);
+      AppLogger.d('❌ [MessageNotifier] Error state changed: $error');
     }
   }
 
@@ -382,9 +368,9 @@ class MessageProvider extends ChangeNotifier {
         _lastFetchTime != null &&
         DateTime.now().difference(_lastFetchTime!) <
             const Duration(minutes: 2) &&
-        _conversations.isNotEmpty) {
+        state.allConversations.isNotEmpty) {
       AppLogger.d(
-        '✅ [MessageProvider] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
+        '✅ [MessageNotifier] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
       );
       return;
     }
@@ -392,7 +378,7 @@ class MessageProvider extends ChangeNotifier {
     final fetchKey = '${refresh ? 'refresh' : 'page'}:$requestedPage';
     final inFlight = _inFlightFetches[fetchKey];
     if (inFlight != null) {
-      AppLogger.d('⏳ [MessageProvider] Joining in-flight fetch $fetchKey');
+      AppLogger.d('⏳ [MessageNotifier] Joining in-flight fetch $fetchKey');
       return inFlight;
     }
 
@@ -418,29 +404,27 @@ class MessageProvider extends ChangeNotifier {
     final isPagination = !refresh && requestedPage > 1;
 
     AppLogger.d(
-      '📡 [MessageProvider] fetchConversations trigger=$reason '
+      '📡 [MessageNotifier] fetchConversations trigger=$reason '
       'page=$requestedPage refresh=$refresh',
     );
 
     if (refresh) {
-      _currentPage = 1;
-      _hasMoreData = true;
-      _setRefreshing(true);
+      state = state.copyWith(
+        currentPage: 1,
+        hasMoreData: true,
+        isRefreshing: true,
+      );
     } else if (isPagination) {
-      _setLoadingMore(true);
+      state = state.copyWith(isLoadingMore: true);
     } else {
-      _setLoading(true);
+      state = state.copyWith(isLoading: true);
     }
 
     clearError();
 
     try {
-      AppLogger.d(
-        '📡 [MessageProvider] Fetching conversations - Page: $_currentPage, Refresh: $refresh',
-      );
-
       final apiStart = DateTime.now();
-      final conversations = await _messageService.getConversationList(
+      final fetched = await _messageService.getConversationList(
         forceRefresh: refresh,
         page: requestedPage,
         pageSize: _pageSize,
@@ -449,44 +433,35 @@ class MessageProvider extends ChangeNotifier {
       final apiTime = DateTime.now().difference(apiStart);
 
       AppLogger.d(
-        '📩 [MessageProvider] API response received in ${apiTime.inMilliseconds}ms',
+        '📩 [MessageNotifier] API response received in ${apiTime.inMilliseconds}ms',
       );
       AppLogger.d(
-        '📊 [MessageProvider] API returned ${conversations.length} conversations',
+        '📊 [MessageNotifier] API returned ${fetched.length} conversations',
       );
-
-      if (conversations.isEmpty) {
-        AppLogger.d('⚠️ [MessageProvider] API returned EMPTY conversation list');
-      } else {
-        final ids = conversations.map((c) => c.id).take(5).toList();
-        final unreadList = conversations
-            .take(5)
-            .map((c) => '${c.id.substring(0, 6)}:unread=${c.unreadCount}')
-            .toList();
-        AppLogger.d('💬 [MessageProvider] conversationIDs (first 5): $ids');
-        AppLogger.d('🔔 [MessageProvider] unreadCounts (first 5): $unreadList');
-      }
 
       final preserveLocalUnread = reason == 'background_refresh' || !refresh;
 
+      List<ConversationModel> newConversations;
+      bool hasMoreData = state.hasMoreData;
+
       if (refresh || !isPagination) {
-        _conversations = _cleanConversations(conversations, preserveLocalUnread: preserveLocalUnread);
-        _lastFetchTime = DateTime.now();
-      } else {
-        final beforeCount = _conversations.length;
-        _conversations = _cleanConversations(
-          [
-            ..._conversations,
-            ...conversations,
-          ],
+        newConversations = _cleanConversations(
+          fetched,
           preserveLocalUnread: preserveLocalUnread,
         );
-        final addedCount = _conversations.length - beforeCount;
+        _lastFetchTime = DateTime.now();
+      } else {
+        final beforeCount = state.allConversations.length;
+        newConversations = _cleanConversations([
+          ...state.allConversations,
+          ...fetched,
+        ], preserveLocalUnread: preserveLocalUnread);
+        final addedCount = newConversations.length - beforeCount;
         AppLogger.d(
-          '📊 [MessageProvider] Added $addedCount new conversations (${conversations.length - addedCount} duplicates/invalid skipped)',
+          '📊 [MessageNotifier] Added $addedCount new conversations (${fetched.length - addedCount} duplicates/invalid skipped)',
         );
         if (isPagination && addedCount <= 0) {
-          _hasMoreData = false;
+          hasMoreData = false;
         }
         if (!isPagination) {
           _lastFetchTime = DateTime.now();
@@ -495,66 +470,70 @@ class MessageProvider extends ChangeNotifier {
 
       // Sort conversations by updated_at (most recent first)
       final sortStart = DateTime.now();
-      _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      newConversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       final sortTime = DateTime.now().difference(sortStart);
 
       // Update pagination state
-      _hasMoreData = _hasMoreData && conversations.length >= _pageSize;
-      _currentPage = requestedPage + 1;
+      hasMoreData = hasMoreData && fetched.length >= _pageSize;
+
+      state = state.copyWith(
+        allConversations: newConversations,
+        hasMoreData: hasMoreData,
+        currentPage: requestedPage + 1,
+      );
 
       final totalTime = DateTime.now().difference(fetchStart);
       developer.log(
-        '🌐 [PERF] MessageProvider fetch: API ${apiTime.inMilliseconds}ms, Sort ${sortTime.inMilliseconds}ms, Total ${totalTime.inMilliseconds}ms',
-        name: 'MessageProvider',
+        '🌐 [PERF] MessageNotifier fetch: API ${apiTime.inMilliseconds}ms, Sort ${sortTime.inMilliseconds}ms, Total ${totalTime.inMilliseconds}ms',
+        name: 'MessageNotifier',
       );
 
       AppLogger.d(
-        '✅ [MessageProvider] Fetch complete — total: ${_conversations.length} | totalUnread: $totalUnreadCount | hasMore: $_hasMoreData',
+        '✅ [MessageNotifier] Fetch complete — total: ${newConversations.length} | totalUnread: ${state.totalUnreadCount} | hasMore: ${state.hasMoreData}',
       );
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageProvider] fetchConversations cancelled');
+        AppLogger.d('🚫 [MessageNotifier] fetchConversations cancelled');
         return;
       }
-      AppLogger.d('💥 [MessageProvider] Error fetching conversations: $e');
+      AppLogger.d('💥 [MessageNotifier] Error fetching conversations: $e');
       _setError(e.toString());
     } finally {
-      // Clear loading states properly
       if (refresh) {
-        _setRefreshing(false);
+        state = state.copyWith(isRefreshing: false);
       } else if (isPagination) {
-        _setLoadingMore(false);
+        state = state.copyWith(isLoadingMore: false);
       } else {
-        _setLoading(false);
+        state = state.copyWith(isLoading: false);
       }
-
-      AppLogger.d(
-        '🏁 [MessageProvider] Loading states cleared - isLoading: $_isLoading, isRefreshing: $_isRefreshing, isLoadingMore: $_isLoadingMore',
-      );
     }
   }
 
   /// Pull-to-refresh functionality
   Future<void> refreshConversations() async {
-    AppLogger.d('🔄 [MessageProvider] Refresh conversations requested');
+    AppLogger.d('🔄 [MessageNotifier] Refresh conversations requested');
     await fetchConversations(refresh: true, reason: 'manual_refresh');
   }
 
   /// Load more conversations (pagination)
   Future<void> loadMoreConversations({String reason = 'scroll'}) async {
-    if (_isLoading || _isLoadingMore || _isRefreshing || !_hasMoreData) {
+    if (state.isLoading ||
+        state.isLoadingMore ||
+        state.isRefreshing ||
+        !state.hasMoreData) {
       AppLogger.d(
-        '⏸️ [MessageProvider] Skipping load more reason=$reason - '
-        'Loading: $_isLoading, LoadingMore: $_isLoadingMore, '
-        'Refreshing: $_isRefreshing, HasMore: $_hasMoreData',
+        '⏸️ [MessageNotifier] Skipping load more reason=$reason - '
+        'Loading: ${state.isLoading}, LoadingMore: ${state.isLoadingMore}, '
+        'Refreshing: ${state.isRefreshing}, HasMore: ${state.hasMoreData}',
       );
       return;
     }
 
-    AppLogger.d(
-      '📡 [MessageProvider] loadMoreConversations trigger=$reason page=$_currentPage',
+    await fetchConversations(
+      refresh: false,
+      page: state.currentPage,
+      reason: reason,
     );
-    await fetchConversations(refresh: false, page: _currentPage, reason: reason);
   }
 
   /// Mark a conversation as read
@@ -563,33 +542,25 @@ class MessageProvider extends ChangeNotifier {
   /// Returns true if successful
   Future<bool> markConversationAsRead(String conversationId) async {
     try {
-      AppLogger.d(
-        '👁️ [MessageProvider] Marking conversation as read: $conversationId',
-      );
-
       final success = await _messageService.markConversationAsRead(
         conversationId,
       );
 
       if (success) {
-        // Update local state
-        final index = _conversations.indexWhere((c) => c.id == conversationId);
+        final conversations = [...state.allConversations];
+        final index = conversations.indexWhere((c) => c.id == conversationId);
         if (index != -1) {
-          final updatedConversation = _conversations[index].copyWith(
-            unreadCount: 0,
-          );
-          _conversations[index] = updatedConversation;
+          conversations[index] = conversations[index].copyWith(unreadCount: 0);
+          state = state.copyWith(allConversations: conversations);
           unawaited(TokenStorage.setUnreadCount(conversationId, 0));
-          notifyListeners();
-          AppLogger.d(
-            '✅ [MessageProvider] Successfully marked conversation as read locally',
-          );
         }
       }
 
       return success;
     } catch (e) {
-      AppLogger.d('💥 [MessageProvider] Error marking conversation as read: $e');
+      AppLogger.d(
+        '💥 [MessageNotifier] Error marking conversation as read: $e',
+      );
       return false;
     }
   }
@@ -599,35 +570,29 @@ class MessageProvider extends ChangeNotifier {
   /// [conversationId] - The ID of the conversation to delete
   /// Returns true if successful
   Future<bool> deleteConversation(String conversationId) async {
-    _isDeletingConversation = true;
-    notifyListeners();
+    state = state.copyWith(isDeletingConversation: true);
 
     try {
-      AppLogger.d(
-        '🗑️ [MessageProvider] Deleting conversation: $conversationId',
-      );
-
       final success = await _messageService.deleteConversation(
         conversationId,
         cancelToken: _getCancelToken(),
       );
 
       if (success) {
-        // Remove from local state
-        _conversations.removeWhere((c) => c.id == conversationId);
-        AppLogger.d(
-          '✅ [MessageProvider] Successfully deleted conversation locally',
+        state = state.copyWith(
+          allConversations: state.allConversations
+              .where((c) => c.id != conversationId)
+              .toList(),
         );
       }
 
       return success;
     } catch (e) {
-      AppLogger.d('💥 [MessageProvider] Error deleting conversation: $e');
+      AppLogger.d('💥 [MessageNotifier] Error deleting conversation: $e');
       _setError('Failed to delete conversation');
       return false;
     } finally {
-      _isDeletingConversation = false;
-      notifyListeners();
+      state = state.copyWith(isDeletingConversation: false);
     }
   }
 
@@ -636,32 +601,28 @@ class MessageProvider extends ChangeNotifier {
   /// [conversation] - The updated conversation data
   void updateConversation(ConversationModel conversation) {
     try {
-      final index = _conversations.indexWhere((c) => c.id == conversation.id);
+      final conversations = [...state.allConversations];
+      final index = conversations.indexWhere((c) => c.id == conversation.id);
 
       if (index != -1) {
-        // Update existing conversation
-        _conversations[index] = conversation;
-        AppLogger.d(
-          '🔄 [MessageProvider] Updated existing conversation: ${conversation.id}',
-        );
+        conversations[index] = conversation;
       } else {
-        // Add new conversation at the beginning
-        _conversations.insert(0, conversation);
-        AppLogger.d(
-          '➕ [MessageProvider] Added new conversation: ${conversation.id}',
-        );
+        conversations.insert(0, conversation);
       }
 
-      unawaited(TokenStorage.setUnreadCount(conversation.id, conversation.unreadCount));
+      unawaited(
+        TokenStorage.setUnreadCount(conversation.id, conversation.unreadCount),
+      );
 
-      _conversations = _cleanConversations(_conversations, preserveLocalUnread: true);
+      final cleaned = _cleanConversations(
+        conversations,
+        preserveLocalUnread: true,
+      );
+      cleaned.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
-      // Sort to maintain order
-      _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-
-      notifyListeners();
+      state = state.copyWith(allConversations: cleaned);
     } catch (e) {
-      AppLogger.d('💥 [MessageProvider] Error updating conversation: $e');
+      AppLogger.d('💥 [MessageNotifier] Error updating conversation: $e');
     }
   }
 
@@ -671,22 +632,21 @@ class MessageProvider extends ChangeNotifier {
   void addConversation(ConversationModel conversation) {
     if (!_isRenderableConversation(conversation)) {
       AppLogger.d(
-        '🚫 [MessageProvider] Invalid conversation skipped: ${conversation.id}',
+        '🚫 [MessageNotifier] Invalid conversation skipped: ${conversation.id}',
       );
       return;
     }
 
     final key = _conversationKey(conversation);
-    if (_conversations.any((item) => _conversationKey(item) == key)) {
+    if (state.allConversations.any((item) => _conversationKey(item) == key)) {
       AppLogger.d(
-        '🔒 [MessageProvider] Duplicate conversation skipped: ${conversation.id}',
+        '🔒 [MessageNotifier] Duplicate conversation skipped: ${conversation.id}',
       );
       return;
     }
-    _conversations.insert(0, conversation);
-    notifyListeners();
-    AppLogger.d(
-      '➕ [MessageProvider] Added new conversation: ${conversation.id}',
+
+    state = state.copyWith(
+      allConversations: [conversation, ...state.allConversations],
     );
   }
 
@@ -694,9 +654,11 @@ class MessageProvider extends ChangeNotifier {
   ///
   /// [conversationId] - The ID of the conversation to remove
   void removeConversation(String conversationId) {
-    _conversations.removeWhere((c) => c.id == conversationId);
-    notifyListeners();
-    AppLogger.d('➖ [MessageProvider] Removed conversation: $conversationId');
+    state = state.copyWith(
+      allConversations: state.allConversations
+          .where((c) => c.id != conversationId)
+          .toList(),
+    );
   }
 
   List<ConversationModel> _cleanConversations(
@@ -727,7 +689,9 @@ class MessageProvider extends ChangeNotifier {
         updatedConversation = conversation.copyWith(
           unreadCount: targetUnreadCount,
         );
-        unawaited(TokenStorage.setUnreadCount(conversation.id, targetUnreadCount));
+        unawaited(
+          TokenStorage.setUnreadCount(conversation.id, targetUnreadCount),
+        );
       }
 
       final existing = deduped[key];
@@ -759,31 +723,17 @@ class MessageProvider extends ChangeNotifier {
     return 'conversation:${conversation.id.trim()}';
   }
 
-  /// Reset provider state
+  /// Reset all message data on logout.
   void reset() {
     _refreshDebounceTimer?.cancel();
-    _conversations.clear();
-    _error = null;
-    _isLoading = false;
-    _isLoadingMore = false;
-    _isRefreshing = false;
-    _isDeletingConversation = false;
-    _currentPage = 1;
-    _hasMoreData = true;
     _lastFetchTime = null;
     _inFlightFetches.clear();
     _seenRealtimeEventKeys.clear();
-    notifyListeners();
-    AppLogger.d('🔄 [MessageProvider] Provider state reset');
-  }
-
-  @override
-  void dispose() {
-    cancelActiveRequests();
-    _refreshDebounceTimer?.cancel();
-    _socketSubscription?.cancel();
-    _socketSubscription = null;
-    AppLogger.d('🗑️ [MessageProvider] Disposed and socket listener cancelled');
-    super.dispose();
+    state = const MessageState();
+    AppLogger.d('🔄 [MessageNotifier] State reset');
   }
 }
+
+final messageNotifierProvider = NotifierProvider<MessageNotifier, MessageState>(
+  MessageNotifier.new,
+);

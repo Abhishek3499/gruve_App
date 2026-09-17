@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/message/presentation/screens/message_screen.dart';
 import 'package:gruve_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:gruve_app/features/search/presentation/screens/search_screen.dart';
@@ -14,7 +15,7 @@ import 'package:gruve_app/features/home/presentation/controllers/video_feed_cont
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_feed.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/core/auth/current_user_provider.dart';
+import 'package:gruve_app/core/auth/current_user_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/presentation/controller/camera_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -27,14 +28,15 @@ import 'package:gruve_app/features/message/presentation/controller/user_provider
 /// Rebuild cost: 8-12ms → 1-2ms (85% reduction)
 /// Memory usage: Reduced through selective rebuilds
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   // 🚀 OPTIMIZED: Use ValueNotifier for selective rebuilds
   final ValueNotifier<int> _currentIndex = ValueNotifier(0);
   final ValueNotifier<int> _previousIndex = ValueNotifier(0);
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final profileProvider = context.read<ProfileProvider>();
-      final currentUser = context.read<CurrentUserProvider>();
+      final currentUser = ref.read(currentUserNotifierProvider.notifier);
       final cachedUser = profileProvider.user;
       if (cachedUser != null) {
         currentUser.updateProfileData(

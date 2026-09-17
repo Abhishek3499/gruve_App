@@ -12,7 +12,7 @@ import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: TikTok-style video controller management
 /// Keeps previous + current + next video initialized for optimal memory usage
@@ -39,7 +39,7 @@ class VideoFeedController {
   bool Function(String userId)? isBlockedUser;
 
   VideoFeedController() {
-    final subscribeController = SubscribeController();
+    final subscribeController = SubscribeNotifier();
     _syncedSubscribedUserIds = subscribeController.users.entries
         .where(
           (e) =>
@@ -59,7 +59,7 @@ class VideoFeedController {
     _localSubscribedUserIds = _collectLocalSubscribedUserIds(
       subscribeController,
     );
-    SubscribeController().addListener(_onSubscriptionChanged);
+    SubscribeNotifier().addListener(_onSubscriptionChanged);
   }
 
   Set<String> _syncedSubscribedUserIds = {};
@@ -195,17 +195,11 @@ class VideoFeedController {
     final uniqueNewPosts = _uniquePosts(newPosts, existingIds: existingIds);
 
     if (uniqueNewPosts.isEmpty) {
-      AppLogger.d('🔄 feed merge: no new post IDs — skip (duplicates only)');
-
       return;
     }
 
     _posts.insertAll(0, uniqueNewPosts);
     _mediaUrls.insertAll(0, uniqueNewPosts.map(_feedMediaUrlFor).toList());
-
-    AppLogger.d(
-      '🔄 feed merge: +${uniqueNewPosts.length} new at top → total ${_posts.length}',
-    );
 
     if (_currentIndex.value > 0) {
       _currentIndex.value += uniqueNewPosts.length;
@@ -275,10 +269,14 @@ class VideoFeedController {
       _isPlaying.value = false;
     }
 
-    AppLogger.d(
-      '🔄 feed snapshot applied: ${uniquePosts.length} posts | index=${_currentIndex.value}',
-    );
     _notifyFeedStructureChanged();
+
+    // The PageView keeps whatever physical page it was on; without this the
+    // displayed page can end up pointing at a different post than
+    // _currentIndex.value (or past the end of the new list), showing a
+    // blank/black item — e.g. when a subscribe/unsubscribe sync silently
+    // swaps the feed snapshot while the user is on another screen.
+    onPostsRemoved?.call();
   }
 
   List<Post> _uniquePosts(List<Post> posts, {Set<String>? existingIds}) {
@@ -293,8 +291,6 @@ class VideoFeedController {
 
       if (seenIds.add(post.id)) {
         unique.add(post);
-      } else {
-        AppLogger.d('feed duplicate skipped id=${post.id}');
       }
     }
 
@@ -337,18 +333,10 @@ class VideoFeedController {
 
   Future<bool?> loadMorePosts({String reason = 'scroll'}) async {
     if (_isAnyOperationInProgress) {
-      AppLogger.d(
-        '⏸️ [VideoFeed] Operation already in progress, skipping loadMore reason=$reason',
-      );
       return null;
     }
 
     if (_isLoadingMore || !_hasMore || _isRefreshing) return null;
-
-    AppLogger.d(
-      '📡 [VideoFeed] loadMorePosts trigger=$reason '
-      'cursor=$_nextCursor feed=$_currentFeed',
-    );
 
     final requestId = _feedLoadGeneration;
     _isAnyOperationInProgress = true;
@@ -356,8 +344,6 @@ class VideoFeedController {
     _setLoadingMore(true);
 
     try {
-      AppLogger.d("⏬ Load More Triggered");
-
       var fetchCursor = _nextCursor;
 
       while (true) {
@@ -367,15 +353,8 @@ class VideoFeedController {
         );
 
         if (requestId != _feedLoadGeneration) {
-          AppLogger.d(
-            'Load more request $requestId cancelled due to newer request',
-          );
           return null;
         }
-
-        AppLogger.d(
-          '📡 feed API load-more: ${response.posts.length} raw posts',
-        );
 
         final posts = _filterPostsWithSupportedMedia(response.posts);
         final uniquePosts = _uniquePosts(
@@ -393,17 +372,6 @@ class VideoFeedController {
         if (uniquePosts.isNotEmpty) {
           _consecutiveEmptyLoadMorePages = 0;
 
-          final videoCount = uniquePosts
-              .where(
-                (post) =>
-                    post.isVideo || Post.mediaUrlLooksLikeVideo(post.media),
-              )
-              .length;
-          final imageCount = uniquePosts.length - videoCount;
-          AppLogger.d(
-            '🎥 video detected (kept): $videoCount | 🖼 image detected (kept): $imageCount',
-          );
-
           if (_currentFeed == 'subscribed') {
             _seedSubscribedAuthors(uniquePosts);
           }
@@ -415,18 +383,11 @@ class VideoFeedController {
           unawaited(
             _ensureControllersAroundIndex(_currentIndex.value, requestId),
           );
-          AppLogger.d('✅ [VideoFeed] Total Posts: ${_posts.length}');
-          AppLogger.d('✅ Loaded ${uniquePosts.length} more posts');
           return true;
         }
 
         // Duplicate-only page: advance cursor and retry up to the safety cap.
         _consecutiveEmptyLoadMorePages++;
-        AppLogger.d(
-          '📡 [VideoFeed] Duplicate-only page '
-          '($_consecutiveEmptyLoadMorePages/$maxConsecutiveEmptyLoadMorePages) '
-          '— cursor advanced',
-        );
 
         if (!canLoadMore) {
           _hasMore = false;
@@ -475,27 +436,16 @@ class VideoFeedController {
     }
 
     if (_isAnyOperationInProgress) {
-      AppLogger.d(
-        '⏸️ [VideoFeed] Operation already in progress, skipping init',
-      );
       return null;
     }
 
     if (refresh) {
       if (_isRefreshing) {
-        AppLogger.d(
-          '⏳ [VideoFeed] Refresh already in progress, skipping request',
-        );
-
         return null;
       }
       _isRefreshing = true;
     } else {
       if (_isInitialLoading) {
-        AppLogger.d(
-          '⏳ [VideoFeed] Initial load already in progress, skipping request',
-        );
-
         return null;
       }
       _isInitialLoading = _mediaUrls.isEmpty;
@@ -512,9 +462,6 @@ class VideoFeedController {
         'feed_posts_$_currentFeed',
       );
       if (cachedData is List) {
-        AppLogger.d(
-          '📦 [VideoFeedController] Cache HIT. Loading cached posts first.',
-        );
         try {
           _posts = cachedData
               .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
@@ -531,9 +478,6 @@ class VideoFeedController {
                   !_disposed &&
                   requestId == _feedLoadGeneration) {
                 _setInitialFeedLoading(false);
-                AppLogger.d(
-                  '⏰ [VideoFeedController] Shimmer dismissed via cache fallback timer',
-                );
               }
             });
           }
@@ -551,12 +495,6 @@ class VideoFeedController {
     }
 
     try {
-      if (refresh) {
-        AppLogger.d('🔄 feed refresh — fetching latest posts');
-      } else {
-        AppLogger.d('📡 feed API — initial load');
-      }
-
       if (refresh) {
         _nextCursor = null;
         _hasMore = true;
@@ -581,16 +519,8 @@ class VideoFeedController {
       // at write time, not capture time), causing the feed to visibly
       // reinitialize/flicker right after switching.
       if (requestId != _feedLoadGeneration) {
-        AppLogger.d(
-          '⏭️ [VideoFeedController] Discarding stale initVideos response '
-          'requestId=$requestId currentGen=$_feedLoadGeneration feed=$_currentFeed',
-        );
         return null;
       }
-
-      AppLogger.d(
-        '📡 feed API ${refresh ? "refresh" : "initial"}: ${response.posts.length} raw posts',
-      );
 
       final posts = _filterPostsWithSupportedMedia(response.posts);
       final uniquePosts = refresh ? posts : _uniquePosts(posts);
@@ -611,14 +541,6 @@ class VideoFeedController {
           }
         }
       }
-
-      final videoCount = uniquePosts
-          .where((p) => Post.mediaUrlLooksLikeVideo(p.media) || p.isVideo)
-          .length;
-      final imageCount = uniquePosts.length - videoCount;
-      AppLogger.d(
-        '🎥 video detected (kept): $videoCount | 🖼 image detected (kept): $imageCount',
-      );
 
       if (response.posts.isEmpty) {
         AppLogger.d("❌ API returned no posts");
@@ -660,14 +582,8 @@ class VideoFeedController {
         if (refresh) {
           if (replaceSnapshot) {
             _applyRefreshedFeedSnapshot(uniquePosts);
-            AppLogger.d(
-              '🔄 feed snapshot refresh: ${uniquePosts.length} posts',
-            );
           } else {
             _mergeRefreshedPosts(uniquePosts);
-            AppLogger.d(
-              '🔄 feed refresh merged slice: ${uniquePosts.length} posts',
-            );
           }
           if (_currentFeed == 'subscribed') {
             _seedSubscribedAuthors(_posts);
@@ -680,9 +596,6 @@ class VideoFeedController {
           if (!isFeedUnchanged) {
             _posts = uniquePosts;
             _mediaUrls = _posts.map(_feedMediaUrlFor).toList();
-            AppLogger.d(
-              '✅ [VideoFeed] Initial load: ${uniquePosts.length} posts',
-            );
             unawaited(_precacheFeedImages(uniquePosts));
 
             // Save newly fetched posts to Hive cache
@@ -713,14 +626,9 @@ class VideoFeedController {
                 !_disposed &&
                 requestId == _feedLoadGeneration) {
               _setInitialFeedLoading(false);
-              AppLogger.d(
-                '⏰ [VideoFeedController] Shimmer dismissed via fallback timer',
-              );
             }
           });
         }
-
-        AppLogger.d('✅ [VideoFeed] Total Posts: ${_posts.length}');
       }
 
       if (requestId != _feedLoadGeneration) return null;
@@ -733,9 +641,6 @@ class VideoFeedController {
         for (final entry in _controllersByUrl.entries) {
           if (newUrls.contains(entry.key)) {
             preservedControllers[entry.key] = entry.value;
-            AppLogger.d(
-              '♻️ Preserving video player for url=${entry.key.substring(0, entry.key.length.clamp(0, 48))}',
-            );
           } else {
             controllersToDispose.add(entry.value);
           }
@@ -895,12 +800,6 @@ class VideoFeedController {
 
     final cached = _controllersByUrl[url];
     if (cached != null) {
-      _logControllerMetric(
-        'REUSED',
-        url: url,
-        index: index,
-        extra: 'source=cache',
-      );
       _applyPlaybackForIndex(index);
       return;
     }
@@ -914,12 +813,6 @@ class VideoFeedController {
       // own checkpoint, that the live window no longer wanted it), fall
       // through below and start a fresh attempt now that none is left
       // running — instead of leaving CURRENT stuck with nothing.
-      _logControllerMetric(
-        'REUSED',
-        url: url,
-        index: index,
-        extra: 'source=in_flight_await',
-      );
       await pending;
       if (_disposed || generation != _feedLoadGeneration) return;
       if (_controllersByUrl.containsKey(url)) {
@@ -947,7 +840,6 @@ class VideoFeedController {
 
     _hasPendingEnsureAroundIndex = false;
     final index = _pendingEnsureAroundIndex;
-    AppLogger.d('📌 [VideoFeed] Committing preload for settled index $index');
     unawaited(_ensureControllersAroundIndex(index, _feedLoadGeneration));
   }
 
@@ -975,10 +867,6 @@ class VideoFeedController {
     // applying it here would incorrectly play a video the user has already
     // scrolled past and pause the one they're actually looking at.
     if (_currentIndex.value != index) {
-      AppLogger.d(
-        '⏭️ [VideoFeed] Skipping stale playback apply index=$index '
-        '(current is now ${_currentIndex.value})',
-      );
       return;
     }
 
@@ -1018,9 +906,6 @@ class VideoFeedController {
 
     // If it failed previously, remove from failed and retry initialization
     if (url.isNotEmpty && _failedUrls.contains(url)) {
-      AppLogger.d(
-        '🔄 [VideoFeedController] Retrying failed video initialization on tap: $url',
-      );
       _failedUrls.remove(url);
       _notifyVideoControllersChanged();
       unawaited(_initializeVideoAt(_currentIndex.value, _feedLoadGeneration));
@@ -1057,11 +942,7 @@ class VideoFeedController {
     _cancelPendingEnsureAroundIndex();
     _subscriptionFeedRefreshDebounce?.cancel();
 
-    SubscribeController().removeListener(_onSubscriptionChanged);
-
-    AppLogger.d(
-      '🧹 VideoFeedController disposing ${_controllersByUrl.length} controllers...',
-    );
+    SubscribeNotifier().removeListener(_onSubscriptionChanged);
 
     final futures = <Future<void>>[];
     for (final entry in _controllersByUrl.entries) {
@@ -1083,7 +964,6 @@ class VideoFeedController {
           _controllersByUrl.clear();
           _initializingUrls.clear();
           _initTokensByUrl.clear();
-          AppLogger.d('✅ All video controllers disposed successfully');
         })
         .catchError((e) {
           AppLogger.d('❌ Error during controller disposal: $e');
@@ -1097,15 +977,11 @@ class VideoFeedController {
     _isLoadingMoreNotifier.dispose();
     _loadErrorNotifier.dispose();
     _videoControllersRevision.dispose();
-
-    AppLogger.d('✅ VideoFeedController fully disposed (memory freed)');
   }
 
   /// Reset controller state (for logout)
   void reset() {
     if (_disposed) return;
-
-    AppLogger.d('🔄 [VideoFeedController] Resetting state...');
 
     // Dispose all controllers
     for (final controller in _controllersByUrl.values) {
@@ -1140,7 +1016,6 @@ class VideoFeedController {
     _disposeItemRevisions();
 
     _notifyFeedStructureChanged();
-    AppLogger.d('✅ [VideoFeedController] State reset complete');
   }
 
   /// Instantly prepends a new post (e.g. after upload) to show it immediately.
@@ -1149,18 +1024,11 @@ class VideoFeedController {
 
     final exists = _posts.any((p) => p.id == post.id);
     if (exists) {
-      AppLogger.d(
-        '🔔 [VideoFeedController] Post ${post.id} already exists, skipping prepend',
-      );
       return;
     }
 
     _posts.insert(0, post);
     _mediaUrls.insert(0, _feedMediaUrlFor(post));
-
-    AppLogger.d(
-      '🔔 [VideoFeedController] Prepended new post ${post.id} to feed',
-    );
 
     _currentIndex.value = 0;
     _isPlaying.value = false;
@@ -1173,10 +1041,6 @@ class VideoFeedController {
   /// Releases all active video player controllers to free hardware decoders
   void releaseAllControllers() {
     if (_disposed) return;
-
-    AppLogger.d(
-      '🧹 [VideoFeedController] Releasing all video controllers to free decoders...',
-    );
 
     final controllersToDispose = List<VideoPlayerController>.from(
       _controllersByUrl.values,
@@ -1210,15 +1074,8 @@ class VideoFeedController {
     // is already active for no reason.
     final targetFeed = feedTab == 'Subscribed' ? 'subscribed' : 'for_you';
     if (_currentFeed == targetFeed) {
-      AppLogger.d(
-        '⏭️ [VideoFeedController] changeFeed ignored — already on $targetFeed',
-      );
       return;
     }
-
-    AppLogger.d(
-      '🔄 [VideoFeedController] Changing feed to $feedTab (from $_currentFeed)...',
-    );
 
     // Asynchronously dispose of controllers to avoid blocking the UI thread
     final controllersToDispose = List<VideoPlayerController>.from(
@@ -1267,47 +1124,23 @@ class VideoFeedController {
     }
 
     _notifyFeedStructureChanged();
-    AppLogger.d(
-      '✅ [VideoFeedController] Feed successfully changed to $_currentFeed (gen: $_feedLoadGeneration)',
-    );
   }
 
   List<Post> _filterPostsWithSupportedMedia(List<Post> raw) {
     final out = <Post>[];
-    var skippedInvalid = 0;
-    var skippedBlocked = 0;
 
     for (final post in raw) {
       if (isBlockedUser != null && isBlockedUser!(post.userId)) {
-        skippedBlocked++;
-        AppLogger.d(
-          '🔒 [VideoFeedController] Skipping post by blocked user: ${post.userId}',
-        );
         continue;
       }
       if (post.isFeedEligible) {
         out.add(post);
-        if (kDebugMode) {
-          final label =
-              (post.isVideo || Post.mediaUrlLooksLikeVideo(post.media))
-              ? '🎥 video detected'
-              : '🖼 image detected';
-          AppLogger.d('$label — ✅ kept in feed id=${post.id}');
-        }
       } else {
-        skippedInvalid++;
         AppLogger.d(
           '❌ video/image filtered/skipped — no playable URL id=${post.id} '
           'media="${post.media}" thumb="${post.thumbnailUrl}"',
         );
       }
-    }
-
-    if (skippedInvalid > 0 || skippedBlocked > 0) {
-      AppLogger.d(
-        '📊 [VideoFeed] filter: kept=${out.length} skipped_invalid=$skippedInvalid '
-        'skipped_blocked=$skippedBlocked raw=${raw.length}',
-      );
     }
 
     return out;
@@ -1334,31 +1167,6 @@ class VideoFeedController {
     return post.isVideo || Post.mediaUrlLooksLikeVideo(post.media);
   }
 
-  /// Debug-only lifecycle metric for one VideoPlayerController event —
-  /// CREATED / INIT_START / INIT_READY / REUSED / EVICT / DISPOSED — used to
-  /// diagnose slow loads (preload-vs-swipe timing, recreation churn, network
-  /// vs decoder duration, disposal/retention correctness) without touching
-  /// playback behavior. Separate from the narrower, index-gated
-  /// _VideoInitTrace above, which stays focused on limiter queue diagnostics.
-  void _logControllerMetric(
-    String event, {
-    required String url,
-    int? index,
-    String? extra,
-  }) {
-    if (!kDebugMode) return;
-    final resolvedIndex = index ?? _mediaUrls.indexOf(url);
-    AppLogger.d(
-      '📊 [VideoMetric] $event index=$resolvedIndex url=${_shortUrl(url)} '
-      'current=${_currentIndex.value} cached=${_controllersByUrl.length} '
-      'inflight=${_initializingUrls.length}'
-      '${extra != null ? ' $extra' : ''}',
-      tag: 'VideoMetric',
-    );
-  }
-
-  String _shortUrl(String url) => url.substring(0, url.length.clamp(0, 48));
-
   void _checkInitialFeedLoadingStatus() {
     if (!_isInitialFeedLoading) return;
 
@@ -1378,9 +1186,6 @@ class VideoFeedController {
 
     if (posterAvailable || firstControllerReady || firstControllerFailed) {
       _setInitialFeedLoading(false);
-      AppLogger.d(
-        '✨ [VideoFeedController] Initial feed loading finished. Poster: $posterAvailable, Controller: $firstControllerReady, Failed: $firstControllerFailed',
-      );
     }
   }
 
@@ -1397,10 +1202,6 @@ class VideoFeedController {
     if (_disposed || index < 0 || index >= _posts.length) return;
 
     final keepUrls = _keepUrlsForIndex(index);
-    AppLogger.d(
-      '🪟 [VideoFeed] POOL index=$index keep=[${index - preloadBehindDistance}..${index + preloadDistance}] '
-      'keepCount=${keepUrls.length} cached=${_controllersByUrl.length}',
-    );
     _cancelStaleInitializations(keepUrls);
 
     final currentUrl = _mediaUrlAt(index);
@@ -1521,20 +1322,13 @@ class VideoFeedController {
         .toList();
     if (urlsToEvict.isEmpty) return;
 
-    final retainedCount = _controllersByUrl.length - urlsToEvict.length;
-    AppLogger.d(
-      '📌 [VideoFeed] controllers retained=$retainedCount evicting=${urlsToEvict.length}',
-    );
-
     for (final url in urlsToEvict) {
       final controller = _controllersByUrl.remove(url);
       if (controller == null) continue;
-      final evictedIndex = _mediaUrls.indexOf(url);
       unawaited(() async {
         try {
           await controller.pause();
           await controller.dispose();
-          _logControllerMetric('EVICT', url: url, index: evictedIndex);
         } catch (e) {
           AppLogger.d('❌ Error evicting controller for $url: $e');
         }
@@ -1576,9 +1370,6 @@ class VideoFeedController {
 
     for (final url in staleUrls) {
       _initTokensByUrl.remove(url);
-      AppLogger.d(
-        '🛑 [VideoFeed] CANCEL index=${_mediaUrls.indexOf(url)} reason=outside_window',
-      );
     }
     _FeedVideoInitLimiter.bumpEpoch();
   }
@@ -1590,9 +1381,6 @@ class VideoFeedController {
 
     for (final url in staleUrls) {
       _initTokensByUrl.remove(url);
-      AppLogger.d(
-        '🛑 [VideoFeed] CANCEL index=${_mediaUrls.indexOf(url)} reason=outside_window',
-      );
     }
   }
 
@@ -1613,7 +1401,6 @@ class VideoFeedController {
         _mediaUrls[mediaIndex] = resolvedUrl;
       }
       _notifyFeedItemChanged(_itemRevisionKey(merged, mediaUrl: resolvedUrl));
-      AppLogger.d('✅ [VideoFeed] Resolved stream URL for post ${post.id}');
       return resolvedUrl;
     } catch (e) {
       AppLogger.d('⚠️ [VideoFeed] Could not resolve media for ${post.id}: $e');
@@ -1730,30 +1517,15 @@ class VideoFeedController {
     _pendingRetryUrls.remove(resolvedUrl);
     final initToken = ++_initTokenSeq;
     _initTokensByUrl[resolvedUrl] = initToken;
-    final traceInit = _shouldTraceVideoInit(mediaIndex);
-    final initTrace = traceInit ? _VideoInitTrace(mediaIndex) : null;
     final initDeadline = isCurrentVideo ? initTimeout : preloadInitTimeout;
 
     VideoPlayerController? controller;
     _initializingUrls.add(resolvedUrl);
     _notifyVideoControllersChanged();
     try {
-      AppLogger.d(
-        '🔄 [VideoFeed] Initializing video at index $mediaIndex '
-        '(attempt ${attempt + 1}): $resolvedUrl',
-      );
-
       final adopted = await _adoptFrameCacheController(resolvedUrl);
       if (adopted != null) {
         controller = adopted;
-        _logControllerMetric(
-          'REUSED',
-          url: resolvedUrl,
-          index: mediaIndex,
-          extra: 'source=frame_cache',
-        );
-        initTrace?.markInitStart(bypassedLimiter: true);
-        initTrace?.markInitSuccess();
       } else {
         controller = VideoPlayerController.networkUrl(
           Uri.parse(resolvedUrl),
@@ -1762,7 +1534,6 @@ class VideoFeedController {
             allowBackgroundPlayback: false,
           ),
         );
-        _logControllerMetric('CREATED', url: resolvedUrl, index: mediaIndex);
 
         _initializingControllers[resolvedUrl] = controller;
         final localController = controller;
@@ -1794,21 +1565,11 @@ class VideoFeedController {
         // token/generation/the live preload window (see that method).
         final token = initToken;
         final limiterEpoch = epoch ?? _FeedVideoInitLimiter.epoch;
-        final mode = isCurrentVideo ? 'current' : 'preload';
         bool isNowCurrent() => mediaIndex == _currentIndex.value;
-        _logControllerMetric(
-          'INIT_START',
-          url: resolvedUrl,
-          index: mediaIndex,
-          extra: 'mode=$mode',
-        );
-        final initWatch = Stopwatch()..start();
         final ran = await _FeedVideoInitLimiter.run(
           epoch: limiterEpoch,
           isPriority: isNowCurrent,
-          trace: initTrace,
           task: () async {
-            initTrace?.markInitStart(bypassedLimiter: false);
             await localController.initialize().timeout(
               initDeadline,
               onTimeout: () {
@@ -1827,40 +1588,16 @@ class VideoFeedController {
             generation: generation,
           ),
         );
-        initWatch.stop();
         if (!ran) {
-          initTrace?.markCancelled();
           await localController.dispose().catchError((_) {});
-          _logControllerMetric(
-            'DISPOSED',
-            url: resolvedUrl,
-            index: mediaIndex,
-            extra: 'reason=cancelled_before_init',
-          );
           _initializingControllers.remove(resolvedUrl);
           _initTokensByUrl.remove(resolvedUrl);
           return;
         }
-        _logControllerMetric(
-          'INIT_READY',
-          url: resolvedUrl,
-          index: mediaIndex,
-          extra: 'mode=$mode durationMs=${initWatch.elapsedMilliseconds}',
-        );
-        initTrace?.markInitSuccess();
       }
     } catch (e) {
-      initTrace?.markInitFailure(e);
       try {
         await controller?.dispose();
-        if (controller != null) {
-          _logControllerMetric(
-            'DISPOSED',
-            url: resolvedUrl,
-            index: mediaIndex,
-            extra: 'reason=init_failed',
-          );
-        }
       } catch (_) {}
 
       if (_initTokensByUrl[resolvedUrl] != initToken) return;
@@ -1873,10 +1610,6 @@ class VideoFeedController {
 
       if (canRetry) {
         _pendingRetryUrls.add(resolvedUrl);
-        AppLogger.d(
-          '🔁 [VideoFeed] Retrying video init at $mediaIndex '
-          '(attempt ${attempt + 2})',
-        );
         await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
         if (_disposed || generation != _feedLoadGeneration) {
           _pendingRetryUrls.remove(resolvedUrl);
@@ -1909,12 +1642,6 @@ class VideoFeedController {
         generation != _feedLoadGeneration ||
         _initTokensByUrl[resolvedUrl] != initToken) {
       await controller.dispose();
-      _logControllerMetric(
-        'DISPOSED',
-        url: resolvedUrl,
-        index: mediaIndex,
-        extra: 'reason=stale_after_init',
-      );
       _initTokensByUrl.remove(resolvedUrl);
       return;
     }
@@ -1926,12 +1653,6 @@ class VideoFeedController {
         : _isUrlInPreloadWindow(resolvedUrl, _currentIndex.value);
     if (!stillWanted) {
       await controller.dispose();
-      _logControllerMetric(
-        'DISPOSED',
-        url: resolvedUrl,
-        index: mediaIndex,
-        extra: 'reason=off_window',
-      );
       return;
     }
 
@@ -1954,9 +1675,6 @@ class VideoFeedController {
         _pauseAllVideos(exceptUrl: resolvedUrl);
         await controller.play();
         _isPlaying.value = true;
-        AppLogger.d(
-          '▶️ [VideoFeed] Auto-playing video at $mediaIndex after init',
-        );
       } else {
         await controller.setVolume(0);
         await controller.pause();
@@ -1964,13 +1682,6 @@ class VideoFeedController {
       }
     } catch (e) {
       AppLogger.d('⚠️ [VideoFeed] Could not start/prime video: $e');
-    }
-
-    AppLogger.d(
-      '✅ [VideoFeed] Video ready at $mediaIndex (total cached: ${_controllersByUrl.length})',
-    );
-    if (!isCurrentVideo) {
-      AppLogger.d('✅ [VideoFeed] PRELOAD READY index=$mediaIndex');
     }
   }
 
@@ -1986,30 +1697,21 @@ class VideoFeedController {
     final adopted = await VideoFrameCache.takeForFeed(url);
     if (adopted == null) return null;
 
-    AppLogger.d(
-      '♻️ [VideoFeed] Adopted warmed controller from frame cache: '
-      '${url.substring(0, url.length.clamp(0, 48))}',
-    );
     return adopted;
   }
 
   void _pauseAllVideos({String? exceptUrl}) {
-    var pausedAny = false;
     _controllersByUrl.forEach((url, controller) {
       if (exceptUrl == null || url != exceptUrl) {
         try {
           if (controller.value.isPlaying) {
             controller.pause();
-            pausedAny = true;
           }
         } catch (e) {
           AppLogger.d('❌ Error pausing controller for $url: $e');
         }
       }
     });
-    if (pausedAny) {
-      AppLogger.d('⏸️ All other videos paused');
-    }
   }
 
   Future<void> _precacheFeedImages(List<Post> posts) async {
@@ -2044,10 +1746,6 @@ class VideoFeedController {
 
     try {
       await Future.wait(tasks);
-      AppLogger.d(
-        '✅ [VideoFeedController] Precached feed assets '
-        '(${imageFutures.length} images).',
-      );
     } catch (e) {
       AppLogger.d('⚠️ Error pre-caching feed images: $e');
     }
@@ -2085,7 +1783,7 @@ class VideoFeedController {
   }
 
   void _seedSubscribedAuthors(List<Post> posts) {
-    SubscribeController().seedSubscribedFeedAuthors(
+    SubscribeNotifier().seedSubscribedFeedAuthors(
       posts.map((post) => (userId: post.userId, username: post.username)),
     );
   }
@@ -2104,7 +1802,7 @@ class VideoFeedController {
     await cacheManager.invalidatePattern('user/profile');
   }
 
-  Set<String> _collectLocalSubscribedUserIds(SubscribeController controller) {
+  Set<String> _collectLocalSubscribedUserIds(SubscribeNotifier controller) {
     final ids = <String>{
       ...controller.users.entries
           .where((e) => e.value.isSubscribed)
@@ -2120,9 +1818,6 @@ class VideoFeedController {
 
   void _maybeRefreshFeedIfEmpty(String reason) {
     if (_posts.isNotEmpty || _disposed) return;
-    AppLogger.d(
-      '🔄 [VideoFeedController] Feed empty after $reason — silent refresh',
-    );
     unawaited(initVideos(refresh: true, replaceSnapshot: true));
   }
 
@@ -2136,9 +1831,6 @@ class VideoFeedController {
         if (_disposed) return;
         final replace = _pendingReplaceSnapshotRefresh;
         _pendingReplaceSnapshotRefresh = false;
-        AppLogger.d(
-          '🔄 [VideoFeedController] Debounced subscription feed refresh replace=$replace feed=$_currentFeed',
-        );
         unawaited(initVideos(refresh: true, replaceSnapshot: replace));
       },
     );
@@ -2149,7 +1841,7 @@ class VideoFeedController {
   void _onSubscriptionChanged() {
     if (_disposed) return;
 
-    final subscribeController = SubscribeController();
+    final subscribeController = SubscribeNotifier();
     final currentLocalSubscribed = _collectLocalSubscribedUserIds(
       subscribeController,
     );
@@ -2208,27 +1900,18 @@ class VideoFeedController {
     if (_currentFeed == 'for_you') {
       if (newSyncedSubscriptions.isNotEmpty ||
           newSyncedUnsubscriptions.isNotEmpty) {
-        AppLogger.d(
-          '🔄 [VideoFeedController] Server-synced subscription change on for_you — API snapshot refresh',
-        );
         _scheduleSubscriptionFeedRefresh(replaceSnapshot: true);
       }
     }
 
     if (_currentFeed == 'subscribed') {
       if (newlyUnsubscribed.isNotEmpty && _posts.isNotEmpty) {
-        AppLogger.d(
-          '🗑️ [VideoFeedController] Removing posts for newly unsubscribed creator(s): $newlyUnsubscribed',
-        );
         _removePostsByUsers(newlyUnsubscribed);
         _maybeRefreshFeedIfEmpty('subscribed unsubscribe');
       }
 
       if (newSyncedSubscriptions.isNotEmpty ||
           newSyncedUnsubscriptions.isNotEmpty) {
-        AppLogger.d(
-          '🔄 [VideoFeedController] Server-synced subscription change on subscribed — API snapshot refresh',
-        );
         _scheduleSubscriptionFeedRefresh(replaceSnapshot: true);
       }
     }
@@ -2306,157 +1989,6 @@ class VideoFeedController {
   void removePostsByUsers(Set<String> userIds) {
     _removePostsByUsers(userIds);
   }
-
-  static bool _shouldTraceVideoInit(int mediaIndex) =>
-      kDebugMode && mediaIndex >= 5 && mediaIndex <= 7;
-
-  static void _logVideoInitTrace(
-    int mediaIndex, {
-    required String phase,
-    int? preloadGateMs,
-    int? queueWaitMs,
-    int? initMs,
-    int? queueDepth,
-    int? activeSlots,
-    bool? wasQueued,
-    bool? bypassedLimiter,
-    int? centerIndex,
-    Object? error,
-  }) {
-    if (!kDebugMode) return;
-    final parts = <String>[
-      'phase=$phase',
-      if (preloadGateMs != null) 'preloadGate=${preloadGateMs}ms',
-      if (queueWaitMs != null) 'queueWait=${queueWaitMs}ms',
-      if (initMs != null) 'init=${initMs}ms',
-      if (queueDepth != null) 'queueDepth=$queueDepth',
-      if (activeSlots != null) 'active=$activeSlots',
-      if (wasQueued != null) 'wasQueued=$wasQueued',
-      if (bypassedLimiter != null) 'bypassedLimiter=$bypassedLimiter',
-      if (centerIndex != null) 'centerIndex=$centerIndex',
-      if (error != null) 'error=$error',
-    ];
-    final totalMs = (preloadGateMs ?? 0) + (queueWaitMs ?? 0) + (initMs ?? 0);
-    if (totalMs > 0) {
-      parts.add('wall=${totalMs}ms');
-    }
-    AppLogger.d(
-      '[VideoInitTrace] idx=$mediaIndex ${parts.join(' ')}',
-      tag: 'VideoInitTrace',
-    );
-  }
-}
-
-class _VideoInitTrace {
-  _VideoInitTrace(this.mediaIndex);
-
-  final int mediaIndex;
-  final Stopwatch _wall = Stopwatch()..start();
-  int? _queueWaitMs;
-  int? _initMs;
-  int? _queueDepth;
-  int? _activeSlots;
-  bool? _wasQueued;
-
-  void markLimiterAcquired({
-    required int queueWaitMs,
-    required int queueDepth,
-    required int activeSlots,
-    required bool wasQueued,
-  }) {
-    _queueWaitMs = queueWaitMs;
-    _queueDepth = queueDepth;
-    _activeSlots = activeSlots;
-    _wasQueued = wasQueued;
-    VideoFeedController._logVideoInitTrace(
-      mediaIndex,
-      phase: 'limiter_acquired',
-      queueWaitMs: queueWaitMs,
-      queueDepth: queueDepth,
-      activeSlots: activeSlots,
-      wasQueued: wasQueued,
-    );
-  }
-
-  void markInitStart({required bool bypassedLimiter}) {
-    _initStopwatch = Stopwatch()..start();
-    VideoFeedController._logVideoInitTrace(
-      mediaIndex,
-      phase: 'init_start',
-      queueWaitMs: _queueWaitMs,
-      queueDepth: _queueDepth,
-      activeSlots: _activeSlots,
-      wasQueued: _wasQueued,
-      bypassedLimiter: bypassedLimiter,
-    );
-  }
-
-  Stopwatch? _initStopwatch;
-
-  void markInitSuccess() {
-    _initStopwatch?.stop();
-    _initMs = _initStopwatch?.elapsedMilliseconds;
-    VideoFeedController._logVideoInitTrace(
-      mediaIndex,
-      phase: 'init_success',
-      queueWaitMs: _queueWaitMs,
-      initMs: _initMs,
-      queueDepth: _queueDepth,
-      activeSlots: _activeSlots,
-      wasQueued: _wasQueued,
-    );
-  }
-
-  void markInitFailure(Object error) {
-    _initStopwatch?.stop();
-    _initMs = _initStopwatch?.elapsedMilliseconds;
-    _wall.stop();
-    VideoFeedController._logVideoInitTrace(
-      mediaIndex,
-      phase: 'init_failed',
-      queueWaitMs: _queueWaitMs,
-      initMs: _initMs,
-      queueDepth: _queueDepth,
-      activeSlots: _activeSlots,
-      wasQueued: _wasQueued,
-      error: error,
-    );
-    final diagnosis = _diagnoseFailure(error);
-    AppLogger.w(
-      '[VideoInitTrace] idx=$mediaIndex diagnosis=$diagnosis '
-      'queueWait=${_queueWaitMs ?? 0}ms init=${_initMs ?? 0}ms '
-      'wall=${_wall.elapsedMilliseconds}ms',
-      tag: 'VideoInitTrace',
-    );
-  }
-
-  void markCancelled() {
-    _wall.stop();
-    VideoFeedController._logVideoInitTrace(
-      mediaIndex,
-      phase: 'cancelled_after_queue',
-      queueWaitMs: _queueWaitMs,
-      queueDepth: _queueDepth,
-      activeSlots: _activeSlots,
-      wasQueued: _wasQueued,
-    );
-  }
-
-  String _diagnoseFailure(Object error) {
-    if (error is! TimeoutException) return 'non_timeout_error';
-    final initMs = _initMs ?? 0;
-    final queueWaitMs = _queueWaitMs ?? 0;
-    if (initMs >= VideoFeedController.initTimeout.inMilliseconds - 500) {
-      if (queueWaitMs < 1000) {
-        return 'network_or_decoder_slow_init_hit_15s_cap';
-      }
-      return 'init_hit_15s_cap_after_queue_wait_${queueWaitMs}ms';
-    }
-    if (queueWaitMs >= VideoFeedController.initTimeout.inMilliseconds) {
-      return 'unlikely_queue_only_timeout_check_init_ms';
-    }
-    return 'timeout_with_mixed_contributors';
-  }
 }
 
 /// Caps concurrent feed video initializations — Exynos/Snapdragon decoders
@@ -2517,7 +2049,6 @@ class _FeedVideoInitLimiter {
     required Future<void> Function() task,
     required bool Function() isValid,
     required bool Function() isPriority,
-    _VideoInitTrace? trace,
   }) async {
     // CURRENT (priority) requests are immune to epoch-based rejection: a
     // bump means some unrelated attempt was cancelled elsewhere — possibly
@@ -2528,19 +2059,8 @@ class _FeedVideoInitLimiter {
 
     if (!isValid() || !epochOk()) return false;
 
-    final wasQueued = _active >= _maxConcurrent;
-    final queueDepth = _waitQueue.length;
-    final queueWait = Stopwatch()..start();
     final acquired = await _acquire(epoch, isPriority);
     if (!acquired) return false;
-    queueWait.stop();
-
-    trace?.markLimiterAcquired(
-      queueWaitMs: queueWait.elapsedMilliseconds,
-      queueDepth: queueDepth,
-      activeSlots: _active,
-      wasQueued: wasQueued,
-    );
 
     try {
       if (!isValid() || !epochOk()) return false;

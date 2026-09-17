@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_filter_tabs.dart';
@@ -15,7 +16,7 @@ import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class UserProfileScreen extends StatefulWidget {
+class UserProfileScreen extends ConsumerStatefulWidget {
   final String profileUserId;
   final String userName;
   final String? profileImageUrl;
@@ -30,16 +31,16 @@ class UserProfileScreen extends StatefulWidget {
   });
 
   @override
-  State<UserProfileScreen> createState() => _UserProfileScreenState();
+  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
 }
 
-class _UserProfileScreenState extends State<UserProfileScreen> {
+class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
   String? _lastLoggedInUserId;
   int _selectedTab = 0;
   late final UserProfileController _profileController;
-  late final SubscribeController _subscribeController;
+  late final SubscribeNotifier _subscribeController;
   bool _didSeedSubscribeState = false;
   bool _isRefreshing = false;
   final ScrollController _scrollController = ScrollController();
@@ -54,7 +55,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   void initState() {
     super.initState();
     _profileController = UserProfileController(userId: widget.profileUserId);
-    _subscribeController = SubscribeController();
+    _subscribeController = ref.read(subscribeNotifierProvider);
     _profileController.contentListenable.addListener(_syncSubscribeState);
     _scrollController.addListener(_onProfileScroll);
     _resolveIdentity();

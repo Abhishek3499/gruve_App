@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/notification/domain/entities/notification_model.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 import 'package:gruve_app/features/notification/presentation/widgets/follow_tile.dart';
 import 'package:gruve_app/features/notification/presentation/widgets/notification_tile.dart';
 
-class ThisWeekSection extends StatelessWidget {
+class ThisWeekSection extends ConsumerWidget {
   final List<AppNotification> thisWeekNotifications;
   final List<AppNotification> earlierNotifications;
 
@@ -16,8 +16,8 @@ class ThisWeekSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.read<NotificationProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(notificationNotifierProvider.notifier);
 
     return Container(
       width: double.infinity,
@@ -45,7 +45,7 @@ class ThisWeekSection extends StatelessWidget {
             ...earlierNotifications.map((n) {
               final actorUsername = n.actor?.username ?? 'Someone';
               final profilePic = n.actor?.profilePicture ?? '';
-              final timeDisplay = NotificationProvider.formatTime(n.createdAt);
+              final timeDisplay = NotificationNotifier.formatTime(n.createdAt);
 
               if (n.type == 'follow' || n.type == 'user_follow') {
                 return FollowTile(
@@ -54,7 +54,7 @@ class ThisWeekSection extends StatelessWidget {
                   profileImage: profilePic,
                   userId: n.actor?.id ?? '',
                   isRead: n.isRead,
-                  onTap: () => provider.markNotificationAsRead(n.id),
+                  onTap: () => notifier.markNotificationAsRead(n.id),
                 );
               } else {
                 String msg = 'interacted with your post.';
@@ -71,7 +71,7 @@ class ThisWeekSection extends StatelessWidget {
                   time: timeDisplay,
                   profileImage: profilePic,
                   isRead: n.isRead,
-                  onTap: () => provider.markNotificationAsRead(n.id),
+                  onTap: () => notifier.markNotificationAsRead(n.id),
                 );
               }
             }),
@@ -83,14 +83,14 @@ class ThisWeekSection extends StatelessWidget {
   }
 }
 
-class _ThisWeekBand extends StatelessWidget {
+class _ThisWeekBand extends ConsumerWidget {
   final List<AppNotification> notifications;
 
   const _ThisWeekBand({required this.notifications});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.read<NotificationProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(notificationNotifierProvider.notifier);
 
     return Container(
       width: double.infinity,
@@ -111,7 +111,7 @@ class _ThisWeekBand extends StatelessWidget {
           ...notifications.map((n) {
             final actorUsername = n.actor?.username ?? 'Someone';
             final profilePic = n.actor?.profilePicture ?? '';
-            final timeDisplay = NotificationProvider.formatTime(n.createdAt);
+            final timeDisplay = NotificationNotifier.formatTime(n.createdAt);
 
             if (n.type == 'follow' || n.type == 'user_follow') {
               return FollowTile(
@@ -120,7 +120,7 @@ class _ThisWeekBand extends StatelessWidget {
                 profileImage: profilePic,
                 userId: n.actor?.id ?? '',
                 isRead: n.isRead,
-                onTap: () => provider.markNotificationAsRead(n.id),
+                onTap: () => notifier.markNotificationAsRead(n.id),
               );
             } else {
               String msg = 'interacted with your post.';
@@ -137,7 +137,7 @@ class _ThisWeekBand extends StatelessWidget {
                 time: timeDisplay,
                 profileImage: profilePic,
                 isRead: n.isRead,
-                onTap: () => provider.markNotificationAsRead(n.id),
+                onTap: () => notifier.markNotificationAsRead(n.id),
               );
             }
           }),

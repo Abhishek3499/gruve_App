@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/main.dart';
@@ -12,13 +12,13 @@ import 'package:shimmer/shimmer.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/presentation/widgets/optimized_video_overlay.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_top_bar.dart';
 import 'package:gruve_app/shared/widgets/shimmer/feed_shimmer.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class VideoFeed extends StatefulWidget {
+class VideoFeed extends ConsumerStatefulWidget {
   final ValueNotifier<int> selectedIndex;
   final Function(int) onTabChanged;
   final Function(VideoFeedController)? onControllerReady;
@@ -31,13 +31,13 @@ class VideoFeed extends StatefulWidget {
   });
 
   @override
-  State<VideoFeed> createState() => _VideoFeedState();
+  ConsumerState<VideoFeed> createState() => _VideoFeedState();
 }
 
-class _VideoFeedState extends State<VideoFeed> with RouteAware {
+class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
   late VideoFeedController _controller;
   late PageController _pageController;
-  VoidCallback? _blockListener;
+  ProviderSubscription<BlockState>? _blockSubscription;
 
   String selectedContentTab = 'For You';
   int _lastPaginationTriggerItemCount = 0;
@@ -49,29 +49,24 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     super.initState();
 
     _controller = VideoFeedController();
-    AppLogger.d(
-      '🏁 [VideoFeed] Initial feed selection: $selectedContentTab (controller feed=${_controller.currentFeed})',
-    );
     _loadErrorListener = _surfaceNonBlockingLoadError;
     _controller.loadErrorListenable.addListener(_loadErrorListener);
 
     // Set isBlockedUser callback to filter blocked users on load/pagination
-    final blockProvider = context.read<BlockProvider>();
-    _controller.isBlockedUser = (userId) => blockProvider.isBlocked(userId);
+    final blockNotifier = ref.read(blockNotifierProvider.notifier);
+    _controller.isBlockedUser = (userId) => blockNotifier.isBlocked(userId);
 
-    // Listen to BlockProvider for immediate feed removal of blocked users
-    _blockListener = () {
+    // Listen to BlockNotifier for immediate feed removal of blocked users
+    _blockSubscription = ref.listenManual(blockNotifierProvider, (previous, next) {
       if (!mounted) return;
       final blockedUserIds = _controller.posts
           .map((post) => post.userId)
-          .where((userId) => blockProvider.isBlocked(userId))
+          .where((userId) => next.isBlocked(userId))
           .toSet();
       if (blockedUserIds.isNotEmpty) {
-        AppLogger.d('🔒 [VideoFeed] Blocked users detected in feed, removing: $blockedUserIds');
         _controller.removePostsByUsers(blockedUserIds);
       }
-    };
-    blockProvider.addListener(_blockListener!);
+    });
 
     _pageController = PageController(viewportFraction: 1.0);
 
@@ -99,9 +94,9 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onControllerReady?.call(_controller);
       if (mounted) {
-        final savePostProvider = context.read<SavePostProvider>();
-        if (savePostProvider.savedPosts.isEmpty || savePostProvider.isSavedPostsStale) {
-          savePostProvider.fetchSavedPosts();
+        final savePostNotifier = ref.read(savePostNotifierProvider.notifier);
+        if (savePostNotifier.savedPosts.isEmpty || savePostNotifier.isSavedPostsStale) {
+          savePostNotifier.fetchSavedPosts();
         }
         final route = ModalRoute.of(context);
         if (route is PageRoute) {
@@ -114,13 +109,7 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
-    if (_blockListener != null) {
-      try {
-        context.read<BlockProvider>().removeListener(_blockListener!);
-      } catch (e) {
-        AppLogger.d('⚠️ Error removing block listener: $e');
-      }
-    }
+    _blockSubscription?.close();
     _controller.loadErrorListenable.removeListener(_loadErrorListener);
     _controller.dispose();
     _pageController.dispose();
@@ -177,23 +166,17 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
 
   @override
   void didPushNext() {
-    AppLogger.d('🚦 [VideoFeed] User navigated away - releasing video controllers to free decoders');
     _controller.releaseAllControllers();
   }
 
   @override
   void didPopNext() {
-    AppLogger.d('🚦 [VideoFeed] User returned - didPopNext triggered');
     if (widget.selectedIndex.value == 0) {
-      AppLogger.d('🚦 [VideoFeed] Currently on Home tab, resuming video');
       _controller.playVideo(_controller.currentIndex.value);
-    } else {
-      AppLogger.d('🚦 [VideoFeed] Not on Home tab (selectedIndex: ${widget.selectedIndex.value}), keeping video paused');
     }
   }
 
   void _onPageChanged(int page) {
-    AppLogger.d('📄 [VideoFeed] onPageChanged page=$page');
     // Preload for the new neighbor is scheduled (debounced) inside playVideo —
     // never triggered eagerly here, so a fast multi-page fling doesn't spin up
     // and immediately cancel a controller for every index it passes through.
@@ -209,14 +192,10 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
     // video based on mid-drag position starts real network/decoder work that
     // usually gets cancelled a moment later once the drag settles elsewhere.
     if (notification is ScrollStartNotification && notification.depth == 0) {
-      AppLogger.d('👆 [VideoFeed] Scroll drag started');
       return;
     }
 
     if (notification is ScrollEndNotification && notification.depth == 0) {
-      AppLogger.d(
-        '🛑 [VideoFeed] Scroll drag ended, settled page=${_pageController.page?.round()}',
-      );
       _controller.commitPendingEnsureControllersAroundIndex();
     }
   }
@@ -268,8 +247,6 @@ class _VideoFeedState extends State<VideoFeed> with RouteAware {
   Future<void> _refreshFeed() async {
     // Prevent multiple simultaneous refreshes
     if (_controller.isRefreshing) {
-      AppLogger.d('⏳ [VideoFeed] Refresh already in progress, skipping');
-      
       return;
     }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
 import '../../../../core/assets.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/option_button.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/option_item.dart';
@@ -12,7 +12,7 @@ import 'package:gruve_app/features/video_options/presentation/widgets/sheets/sim
 import 'package:gruve_app/features/video_options/presentation/widgets/sheets/simple_not_interested_sheet.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class VideoOptionsSheet extends StatefulWidget {
+class VideoOptionsSheet extends ConsumerStatefulWidget {
   final String userId;
   final String? currentUserId;
   final String? userName;
@@ -29,10 +29,10 @@ class VideoOptionsSheet extends StatefulWidget {
   });
 
   @override
-  State<VideoOptionsSheet> createState() => _VideoOptionsSheetState();
+  ConsumerState<VideoOptionsSheet> createState() => _VideoOptionsSheetState();
 }
 
-class _VideoOptionsSheetState extends State<VideoOptionsSheet>
+class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late AnimationController _fadeController;
@@ -197,10 +197,14 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Consumer<SavePostProvider>(
-                          builder: (context, saveProvider, _) {
+                        Consumer(
+                          builder: (context, ref, _) {
                             final isSaved = widget.postId != null
-                                ? saveProvider.isSaved(widget.postId!)
+                                ? ref.watch(
+                                    savePostNotifierProvider.select(
+                                      (state) => state.isSaved(widget.postId!),
+                                    ),
+                                  )
                                 : false;
 
                             return OptionButton(
@@ -217,10 +221,10 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
 
                                 HapticFeedback.lightImpact();
 
-                                final saveProvider = context.read<SavePostProvider>();
+                                final saveNotifier = ref.read(savePostNotifierProvider.notifier);
                                 final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-                                saveProvider
+                                saveNotifier
                                     .toggleSavePost(widget.postId!)
                                     .catchError((e) {
                                   scaffoldMessenger.removeCurrentSnackBar();
@@ -313,8 +317,9 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
                               icon: AppAssets.blocks,
                               onTap: () async {
                                 // Save references BEFORE any async operation
-                                final blockProvider = context
-                                    .read<BlockProvider>();
+                                final blockNotifier = ref.read(
+                                  blockNotifierProvider.notifier,
+                                );
                                 final scaffoldMessenger = ScaffoldMessenger.of(
                                   context,
                                 );
@@ -387,14 +392,14 @@ class _VideoOptionsSheetState extends State<VideoOptionsSheet>
 
                                   // API call in background
                                   try {
-                                    await blockProvider.toggleBlockUser(
+                                    await blockNotifier.toggleBlockUser(
                                       widget.userId,
                                     );
                                     AppLogger.d('🔴 API call completed');
 
                                     if (!mounted) return;
 
-                                    final isBlocked = blockProvider.isBlocked(
+                                    final isBlocked = blockNotifier.isBlocked(
                                       widget.userId,
                                     );
                                     AppLogger.d('🔴 Block status: $isBlocked');

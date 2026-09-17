@@ -2,26 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/core/auth/current_user_provider.dart';
+import 'package:gruve_app/core/auth/current_user_notifier.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/features/auth/presentation/controllers/logout_controller.dart';
 import 'package:gruve_app/features/highlights/presentation/controller/highlight_flow_provider.dart';
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
-import 'package:gruve_app/features/message/presentation/controller/conversation_controller.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart'
+    show subscribeNotifierProvider;
 import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart'
+    show messageNotifierProvider;
+import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart'
+    show notificationNotifierProvider;
 import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
 import 'package:gruve_app/features/share/presentation/controller/post_share_provider.dart'
     show postShareNotifierProvider;
 import 'package:gruve_app/features/story_preview/presentation/controller/drafts_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/post_like_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/post_like_notifier.dart'
+    show postLikeNotifierProvider;
+import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart'
+    show savePostNotifierProvider;
 import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart'
+    show blockNotifierProvider;
 import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_controller.dart';
 
 /// UI state for the Logout flow: submit-loading flag, the last error (only
@@ -86,7 +91,7 @@ class LogoutNotifier extends Notifier<LogoutUiState> {
 
       await AuthStateManager().logout();
 
-      SubscribeController().reset();
+      ref.read(subscribeNotifierProvider).reset();
 
       if (context != null && context.mounted) {
         final profileProvider = _tryGetProvider<ProfileProvider>(context);
@@ -94,36 +99,25 @@ class LogoutNotifier extends Notifier<LogoutUiState> {
         final highlightProvider = _tryGetProvider<HighlightFlowProvider>(
           context,
         );
-        final blockProvider = _tryGetProvider<BlockProvider>(context);
-        final saveProvider = _tryGetProvider<SavePostProvider>(context);
-        final messageProvider = _tryGetProvider<MessageProvider>(context);
-        final conversationController =
-            _tryGetProvider<ConversationController>(context);
         final userProvider = _tryGetProvider<UserProvider>(context);
-        final notificationProvider =
-            _tryGetProvider<NotificationProvider>(context);
         final draftsProvider = _tryGetProvider<DraftsProvider>(context);
-        final userProfileController =
-            _tryGetProvider<UserProfileController>(context);
-        final currentUserProvider = _tryGetProvider<CurrentUserProvider>(
+        final userProfileController = _tryGetProvider<UserProfileController>(
           context,
         );
-        final postLikeProvider = _tryGetProvider<PostLikeProvider>(context);
 
         authLogger.d('[LogoutNotifier] Resetting local providers');
         profileProvider?.reset();
         storyController?.reset();
         highlightProvider?.reset();
-        blockProvider?.reset();
-        saveProvider?.reset();
-        messageProvider?.reset();
-        conversationController?.reset();
         userProvider?.reset();
-        notificationProvider?.reset();
         draftsProvider?.reset();
         userProfileController?.reset();
-        currentUserProvider?.clear();
-        postLikeProvider?.reset();
+        ref.read(currentUserNotifierProvider.notifier).reset();
+        ref.read(notificationNotifierProvider.notifier).reset();
+        ref.read(messageNotifierProvider.notifier).reset();
+        ref.read(postLikeNotifierProvider.notifier).reset();
+        ref.read(savePostNotifierProvider.notifier).reset();
+        ref.read(blockNotifierProvider.notifier).reset();
         ref.read(postShareNotifierProvider.notifier).clearSelection();
         authLogger.d('[LogoutNotifier] Local providers cleared');
       }

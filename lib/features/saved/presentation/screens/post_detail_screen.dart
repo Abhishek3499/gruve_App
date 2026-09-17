@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
@@ -246,16 +246,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     ),
 
                     // Save button
-                    Consumer<SavePostProvider>(
-                      builder: (context, provider, _) {
-                        final isSaved = provider.isSaved(post.id);
-                        final isLoading = provider.isLoading(post.id);
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final isSaved = ref.watch(
+                          savePostNotifierProvider.select((state) => state.isSaved(post.id)),
+                        );
+                        final isLoading = ref.watch(
+                          savePostNotifierProvider.select((state) => state.isLoading(post.id)),
+                        );
 
                         return GestureDetector(
                           onTap: isLoading
                               ? null
                               : () {
-                                  provider.toggleSavePost(post.id);
+                                  ref.read(savePostNotifierProvider.notifier).toggleSavePost(post.id);
                                 },
                           child: Container(
                             padding: EdgeInsets.all(context.rw(8)),

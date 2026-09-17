@@ -26,7 +26,7 @@ class BlockApiService {
     bool forceRefresh = true,
   }) async {
     try {
-      _log('🚀 API START - fetchBlockedUsers');
+      _log(' API START - fetchBlockedUsers');
       final token = await TokenStorage.getAccessToken();
       _log('📡 GET $_listEndpoint');
 
@@ -100,11 +100,7 @@ class BlockApiService {
         data: {'user_id': userId},
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
-          extra: {
-            'skipCache': true,
-            'bypassCache': true,
-            'noCache': true,
-          },
+          extra: {'skipCache': true, 'bypassCache': true, 'noCache': true},
         ),
       );
 

@@ -11,7 +11,7 @@ import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository repository;
@@ -19,7 +19,7 @@ class UserProvider extends ChangeNotifier {
     AppLogger.d('🔥 UserProvider CONSTRUCTOR CALLED');
     _trackedAuthUserId = AuthStateManager().currentUserId;
     _localSubscribedUserIds =
-        _collectLocalSubscribedUserIds(SubscribeController());
+        _collectLocalSubscribedUserIds(SubscribeNotifier());
     _listenToSubscriptions();
     AuthStateManager().addListener(_onAuthStateChanged);
   }
@@ -31,7 +31,7 @@ class UserProvider extends ChangeNotifier {
   String? _trackedAuthUserId;
 
   void _listenToSubscriptions() {
-    SubscribeController().addListener(_onSubscriptionChanged);
+    SubscribeNotifier().addListener(_onSubscriptionChanged);
   }
 
   void _onAuthStateChanged() {
@@ -64,7 +64,7 @@ class UserProvider extends ChangeNotifier {
     _localSubscribedUserIds = {};
   }
 
-  Set<String> _collectLocalSubscribedUserIds(SubscribeController controller) {
+  Set<String> _collectLocalSubscribedUserIds(SubscribeNotifier controller) {
     return controller.users.entries
         .where((e) => e.value.isSubscribed)
         .map((e) => e.key)
@@ -72,7 +72,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   void _onSubscriptionChanged() {
-    final controller = SubscribeController();
+    final controller = SubscribeNotifier();
     final currentLocalSubscribed = _collectLocalSubscribedUserIds(controller);
     final newlySubscribed =
         currentLocalSubscribed.difference(_localSubscribedUserIds);
@@ -204,7 +204,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   void _syncSubscribedUsersFromApi(List<UserEntity> apiUsers) {
-    SubscribeController().syncSubscribedUsersFromApi(
+    SubscribeNotifier().syncSubscribedUsersFromApi(
       apiUsers.map(
         (user) => (
           userId: user.userId,
@@ -479,7 +479,7 @@ class UserProvider extends ChangeNotifier {
   @override
   void dispose() {
     AuthStateManager().removeListener(_onAuthStateChanged);
-    SubscribeController().removeListener(_onSubscriptionChanged);
+    SubscribeNotifier().removeListener(_onSubscriptionChanged);
     _subscriptionDebounceTimer?.cancel();
     cancelActiveRequests();
     AppLogger.d('🗑️ [UserProvider] Disposed');

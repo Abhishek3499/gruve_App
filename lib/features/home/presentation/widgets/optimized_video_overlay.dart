@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/post_like_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/post_like_notifier.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_user_info.dart';
 import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 import 'package:gruve_app/features/home/presentation/widgets/right_action_bar.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_panel.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/video_options_sheet.dart';
 import 'package:gruve_app/features/comments/presentation/widgets/comment_sheet.dart';
 import 'package:gruve_app/features/share/presentation/screens/share_bottom_sheet.dart';
 
-class OptimizedVideoOverlay extends StatefulWidget {
+class OptimizedVideoOverlay extends ConsumerStatefulWidget {
   final String selectedTab;
   final Function(String) onTabChanged;
   final VideoFeedController controller;
@@ -30,17 +30,18 @@ class OptimizedVideoOverlay extends StatefulWidget {
   });
 
   @override
-  State<OptimizedVideoOverlay> createState() => _OptimizedVideoOverlayState();
+  ConsumerState<OptimizedVideoOverlay> createState() =>
+      _OptimizedVideoOverlayState();
 }
 
-class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
-  late final SubscribeController _subscribeController;
+class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
+  late final SubscribeNotifier _subscribeController;
   String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _subscribeController = SubscribeController();
+    _subscribeController = ref.read(subscribeNotifierProvider);
     _seedCurrentUser();
     // Sync + cached (populated at app startup) — avoids an async secure-storage
     // read on every swipe for a value that's only needed if Options is opened.
@@ -78,7 +79,8 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
   @override
   Widget build(BuildContext context) {
     final index = widget.currentIndex;
-    if (widget.controller.posts.isEmpty || index >= widget.controller.posts.length) {
+    if (widget.controller.posts.isEmpty ||
+        index >= widget.controller.posts.length) {
       return const SizedBox.shrink();
     }
     final post = widget.controller.posts[index];
@@ -127,15 +129,17 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
         Positioned(
           right: 16,
           bottom: 150,
-          child: Selector<PostLikeProvider, (bool, int)>(
+          child: Consumer(
             key: ValueKey(post.id),
-            selector: (_, likeProvider) => (
-              likeProvider.isLiked(post),
-              likeProvider.likesCount(post),
-            ),
-            builder: (context, likeState, _) {
-              final isLiked = likeState.$1;
-              final likeCount = likeState.$2;
+            builder: (context, ref, _) {
+              final isLiked = ref.watch(
+                postLikeNotifierProvider.select((state) => state.isLiked(post)),
+              );
+              final likeCount = ref.watch(
+                postLikeNotifierProvider.select(
+                  (state) => state.likesCount(post),
+                ),
+              );
               return RightActionBar(
                 likeCount: likeCount,
                 isLiked: isLiked,
@@ -150,7 +154,7 @@ class _OptimizedVideoOverlayState extends State<OptimizedVideoOverlay> {
                   );
                 },
                 onLike: () {
-                  context.read<PostLikeProvider>().toggleLike(post);
+                  ref.read(postLikeNotifierProvider.notifier).toggleLike(post);
                 },
                 onComment: () {
                   showModalBottomSheet(

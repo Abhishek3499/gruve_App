@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
@@ -12,10 +13,17 @@ import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/features/home/data/services/subscribe_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class SubscribeController extends ChangeNotifier {
-  static final SubscribeController _instance = SubscribeController._internal();
-  factory SubscribeController() => _instance;
-  SubscribeController._internal();
+/// Replaces the previous `SubscribeController`. Stays a singleton
+/// [ChangeNotifier] — not a plain Riverpod [Notifier] — because
+/// `VideoFeedController`, `AuthStateManager`, and `UserProvider` all call
+/// `SubscribeNotifier()`/`addListener`/`removeListener` directly from plain
+/// Dart code with no `Ref` available. [subscribeNotifierProvider] (a legacy
+/// `ChangeNotifierProvider`) exposes this exact same singleton instance to
+/// widget-tree code via `ref.watch`/`ref.read`.
+class SubscribeNotifier extends ChangeNotifier {
+  static final SubscribeNotifier _instance = SubscribeNotifier._internal();
+  factory SubscribeNotifier() => _instance;
+  SubscribeNotifier._internal();
 
   final SubscribeService _subscribeService = SubscribeService();
   final UserProfileService _userProfileService = UserProfileService();
@@ -27,7 +35,7 @@ class SubscribeController extends ChangeNotifier {
   Map<String, SubscribeModel> get users => Map.unmodifiable(_users);
 
   void _log(String message) {
-    AppLogger.d('🎛️ [SubscribeController] $message');
+    AppLogger.d('🎛️ [SubscribeNotifier] $message');
   }
 
   bool isUserSubscribed(String userId) {
@@ -40,7 +48,8 @@ class SubscribeController extends ChangeNotifier {
 
   bool isSubscriptionSynced(String userId) {
     final local = isUserSubscribed(userId);
-    final server = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+    final server =
+        _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
     return server == local;
   }
 
@@ -56,8 +65,8 @@ class SubscribeController extends ChangeNotifier {
     final resolvedStatus = localStatus == false
         ? false
         : user.isSubscribed
-            ? true
-            : localStatus == true;
+        ? true
+        : localStatus == true;
 
     _users[user.userId] = user.copyWith(
       username: user.username.isNotEmpty
@@ -130,7 +139,9 @@ class SubscribeController extends ChangeNotifier {
 
         // Fetch fresh ground-truth server state (bypass stale profile cache).
         unawaited(CacheManager().invalidatePattern(userId));
-        final profileModel = await _userProfileService.getUserProfileModel(userId);
+        final profileModel = await _userProfileService.getUserProfileModel(
+          userId,
+        );
         final serverState = profileModel.isFollowing;
 
         // Update serverStates cache with the fresh value
@@ -161,7 +172,9 @@ class SubscribeController extends ChangeNotifier {
           syncFailed = true;
 
           // Revert local state back to the correct server state
-          final latestServerState = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+          final latestServerState =
+              _serverStates[userId] ??
+              _subscribeService.isUserSubscribed(userId);
           _applyLocalState(userId, latestServerState);
 
           // Show floating SnackBar for error feedback using global ScaffoldMessenger state
@@ -178,9 +191,12 @@ class SubscribeController extends ChangeNotifier {
 
       if (iterations >= maxIterations) {
         final desiredState = isUserSubscribed(userId);
-        final finalServerState = _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
+        final finalServerState =
+            _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
         if (desiredState != finalServerState) {
-          _log('⚠️ [SubscribeController] Warning: reached max iterations ($maxIterations) for userId=$userId without aligning states (desired=$desiredState, server=$finalServerState)');
+          _log(
+            '⚠️ [SubscribeNotifier] Warning: reached max iterations ($maxIterations) for userId=$userId without aligning states (desired=$desiredState, server=$finalServerState)',
+          );
         }
       }
     } finally {
@@ -191,8 +207,7 @@ class SubscribeController extends ChangeNotifier {
       final serverState =
           _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
 
-      if (needsResync ||
-          (!syncFailed && desiredState != serverState)) {
+      if (needsResync || (!syncFailed && desiredState != serverState)) {
         unawaited(_syncWithServer(userId));
       }
     }
@@ -314,3 +329,7 @@ class SubscribeController extends ChangeNotifier {
     });
   }
 }
+
+final subscribeNotifierProvider = ChangeNotifierProvider<SubscribeNotifier>(
+  (ref) => SubscribeNotifier(),
+);

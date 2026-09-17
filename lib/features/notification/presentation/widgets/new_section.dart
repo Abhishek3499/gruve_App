@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/notification/domain/entities/notification_model.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 import 'package:gruve_app/features/notification/presentation/widgets/notification_tile.dart';
 import 'package:gruve_app/features/notification/presentation/widgets/follow_tile.dart';
 
-class NewSection extends StatelessWidget {
+class NewSection extends ConsumerWidget {
   final List<AppNotification> notifications;
 
   const NewSection({super.key, required this.notifications});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.read<NotificationProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(notificationNotifierProvider.notifier);
 
     return Container(
       width: double.infinity,
@@ -33,7 +33,7 @@ class NewSection extends StatelessWidget {
           ...notifications.map((n) {
             final actorUsername = n.actor?.username ?? 'Someone';
             final profilePic = n.actor?.profilePicture ?? '';
-            final timeDisplay = NotificationProvider.formatTime(n.createdAt);
+            final timeDisplay = NotificationNotifier.formatTime(n.createdAt);
 
             if (n.type == 'follow' || n.type == 'user_follow') {
               return FollowTile(
@@ -42,7 +42,7 @@ class NewSection extends StatelessWidget {
                 profileImage: profilePic,
                 userId: n.actor?.id ?? '',
                 isRead: n.isRead,
-                onTap: () => provider.markNotificationAsRead(n.id),
+                onTap: () => notifier.markNotificationAsRead(n.id),
               );
             } else {
               String msg = 'interacted with your post.';
@@ -59,7 +59,7 @@ class NewSection extends StatelessWidget {
                 time: timeDisplay,
                 profileImage: profilePic,
                 isRead: n.isRead,
-                onTap: () => provider.markNotificationAsRead(n.id),
+                onTap: () => notifier.markNotificationAsRead(n.id),
               );
             }
           }),

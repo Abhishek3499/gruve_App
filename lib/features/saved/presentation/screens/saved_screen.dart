@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
 import 'package:gruve_app/features/saved/presentation/widgets/saved_header.dart';
 import 'package:gruve_app/features/saved/presentation/screens/post_detail_screen.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class SavedScreen extends StatefulWidget {
+class SavedScreen extends ConsumerStatefulWidget {
   const SavedScreen({super.key});
 
   @override
-  State<SavedScreen> createState() => _SavedScreenState();
+  ConsumerState<SavedScreen> createState() => _SavedScreenState();
 }
 
-class _SavedScreenState extends State<SavedScreen> {
+class _SavedScreenState extends ConsumerState<SavedScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<SavePostProvider>().fetchSavedPosts();
+        ref.read(savePostNotifierProvider.notifier).fetchSavedPosts();
       }
     });
   }
@@ -52,8 +52,9 @@ class _SavedScreenContent extends StatelessWidget {
               const SavedHeader(),
               SizedBox(height: context.rh(20)),
               Expanded(
-                child: Consumer<SavePostProvider>(
-                  builder: (context, provider, _) {
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final provider = ref.watch(savePostNotifierProvider);
                     if (provider.isLoadingSavedPosts) {
                       return const Center(
                         child: CircularProgressIndicator(color: Colors.white),
@@ -81,7 +82,7 @@ class _SavedScreenContent extends StatelessWidget {
                             SizedBox(height: context.rh(16)),
                             ElevatedButton(
                               onPressed: () {
-                                provider.fetchSavedPosts();
+                                ref.read(savePostNotifierProvider.notifier).fetchSavedPosts();
                               },
                               child: const Text('Retry'),
                             ),

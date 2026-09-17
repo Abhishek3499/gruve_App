@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/shared/widgets/cached_avatar.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/features/message/utils/conversation_utils.dart';
 
-class FollowTile extends StatelessWidget {
+class FollowTile extends ConsumerWidget {
   final String username;
   final String time;
   final String profileImage;
@@ -23,7 +24,7 @@ class FollowTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
       onTap: onTap,
       splashColor: Colors.white12,
@@ -51,7 +52,9 @@ class FollowTile extends StatelessWidget {
                       builder: (context) => UserProfileScreen(
                         profileUserId: userId,
                         userName: username,
-                        profileImageUrl: profileImage.isNotEmpty ? profileImage : null,
+                        profileImageUrl: profileImage.isNotEmpty
+                            ? profileImage
+                            : null,
                       ),
                     ),
                   );
@@ -73,7 +76,9 @@ class FollowTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isRead ? Colors.white.withValues(alpha: 0.85) : Colors.white,
+                      color: isRead
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : Colors.white,
                       fontSize: 12,
                       height: 1.15,
                       fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,
@@ -103,7 +108,7 @@ class FollowTile extends StatelessWidget {
               ),
               onPressed: () {
                 if (onTap != null) onTap!();
-                _handleMessageTap(context);
+                _handleMessageTap(context, ref);
               },
               child: const Text(
                 "Message",
@@ -120,9 +125,10 @@ class FollowTile extends StatelessWidget {
     );
   }
 
-  void _handleMessageTap(BuildContext context) {
+  void _handleMessageTap(BuildContext context, WidgetRef ref) {
     ConversationUtils.navigateToChat(
       context: context,
+      ref: ref,
       receiverId: userId,
       receiverName: username,
       receiverProfileImage: profileImage.isNotEmpty ? profileImage : null,

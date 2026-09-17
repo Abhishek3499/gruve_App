@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'dart:developer' as developer;
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/socket/socket_reconnect_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -70,48 +69,25 @@ class SocketService {
     });
   }
 
-  void _onConnected() {
-    final connectionTime = _reconnectManager.lastConnectedAt;
-    AppLogger.d("✅ [SocketService] ✅ SOCKET CONNECTED SUCCESSFULLY");
-    AppLogger.d("🎉 [SocketService] 🎉 WebSocket connection established");
-    if (connectionTime != null) {
-      developer.log(
-        '🔌 [PERF] Socket connected at: ${connectionTime.toIso8601String()}',
-        name: 'SocketService',
-      );
-    }
-  }
+  void _onConnected() {}
 
   void _onDisconnected() {
     _setOnlineUsers(<String>{});
-    AppLogger.d("[SocketService] SOCKET CONNECTION CLOSED");
-    AppLogger.d(
-      "[SocketService] Connection ended, will reconnect automatically",
-    );
   }
 
-  void _onReconnecting(int attempt) {
-    AppLogger.d("[SocketService] RECONNECTING ATTEMPT $attempt");
-    AppLogger.d("⏳ [SocketService] ⏳ Attempting to restore connection...");
-  }
+  void _onReconnecting(int attempt) {}
 
   void _onFailed() {
     _setOnlineUsers(<String>{});
-    AppLogger.d("❌ [SocketService] ❌ CONNECTION FAILED");
-    AppLogger.d("[SocketService] Max reconnect attempts reached");
+    AppLogger.e("[SocketService] Connection failed — max reconnect attempts reached");
   }
 
   void _onError(String error) {
-    AppLogger.d("💥 [SocketService] 💥 SOCKET ERROR => $error");
-    AppLogger.d("❌ [SocketService] ❌ Connection error occurred");
+    AppLogger.e("[SocketService] Socket error: $error");
   }
-
-  // ADD HERE 👇👇👇
 
   void _handleSocketMessage(Map<String, dynamic> data) {
     final type = data['type']?.toString();
-
-    AppLogger.d("📩 [SocketService] Message Type => $type");
 
     switch (type) {
       case 'connected':
@@ -138,8 +114,6 @@ class SocketService {
 
         _setOnlineUsers(updatedUsers);
 
-        AppLogger.d("🟢 ONLINE USERS => ${onlineUsers.value}");
-
         break;
       case 'user_online':
       case 'presence_online':
@@ -153,8 +127,6 @@ class SocketService {
           updatedUsers.add(userId);
 
           _setOnlineUsers(updatedUsers);
-
-          AppLogger.d("🟢 USER ONLINE => $userId");
         }
 
         break;
@@ -171,8 +143,6 @@ class SocketService {
           updatedUsers.remove(userId);
 
           _setOnlineUsers(updatedUsers);
-
-          AppLogger.d("🔴 USER OFFLINE => $userId");
         }
 
         break;
@@ -192,9 +162,6 @@ class SocketService {
             updatedUsers.remove(userId);
           }
           _setOnlineUsers(updatedUsers);
-          AppLogger.d(
-            "USER PRESENCE => $userId online=${onlineUsers.value.contains(userId)}",
-          );
         }
         break;
 
@@ -225,7 +192,6 @@ class SocketService {
 
       if (changed) {
         _setOnlineUsers(updatedUsers);
-        AppLogger.d("PRESENCE LIST UPDATE => ${onlineUsers.value}");
       }
       return;
     }
@@ -247,7 +213,6 @@ class SocketService {
 
     if (wasOnline != isOnline) {
       _setOnlineUsers(updatedUsers);
-      AppLogger.d("GENERIC PRESENCE => $userId online=$isOnline");
     }
   }
 
@@ -385,17 +350,7 @@ class SocketService {
 
   /// Connect to WebSocket (maintains backward compatibility)
   Future<void> connect(String token) async {
-    AppLogger.d("[SOCKET SERVICE] connect() requested");
-    AppLogger.d("🔌 [SocketService] 🔌 CONNECTING SOCKET...");
-    final previewLength = token.length < 10 ? token.length : 10;
-    AppLogger.d(
-      "🎫 [SocketService] 🎫 Token preview: ${token.substring(0, previewLength)}...",
-    );
-
     await _reconnectManager.connect(token);
-    AppLogger.d(
-      "[SOCKET SERVICE] connect() completed state=${_reconnectManager.state.name}",
-    );
   }
 
   /// Send chat message through WebSocket (`chat.send`).
@@ -408,20 +363,14 @@ class SocketService {
     String? senderId,
     Map<String, dynamic>? additionalData,
   }) {
-    AppLogger.d(
-      "[SOCKET SERVICE] sendMessage() state=${_reconnectManager.state.name} connected=${_reconnectManager.isConnected}",
-    );
-
     final trimmedContent = content?.trim() ?? '';
     if (trimmedContent.isEmpty && media == null) {
-      AppLogger.d("⚠️ [SocketService] ⚠️ EMPTY MESSAGE - Nothing to send");
+      AppLogger.w("[SocketService] sendMessage called with no content/media — nothing to send");
       return false;
     }
 
     if (!_reconnectManager.isConnected) {
-      AppLogger.d(
-        "⚠️ [SocketService] ⚠️ WEBSOCKET NOT CONNECTED - Message not sent",
-      );
+      AppLogger.w("[SocketService] sendMessage called while disconnected — message not sent");
       return false;
     }
 
@@ -437,8 +386,6 @@ class SocketService {
       ...?additionalData,
     };
 
-    AppLogger.d("[SOCKET SERVICE] outgoing payload => $messageData");
-
     try {
       final sent = _reconnectManager.sendMessage(messageData);
       if (sent && conversationId != null) {
@@ -446,7 +393,7 @@ class SocketService {
       }
       return sent;
     } catch (e) {
-      AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND MESSAGE: $e");
+      AppLogger.e("[SocketService] Failed to send message: $e");
       return false;
     }
   }
@@ -454,33 +401,26 @@ class SocketService {
   /// Send an event map directly via WebSocket (e.g. read receipt)
   bool sendEvent(Map<String, dynamic> eventData) {
     if (!_reconnectManager.isConnected) {
-      AppLogger.d("⚠️ [SocketService] ⚠️ WEBSOCKET NOT CONNECTED - Event not sent");
+      AppLogger.w("[SocketService] sendEvent called while disconnected — event not sent");
       return false;
     }
 
     try {
-      AppLogger.d("🚀 [SocketService] 🚀 Sending event via WebSocket: ${eventData['type']}");
       final sent = _reconnectManager.sendMessage(eventData);
       return sent;
     } catch (e) {
-      AppLogger.d("❌ [SocketService] ❌ FAILED TO SEND EVENT: $e");
+      AppLogger.e("[SocketService] Failed to send event: $e");
       return false;
     }
   }
 
   /// Disconnect from WebSocket
   Future<void> disconnect() async {
-    AppLogger.d("🔌 [SocketService] 🔌 DISCONNECTING SOCKET...");
-    AppLogger.d("👋 [SocketService] 👋 Closing connection");
-
     await _reconnectManager.disconnect();
-
-    AppLogger.d("✅ [SocketService] ✅ SOCKET DISCONNECTED SUCCESSFULLY");
   }
 
   /// Reset connection (useful for token changes)
   Future<void> reset() async {
-    AppLogger.d("🔄 [SocketService] 🔄 RESETTING CONNECTION");
     await _reconnectManager.reset();
   }
 
@@ -489,7 +429,6 @@ class SocketService {
       return;
     }
 
-    AppLogger.d('[SocketService] Refreshing socket auth with latest token');
     await _reconnectManager.reset();
   }
 
@@ -524,13 +463,9 @@ class SocketService {
   // =========================
 
   Future<void> dispose() async {
-    AppLogger.d("🗑️ [SocketService] 🗑️ DISPOSING SOCKET SERVICE");
-
     await _eventSubscription?.cancel();
     _eventSubscription = null;
 
     await _reconnectManager.dispose();
-
-    AppLogger.d("✅ [SocketService] ✅ SOCKET SERVICE DISPOSED");
   }
 }

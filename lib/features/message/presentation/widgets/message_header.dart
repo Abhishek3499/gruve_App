@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/features/search/domain/entities/search_navigation_type.dart';
 import 'package:gruve_app/features/search/presentation/screens/search_page.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/message/presentation/widgets/message_avatar_list.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class MessageHeader extends StatelessWidget {
+class MessageHeader extends ConsumerWidget {
   const MessageHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.only(top: 60, bottom: 20),
       decoration: BoxDecoration(
@@ -63,9 +63,9 @@ class MessageHeader extends StatelessWidget {
                           '🔄 [MessageHeader] Returned from search page - refreshing list',
                         );
                         unawaited(
-                          context.read<MessageProvider>().fetchConversations(
-                            refresh: true,
-                          ),
+                          ref
+                              .read(messageNotifierProvider.notifier)
+                              .fetchConversations(refresh: true),
                         );
                       }
                     },

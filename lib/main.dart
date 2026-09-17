@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/core/auth/current_user_provider.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/routes/app_routes.dart';
 import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
@@ -14,22 +13,15 @@ import 'package:gruve_app/features/highlights_create/presentation/controller/hig
 import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
 import 'package:gruve_app/features/profile/presentation/controller/user_profile_provider.dart';
 import 'package:gruve_app/features/user_profile/data/datasource/user_profile_service.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/post_like_provider.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
-import 'package:gruve_app/features/message/data/datasource/message_service.dart';
-import 'package:gruve_app/features/message/presentation/controller/conversation_controller.dart';
 import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
 import 'package:gruve_app/features/message/data/repo/user_repository_impl.dart';
 import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
 import 'package:gruve_app/core/network/api_client.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/drafts_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
@@ -70,20 +62,18 @@ Future<void> main() async {
   final authStateManager = AuthStateManager();
   try {
     await authStateManager.initialize();
-    
+
     // Eagerly prime ProfileIdentityService with the logged-in user ID for instant synchronous resolution!
     if (authStateManager.currentUserId != null) {
-      ProfileIdentityService.instance.primeLoggedInUserId(authStateManager.currentUserId);
+      ProfileIdentityService.instance.primeLoggedInUserId(
+        authStateManager.currentUserId,
+      );
     }
   } catch (e) {
     AppLogger.d('🚨 [Main] AuthStateManager initialization failed: $e');
   }
 
-  runApp(
-    ProviderScope(
-      child: MyApp(authStateManager: authStateManager),
-    ),
-  );
+  runApp(ProviderScope(child: MyApp(authStateManager: authStateManager)));
 }
 
 class MyApp extends StatelessWidget {
@@ -97,9 +87,6 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(
           value: authStateManager ?? AuthStateManager(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CurrentUserProvider(),
         ),
         ChangeNotifierProvider.value(value: StoryStateController()),
         ChangeNotifierProvider(
@@ -144,35 +131,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => UserProfileProvider(service: UserProfileService()),
         ),
-        ChangeNotifierProvider(create: (_) => BlockProvider()),
-        ChangeNotifierProvider(create: (_) => SavePostProvider()),
-        ChangeNotifierProvider(
-          lazy: false,
-          create: (_) => MessageProvider(MessageService()),
-        ),
-        ChangeNotifierProvider(
-          lazy: true,
-          create: (_) => ConversationController(MessageService()),
-        ),
         ChangeNotifierProvider(
           lazy: true,
           create: (_) => UserProvider(
             UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
           ),
         ),
-        ChangeNotifierProxyProvider<CurrentUserProvider, NotificationProvider>(
-          lazy: false,
-          create: (_) => NotificationProvider(),
-          update: (_, currentUserProvider, notificationProvider) =>
-              (notificationProvider ?? NotificationProvider())
-                ..updateFromCurrentUser(currentUserProvider),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => DraftsProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => PostLikeProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => DraftsProvider()),
       ],
       child: MaterialApp(
         title: 'Gruve',

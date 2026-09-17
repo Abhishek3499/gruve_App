@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 
-class BlockUserWidget extends StatefulWidget {
+class BlockUserWidget extends ConsumerStatefulWidget {
   final String name;
   final String username;
   final String userId;
@@ -17,10 +17,10 @@ class BlockUserWidget extends StatefulWidget {
   });
 
   @override
-  State<BlockUserWidget> createState() => _BlockUserWidgetState();
+  ConsumerState<BlockUserWidget> createState() => _BlockUserWidgetState();
 }
 
-class _BlockUserWidgetState extends State<BlockUserWidget> {
+class _BlockUserWidgetState extends ConsumerState<BlockUserWidget> {
   bool _isLoading = false;
 
   Future<void> _handleToggleBlock() async {
@@ -28,15 +28,15 @@ class _BlockUserWidgetState extends State<BlockUserWidget> {
     setState(() => _isLoading = true);
 
     try {
-      final blockProvider = context.read<BlockProvider>();
-      await blockProvider.toggleBlockUser(
+      final blockNotifier = ref.read(blockNotifierProvider.notifier);
+      await blockNotifier.toggleBlockUser(
         widget.userId,
         refreshList: true,
         optimistic: false,
       );
       if (!mounted) return;
 
-      Navigator.of(context).pop(blockProvider.isBlocked(widget.userId));
+      Navigator.of(context).pop(blockNotifier.isBlocked(widget.userId));
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);

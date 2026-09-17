@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/shimmer/notification_shimmer.dart';
 import 'package:gruve_app/features/notification/domain/entities/notification_model.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/profile_post_detail_screen.dart';
 
@@ -13,31 +13,25 @@ import 'package:gruve_app/features/notification/presentation/widgets/follow_tile
 import 'package:gruve_app/features/notification/presentation/widgets/notification_tile.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class NotificationScreen extends StatefulWidget {
+class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  State<NotificationScreen> createState() => _NotificationScreenState();
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
+class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   final ScrollController _scrollController = ScrollController();
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
-  NotificationProvider? _notificationProvider;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _notificationProvider ??= context.read<NotificationProvider>();
-  }
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<NotificationProvider>();
-      provider.fetchInitialNotifications(showLoading: true);
+      ref
+          .read(notificationNotifierProvider.notifier)
+          .fetchInitialNotifications(showLoading: true);
     });
   }
 
@@ -45,20 +39,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _notificationProvider?.cancelActiveRequests();
+    ref.read(notificationNotifierProvider.notifier).cancelActiveRequests();
     super.dispose();
   }
 
   void _onScroll() {
-    final provider = _notificationProvider ?? context.read<NotificationProvider>();
+    final state = ref.read(notificationNotifierProvider);
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
-      isLoading: provider.isLoading || provider.isLoadingMore,
-      hasMore: provider.hasNextPage,
+      isLoading: state.isLoading || state.isLoadingMore,
+      hasMore: state.hasNextPage,
     )) {
       return;
     }
-    provider.fetchNextPage(reason: 'scroll');
+    ref
+        .read(notificationNotifierProvider.notifier)
+        .fetchNextPage(reason: 'scroll');
   }
 
   Widget _buildSectionHeader(String title) {
@@ -81,27 +77,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _handleNotificationTap(AppNotification n) async {
-    final provider = context.read<NotificationProvider>();
-    
+    final notifier = ref.read(notificationNotifierProvider.notifier);
+
     // Always mark notification as read
     if (!n.isRead) {
-      provider.markNotificationAsRead(n.id);
+      notifier.markNotificationAsRead(n.id);
     }
-    
+
     // If it has a post_id, fetch the post and open it!
     if (n.postId != null && n.postId!.isNotEmpty) {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        builder: (context) =>
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
-      
+
       try {
         final postService = PostService();
         final post = await postService.fetchPostById(n.postId!);
-        
+
         if (mounted) {
           Navigator.pop(context); // pop loading dialog
           Navigator.push(
@@ -133,7 +128,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildNotificationTile(AppNotification n) {
     final actorUsername = n.actor?.username ?? 'Someone';
     final profilePic = n.actor?.profilePicture ?? '';
-    final timeDisplay = NotificationProvider.formatTime(n.createdAt);
+    final timeDisplay = NotificationNotifier.formatTime(n.createdAt);
 
     if (n.type == 'follow' || n.type == 'user_follow') {
       return FollowTile(
@@ -186,11 +181,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
             color: Colors.white,
             backgroundColor: AppColors.bottomBlack,
             onRefresh: () async {
-              final provider = context.read<NotificationProvider>();
-              await provider.fetchInitialNotifications(showLoading: false);
+              await ref
+                  .read(notificationNotifierProvider.notifier)
+                  .fetchInitialNotifications(showLoading: false);
             },
-            child: Consumer<NotificationProvider>(
-              builder: (context, provider, child) {
+            child: Consumer(
+              builder: (context, ref, child) {
+                final provider = ref.watch(notificationNotifierProvider);
                 Widget content;
 
                 if (provider.isLoading) {
@@ -236,9 +233,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               SizedBox(height: context.rh(16)),
                               ElevatedButton(
                                 onPressed: () {
-                                  provider.fetchInitialNotifications(
-                                    showLoading: true,
-                                  );
+                                  ref
+                                      .read(
+                                        notificationNotifierProvider.notifier,
+                                      )
+                                      .fetchInitialNotifications(
+                                        showLoading: true,
+                                      );
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF8E44B9),
@@ -254,17 +255,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 } else if (provider.notifications.isEmpty) {
                   content = const SingleChildScrollView(
                     physics: AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      children: [
-                        Header(),
-                        _EmptyNotifications(),
-                      ],
-                    ),
+                    child: Column(children: [Header(), _EmptyNotifications()]),
                   );
                 } else {
                   final showNew = provider.newNotifications.isNotEmpty;
                   final showToday = provider.todayNotifications.isNotEmpty;
-                  final showThisWeek = provider.thisWeekNotifications.isNotEmpty;
+                  final showThisWeek =
+                      provider.thisWeekNotifications.isNotEmpty;
                   final showEarlier = provider.earlierNotifications.isNotEmpty;
 
                   content = SingleChildScrollView(
@@ -276,19 +273,27 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         const Header(),
                         if (showNew) ...[
                           _buildSectionHeader("New"),
-                          ...provider.newNotifications.map((n) => _buildNotificationTile(n)),
+                          ...provider.newNotifications.map(
+                            (n) => _buildNotificationTile(n),
+                          ),
                         ],
                         if (showToday) ...[
                           _buildSectionHeader("Today"),
-                          ...provider.todayNotifications.map((n) => _buildNotificationTile(n)),
+                          ...provider.todayNotifications.map(
+                            (n) => _buildNotificationTile(n),
+                          ),
                         ],
                         if (showThisWeek) ...[
                           _buildSectionHeader("This Week"),
-                          ...provider.thisWeekNotifications.map((n) => _buildNotificationTile(n)),
+                          ...provider.thisWeekNotifications.map(
+                            (n) => _buildNotificationTile(n),
+                          ),
                         ],
                         if (showEarlier) ...[
                           _buildSectionHeader("Earlier"),
-                          ...provider.earlierNotifications.map((n) => _buildNotificationTile(n)),
+                          ...provider.earlierNotifications.map(
+                            (n) => _buildNotificationTile(n),
+                          ),
                         ],
                         if (provider.isLoadingMore)
                           Padding(
@@ -302,7 +307,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               ),
                             ),
                           ),
-                        SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                        SizedBox(
+                          height: MediaQuery.of(context).padding.bottom + 20,
+                        ),
                       ],
                     ),
                   );

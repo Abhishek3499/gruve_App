@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' hide Consumer;
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/message/presentation/widgets/message_header.dart';
 import 'package:gruve_app/features/message/presentation/widgets/message_card.dart';
 import 'package:gruve_app/features/message/presentation/widgets/swipe_delete_background.dart';
@@ -15,24 +16,22 @@ import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart
 import 'package:gruve_app/shared/widgets/shimmer/chat_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class MessageScreen extends StatefulWidget {
+class MessageScreen extends ConsumerStatefulWidget {
   const MessageScreen({super.key});
 
   @override
-  State<MessageScreen> createState() => _MessageScreenState();
+  ConsumerState<MessageScreen> createState() => _MessageScreenState();
 }
 
-class _MessageScreenState extends State<MessageScreen> {
+class _MessageScreenState extends ConsumerState<MessageScreen> {
   bool _isLoadingMoreConversations = false;
   bool _startedUserPrefetch = false;
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
-  MessageProvider? _messageProvider;
   UserProvider? _userProvider;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _messageProvider ??= context.read<MessageProvider>();
     _userProvider ??= context.read<UserProvider>();
   }
 
@@ -48,14 +47,16 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   void dispose() {
-    _messageProvider?.cancelActiveRequests();
+    ref.read(messageNotifierProvider.notifier).cancelActiveRequests();
     _userProvider?.cancelActiveRequests();
     super.dispose();
   }
 
   Future<void> _fetchInitialData() async {
     _prefetchUsersForAvatarRow();
-    await context.read<MessageProvider>().fetchConversations(refresh: true);
+    await ref
+        .read(messageNotifierProvider.notifier)
+        .fetchConversations(refresh: true);
     AppLogger.d('[MessageScreen] Conversations loaded');
   }
 
@@ -75,10 +76,10 @@ class _MessageScreenState extends State<MessageScreen> {
     AppLogger.d('🔄 [MessageScreen] Refresh started');
 
     // Clear cache timestamps to force fresh data
-    final messageProvider = context.read<MessageProvider>();
+    final messageNotifier = ref.read(messageNotifierProvider.notifier);
     final userProvider = context.read<UserProvider>();
 
-    await messageProvider.refreshConversations();
+    await messageNotifier.refreshConversations();
     unawaited(userProvider.refreshUsers());
 
     AppLogger.d('✅ [MessageScreen] Refresh completed');
@@ -122,14 +123,13 @@ class _MessageScreenState extends State<MessageScreen> {
     return confirmed ?? false;
   }
 
-  Future<bool> _deleteConversation(
-    ConversationModel conversation,
-    MessageProvider messageProvider,
-  ) async {
+  Future<bool> _deleteConversation(ConversationModel conversation) async {
     AppLogger.d(
       '🗑️ [MessageScreen] Deleting conversation: ${conversation.id} - ${conversation.otherUserName}',
     );
-    final success = await messageProvider.deleteConversation(conversation.id);
+    final success = await ref
+        .read(messageNotifierProvider.notifier)
+        .deleteConversation(conversation.id);
 
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -145,89 +145,86 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final messageState = ref.watch(messageNotifierProvider);
     return Scaffold(
       backgroundColor: const Color(0xFF1C0B21),
       resizeToAvoidBottomInset: true,
-      body: Consumer<MessageProvider>(
-        builder: (context, messageProvider, child) {
-          return Stack(
-            children: [
-              RefreshIndicator(
-                onRefresh: _handleRefresh,
-                color: Colors.white,
-                backgroundColor: const Color(0xFF42174C),
-                child: Column(
-                  children: [
-                    /// 🔥 HEADER + LIST OVERLAP AREA
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          /// HEADER
-                          MessageHeader(),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: Colors.white,
+            backgroundColor: const Color(0xFF42174C),
+            child: Column(
+              children: [
+                /// 🔥 HEADER + LIST OVERLAP AREA
+                Expanded(
+                  child: Stack(
+                    children: [
+                      /// HEADER
+                      MessageHeader(),
 
-                          /// MESSAGE LIST
-                          Positioned(
-                            top: 195,
-                            left: 0,
-                            right: 0,
-                            bottom: 60,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF1C0B21),
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(40),
-                                ),
-                              ),
-                              child: _buildConversationList(messageProvider),
+                      /// MESSAGE LIST
+                      Positioned(
+                        top: 195,
+                        left: 0,
+                        right: 0,
+                        bottom: 60,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1C0B21),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(40),
                             ),
                           ),
-                        ],
+                          child: _buildConversationList(messageState),
+                        ),
                       ),
-                    ),
-
-                    /// 🔥 FOOTER (original wala hi)
-                  ],
-                ),
-              ),
-              // Loading overlay during deletion
-              if (messageProvider.isDeletingConversation)
-                Container(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF72008D)),
+                    ],
                   ),
                 ),
-            ],
-          );
-        },
+
+                /// 🔥 FOOTER (original wala hi)
+              ],
+            ),
+          ),
+          // Loading overlay during deletion
+          if (messageState.isDeletingConversation)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFF72008D)),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildConversationList(MessageProvider messageProvider) {
+  Widget _buildConversationList(MessageState messageState) {
     if (kDebugMode) {
       AppLogger.d(
-        '🔍 [buildConversationList] isLoading: ${messageProvider.isLoading} | count: ${messageProvider.conversationCount}',
+        '🔍 [buildConversationList] isLoading: ${messageState.isLoading} | count: ${messageState.conversationCount}',
       );
     }
 
     // Show loading shimmer on initial load
-    if (messageProvider.isLoading && !messageProvider.hasConversations) {
+    if (messageState.isLoading && !messageState.hasConversations) {
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show shimmer during refresh
-    if (messageProvider.isRefreshing && !messageProvider.hasConversations) {
+    if (messageState.isRefreshing && !messageState.hasConversations) {
       return const ChatListShimmer(itemCount: 7);
     }
 
     // Show error state
-    if (messageProvider.hasError && !messageProvider.hasConversations) {
-      return _buildErrorState(messageProvider);
+    if (messageState.hasError && !messageState.hasConversations) {
+      return _buildErrorState(messageState);
     }
 
     // Show empty state
-    if (!messageProvider.hasConversations && !messageProvider.isLoading) {
+    if (!messageState.hasConversations && !messageState.isLoading) {
       return _buildEmptyState();
     }
 
@@ -238,33 +235,36 @@ class _MessageScreenState extends State<MessageScreen> {
           scrollInfo.metrics,
           isLoading:
               _isLoadingMoreConversations ||
-              messageProvider.isLoading ||
-              messageProvider.isLoadingMore ||
-              messageProvider.isRefreshing,
-          hasMore: messageProvider.hasMoreData,
+              messageState.isLoading ||
+              messageState.isLoadingMore ||
+              messageState.isRefreshing,
+          hasMore: messageState.hasMoreData,
         )) {
           _isLoadingMoreConversations = true;
-          messageProvider.loadMoreConversations(reason: 'scroll').then((_) {
-            if (mounted) {
-              _isLoadingMoreConversations = false;
-            }
-          });
+          ref
+              .read(messageNotifierProvider.notifier)
+              .loadMoreConversations(reason: 'scroll')
+              .then((_) {
+                if (mounted) {
+                  _isLoadingMoreConversations = false;
+                }
+              });
         }
         return false;
       },
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),        
+          parent: BouncingScrollPhysics(),
         ),
         padding: const EdgeInsets.all(16),
         cacheExtent: 1000,
         addAutomaticKeepAlives: true,
         addRepaintBoundaries: true,
         itemCount:
-            messageProvider.conversations.length +
-            (messageProvider.isLoadingMore ? 1 : 0),
+            messageState.conversations.length +
+            (messageState.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index >= messageProvider.conversations.length) {
+          if (index >= messageState.conversations.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 18),
               child: Center(
@@ -280,7 +280,7 @@ class _MessageScreenState extends State<MessageScreen> {
             );
           }
 
-          final conversation = messageProvider.conversations[index];
+          final conversation = messageState.conversations[index];
           return RepaintBoundary(
             child: Dismissible(
               key: ValueKey(conversation.id),
@@ -290,7 +290,7 @@ class _MessageScreenState extends State<MessageScreen> {
                 if (direction == DismissDirection.endToStart) {
                   final confirmed = await _showDeleteConfirmation(conversation);
                   if (!confirmed || !mounted) return false;
-                  return _deleteConversation(conversation, messageProvider);
+                  return _deleteConversation(conversation);
                 }
                 return false;
               },
@@ -305,7 +305,7 @@ class _MessageScreenState extends State<MessageScreen> {
     );
   }
 
-  Widget _buildErrorState(MessageProvider messageProvider) {
+  Widget _buildErrorState(MessageState messageState) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -313,13 +313,14 @@ class _MessageScreenState extends State<MessageScreen> {
           const Icon(Icons.error_outline, color: Colors.white54, size: 48),
           const SizedBox(height: 16),
           Text(
-            messageProvider.error ?? 'Something went wrong',
+            messageState.error ?? 'Something went wrong',
             style: const TextStyle(color: Colors.white70, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => messageProvider.fetchConversations(),
+            onPressed: () =>
+                ref.read(messageNotifierProvider.notifier).fetchConversations(),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF72008D),
               foregroundColor: Colors.white,
@@ -356,7 +357,8 @@ class _MessageScreenState extends State<MessageScreen> {
     AppLogger.d(
       '💬 [MessageScreen] Navigating to chat with: ${conversation.otherUserName} (${conversation.id})',
     );
-    context.read<MessageProvider>().markConversationAsRead(conversation.id);
+    final messageNotifier = ref.read(messageNotifierProvider.notifier);
+    messageNotifier.markConversationAsRead(conversation.id);
 
     final shouldRefresh = await Navigator.push<bool>(
       context,
@@ -375,7 +377,7 @@ class _MessageScreenState extends State<MessageScreen> {
 
     if (shouldRefresh == true) {
       AppLogger.d('🔄 [MessageScreen] Refreshing after block action');
-      context.read<MessageProvider>().removeConversation(conversation.id);
+      messageNotifier.removeConversation(conversation.id);
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         await _handleRefresh();
@@ -384,9 +386,7 @@ class _MessageScreenState extends State<MessageScreen> {
       AppLogger.d(
         '🔄 [MessageScreen] User returned from ChatScreen - refreshing list',
       );
-      unawaited(
-        context.read<MessageProvider>().fetchConversations(refresh: true),
-      );
+      unawaited(messageNotifier.fetchConversations(refresh: true));
     }
   }
 }

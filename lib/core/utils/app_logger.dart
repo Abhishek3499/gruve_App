@@ -1,12 +1,26 @@
 import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 
 /// Single centralized logging utility for the app.
 /// All logging goes through here — no raw [debugPrint] in feature code.
-/// Logs are suppressed automatically in release/profile builds.
+/// Logs are suppressed automatically in release/profile builds and rendered
+/// with the same pretty box-style printer used by [authLogger].
 class AppLogger {
   AppLogger._();
 
   static bool _enableLogs = kDebugMode;
+
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 5,
+      lineLength: 100,
+      colors: true,
+      printEmojis: true,
+      dateTimeFormat: DateTimeFormat.none,
+    ),
+    filter: _AppLogFilter(),
+  );
 
   /// Enable or disable logging (still no-op outside debug mode).
   static void setEnabled(bool enabled) {
@@ -17,8 +31,7 @@ class AppLogger {
 
   /// Debug log — primary method for general messages.
   static void d(String message, {String? tag}) {
-    if (!_enableLogs) return;
-    _emit(tag != null ? '[$tag] $message' : message);
+    _logger.d(tag != null ? '[$tag] $message' : message);
   }
 
   /// Alias for [d].
@@ -26,9 +39,8 @@ class AppLogger {
 
   /// Info log.
   static void i(String message, {String? tag}) {
-    if (!_enableLogs) return;
     final prefix = tag != null ? '[$tag] ' : '';
-    _emit('ℹ️ $prefix$message');
+    _logger.d('ℹ️ $prefix$message');
   }
 
   /// Info alias.
@@ -36,9 +48,8 @@ class AppLogger {
 
   /// Warning log.
   static void w(String message, {String? tag}) {
-    if (!_enableLogs) return;
     final prefix = tag != null ? '[$tag] ' : '';
-    _emit('⚠️ $prefix$message');
+    _logger.d('⚠️ $prefix$message');
   }
 
   /// Warning alias.
@@ -51,15 +62,8 @@ class AppLogger {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    if (!_enableLogs) return;
     final prefix = tag != null ? '[$tag] ' : '';
-    _emit('❌ $prefix$message');
-    if (error != null) {
-      _emit('Error: $error');
-    }
-    if (stackTrace != null) {
-      _emit('StackTrace: $stackTrace');
-    }
+    _logger.e('❌ $prefix$message', error: error, stackTrace: stackTrace);
   }
 
   /// Error alias.
@@ -73,39 +77,36 @@ class AppLogger {
 
   /// Success log.
   static void success(String message, {String? tag}) {
-    if (!_enableLogs) return;
     final prefix = tag != null ? '[$tag] ' : '';
-    _emit('✅ $prefix$message');
+    _logger.d('✅ $prefix$message');
   }
 
   /// API request log.
   static void api(String method, String endpoint, {Map<String, dynamic>? params}) {
-    if (!_enableLogs) return;
-    _emit('📡 API: $method $endpoint');
+    var message = '📡 API: $method $endpoint';
     if (params != null && params.isNotEmpty) {
-      _emit('   Params: $params');
+      message += '\nParams: $params';
     }
+    _logger.d(message);
   }
 
   /// Performance timing log.
   static void performance(String operation, Duration duration) {
-    if (!_enableLogs) return;
-    _emit('⚡ PERF: $operation took ${duration.inMilliseconds}ms');
+    _logger.d('⚡ PERF: $operation took ${duration.inMilliseconds}ms');
   }
 
   /// Navigation log.
   static void navigation(String from, String to) {
-    if (!_enableLogs) return;
-    _emit('🧭 NAV: $from → $to');
+    _logger.d('🧭 NAV: $from → $to');
   }
 
   /// State change log.
   static void state(String stateName, dynamic oldValue, dynamic newValue) {
-    if (!_enableLogs) return;
-    _emit('🔄 STATE: $stateName changed from $oldValue to $newValue');
+    _logger.d('🔄 STATE: $stateName changed from $oldValue to $newValue');
   }
+}
 
-  static void _emit(String message) {
-    debugPrint(message);
-  }
+class _AppLogFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) => AppLogger.isEnabled;
 }

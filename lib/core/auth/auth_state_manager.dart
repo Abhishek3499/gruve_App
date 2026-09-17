@@ -9,7 +9,7 @@ import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
-import 'package:gruve_app/features/home/presentation/controllers/subscribe_controller.dart';
+import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation
@@ -82,7 +82,7 @@ class AuthStateManager extends ChangeNotifier {
   }
 
   Future<void> _clearSessionScopedState() async {
-    SubscribeController().reset();
+    SubscribeNotifier().reset();
 
     final hive = HiveService();
     await hive.clearCache(HiveService.userCacheBoxName);
@@ -143,7 +143,7 @@ class AuthStateManager extends ChangeNotifier {
 
       ProfileIdentityService.instance.clearCachedLoggedInUserId();
 
-      SubscribeController().reset();
+      SubscribeNotifier().reset();
       final hive = HiveService();
       await hive.clearCache(HiveService.userCacheBoxName);
       await hive.clearCache(HiveService.feedCacheBoxName);

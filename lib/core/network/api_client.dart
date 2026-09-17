@@ -21,10 +21,10 @@ class ApiClient {
       return response.data;
     } on DioException catch (error) {
       AppLogger.d(
-          '[ApiClient] GET $endpoint failed: '
-          'status=${error.response?.statusCode} type=${error.type}',
-        );
-      
+        '[ApiClient] GET $endpoint failed: '
+        'status=${error.response?.statusCode} type=${error.type}',
+      );
+
       rethrow;
     }
   }

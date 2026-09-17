@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/message/presentation/controller/message_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class MessageAvatar extends StatelessWidget {
+class MessageAvatar extends ConsumerWidget {
   final String name;
   final String imageUrl;
   final bool isOnline;
@@ -23,18 +23,14 @@ class MessageAvatar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: onTap ?? () => _handleTap(context),
+      onTap: onTap ?? () => _handleTap(context, ref),
       child: Column(
         children: [
           Stack(
             children: [
-              OptimizedAvatar(
-                imageUrl: imageUrl,
-                name: name,
-                radius: 30,
-              ),
+              OptimizedAvatar(imageUrl: imageUrl, name: name, radius: 30),
 
               if (isOnline)
                 Positioned(
@@ -59,32 +55,51 @@ class MessageAvatar extends StatelessWidget {
     );
   }
 
-  Future<void> _handleTap(BuildContext context) async {
-    AppLogger.d('👆 [MessageAvatar] 🎯 Avatar clicked - userId: $userId, name: $name');
-    AppLogger.d('🖼️ [MessageAvatar] 📸 Profile image: ${imageUrl.isNotEmpty ? imageUrl : "none"}');
+  Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
+    AppLogger.d(
+      '👆 [MessageAvatar] 🎯 Avatar clicked - userId: $userId, name: $name',
+    );
+    AppLogger.d(
+      '🖼️ [MessageAvatar] 📸 Profile image: ${imageUrl.isNotEmpty ? imageUrl : "none"}',
+    );
     AppLogger.d('🟢 [MessageAvatar] 📡 Online status: $isOnline');
 
-    final messageProvider = context.read<MessageProvider>();
+    final messageNotifier = ref.read(messageNotifierProvider.notifier);
 
-    AppLogger.d('🔍 [MessageAvatar] 🔎 Checking for existing conversation with user: $userId');
-    AppLogger.d('📊 [MessageAvatar] 💬 Total conversations in provider: ${messageProvider.conversationCount}');
-    
+    AppLogger.d(
+      '🔍 [MessageAvatar] 🔎 Checking for existing conversation with user: $userId',
+    );
+
     // Check if conversation exists
-    final existingConversation = messageProvider.getConversationByUserId(userId);
+    final existingConversation = messageNotifier.getConversationByUserId(
+      userId,
+    );
 
     if (existingConversation != null) {
       AppLogger.d('✅ [MessageAvatar] 🎉 Existing conversation found!');
-      AppLogger.d('💬 [MessageAvatar] 🆔 Conversation ID: ${existingConversation.id}');
-      AppLogger.d('👤 [MessageAvatar] 👥 Other user: ${existingConversation.otherUser.name}');
-      AppLogger.d('📨 [MessageAvatar] 💭 Last message: ${existingConversation.lastMessage.content}');
-      AppLogger.d('🔔 [MessageAvatar] 📬 Unread count: ${existingConversation.unreadCount}');
-      AppLogger.d('🧭 [MessageAvatar] 🚀 Navigating to existing chat screen...');
-      
+      AppLogger.d(
+        '💬 [MessageAvatar] 🆔 Conversation ID: ${existingConversation.id}',
+      );
+      AppLogger.d(
+        '👤 [MessageAvatar] 👥 Other user: ${existingConversation.otherUser.name}',
+      );
+      AppLogger.d(
+        '📨 [MessageAvatar] 💭 Last message: ${existingConversation.lastMessage.content}',
+      );
+      AppLogger.d(
+        '🔔 [MessageAvatar] 📬 Unread count: ${existingConversation.unreadCount}',
+      );
+      AppLogger.d(
+        '🧭 [MessageAvatar] 🚀 Navigating to existing chat screen...',
+      );
+
       if (!context.mounted) {
-        AppLogger.d('⚠️ [MessageAvatar] ❌ Context unmounted, aborting navigation');
+        AppLogger.d(
+          '⚠️ [MessageAvatar] ❌ Context unmounted, aborting navigation',
+        );
         return;
       }
-      
+
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -100,13 +115,15 @@ class MessageAvatar extends StatelessWidget {
       AppLogger.d('✅ [MessageAvatar] 🎊 Navigation to existing chat completed');
     } else {
       AppLogger.d('🔍 [MessageAvatar] ❌ No existing conversation found');
-      AppLogger.d('🚀 [MessageAvatar] 🆕 Navigating immediately to ChatScreen (async resolve)...');
-      
+      AppLogger.d(
+        '🚀 [MessageAvatar] 🆕 Navigating immediately to ChatScreen (async resolve)...',
+      );
+
       if (!context.mounted) {
         AppLogger.d('⚠️ [MessageAvatar] ❌ Context unmounted, aborting');
         return;
       }
-      
+
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -121,8 +138,10 @@ class MessageAvatar extends StatelessWidget {
     }
 
     if (context.mounted) {
-      AppLogger.d('🔄 [MessageAvatar] User returned from ChatScreen - refreshing list');
-      unawaited(messageProvider.fetchConversations(refresh: true));
+      AppLogger.d(
+        '🔄 [MessageAvatar] User returned from ChatScreen - refreshing list',
+      );
+      unawaited(messageNotifier.fetchConversations(refresh: true));
     }
   }
 }

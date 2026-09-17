@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 
-class Header extends StatelessWidget {
+class Header extends ConsumerWidget {
   const Header({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<NotificationProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = ref.watch(notificationNotifierProvider);
+    final notifier = ref.read(notificationNotifierProvider.notifier);
 
     return Container(
       color: Colors.transparent,
@@ -50,7 +51,7 @@ class Header extends StatelessWidget {
                     size: 20,
                   ),
                   onPressed: () {
-                    provider.markAllNotificationsAsRead();
+                    notifier.markAllNotificationsAsRead();
                   },
                   tooltip: 'Mark all as read',
                 )
@@ -64,7 +65,7 @@ class Header extends StatelessWidget {
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => provider.setUnreadOnly(false),
+                onTap: () => notifier.setUnreadOnly(false),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Container(
@@ -79,8 +80,9 @@ class Header extends StatelessWidget {
                             ? TextDecoration.underline
                             : TextDecoration.none,
                         decorationColor: Colors.white,
-                        fontWeight:
-                            !provider.unreadOnly ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: !provider.unreadOnly
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -89,7 +91,7 @@ class Header extends StatelessWidget {
               const SizedBox(width: 56),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => provider.setUnreadOnly(true),
+                onTap: () => notifier.setUnreadOnly(true),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
@@ -139,8 +141,9 @@ class Header extends StatelessWidget {
                               ? TextDecoration.underline
                               : TextDecoration.none,
                           decorationColor: Colors.white,
-                          fontWeight:
-                              provider.unreadOnly ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: provider.unreadOnly
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
                       ),
                     ],

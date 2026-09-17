@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/notification/presentation/screens/notification_screen.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/notification/presentation/controller/notification_provider.dart';
+import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 
 class VideoTopBar extends StatelessWidget {
   final String selectedTab;
@@ -57,16 +57,21 @@ class VideoTopBar extends StatelessWidget {
                   Positioned(
                     right: 16,
                     top: 0,
-                    child: Consumer<NotificationProvider>(
-                      builder: (context, provider, _) {
-                        final count = provider.unreadCount;
-                        
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final count = ref.watch(
+                          notificationNotifierProvider.select(
+                            (s) => s.unreadCount,
+                          ),
+                        );
+
                         return GestureDetector(
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const NotificationScreen(),
+                                builder: (context) =>
+                                    const NotificationScreen(),
                               ),
                             );
                           },
@@ -96,14 +101,24 @@ class VideoTopBar extends StatelessWidget {
                                   right: -2,
                                   top: -2,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFF3B30), // Premium vibrant iOS red
+                                      color: const Color(
+                                        0xFFFF3B30,
+                                      ), // Premium vibrant iOS red
                                       borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.black, width: 1.5),
+                                      border: Border.all(
+                                        color: Colors.black,
+                                        width: 1.5,
+                                      ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.3),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.3,
+                                          ),
                                           blurRadius: 4,
                                           spreadRadius: 1,
                                         ),
@@ -155,7 +170,9 @@ class VideoTopBar extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.w700,
               fontFamily: 'Syncopate',
-              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.6),
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.6),
               shadows: [
                 Shadow(
                   blurRadius: 4.0,
@@ -187,4 +204,3 @@ class VideoTopBar extends StatelessWidget {
     );
   }
 }
-

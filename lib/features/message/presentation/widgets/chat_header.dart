@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
 import 'package:gruve_app/features/message/presentation/widgets/chat_header_menu.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/block_provider.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/features/message/utils/user_display_helper.dart';
 
-class ChatHeader extends StatelessWidget {
+class ChatHeader extends ConsumerWidget {
   final dynamic userOrConversation;
   final String? explicitUserName;
   final String? explicitUserId;
@@ -59,11 +59,11 @@ class ChatHeader extends StatelessWidget {
     return UserDisplayHelper.getProfileImageForUser(userOrConversation);
   }
 
-  void showChatHeaderMenu(BuildContext context) {
+  void showChatHeaderMenu(BuildContext context, WidgetRef ref) {
     OverlayEntry? overlayEntry;
     // Capture live block state from the widget-tree context BEFORE entering overlay
     final bool currentIsBlocked =
-        context.read<BlockProvider>().isBlocked(_userId);
+        ref.read(blockNotifierProvider.notifier).isBlocked(_userId);
 
     overlayEntry = OverlayEntry(
       builder: (overlayContext) => GestureDetector(
@@ -125,7 +125,7 @@ class ChatHeader extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -161,7 +161,7 @@ class ChatHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () => showChatHeaderMenu(context),
+            onPressed: () => showChatHeaderMenu(context, ref),
             icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
           ),
         ],

@@ -5,11 +5,11 @@ import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/media/video_playback_guard.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/save_post_provider.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/widgets/post_action_sheet.dart';
@@ -549,11 +549,13 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                         ),
                       ],
                     ),
-                    Consumer<SavePostProvider>(
-                      builder: (context, provider, _) {
-                        final isSaved = provider.isSaved(post.id);
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final isSaved = ref.watch(
+                          savePostNotifierProvider.select((state) => state.isSaved(post.id)),
+                        );
                         return GestureDetector(
-                          onTap: () => provider.toggleSavePost(post.id),
+                          onTap: () => ref.read(savePostNotifierProvider.notifier).toggleSavePost(post.id),
                           child: Container(
                             padding: EdgeInsets.all(context.rw(8)),
                             child: Icon(
