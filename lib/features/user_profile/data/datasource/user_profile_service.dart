@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
-import 'package:gruve_app/features/profile/domain/entities/user_profile_model.dart';
+import 'package:gruve_app/features/user_profile/domain/entities/user_profile_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class UserProfileService {

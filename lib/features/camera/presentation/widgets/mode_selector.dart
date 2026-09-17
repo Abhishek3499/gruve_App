@@ -7,7 +7,7 @@ import 'package:gruve_app/features/home/presentation/controllers/post_share_flow
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/core/assets.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_preview_screen.dart';
-import 'package:gruve_app/features/ideas/presentation/screens/ideas_screen.dart';
+import 'package:gruve_app/features/analytics/ideas/presentation/screens/ideas_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/features/camera/utils/camera_logger.dart';
 import 'package:gruve_app/features/camera/data/datasource/mode_service.dart';

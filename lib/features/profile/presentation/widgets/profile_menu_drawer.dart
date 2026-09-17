@@ -14,7 +14,7 @@ import 'package:gruve_app/features/privacy/presentation/screens/account_privacy_
 import 'package:gruve_app/features/subscription/presentation/screens/subscription_screen.dart';
 
 import 'package:gruve_app/features/account/presentation/screens/account_screen.dart';
-import 'package:gruve_app/features/insight/presentation/screens/professional_dashboard_screen.dart';
+import 'package:gruve_app/features/analytics/presentation/screens/professional_dashboard_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class ProfileMenuDrawer extends ConsumerWidget {

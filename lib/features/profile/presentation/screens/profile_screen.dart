@@ -7,10 +7,10 @@ import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_grid.dart';
-import 'package:gruve_app/features/profile/presentation/controller/user_profile_provider.dart';
+import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_provider.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
-import 'package:gruve_app/features/profile/domain/entities/user_profile_model.dart';
+import 'package:gruve_app/features/user_profile/domain/entities/user_profile_model.dart';
 
 import 'package:gruve_app/features/profile/presentation/widgets/filter_tabs.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_header.dart';

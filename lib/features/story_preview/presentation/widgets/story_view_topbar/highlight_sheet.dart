@@ -4,7 +4,7 @@ import 'package:gruve_app/features/highlights/presentation/controller/highlight_
 import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
 import 'package:gruve_app/features/highlights/presentation/controller/highlight_flow_provider.dart';
-import 'package:gruve_app/features/highlights_create/presentation/controller/highlight_create_controller.dart';
+import 'package:gruve_app/features/highlights/presentation/controller/highlight_create_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_selector_screen.dart';

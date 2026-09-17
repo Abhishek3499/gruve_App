@@ -6,7 +6,7 @@ import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/comments/domain/entities/comment_model.dart';
 import 'package:gruve_app/features/comments/data/datasource/comment_service.dart';
-import 'package:gruve_app/shared/widgets/shimmer/comment_shimmer.dart';
+import 'package:gruve_app/features/comments/presentation/widgets/shimmer/comment_shimmer.dart';
 
 class CommentSheet extends StatefulWidget {
   final String postId;

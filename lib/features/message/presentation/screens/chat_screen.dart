@@ -23,7 +23,7 @@ import 'package:gruve_app/features/message/presentation/widgets/message_popup_me
 import 'package:gruve_app/features/message/presentation/widgets/block/block_user_widget.dart';
 import 'package:gruve_app/features/message/presentation/widgets/pinned_message_banner.dart';
 import 'package:gruve_app/features/message/presentation/widgets/reply_preview_bar.dart';
-import 'package:gruve_app/shared/widgets/shimmer/chat_shimmer.dart';
+import 'package:gruve_app/features/message/presentation/widgets/shimmer/chat_shimmer.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 

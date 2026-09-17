@@ -11,13 +11,13 @@ import 'package:gruve_app/features/auth/presentation/screens/otp_screen.dart';
 
 import 'package:gruve_app/shared/widgets/get_started_button.dart';
 
-import 'package:gruve_app/shared/widgets/inputs/phone_input_field.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/inputs/phone_input_field.dart';
 
 import 'package:gruve_app/shared/widgets/video_background.dart';
 
-import 'package:gruve_app/shared/widgets/inputs/neon_text_field.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_text_field.dart';
 
-import 'package:gruve_app/shared/widgets/inputs/neon_password_field.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_password_field.dart';
 
 import 'package:gruve_app/features/auth/presentation/notifiers/signup_notifier.dart';
 import 'package:gruve_app/features/auth/validators/phone_number_validator.dart';

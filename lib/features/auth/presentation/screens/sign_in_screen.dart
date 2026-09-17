@@ -13,8 +13,8 @@ import 'package:gruve_app/features/auth/presentation/controllers/auth_session_he
 import 'package:gruve_app/features/auth/presentation/screens/email_login_screen.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 import 'package:gruve_app/features/auth/presentation/screens/signup_screen.dart';
-import 'package:gruve_app/shared/widgets/primary_button.dart';
-import 'package:gruve_app/shared/widgets/outline_button.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/primary_button.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/outline_button.dart';
 import 'package:gruve_app/shared/widgets/video_background.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';

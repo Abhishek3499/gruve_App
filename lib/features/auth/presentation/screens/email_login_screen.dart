@@ -15,9 +15,9 @@ import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 
 import 'package:gruve_app/shared/widgets/video_background.dart';
 
-import 'package:gruve_app/shared/widgets/inputs/neon_text_field.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_text_field.dart';
 
-import 'package:gruve_app/shared/widgets/inputs/neon_password_field.dart';
+import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_password_field.dart';
 
 class EmailLoginScreen extends ConsumerStatefulWidget {
   const EmailLoginScreen({super.key});

@@ -14,7 +14,7 @@ import 'package:gruve_app/features/home/presentation/controllers/video_feed_cont
 import 'package:gruve_app/features/home/presentation/widgets/optimized_video_overlay.dart';
 import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_top_bar.dart';
-import 'package:gruve_app/shared/widgets/shimmer/feed_shimmer.dart';
+import 'package:gruve_app/features/home/presentation/widgets/shimmer/feed_shimmer.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 

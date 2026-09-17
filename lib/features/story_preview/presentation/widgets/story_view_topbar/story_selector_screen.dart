@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/highlights_create/presentation/controller/highlight_create_controller.dart';
+import 'package:gruve_app/features/highlights/presentation/controller/highlight_create_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';

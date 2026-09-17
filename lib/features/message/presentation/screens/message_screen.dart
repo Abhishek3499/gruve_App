@@ -13,7 +13,7 @@ import 'package:gruve_app/features/message/presentation/widgets/message_card.dar
 import 'package:gruve_app/features/message/presentation/widgets/swipe_delete_background.dart';
 import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart';
 
-import 'package:gruve_app/shared/widgets/shimmer/chat_shimmer.dart';
+import 'package:gruve_app/features/message/presentation/widgets/shimmer/chat_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageScreen extends ConsumerStatefulWidget {

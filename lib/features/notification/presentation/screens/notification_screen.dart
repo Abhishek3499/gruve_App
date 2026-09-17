@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
-import 'package:gruve_app/shared/widgets/shimmer/notification_shimmer.dart';
+import 'package:gruve_app/features/notification/presentation/widgets/shimmer/notification_shimmer.dart';
 import 'package:gruve_app/features/notification/domain/entities/notification_model.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';

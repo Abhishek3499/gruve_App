@@ -7,7 +7,7 @@ import 'package:gruve_app/features/search/domain/entities/search_navigation_type
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 
 import 'package:gruve_app/features/search/data/datasource/recent_search_service.dart';
-import 'package:gruve_app/shared/widgets/shimmer/search_shimmer.dart';
+import 'package:gruve_app/features/search/presentation/widgets/shimmer/search_shimmer.dart';
 import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';

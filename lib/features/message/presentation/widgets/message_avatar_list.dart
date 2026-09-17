@@ -6,7 +6,7 @@ import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/presentation/widgets/message_avatar.dart';
 import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
 import 'package:gruve_app/features/message/utils/user_display_helper.dart';
-import 'package:gruve_app/shared/widgets/shimmer/message_avatar_shimmer.dart';
+import 'package:gruve_app/features/message/presentation/widgets/shimmer/message_avatar_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class MessageAvatarList extends StatefulWidget {

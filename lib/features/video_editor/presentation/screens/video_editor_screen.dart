@@ -12,7 +12,7 @@ import 'package:gruve_app/features/camera/domain/entities/filter_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_filter_picker.dart';
 import 'package:gruve_app/features/camera/presentation/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
-import 'package:gruve_app/core/utils/video_trim_helper.dart';
+import 'package:gruve_app/features/video_editor/utils/video_trim_helper.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class VideoEditorResult {
