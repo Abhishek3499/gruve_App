@@ -1,18 +1,18 @@
 import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_controller_notifier.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class HighlightViewerScreen extends StatefulWidget {
+class HighlightViewerScreen extends ConsumerStatefulWidget {
   final String highlightId;
   final HighlightModel? initialHighlight;
 
@@ -23,17 +23,17 @@ class HighlightViewerScreen extends StatefulWidget {
   });
 
   @override
-  State<HighlightViewerScreen> createState() => _HighlightViewerScreenState();
+  ConsumerState<HighlightViewerScreen> createState() =>
+      _HighlightViewerScreenState();
 }
 
-class _HighlightViewerScreenState extends State<HighlightViewerScreen>
+class _HighlightViewerScreenState extends ConsumerState<HighlightViewerScreen>
     with SingleTickerProviderStateMixin {
   int currentIndex = 0;
   bool isLoading = true;
   String? errorMessage;
   HighlightModel? highlight;
   late final AnimationController _progressController;
-  HighlightController? _highlightController;
   bool _bootstrapped = false;
 
   @override
@@ -49,19 +49,18 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _highlightController ??= context.read<HighlightController>();
     if (_bootstrapped) return;
     _bootstrapped = true;
 
-    final highlightController = _highlightController!;
+    final controller = ref.read(highlightControllerProvider.notifier);
     final cached =
         widget.initialHighlight ??
-        highlightController.cachedHighlightStories(widget.highlightId);
+        controller.cachedHighlightStories(widget.highlightId);
 
     if (cached != null && cached.stories.isNotEmpty) {
       highlight = cached;
       isLoading = false;
-      highlightController.cacheHighlightStories(cached);
+      controller.cacheHighlightStories(cached);
       WidgetsBinding.instance.addPostFrameCallback((_) => _restartProgress());
       _fetchHighlight(background: true);
     } else {
@@ -74,7 +73,7 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     _progressController
       ..removeStatusListener(_onProgressStatusChanged)
       ..dispose();
-    _highlightController?.cancelActiveRequests();
+    ref.read(highlightControllerProvider.notifier).cancelActiveRequests();
     super.dispose();
   }
 
@@ -101,12 +100,9 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
     }
 
     try {
-      final highlightController = _highlightController;
-      if (highlightController == null) return;
-
-      final fetchedHighlight = await highlightController.fetchHighlightStories(
-        widget.highlightId,
-      );
+      final fetchedHighlight = await ref
+          .read(highlightControllerProvider.notifier)
+          .fetchHighlightStories(widget.highlightId, force: true);
 
       if (!mounted) return;
 
@@ -268,12 +264,12 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: const Color(0xFFD42BC2).withValues(alpha: 0.45),
+                color: AppColors.vibrantMagenta.withValues(alpha: 0.45),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFD42BC2).withValues(alpha: 0.18),
+                  color: AppColors.vibrantMagenta.withValues(alpha: 0.18),
                   blurRadius: 24,
                   spreadRadius: 2,
                 ),
@@ -390,16 +386,15 @@ class _HighlightViewerScreenState extends State<HighlightViewerScreen>
       isLoading = true;
     });
 
-    final highlightController = context.read<HighlightController>();
-    final success = await highlightController.deleteHighlight(
-      widget.highlightId,
-    );
+    final success = await ref
+        .read(highlightControllerProvider.notifier)
+        .deleteHighlight(widget.highlightId);
 
     if (success) {
       if (mounted) {
-        context.read<ProfileProvider>().removeHighlightLocally(
-          widget.highlightId,
-        );
+        ref
+            .read(profileNotifierProvider.notifier)
+            .removeHighlightLocally(widget.highlightId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

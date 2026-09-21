@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
+import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/features/story_preview/data/dto/cursor_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/data/dto/paginated_response_model.dart';
@@ -368,7 +369,11 @@ class PostService {
       );
 
       AppLogger.d('✅ [PostService] Save Draft Status: ${res.statusCode}');
+      AppLogger.d('📥 [PostService] Save Draft Response body: ${res.data}');
       AppLogger.d('🏁 [PostService] ===== SAVE DRAFT SUCCESS =====\n');
+
+      await CacheManager().invalidatePattern(ApiConstants.postDrafts);
+      await CacheManager().invalidatePattern('drafts');
 
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
@@ -397,14 +402,57 @@ class PostService {
       final res = await _getWithRetry(
         ApiConstants.postDrafts,
         queryParameters: queryParams,
-        options: Options(headers: {"Authorization": "Bearer $token"}),
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+          extra: {'skipCache': true, 'bypassCache': true, 'noCache': true},
+        ),
       );
 
       AppLogger.d('✅ [PostService] Get Drafts Status: ${res.statusCode}');
+      AppLogger.d('📥 [PostService] Get Drafts Response: ${res.data}');
       AppLogger.d('🏁 [PostService] ===== GET DRAFTS SUCCESS =====\n');
 
-      final dynamic data = res.data['data'] ?? res.data;
-      return PaginatedDraftsResponse.fromJson(Map<String, dynamic>.from(data));
+      final dynamic raw = res.data;
+      if (raw is List) {
+        return PaginatedDraftsResponse(
+          count: raw.length,
+          page: page,
+          limit: limit,
+          hasNext: false,
+          results: raw
+              .whereType<Map>()
+              .map((e) => PostDraft.fromJson(Map<String, dynamic>.from(e)))
+              .toList(),
+        );
+      }
+      final dynamic data = raw is Map ? (raw['data'] ?? raw) : raw;
+      if (data is List) {
+        return PaginatedDraftsResponse(
+          count: data.length,
+          page: page,
+          limit: limit,
+          hasNext: false,
+          results: data
+              .whereType<Map>()
+              .map((e) => PostDraft.fromJson(Map<String, dynamic>.from(e)))
+              .toList(),
+        );
+      }
+      if (data is Map<String, dynamic>) {
+        return PaginatedDraftsResponse.fromJson(data);
+      }
+      if (data is Map) {
+        return PaginatedDraftsResponse.fromJson(
+          Map<String, dynamic>.from(data),
+        );
+      }
+      return PaginatedDraftsResponse(
+        count: 0,
+        page: page,
+        limit: limit,
+        hasNext: false,
+        results: [],
+      );
     } on DioException catch (e) {
       AppLogger.d('❌ [PostService] GET DRAFTS DIO ERROR: $e');
       rethrow;
@@ -487,6 +535,9 @@ class PostService {
       AppLogger.d('📥 [PostService] Update Draft Response body: ${res.data}');
       AppLogger.d('🏁 [PostService] ===== UPDATE DRAFT SUCCESS =====\n');
 
+      await CacheManager().invalidatePattern(ApiConstants.postDrafts);
+      await CacheManager().invalidatePattern('drafts');
+
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
       AppLogger.d('\n❌ [PostService] UPDATE DRAFT DIO ERROR');
@@ -517,6 +568,9 @@ class PostService {
 
       AppLogger.d('✅ [PostService] Delete Draft Status: ${res.statusCode}');
       AppLogger.d('🏁 [PostService] ===== DELETE DRAFT SUCCESS =====\n');
+
+      await CacheManager().invalidatePattern(ApiConstants.postDrafts);
+      await CacheManager().invalidatePattern('drafts');
     } on DioException catch (e) {
       AppLogger.d('\n❌ [PostService] DELETE DRAFT DIO ERROR');
       AppLogger.d('⚠️ [PostService] type: ${e.type}');

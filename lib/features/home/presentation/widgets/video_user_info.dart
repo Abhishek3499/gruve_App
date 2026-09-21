@@ -13,6 +13,7 @@ import 'package:gruve_app/features/home/presentation/widgets/subscribe_button.da
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class VideoUserInfo extends StatefulWidget {
   final String username;
@@ -590,7 +591,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                         TextSpan(
                           text: linkText,
                           style: const TextStyle(
-                            color: Color(0xFFB86AD0),
+                            color: AppColors.lavenderPurple,
                             fontWeight: FontWeight.bold,
                             shadows: [
                               Shadow(
@@ -615,7 +616,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                           TextSpan(
                             text: ' less',
                             style: const TextStyle(
-                              color: Color(0xFFB86AD0),
+                              color: AppColors.lavenderPurple,
                               fontWeight: FontWeight.bold,
                               shadows: [
                                 Shadow(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_draft_model.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class DraftTile extends StatelessWidget {
   final PostDraft draft;
@@ -113,12 +114,10 @@ class DraftTile extends StatelessWidget {
 
           // Options Icon
           Theme(
-            data: Theme.of(
-              context,
-            ).copyWith(cardColor: const Color(0xFF1E092D)),
+            data: Theme.of(context).copyWith(cardColor: AppColors.surfaceDark),
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.more_horiz, color: Colors.white),
-              color: const Color(0xFF1E092D),
+              color: AppColors.surfaceDark,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),

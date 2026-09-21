@@ -242,7 +242,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1E092D),
+        backgroundColor: AppColors.surfaceDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -339,7 +339,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               const Text('Post deleted successfully'),
             ],
           ),
-          backgroundColor: const Color(0xFF1E092D),
+          backgroundColor: AppColors.surfaceDark,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -358,7 +358,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               const Text('Failed to delete post'),
             ],
           ),
-          backgroundColor: const Color(0xFF1E092D),
+          backgroundColor: AppColors.surfaceDark,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

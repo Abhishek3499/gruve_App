@@ -3,7 +3,14 @@
     "allow": [
       "Bash(find 'C:\\\\Users\\\\Acer' -iname ref.dart -path *riverpod*)",
       "Bash(find 'C:\\\\Users\\\\Acer/AppData/Local/Pub/Cache' -maxdepth 2 -iname flutter_riverpod-*)",
-      "Bash(find 'C:\\\\Users\\\\Acer/AppData/Local/Pub/Cache' -maxdepth 2 -iname riverpod-*)"
+      "Bash(find 'C:\\\\Users\\\\Acer/AppData/Local/Pub/Cache' -maxdepth 2 -iname riverpod-*)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(xargs grep -l \"MultipartFile\\\\|FormData\")",
+      "Bash(grep -rohE \"Color\\\\\\(0x[A-Fa-f0-9]{6,8}\\\\\\)\" lib --include=\"*.dart\")",
+      "Bash(rm \"lib/features/search/presentation/widgets/profile_avatar.dart\" && echo deleted)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Acer\\Desktop\\projects\\hardkore_projects\\gruve_app\\lib\\features\\search\\presentation\\widgets"
     ]
   }
 }

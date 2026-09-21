@@ -7,6 +7,7 @@ import 'package:gruve_app/features/blocked/presentation/widgets/blocked_tile.dar
 import 'package:gruve_app/features/blocked/presentation/widgets/unblock_widget.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class BlockedScreen extends ConsumerStatefulWidget {
   const BlockedScreen({super.key});
@@ -41,7 +42,7 @@ class _BlockedScreenState extends ConsumerState<BlockedScreen> {
                   if (provider.isLoadingList) {
                     return const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFFCD72E3),
+                        color: AppColors.softPurple,
                       ),
                     );
                   }
@@ -131,7 +132,7 @@ class _BlockedScreenState extends ConsumerState<BlockedScreen> {
                                     ),
                                   ],
                                 ),
-                                backgroundColor: const Color(0xFFCD72E3),
+                                backgroundColor: AppColors.softPurple,
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -179,7 +180,7 @@ class _BlockedScreenState extends ConsumerState<BlockedScreen> {
                                       ),
                                     ],
                                   ),
-                                  backgroundColor: const Color(0xFFCD72E3),
+                                  backgroundColor: AppColors.softPurple,
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),

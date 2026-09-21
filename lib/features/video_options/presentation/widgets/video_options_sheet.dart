@@ -11,6 +11,7 @@ import 'package:gruve_app/features/video_options/presentation/widgets/sheets/sim
 import 'package:gruve_app/features/video_options/presentation/widgets/sheets/simple_block_sheet.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/sheets/simple_not_interested_sheet.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class VideoOptionsSheet extends ConsumerStatefulWidget {
   final String userId;
@@ -94,7 +95,7 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFCD72E3),
+              color: AppColors.softPurple,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
@@ -164,7 +165,7 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+                  colors: [AppColors.softPurple, AppColors.sheetDark],
                 ),
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(35),
@@ -382,7 +383,7 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                                           ),
                                         ],
                                       ),
-                                      backgroundColor: const Color(0xFFCD72E3),
+                                      backgroundColor: AppColors.softPurple,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
@@ -435,9 +436,7 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                                             ),
                                           ],
                                         ),
-                                        backgroundColor: const Color(
-                                          0xFFCD72E3,
-                                        ),
+                                        backgroundColor: AppColors.softPurple,
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(

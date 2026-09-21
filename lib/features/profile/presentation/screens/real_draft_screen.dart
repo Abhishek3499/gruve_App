@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/draft_tile.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_draft_model.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/drafts_provider.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/drafts_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
-class ReelsDraftsScreen extends StatefulWidget {
+class ReelsDraftsScreen extends ConsumerStatefulWidget {
   const ReelsDraftsScreen({super.key});
 
   @override
-  State<ReelsDraftsScreen> createState() => _ReelsDraftsScreenState();
+  ConsumerState<ReelsDraftsScreen> createState() => _ReelsDraftsScreenState();
 }
 
-class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
+class _ReelsDraftsScreenState extends ConsumerState<ReelsDraftsScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<DraftsProvider>().fetchDrafts();
+        ref.read(draftsNotifierProvider.notifier).fetchDrafts();
       }
     });
   }
@@ -59,7 +60,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
 
     if (!mounted) return;
     // Refresh drafts list silently after returning from edit screen
-    context.read<DraftsProvider>().fetchDrafts(silent: true);
+    ref.read(draftsNotifierProvider.notifier).fetchDrafts(silent: true);
   }
 
   void _deleteDraft(PostDraft draft) async {
@@ -67,7 +68,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E092D),
+          backgroundColor: AppColors.surfaceDark,
           title: const Text(
             "Delete Draft",
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -109,7 +110,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
         ),
       );
 
-      await context.read<DraftsProvider>().deleteDraft(draft.id);
+      await ref.read(draftsNotifierProvider.notifier).deleteDraft(draft.id);
 
       if (!mounted) return;
       Navigator.pop(context); // Pop loading dialog
@@ -134,7 +135,7 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final draftsProvider = context.watch<DraftsProvider>();
+    final draftsState = ref.watch(draftsNotifierProvider);
 
     return Scaffold(
       // Dark Purple Gradient Background
@@ -179,15 +180,16 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.refresh, color: Colors.white),
-                      onPressed: () =>
-                          context.read<DraftsProvider>().fetchDrafts(),
+                      onPressed: () => ref
+                          .read(draftsNotifierProvider.notifier)
+                          .fetchDrafts(),
                     ),
                   ],
                 ),
               ),
 
               // --- Draft List ---
-              Expanded(child: _buildBody(draftsProvider)),
+              Expanded(child: _buildBody(draftsState)),
             ],
           ),
         ),
@@ -195,25 +197,26 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
     );
   }
 
-  Widget _buildBody(DraftsProvider provider) {
-    if (provider.isLoading) {
+  Widget _buildBody(DraftsState state) {
+    if (state.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFBB86FC)),
       );
     }
 
-    if (provider.errorMessage != null) {
+    if (state.errorMessage != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              provider.errorMessage!,
+              state.errorMessage!,
               style: TextStyle(color: Colors.white70, fontSize: context.rf(14)),
             ),
             SizedBox(height: context.rh(12)),
             ElevatedButton(
-              onPressed: () => provider.fetchDrafts(),
+              onPressed: () =>
+                  ref.read(draftsNotifierProvider.notifier).fetchDrafts(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 120, 2, 99),
                 foregroundColor: Colors.white,
@@ -225,31 +228,49 @@ class _ReelsDraftsScreenState extends State<ReelsDraftsScreen> {
       );
     }
 
-    final drafts = provider.drafts;
+    final drafts = state.drafts;
     if (drafts.isEmpty) {
-      return Center(
-        child: Text(
-          'No drafts saved yet',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: context.rf(16),
-            fontWeight: FontWeight.w500,
+      return RefreshIndicator(
+        onRefresh: () =>
+            ref.read(draftsNotifierProvider.notifier).fetchDrafts(),
+        color: const Color(0xFFBB86FC),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Text(
+                  'No drafts saved yet',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: context.rf(16),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
-      itemCount: drafts.length,
-      itemBuilder: (context, index) {
-        final draft = drafts[index];
-        return DraftTile(
-          draft: draft,
-          onEdit: () => _editDraft(draft),
-          onDelete: () => _deleteDraft(draft),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () => ref.read(draftsNotifierProvider.notifier).fetchDrafts(),
+      color: const Color(0xFFBB86FC),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
+        itemCount: drafts.length,
+        itemBuilder: (context, index) {
+          final draft = drafts[index];
+          return DraftTile(
+            draft: draft,
+            onEdit: () => _editDraft(draft),
+            onDelete: () => _deleteDraft(draft),
+          );
+        },
+      ),
     );
   }
 }

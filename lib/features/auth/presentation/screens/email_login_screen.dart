@@ -18,6 +18,7 @@ import 'package:gruve_app/shared/widgets/video_background.dart';
 import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_text_field.dart';
 
 import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_password_field.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class EmailLoginScreen extends ConsumerStatefulWidget {
   const EmailLoginScreen({super.key});
@@ -398,7 +399,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                                       text: 'Sign Up',
 
                                       style: TextStyle(
-                                        color: Color(0xFFB86AD0),
+                                        color: AppColors.lavenderPurple,
 
                                         fontWeight: FontWeight.w700,
 

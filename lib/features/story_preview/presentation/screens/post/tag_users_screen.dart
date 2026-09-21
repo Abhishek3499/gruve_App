@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
-import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/user_notifier.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
-class TagUsersScreen extends StatefulWidget {
+class TagUsersScreen extends ConsumerStatefulWidget {
   const TagUsersScreen({super.key});
 
   @override
-  State<TagUsersScreen> createState() => _TagUsersScreenState();
+  ConsumerState<TagUsersScreen> createState() => _TagUsersScreenState();
 }
 
-class _TagUsersScreenState extends State<TagUsersScreen> {
+class _TagUsersScreenState extends ConsumerState<TagUsersScreen> {
   final TextEditingController _searchController = TextEditingController();
   final DebouncedUserSearch _userSearch = DebouncedUserSearch();
   final List<ChatUser> selectedUsers = [];
@@ -33,7 +34,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<UserProvider>().fetchUsers(reason: 'initial');
+        ref.read(userNotifierProvider.notifier).fetchUsers(reason: 'initial');
       }
     });
   }
@@ -52,16 +53,18 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
     // Only paginate general users list, not search queries
     if (_searchController.text.trim().isNotEmpty) return;
 
-    final provider = context.read<UserProvider>();
+    final userState = ref.read(userNotifierProvider);
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
-      isLoading: provider.isLoading || provider.isFetchingMore,
-      hasMore: provider.hasNext,
+      isLoading: userState.isLoading || userState.isFetchingMore,
+      hasMore: userState.hasNext,
     )) {
       return;
     }
 
-    provider.fetchUsers(loadMore: true, reason: 'scroll');
+    ref
+        .read(userNotifierProvider.notifier)
+        .fetchUsers(loadMore: true, reason: 'scroll');
   }
 
   void _onSearchChanged(String query) {
@@ -100,7 +103,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = context.watch<UserProvider>();
+    final userState = ref.watch(userNotifierProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF1C0B21),
@@ -173,19 +176,19 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
             SizedBox(height: context.rh(10)),
 
             // Users List
-            Expanded(child: _buildUserList(userProvider)),
+            Expanded(child: _buildUserList(userState)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUserList(UserProvider provider) {
+  Widget _buildUserList(UserState provider) {
     // 1. Search Results Mode
     if (_searchController.text.trim().isNotEmpty) {
       if (_isSearching) {
         return const Center(
-          child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+          child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
         );
       }
 
@@ -245,7 +248,7 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
     // 2. General Users List Mode (Initial/Cached List)
     if (provider.isLoading && provider.users.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+        child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
       );
     }
 
@@ -260,7 +263,8 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
             ),
             SizedBox(height: context.rh(12)),
             ElevatedButton(
-              onPressed: () => provider.fetchUsers(),
+              onPressed: () =>
+                  ref.read(userNotifierProvider.notifier).fetchUsers(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 120, 2, 99),
                 foregroundColor: Colors.white,
@@ -290,7 +294,9 @@ class _TagUsersScreenState extends State<TagUsersScreen> {
           return Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: context.rh(16)),
-              child: const CircularProgressIndicator(color: Color(0xFFD42BC2)),
+              child: const CircularProgressIndicator(
+                color: AppColors.vibrantMagenta,
+              ),
             ),
           );
         }

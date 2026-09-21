@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 /// Footer widget for Insight screen
 class InsightFooter extends StatelessWidget {
@@ -13,11 +14,7 @@ class InsightFooter extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/splash_screen_logo/image 43.png',
-              width: 16,
-              height: 16,
-            ),
+            Image.asset(AppAssets.footerLogo, width: 16, height: 16),
             const SizedBox(width: 3),
             const Text(
               'Made in India',

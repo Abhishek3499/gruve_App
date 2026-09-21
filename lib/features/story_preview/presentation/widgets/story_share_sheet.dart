@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/profile/data/datasource/edit_profile_service.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/also_share_sheet.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class AppColors {
+class StoryShareColors {
   static const sheetBackground = Color.fromARGB(238, 66, 19, 73);
   static const primaryPurple = Color(0xFF9B27AF);
   static const secondaryPurple = Color(0xFF6A0DAD);
@@ -27,7 +27,7 @@ class _StoryShareProfile {
   });
 }
 
-class StoryShareSheet extends StatefulWidget {
+class StoryShareSheet extends ConsumerStatefulWidget {
   final String? mediaPath;
   final bool isMuted;
 
@@ -43,19 +43,16 @@ class StoryShareSheet extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) {
-        return ChangeNotifierProvider.value(
-          value: Provider.of<StoryController>(context, listen: false),
-          child: StoryShareSheet(mediaPath: mediaPath, isMuted: isMuted),
-        );
+        return StoryShareSheet(mediaPath: mediaPath, isMuted: isMuted);
       },
     );
   }
 
   @override
-  State<StoryShareSheet> createState() => _StoryShareSheetState();
+  ConsumerState<StoryShareSheet> createState() => _StoryShareSheetState();
 }
 
-class _StoryShareSheetState extends State<StoryShareSheet> {
+class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
   bool _yourStorySelected = true;
   bool _closeFriendsSelected = false;
   bool _isLoading = false;
@@ -77,8 +74,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
   void _ensureOwnProfileLoaded() {
     if (!mounted) return;
 
-    final profileProvider = context.read<ProfileProvider>();
-    final providerUser = profileProvider.user;
+    final providerUser = ref.read(profileNotifierProvider).user;
     if (providerUser != null) {
       setState(() {
         _profile = _StoryShareProfile(
@@ -167,10 +163,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
     });
 
     try {
-      final storyController = Provider.of<StoryController>(
-        context,
-        listen: false,
-      );
+      final storyController = ref.read(storyControllerProvider.notifier);
 
       await storyController.createStory(
         caption: '',
@@ -184,9 +177,9 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       if (!mounted) return;
 
       if (storyController.isSuccess) {
-        context.read<StoryStateController>().markStoryAsShared(
-          widget.mediaPath!,
-        );
+        ref
+            .read(storyStateNotifierProvider.notifier)
+            .markStoryAsShared(widget.mediaPath!);
 
         final navigator = Navigator.of(context);
         PostShareFlowBridge.notifyStorySharedNavigateToProfile();
@@ -220,7 +213,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: AppColors.sheetBackground,
+          color: StoryShareColors.sheetBackground,
           borderRadius: BorderRadius.circular(28),
         ),
         child: Column(
@@ -253,7 +246,7 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
             _ShareOptionTile(
               leading: _buildCircularIcon(
                 Image.asset(AppAssets.stars, height: 25, width: 25),
-                AppColors.closeFriendsGreen,
+                StoryShareColors.closeFriendsGreen,
               ),
               title: 'Close Story',
               trailing: _buildCheckCircle(_closeFriendsSelected),
@@ -403,9 +396,9 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
       width: 26,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: selected ? AppColors.selectionPurple : Colors.transparent,
+        color: selected ? StoryShareColors.selectionPurple : Colors.transparent,
         border: Border.all(
-          color: selected ? AppColors.selectionPurple : Colors.white38,
+          color: selected ? StoryShareColors.selectionPurple : Colors.white38,
           width: 2,
         ),
       ),
@@ -433,14 +426,14 @@ class _StoryShareSheetState extends State<StoryShareSheet> {
             gradient: onPressed != null
                 ? const LinearGradient(
                     colors: [
-                      AppColors.primaryPurple,
-                      AppColors.secondaryPurple,
+                      StoryShareColors.primaryPurple,
+                      StoryShareColors.secondaryPurple,
                     ],
                   )
                 : LinearGradient(
                     colors: [
-                      AppColors.primaryPurple.withValues(alpha: 0.5),
-                      AppColors.secondaryPurple.withValues(alpha: 0.5),
+                      StoryShareColors.primaryPurple.withValues(alpha: 0.5),
+                      StoryShareColors.secondaryPurple.withValues(alpha: 0.5),
                     ],
                   ),
           ),

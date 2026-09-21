@@ -15,7 +15,7 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Replaces the previous `SubscribeController`. Stays a singleton
 /// [ChangeNotifier] — not a plain Riverpod [Notifier] — because
-/// `VideoFeedController`, `AuthStateManager`, and `UserProvider` all call
+/// `VideoFeedController`, `AuthStateManager`, and `UserNotifier` all call
 /// `SubscribeNotifier()`/`addListener`/`removeListener` directly from plain
 /// Dart code with no `Ref` available. [subscribeNotifierProvider] (a legacy
 /// `ChangeNotifierProvider`) exposes this exact same singleton instance to

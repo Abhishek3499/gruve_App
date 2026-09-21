@@ -1,20 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/more_option_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/tag_people_screen.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/drafts_provider.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/drafts_notifier.dart';
 
 import 'package:gruve_app/features/story_preview/presentation/widgets/post/menu_row.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
-class SharePostScreen extends StatefulWidget {
+class SharePostScreen extends ConsumerStatefulWidget {
   final String mediaPath;
   final String? mediaMimeType;
   final List<ChatUser>? taggedUsers;
@@ -54,10 +55,10 @@ class SharePostScreen extends StatefulWidget {
   });
 
   @override
-  State<SharePostScreen> createState() => _SharePostScreenState();
+  ConsumerState<SharePostScreen> createState() => _SharePostScreenState();
 }
 
-class _SharePostScreenState extends State<SharePostScreen> {
+class _SharePostScreenState extends ConsumerState<SharePostScreen> {
   List<ChatUser> selectedUsers = [];
   List<ChatUser> taggedUsers = [];
   late TextEditingController captionController;
@@ -157,7 +158,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E092D),
+      backgroundColor: AppColors.surfaceDark,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -217,7 +218,9 @@ class _SharePostScreenState extends State<SharePostScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFB86AD0)),
+                    borderSide: const BorderSide(
+                      color: AppColors.lavenderPurple,
+                    ),
                   ),
                 ),
               ),
@@ -343,14 +346,14 @@ class _SharePostScreenState extends State<SharePostScreen> {
       "💾 [SharePostScreen] _handleSaveDraft - widget.draftId is: '${widget.draftId}'",
     );
 
-    final draftsProvider = context.read<DraftsProvider>();
+    final draftsNotifier = ref.read(draftsNotifierProvider.notifier);
 
     try {
       if (widget.draftId != null) {
         AppLogger.d(
           "💾 [SharePostScreen] _handleSaveDraft: Calling updateDraft with draftId: '${widget.draftId}'",
         );
-        await draftsProvider.updateDraft(
+        await draftsNotifier.updateDraft(
           draftId: widget.draftId!,
           caption: caption,
           mediaPath: mediaPath,
@@ -367,7 +370,7 @@ class _SharePostScreenState extends State<SharePostScreen> {
         AppLogger.d(
           "💾 [SharePostScreen] _handleSaveDraft: Calling saveDraft (draftId is null)",
         );
-        await draftsProvider.saveDraft(
+        await draftsNotifier.saveDraft(
           caption: caption,
           mediaPath: mediaPath,
           mediaMimeType: widget.mediaMimeType,

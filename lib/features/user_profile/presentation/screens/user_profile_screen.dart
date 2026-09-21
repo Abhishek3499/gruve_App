@@ -15,6 +15,7 @@ import 'package:gruve_app/features/user_profile/presentation/widgets/user_stats_
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   final String profileUserId;
@@ -188,7 +189,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+                colors: [AppColors.deepPlum, Color(0xFF9544A7)],
               ),
             ),
             child: SafeArea(
@@ -227,7 +228,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     return RefreshIndicator(
       onRefresh: _handleRefresh,
       color: Colors.white,
-      backgroundColor: const Color(0xFF42174C),
+      backgroundColor: AppColors.deepPlum,
       child: Stack(
         clipBehavior: Clip.none,
         children: [

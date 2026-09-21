@@ -19,6 +19,7 @@ import 'package:gruve_app/features/story_preview/presentation/widgets/story_filt
 import 'package:gruve_app/features/camera/presentation/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PostPreviewScreen extends StatefulWidget {
   final String mediaPath;
@@ -166,7 +167,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
       barrierColor: Colors.black54,
       builder: (context) {
         return Dialog(
-          backgroundColor: const Color(0xFF311B36),
+          backgroundColor: AppColors.chatBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
@@ -548,7 +549,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                   barrierDismissible: false,
                                   builder: (context) => const Center(
                                     child: CircularProgressIndicator(
-                                      color: Color(0xFFC358D7),
+                                      color: AppColors.accentPurple,
                                     ),
                                   ),
                                 );

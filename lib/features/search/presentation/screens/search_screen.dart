@@ -6,6 +6,7 @@ import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 import 'package:gruve_app/features/search/presentation/screens/search_page.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -40,7 +41,7 @@ class _SearchScreenState extends State<SearchScreen> {
           gradient: LinearGradient(
             begin: Alignment(-0.2, -1.0),
             end: Alignment(0.2, 1.0),
-            colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+            colors: [AppColors.deepPlum, Color(0xFF210C26), Color(0xFF000000)],
             stops: [0.0, 0.4172, 0.9933],
           ),
         ),

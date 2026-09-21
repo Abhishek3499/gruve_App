@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 /// Keeps a single OTP box to exactly one digit during normal typing, while
 /// still allowing a full multi-digit burst (paste or SMS autofill) to pass
@@ -84,7 +85,7 @@ class OtpInputBox extends StatelessWidget {
             height: 70,
             decoration: BoxDecoration(
               color: hasValue
-                  ? const Color(0xFFB86AD0)
+                  ? AppColors.lavenderPurple
                   : Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(22), // ✅ perfect shape
               border: Border.all(

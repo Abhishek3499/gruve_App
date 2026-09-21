@@ -23,6 +23,7 @@ import 'package:gruve_app/features/auth/presentation/notifiers/signup_notifier.d
 import 'package:gruve_app/features/auth/validators/phone_number_validator.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -346,7 +347,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               TextSpan(
                                 text: ' Up',
 
-                                style: TextStyle(color: Color(0xFFB86AD0)),
+                                style: TextStyle(
+                                  color: AppColors.lavenderPurple,
+                                ),
                               ),
                             ],
                           ),
@@ -735,7 +738,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               TextSpan(
                                 text: 'Sign In',
                                 style: TextStyle(
-                                  color: Color(0xFFB86AD0),
+                                  color: AppColors.lavenderPurple,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -783,7 +786,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
         borderRadius: BorderRadius.circular(26),
 
-        border: Border.all(color: const Color(0xFFB86AD0)),
+        border: Border.all(color: AppColors.lavenderPurple),
       ),
 
       child: Row(
@@ -828,7 +831,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         height: context.rh(44),
 
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFB86AD0) : Colors.transparent,
+          color: isSelected ? AppColors.lavenderPurple : Colors.transparent,
 
           borderRadius: BorderRadius.circular(22),
         ),
@@ -937,7 +940,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFFB86AD0), size: context.rw(18)),
+              Icon(icon, color: AppColors.lavenderPurple, size: context.rw(18)),
               SizedBox(width: context.rw(8)),
               Text(
                 value,

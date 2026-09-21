@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/more_model.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class MoreConstants {
   static const List<MoreModel> sharingPreferences = [
@@ -66,7 +67,7 @@ class MoreConstants {
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF9544A7), Color(0xFF42174C)],
+    colors: [Color(0xFF9544A7), AppColors.deepPlum],
   );
 
   static const LinearGradient cardGradient = LinearGradient(

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class StoryTextEditor extends StatefulWidget {
   final StickerData? initialSticker;
@@ -43,7 +44,7 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
     Colors.black,
     Color(0xFFFF2D55), // Red
     Color(0xFFFFCC00), // Yellow
-    Color(0xFFC358D7), // Purple
+    AppColors.accentPurple, // Purple
     Color(0xFFFF9500), // Orange
     Color(0xFF4CD964), // Green
     Color(0xFF5AC8FA), // Blue
@@ -240,7 +241,7 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                                   ? Icons.font_download
                                   : Icons.font_download_outlined,
                               color: _hasBackground
-                                  ? const Color(0xFFC358D7)
+                                  ? AppColors.accentPurple
                                   : Colors.white,
                               size: 28,
                             ),
@@ -256,7 +257,7 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFC358D7),
+                                color: AppColors.accentPurple,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Text(
@@ -299,7 +300,7 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                             keyboardType: TextInputType.multiline,
                             textAlign: _textAlign,
                             style: textStyle,
-                            cursorColor: const Color(0xFFC358D7),
+                            cursorColor: AppColors.accentPurple,
                             decoration: const InputDecoration(
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.zero,
@@ -388,7 +389,7 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                             // Get simple font styles for the preview buttons
                             TextStyle itemStyle = TextStyle(
                               color: isSelected
-                                  ? const Color(0xFFC358D7)
+                                  ? AppColors.accentPurple
                                   : Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
@@ -434,7 +435,7 @@ class _StoryTextEditorState extends State<StoryTextEditor> {
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: isSelected
-                                        ? const Color(0xFFC358D7)
+                                        ? AppColors.accentPurple
                                         : Colors.transparent,
                                     width: 1,
                                   ),

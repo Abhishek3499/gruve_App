@@ -1,33 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_controller_notifier.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_state_notifier.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/more_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/highlight_sheet.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_settings_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class StoryViewBottom extends StatefulWidget {
+class StoryViewBottom extends ConsumerStatefulWidget {
   final bool isOwnProfile;
 
   const StoryViewBottom({super.key, this.isOwnProfile = false});
 
   @override
-  State<StoryViewBottom> createState() => _StoryViewBottomState();
+  ConsumerState<StoryViewBottom> createState() => _StoryViewBottomState();
 }
 
-class _StoryViewBottomState extends State<StoryViewBottom> {
-  late final HighlightController _highlightController;
-  late final StoryController _storyController;
-  late final StoryStateController _storyStateController;
-  late final HighlightStateManager _stateManager;
-
+class _StoryViewBottomState extends ConsumerState<StoryViewBottom> {
   HighlightModel? _matchedHighlight;
   bool _isPreparingHighlight = false;
   static const Color _inactiveColor = Colors.white;
@@ -37,20 +33,14 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
   @override
   void initState() {
     super.initState();
-    _storyStateController = context.read<StoryStateController>();
-    _storyController = context.read<StoryController>();
-    _highlightController = context.read<HighlightController>();
-    _stateManager = context.read<HighlightStateManager>();
-
-    _storyStateController.addListener(_onStoryChanged);
-    _stateManager.addListener(_onStoryChanged);
 
     // Only fetch highlights for own profile
     if (widget.isOwnProfile) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_highlightController.highlights.isEmpty &&
-            !_highlightController.isLoading) {
-          _highlightController.fetchMyHighlights();
+        if (!mounted) return;
+        final highlightState = ref.read(highlightControllerProvider);
+        if (highlightState.highlights.isEmpty && !highlightState.isLoading) {
+          ref.read(highlightControllerProvider.notifier).fetchMyHighlights();
         }
       });
     }
@@ -62,13 +52,11 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
 
   @override
   void dispose() {
-    _storyStateController.removeListener(_onStoryChanged);
-    _stateManager.removeListener(_onStoryChanged);
     super.dispose();
   }
 
   void _onStoryChanged() {
-    if (mounted) {
+    if (mounted && _matchedHighlight != null) {
       setState(() {
         _matchedHighlight = null;
       });
@@ -108,36 +96,42 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
   }
 
   Future<String?> _resolveCurrentStoryId() async {
-    final currentStory = _storyStateController.currentStory;
+    final storyState = ref.read(storyStateNotifierProvider);
+    final currentStory = storyState.currentStory;
     final currentId = currentStory?.id.trim();
     if (currentId != null && currentId.isNotEmpty) return currentId;
 
     if (currentStory == null) return null;
 
     AppLogger.d('[HighlightButton] Resolving missing story id');
-    await _storyController.fetchStories(userId: null);
+    final storyController = ref.read(storyControllerProvider.notifier);
+    await storyController.fetchStories(userId: null);
 
-    if (!_storyController.isSuccess || _storyController.stories.isEmpty) {
+    if (!storyController.isSuccess || storyController.stories.isEmpty) {
       return null;
     }
 
-    await _storyStateController.setStoriesFromStoryItems(
-      _storyController.stories,
-      username: _storyStateController.username,
-      avatarUrl: _storyStateController.avatarUrl,
-      userId: null,
-    );
+    await ref
+        .read(storyStateNotifierProvider.notifier)
+        .setStoriesFromStoryItems(
+          storyController.stories,
+          username: storyState.username,
+          avatarUrl: storyState.avatarUrl,
+          userId: null,
+        );
 
     final refreshedStory = _matchRefreshedStory(
       currentStory,
-      _storyController.stories,
+      storyController.stories,
     );
 
     if (refreshedStory == null || refreshedStory.id.trim().isEmpty) {
       return null;
     }
 
-    _storyStateController.setCurrentStory(refreshedStory);
+    ref
+        .read(storyStateNotifierProvider.notifier)
+        .setCurrentStory(refreshedStory);
     return refreshedStory.id;
   }
 
@@ -223,11 +217,16 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
 
     return Builder(
       builder: (context) {
-        final currentStoryId = _storyStateController.currentStory?.id
-            .toString();
+        final currentStoryId = ref.watch(
+          storyStateNotifierProvider.select((s) => s.currentStory?.id),
+        );
         final isHighlighted =
             currentStoryId != null &&
-            _stateManager.isStoryHighlighted(currentStoryId);
+            ref.watch(
+              highlightStateNotifierProvider.select(
+                (s) => s.isStoryHighlighted(currentStoryId),
+              ),
+            );
         final buttonColor = isHighlighted ? _selectedColor : _inactiveColor;
 
         AppLogger.d(
@@ -262,6 +261,23 @@ class _StoryViewBottomState extends State<StoryViewBottom> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<StoryItem?>(
+      storyStateNotifierProvider.select((s) => s.currentStory),
+      (previous, next) {
+        if (previous?.id != next?.id || previous?.mediaUrl != next?.mediaUrl) {
+          _onStoryChanged();
+        }
+      },
+    );
+    ref.listen<Set<String>>(
+      highlightStateNotifierProvider.select((s) => s.highlightedStoryIds),
+      (previous, next) {
+        if (!setEquals(previous, next)) {
+          _onStoryChanged();
+        }
+      },
+    );
+
     return Container(
       height: 70,
       width: double.infinity,

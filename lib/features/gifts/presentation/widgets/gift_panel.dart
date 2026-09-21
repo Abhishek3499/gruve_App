@@ -7,6 +7,7 @@ import 'package:gruve_app/features/gifts/presentation/widgets/gift_item.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_search_bar.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import '../../../../core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class GiftPanel extends StatefulWidget {
   const GiftPanel({super.key});
@@ -127,7 +128,7 @@ class _GiftPanelState extends State<GiftPanel> {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+          colors: [AppColors.softPurple, AppColors.sheetDark],
         ),
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(40), // Increased curve for more rounded look

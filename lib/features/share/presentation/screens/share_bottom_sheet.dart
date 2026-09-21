@@ -4,6 +4,7 @@ import 'package:gruve_app/features/share/presentation/controller/post_share_prov
 import 'package:gruve_app/features/share/presentation/widgets/share_user_grid.dart';
 import 'package:gruve_app/features/share/presentation/widgets/share_social_buttons.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ShareBottomSheet extends ConsumerStatefulWidget {
   final String postId;
@@ -102,7 +103,7 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+            colors: [AppColors.softPurple, AppColors.sheetDark],
           ),
           borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
         ),

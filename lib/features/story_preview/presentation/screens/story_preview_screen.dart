@@ -3,16 +3,16 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gruve_app/shared/widgets/cached_avatar.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_action_buttons.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_top_bar.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_share_sheet.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
-import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
 import 'package:gruve_app/features/camera/presentation/widgets/sticker_overlay.dart';
@@ -24,8 +24,9 @@ import 'package:gruve_app/features/story_preview/presentation/widgets/story_filt
 import 'package:gruve_app/features/camera/presentation/controller/filter_controller.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
-class StoryPreviewScreen extends StatefulWidget {
+class StoryPreviewScreen extends ConsumerStatefulWidget {
   final String mediaPath;
   final String? mediaMimeType;
   final List<StickerData> initialStickers;
@@ -38,10 +39,10 @@ class StoryPreviewScreen extends StatefulWidget {
   });
 
   @override
-  State<StoryPreviewScreen> createState() => _StoryPreviewScreenState();
+  ConsumerState<StoryPreviewScreen> createState() => _StoryPreviewScreenState();
 }
 
-class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
+class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
   VideoPlayerController? _videoController;
   bool _isVideo = false;
   bool _isInitialized = false;
@@ -99,10 +100,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     });
 
     try {
-      final storyController = Provider.of<StoryController>(
-        context,
-        listen: false,
-      );
+      final storyController = ref.read(storyControllerProvider.notifier);
 
       final finalPath = await _captureFlattenedImage();
 
@@ -115,7 +113,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
       if (!mounted) return;
 
       if (storyController.isSuccess) {
-        context.read<StoryStateController>().markStoryAsShared(finalPath);
+        ref
+            .read(storyStateNotifierProvider.notifier)
+            .markStoryAsShared(finalPath);
 
         // Notify that the counts/story changed so Profile screen updates.
         ProfileCountRefreshBridge.notifyCountsChanged(reason: 'story_shared');
@@ -159,12 +159,13 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
     // ✅ OPTIMIZED: Fetch profile ONLY if cache is stale
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final profileProvider = context.read<ProfileProvider>();
+        final notifier = ref.read(profileNotifierProvider.notifier);
 
         // Only fetch if profile is null OR stale (>5 minutes)
-        if (!profileProvider.hasFreshProfile && !profileProvider.isLoading) {
+        if (!notifier.hasFreshProfile &&
+            !ref.read(profileNotifierProvider).isLoading) {
           // Fetch avatar only (skip highlights for speed)
-          profileProvider.fetchAvatarOnly();
+          notifier.fetchAvatarOnly();
         }
       }
     });
@@ -295,7 +296,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Playback speed set to $label'),
-            backgroundColor: const Color(0xFFC358D7),
+            backgroundColor: AppColors.accentPurple,
             duration: const Duration(seconds: 1),
           ),
         );
@@ -306,7 +307,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
           vertical: context.rh(12),
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFC358D7) : Colors.white12,
+          color: isSelected ? AppColors.accentPurple : Colors.white12,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Colors.white24 : Colors.transparent,
@@ -336,7 +337,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
       barrierColor: Colors.black54,
       builder: (context) {
         return Dialog(
-          backgroundColor: const Color(0xFF311B36),
+          backgroundColor: AppColors.chatBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
@@ -422,7 +423,6 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<ProfileProvider>(context).user;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -684,17 +684,18 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                                   strokeWidth: 2,
                                                 ),
                                           )
-                                        : Consumer<ProfileProvider>(
-                                            builder: (context, provider, _) {
+                                        : Consumer(
+                                            builder: (context, ref, _) {
+                                              final cachedUser = ref.watch(
+                                                profileNotifierProvider.select(
+                                                  (s) => s.cachedUser,
+                                                ),
+                                              );
                                               return CachedAvatar(
-                                                imageUrl: provider
-                                                    .cachedUser
-                                                    ?.profileImage,
+                                                imageUrl:
+                                                    cachedUser?.profileImage,
                                                 username:
-                                                    provider
-                                                        .cachedUser
-                                                        ?.username ??
-                                                    '',
+                                                    cachedUser?.username ?? '',
                                                 radius: 13,
                                               );
                                             },
@@ -770,7 +771,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                 barrierDismissible: false,
                                 builder: (context) => const Center(
                                   child: CircularProgressIndicator(
-                                    color: Color(0xFFC358D7),
+                                    color: AppColors.accentPurple,
                                   ),
                                 ),
                               );
@@ -790,15 +791,9 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
                                 builder: (bottomSheetContext) {
-                                  return ChangeNotifierProvider.value(
-                                    value: Provider.of<StoryController>(
-                                      context,
-                                      listen: false,
-                                    ),
-                                    child: StoryShareSheet(
-                                      mediaPath: finalPath,
-                                      isMuted: _isMuted,
-                                    ),
+                                  return StoryShareSheet(
+                                    mediaPath: finalPath,
+                                    isMuted: _isMuted,
                                   );
                                 },
                               );

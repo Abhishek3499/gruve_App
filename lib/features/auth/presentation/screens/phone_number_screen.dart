@@ -12,6 +12,7 @@ import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 
 import 'package:gruve_app/features/auth/validators/phone_number_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PhoneNumberScreen extends ConsumerStatefulWidget {
   const PhoneNumberScreen({super.key});
@@ -219,7 +220,7 @@ class _PhoneNumberScreenState extends ConsumerState<PhoneNumberScreen> {
                                 TextSpan(
                                   text: 'Sign Up',
                                   style: TextStyle(
-                                    color: const Color(0xFFB86AD0),
+                                    color: AppColors.lavenderPurple,
                                     fontWeight: FontWeight.w700,
                                     fontSize: context.rf(14),
                                     fontFamily: AppAssets.montserratfont,

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_create_controller.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_create_notifier.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
@@ -106,7 +106,7 @@ class _StorySelectorScreenState extends State<StorySelectorScreen> {
   }
 }
 
-class CreateHighlightSheet extends StatefulWidget {
+class CreateHighlightSheet extends ConsumerStatefulWidget {
   final String storyImageUrl;
   final String storyId;
 
@@ -117,18 +117,17 @@ class CreateHighlightSheet extends StatefulWidget {
   });
 
   @override
-  State<CreateHighlightSheet> createState() => _CreateHighlightSheetState();
+  ConsumerState<CreateHighlightSheet> createState() =>
+      _CreateHighlightSheetState();
 }
 
-class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
+class _CreateHighlightSheetState extends ConsumerState<CreateHighlightSheet> {
   final TextEditingController _nameController = TextEditingController();
-  late final HighlightCreateController _createController;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _createController = context.read<HighlightCreateController>();
   }
 
   @override
@@ -321,14 +320,20 @@ class _CreateHighlightSheetState extends State<CreateHighlightSheet> {
 
                       try {
                         // 🚀 API CALL
-                        await _createController.addStoryToHighlight(
-                          highlightId: null,
-                          storyId: storyId,
-                          title: _nameController.text.trim(),
+                        await ref
+                            .read(highlightCreateNotifierProvider.notifier)
+                            .addStoryToHighlight(
+                              highlightId: null,
+                              storyId: storyId,
+                              title: _nameController.text.trim(),
+                            );
+
+                        final createState = ref.read(
+                          highlightCreateNotifierProvider,
                         );
 
                         // ✅ Success handling
-                        if (_createController.isSuccess) {
+                        if (createState.isSuccess) {
                           AppLogger.d("✅ Highlight created successfully");
 
                           if (!mounted) return;

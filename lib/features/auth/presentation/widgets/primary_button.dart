@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String text;
@@ -17,7 +18,7 @@ class PrimaryButton extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFB86AD0), Color(0xFF9544A7)],
+            colors: [AppColors.lavenderPurple, Color(0xFF9544A7)],
           ),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [

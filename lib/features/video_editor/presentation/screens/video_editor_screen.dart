@@ -14,6 +14,7 @@ import 'package:gruve_app/features/camera/presentation/controller/filter_control
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/features/video_editor/utils/video_trim_helper.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class VideoEditorResult {
   final List<StickerData> stickers;
@@ -324,7 +325,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                             barrierDismissible: false,
                             builder: (context) => const Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xFFC358D7),
+                                color: AppColors.accentPurple,
                               ),
                             ),
                           );

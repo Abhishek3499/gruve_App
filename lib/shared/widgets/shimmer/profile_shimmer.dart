@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ProfileShimmer extends StatelessWidget {
   const ProfileShimmer({super.key});
@@ -14,7 +15,7 @@ class ProfileShimmer extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF42174C), Color(0xFF212235)],
+          colors: [AppColors.deepPlum, Color(0xFF212235)],
         ),
       ),
       child: SafeArea(

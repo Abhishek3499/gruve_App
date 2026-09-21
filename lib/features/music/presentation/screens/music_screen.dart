@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class MusicScreen extends StatelessWidget {
   final String? musicId;
@@ -27,7 +28,7 @@ class MusicScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+            colors: [AppColors.deepPlum, Color(0xFF210C26), Color(0xFF000000)],
             stops: [0.0, 0.3, 1.0],
           ),
         ),

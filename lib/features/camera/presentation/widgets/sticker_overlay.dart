@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class StickerOverlay extends StatefulWidget {
   final StickerData sticker;
@@ -108,12 +109,12 @@ class _StickerOverlayState extends State<StickerOverlay> {
         color: Colors.black.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFC358D7).withValues(alpha: 0.7),
+          color: AppColors.accentPurple.withValues(alpha: 0.7),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFC358D7).withValues(alpha: 0.2),
+            color: AppColors.accentPurple.withValues(alpha: 0.2),
             blurRadius: 10,
             spreadRadius: 2,
           ),
@@ -128,7 +129,7 @@ class _StickerOverlayState extends State<StickerOverlay> {
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [Color(0xFFC358D7), Color(0xFF72008D)],
+                colors: [AppColors.accentPurple, Color(0xFF72008D)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -171,7 +172,7 @@ class _StickerOverlayState extends State<StickerOverlay> {
                 height: [14.0, 20.0, 10.0, 16.0][index],
                 margin: const EdgeInsets.symmetric(horizontal: 1.5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFC358D7),
+                  color: AppColors.accentPurple,
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -222,7 +223,7 @@ class _StickerOverlayState extends State<StickerOverlay> {
               child: Container(
                 decoration: BoxDecoration(
                   border: widget.isSelected
-                      ? Border.all(color: const Color(0xFFC358D7), width: 1.5)
+                      ? Border.all(color: AppColors.accentPurple, width: 1.5)
                       : null,
                   borderRadius: BorderRadius.circular(12),
                 ),

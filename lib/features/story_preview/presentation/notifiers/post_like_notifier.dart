@@ -37,8 +37,6 @@ class PostLikeState {
   }
 }
 
-/// Replaces the previous `PostLikeProvider` (ChangeNotifier). Owns optimistic
-/// like/unlike state for feed posts, keyed by post ID.
 class PostLikeNotifier extends Notifier<PostLikeState> {
   final PostService _postService = PostService();
 

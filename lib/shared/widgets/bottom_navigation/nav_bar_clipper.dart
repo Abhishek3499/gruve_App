@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class NavBarPainter extends CustomPainter {
   @override
@@ -7,7 +8,7 @@ class NavBarPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment(-0.2, -1.0),
         end: Alignment(0.2, 1.0),
-        colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+        colors: [AppColors.deepPlum, Color(0xFF210C26), Color(0xFF000000)],
         stops: [0.0, 0.4172, 0.9933],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 

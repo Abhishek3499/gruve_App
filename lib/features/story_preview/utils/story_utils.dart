@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_view_screen.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Utility class for story-related operations
@@ -31,30 +31,34 @@ class StoryUtils {
     );
 
     try {
-      final storyStateController = context.read<StoryStateController>();
-      final storyController = context.read<StoryController>();
+      final container = ProviderScope.containerOf(context, listen: false);
+      final storyStateNotifier = container.read(
+        storyStateNotifierProvider.notifier,
+      );
+      final storyController = container.read(storyControllerProvider.notifier);
 
       // Check cache first for instant response
-      await storyStateController.loadStoriesFromStorage(userId);
+      await storyStateNotifier.loadStoriesFromStorage(userId);
 
       if (!context.mounted) return;
 
-      final cachedStoryIds = storyStateController.currentUserStoryIds;
+      final storyState = container.read(storyStateNotifierProvider);
+      final cachedStoryIds = storyState.currentUserStoryIds;
       final cachedStoriesHaveIds = cachedStoryIds.any(
         (id) => id?.trim().isNotEmpty ?? false,
       );
       final canUseCachedStories =
-          storyStateController.hasUserStory &&
-          !storyStateController.isLoadingFromStorage &&
+          storyState.hasUserStory &&
+          !storyState.isLoadingFromStorage &&
           (!isOwnProfile || cachedStoriesHaveIds);
 
       // If cached own stories are missing API ids, fetch first so highlights work.
       if (canUseCachedStories) {
         Navigator.pop(context); // Close loading dialog
 
-        final mediaPaths = storyStateController.currentUserStoryMediaPaths;
-        final timestamps = storyStateController.storyTimestamps;
-        final storyIds = storyStateController.currentUserStoryIds;
+        final mediaPaths = storyState.currentUserStoryMediaPaths;
+        final timestamps = storyState.storyTimestamps;
+        final storyIds = storyState.currentUserStoryIds;
 
         _navigateToStoryScreen(
           context,
@@ -71,7 +75,7 @@ class StoryUtils {
         // Refresh stories in background
         _refreshStoriesInBackground(
           storyController,
-          storyStateController,
+          storyStateNotifier,
           userId,
           username,
           avatar,
@@ -92,7 +96,7 @@ class StoryUtils {
               .map((story) => story.createdAt)
               .toList();
 
-          await storyStateController.setStoriesFromStoryItems(
+          await storyStateNotifier.setStoriesFromStoryItems(
             storyController.stories,
             username: username,
             avatarUrl: avatar,
@@ -165,8 +169,8 @@ class StoryUtils {
   }
 
   static Future<void> _refreshStoriesInBackground(
-    StoryController storyController,
-    StoryStateController storyStateController,
+    StoryControllerNotifier storyController,
+    StoryStateNotifier storyStateNotifier,
     String? userId,
     String username,
     String avatar,
@@ -175,7 +179,7 @@ class StoryUtils {
       await storyController.fetchStories(userId: userId);
 
       if (storyController.isSuccess && storyController.stories.isNotEmpty) {
-        await storyStateController.setStoriesFromStoryItems(
+        await storyStateNotifier.setStoriesFromStoryItems(
           storyController.stories,
           username: username,
           avatarUrl: avatar,

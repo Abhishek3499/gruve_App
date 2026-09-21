@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PhoneNumberHeader extends StatelessWidget {
   final String title;
@@ -32,7 +33,7 @@ class PhoneNumberHeader extends StatelessWidget {
                 TextSpan(
                   text: highlightedText,
                   style: const TextStyle(
-                    color: Color(0xFFB86AD0),
+                    color: AppColors.lavenderPurple,
                     fontFamily: AppAssets.syncopateFont,
                   ),
                 ),

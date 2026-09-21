@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/user_profile/domain/entities/report_user_reasons.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 enum ReportSheetTarget { user, post }
 
@@ -25,7 +26,7 @@ class SimpleReportSheet extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+          colors: [AppColors.softPurple, AppColors.sheetDark],
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

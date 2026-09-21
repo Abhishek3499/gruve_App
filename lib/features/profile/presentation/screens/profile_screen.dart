@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' hide Consumer;
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/auth/current_user_notifier.dart';
 
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_grid.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_provider.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
+import 'package:gruve_app/features/user_profile/presentation/notifiers/user_profile_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/features/user_profile/domain/entities/user_profile_model.dart';
 
@@ -19,6 +18,7 @@ import 'package:gruve_app/features/profile/presentation/widgets/story_list.dart'
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String? userId;
@@ -41,20 +41,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   );
   bool _isRefreshing = false;
 
-  /// Own-profile tab stays mounted under [IndexedStack]; listen for logout clears.
-  ProfileProvider? _ownProfileProvider;
-  UserProfileProvider? _userProfileProvider;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (widget.userId == null) {
-      _ownProfileProvider ??= context.read<ProfileProvider>();
-    } else {
-      _userProfileProvider ??= context.read<UserProfileProvider>();
-    }
-  }
-
   void _log(String message) {
     AppLogger.d(message);
   }
@@ -70,16 +56,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Own profile: fetch whenever session has no user yet (fixes stuck loader when
     // init ran while provider falsely reported loading, and refetch after logout).
     if (widget.userId == null) {
-      _ownProfileProvider ??= context.read<ProfileProvider>();
-      _ownProfileProvider!.addListener(_ensureOwnProfileLoaded);
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _ensureOwnProfileLoaded(),
       );
     } else {
-      // Other user's profile - fetch using UserProfileProvider after first frame
+      // Other user's profile - fetch using UserProfileNotifier after first frame
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          context.read<UserProfileProvider>().fetchProfile(widget.userId!);
+          ref
+              .read(userProfileNotifierProvider.notifier)
+              .fetchProfile(widget.userId!);
         }
       });
     }
@@ -87,26 +73,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _scrollController.addListener(_onProfileScroll);
   }
 
-  void _ensureOwnProfileLoaded() {
+  void _ensureOwnProfileLoaded([ProfileState? state]) {
     if (!mounted || widget.userId != null) return;
-    final p = _ownProfileProvider ?? context.read<ProfileProvider>();
-    if (p.user != null || p.errorMessage != null || p.isLoading) return;
+    final ProfileState s = state ?? ref.read(profileNotifierProvider);
+    if (s.user != null || s.errorMessage != null || s.isLoading) return;
     _log('[ProfileScreen] Fetching profile (empty session, idle)');
-    p.fetchProfileData();
+    ref.read(profileNotifierProvider.notifier).fetchProfileData();
   }
 
   Future<void> _onBridgeRefreshRequested(String reason) async {
     if (!mounted) return;
     try {
-      final provider = context.read<ProfileProvider>();
+      final notifier = ref.read(profileNotifierProvider.notifier);
       switch (reason) {
         case 'post_like_toggled':
         case 'subscribe_toggled':
         case 'user_subscribed':
         case 'user_unsubscribed':
-          await provider.refreshCounts(reason: reason);
+          await notifier.refreshCounts(reason: reason);
         default:
-          await provider.refreshProfileData(reason: reason);
+          await notifier.refreshProfileData(reason: reason);
       }
     } catch (e, st) {
       _log('[ProfileScreen] Bridge refresh failed: $e\n$st');
@@ -115,14 +101,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   void dispose() {
-    _ownProfileProvider?.removeListener(_ensureOwnProfileLoaded);
     ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
     if (widget.userId == null) {
-      _ownProfileProvider?.cancelActiveRequests();
+      ref.read(profileNotifierProvider.notifier).cancelActiveRequests();
     } else {
-      _userProfileProvider?.cancelActiveRequests();
+      ref.read(userProfileNotifierProvider.notifier).cancelActiveRequests();
     }
     super.dispose();
   }
@@ -130,16 +115,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _onProfileScroll() {
     if (!_scrollController.hasClients) return;
 
-    final provider = context.read<ProfileProvider>();
+    final notifier = ref.read(profileNotifierProvider.notifier);
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
-      isLoading: provider.controller.isLoadingTab(selectedTab),
-      hasMore: provider.canLoadMoreForTab(selectedTab),
+      isLoading: notifier.controller.isLoadingTab(selectedTab),
+      hasMore: notifier.canLoadMoreForTab(selectedTab),
     )) {
       return;
     }
 
-    provider.requestLoadMoreThrottled(selectedTab);
+    notifier.requestLoadMoreThrottled(selectedTab);
   }
 
   String _displayUsername(String? raw) {
@@ -153,13 +138,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Handle both own profile and other users
     if (widget.userId == null) {
       // Own profile - only rebuild shell for top-level profile state changes.
-      final provider = context.read<ProfileProvider>();
-      final user = context.select((ProfileProvider p) => p.user);
-      final errorMessage = context.select(
-        (ProfileProvider p) => p.errorMessage,
+      ref.listen<ProfileState>(profileNotifierProvider, (previous, next) {
+        _ensureOwnProfileLoaded(next);
+      });
+      final user = ref.watch(profileNotifierProvider.select((p) => p.user));
+      final errorMessage = ref.watch(
+        profileNotifierProvider.select((p) => p.errorMessage),
       );
-      final hasLocalStory = context.select(
-        (StoryStateController s) => s.hasUserStory,
+      final hasLocalStory = ref.watch(
+        storyStateNotifierProvider.select((s) => s.hasUserStory),
       );
       final hasActiveStory =
           (user?.hasActiveStory ?? false) ||
@@ -168,7 +155,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       return Scaffold(
         extendBody: true,
-        backgroundColor: const Color(0xFF42174C),
+        backgroundColor: AppColors.deepPlum,
         body: Builder(
           builder: (context) {
             if (errorMessage != null) {
@@ -183,9 +170,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     SizedBox(height: context.rh(16)),
                     ElevatedButton(
-                      onPressed: () => provider.fetchProfileData(),
+                      onPressed: () => ref
+                          .read(profileNotifierProvider.notifier)
+                          .fetchProfileData(),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD42BC2),
+                        backgroundColor: AppColors.vibrantMagenta,
                       ),
                       child: const Text('Retry'),
                     ),
@@ -200,70 +189,65 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             }
 
             return _buildMainContentForOwnProfile(
-              provider,
               hasActiveStory: hasActiveStory,
             );
           },
         ),
       );
     } else {
-      // Other user's profile - use UserProfileProvider
-      return Consumer<UserProfileProvider>(
-        builder: (context, userProfileProvider, child) {
-          return Scaffold(
-            extendBody: true,
-            backgroundColor: const Color(0xFF42174C),
-            body: Builder(
-              builder: (context) {
-                if (userProfileProvider.isLoading) {
-                  return _buildProfileShimmer();
-                }
+      // Other user's profile - use UserProfileNotifier
+      final userProfileState = ref.watch(userProfileNotifierProvider);
+      return Scaffold(
+        extendBody: true,
+        backgroundColor: AppColors.deepPlum,
+        body: Builder(
+          builder: (context) {
+            if (userProfileState.isLoading) {
+              return _buildProfileShimmer();
+            }
 
-                if (userProfileProvider.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          userProfileProvider.errorMessage ??
-                              'Failed to load profile',
-                          style: const TextStyle(color: Colors.white),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: context.rh(16)),
-                        ElevatedButton(
-                          onPressed: () {
-                            userProfileProvider.fetchProfile(widget.userId!);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD42BC2),
-                          ),
-                          child: const Text('Retry'),
-                        ),
-                      ],
+            if (userProfileState.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      userProfileState.errorMessage ?? 'Failed to load profile',
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
                     ),
-                  );
-                }
+                    SizedBox(height: context.rh(16)),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref
+                            .read(userProfileNotifierProvider.notifier)
+                            .fetchProfile(widget.userId!);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.vibrantMagenta,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-                if (userProfileProvider.hasData) {
-                  return _buildMainContentForOtherUser(
-                    userProfileProvider.profile!,
-                  );
-                }
+            if (userProfileState.hasData) {
+              return _buildMainContentForOtherUser(userProfileState.profile!);
+            }
 
-                return const SizedBox.shrink();
-              },
-            ),
-          );
-        },
+            return const SizedBox.shrink();
+          },
+        ),
       );
     }
   }
 
-  Widget _buildMainContentForOwnProfile(
-    ProfileProvider provider, {
-    required bool hasActiveStory,
-  }) {
+  Widget _buildMainContentForOwnProfile({required bool hasActiveStory}) {
+    final notifier = ref.read(profileNotifierProvider.notifier);
+    final controller = notifier.controller;
+
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -271,7 +255,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF42174C), Color(0xFF212235)],
+          colors: [AppColors.deepPlum, Color(0xFF212235)],
         ),
       ),
       child: SafeArea(
@@ -279,15 +263,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
           color: Colors.white,
-          backgroundColor: const Color(0xFF42174C),
+          backgroundColor: AppColors.deepPlum,
           child: AnimatedBuilder(
-            animation: provider.contentListenable,
+            animation: controller.contentListenable,
             builder: (context, _) {
               final grid = ProfileGrid(
                 selectedTab: selectedTab,
-                controller: provider.controller,
+                controller: controller,
               );
-              final user = provider.user;
+              final user = controller.user;
 
               return CustomScrollView(
                 controller: _scrollController,
@@ -312,12 +296,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   SizedBox(height: context.rh(110)),
                                   StatsRow(
                                     subscribersCount:
-                                        provider.stats.subscribersCount,
-                                    likesCount: provider.stats.likesCount,
-                                    videosCount: provider.stats.videosCount,
+                                        controller.stats.subscribersCount,
+                                    likesCount: controller.stats.likesCount,
+                                    videosCount: controller.stats.videosCount,
                                   ),
                                   SizedBox(height: context.rh(25)),
-                                  StoryList(provider: provider),
+                                  const StoryList(),
                                   SizedBox(height: context.rh(20)),
                                   FilterTabs(
                                     selectedIndex: selectedTab,
@@ -328,7 +312,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       if (_scrollController.hasClients) {
                                         _scrollController.jumpTo(0);
                                       }
-                                      provider.ensureTabLoaded(index);
+                                      notifier.ensureTabLoaded(index);
                                     },
                                   ),
                                 ],
@@ -349,7 +333,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             profileImage: user?.profileImage ?? '',
                             hasActiveStory: hasActiveStory,
                             onProfileUpdated: (response) {
-                              provider.applyUpdatedProfile(response);
+                              notifier.applyUpdatedProfile(response);
                               final newImageUrl = response.data.profilePicture;
                               final newUsername = response.data.username;
                               ref
@@ -396,7 +380,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF42174C), Color(0xFF212235)],
+          colors: [AppColors.deepPlum, Color(0xFF212235)],
         ),
       ),
       child: SafeArea(
@@ -461,7 +445,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: userProfile.isFollowing
                                       ? Colors.grey
-                                      : const Color(0xFFD42BC2),
+                                      : AppColors.vibrantMagenta,
                                   minimumSize: const Size(double.infinity, 45),
                                 ),
                                 child: Text(
@@ -620,9 +604,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _isRefreshing = true;
 
     try {
-      await context.read<ProfileProvider>().refreshProfileData(
-        reason: 'pull_to_refresh',
-      );
+      await ref
+          .read(profileNotifierProvider.notifier)
+          .refreshProfileData(reason: 'pull_to_refresh');
     } catch (e) {
       _log('[ProfileScreen] Pull-to-refresh failed: $e');
     } finally {

@@ -4,6 +4,7 @@ import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/user_profile/utils/report_user_flow.dart';
 import 'package:gruve_app/features/message/presentation/widgets/block/block_user_widget.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ChatHeaderMenu extends StatefulWidget {
   final VoidCallback? onClose;
@@ -140,7 +141,7 @@ class _ChatHeaderMenuState extends State<ChatHeaderMenu>
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+                colors: [AppColors.softPurple, AppColors.sheetDark],
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [

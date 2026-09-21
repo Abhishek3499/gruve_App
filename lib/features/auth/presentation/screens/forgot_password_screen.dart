@@ -17,6 +17,7 @@ import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_text_fi
 
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -117,7 +118,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                                   TextSpan(text: 'FORGOT '),
                                   TextSpan(
                                     text: 'PASSWORD',
-                                    style: TextStyle(color: Color(0xFFB86AD0)),
+                                    style: TextStyle(
+                                      color: AppColors.lavenderPurple,
+                                    ),
                                   ),
                                 ],
                               ),

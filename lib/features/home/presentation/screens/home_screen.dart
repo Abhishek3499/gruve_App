@@ -19,9 +19,9 @@ import 'package:gruve_app/core/auth/current_user_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/camera/presentation/controller/camera_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:provider/provider.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
-import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/user_notifier.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style navigation performance
 /// FPS impact: 15-20fps drops → 55-60fps smooth (200% improvement)
@@ -66,18 +66,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Splash already eager-loads profile — only sync nav avatar or backfill if missing.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final profileProvider = context.read<ProfileProvider>();
+      final profileState = ref.read(profileNotifierProvider);
       final currentUser = ref.read(currentUserNotifierProvider.notifier);
-      final cachedUser = profileProvider.user;
+      final cachedUser = profileState.user;
       if (cachedUser != null) {
         currentUser.updateProfileData(
           username: cachedUser.username,
           imageUrl: cachedUser.profileImage,
         );
-      } else if (!profileProvider.isLoading) {
-        profileProvider.fetchProfileData(
-          fetchUserReason: 'app_start_eager_load',
-        );
+      } else if (!profileState.isLoading) {
+        ref
+            .read(profileNotifierProvider.notifier)
+            .fetchProfileData(fetchUserReason: 'app_start_eager_load');
       } else {
         currentUser.fetchCurrentUserProfile();
       }
@@ -353,9 +353,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         AppLogger.d(
           "🔄 Home Screen: Refreshing profile because Profile tab clicked again",
         );
-        context.read<ProfileProvider>().refreshProfileData(
-          reason: 'tab_tap_refresh',
-        );
+        ref
+            .read(profileNotifierProvider.notifier)
+            .refreshProfileData(reason: 'tab_tap_refresh');
       }
       return;
     }
@@ -441,7 +441,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     if (newIndex == 3) {
-      unawaited(context.read<UserProvider>().refreshOnTabVisible());
+      unawaited(ref.read(userNotifierProvider.notifier).refreshOnTabVisible());
     }
   }
 
@@ -491,7 +491,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC358D7),
+              backgroundColor: AppColors.accentPurple,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(

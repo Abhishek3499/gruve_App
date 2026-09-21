@@ -14,6 +14,7 @@ import 'package:gruve_app/features/camera/data/datasource/mode_service.dart';
 import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
 import 'package:gruve_app/features/camera/presentation/controller/filter_controller.dart';
 import 'package:gruve_app/features/camera/presentation/widgets/sticker_overlay.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -144,7 +145,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   ? 'Timer turned off'
                   : 'Timer set for $label shooting',
             ),
-            backgroundColor: const Color(0xFFC358D7),
+            backgroundColor: AppColors.accentPurple,
             duration: const Duration(seconds: 1),
           ),
         );
@@ -152,7 +153,7 @@ class _CameraScreenState extends State<CameraScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFC358D7) : Colors.white12,
+          color: isSelected ? AppColors.accentPurple : Colors.white12,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Colors.white24 : Colors.transparent,
@@ -193,7 +194,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   '${ModeService().countdownValue}',
                   key: ValueKey(ModeService().countdownValue),
                   style: const TextStyle(
-                    color: Color(0xFFC358D7),
+                    color: AppColors.accentPurple,
                     fontSize: 140,
                     fontWeight: FontWeight.w900,
                   ),

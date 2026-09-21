@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -43,7 +44,7 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF311B36),
+        color: AppColors.chatBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
       ),
       child: SafeArea(

@@ -2,10 +2,10 @@ import 'dart:developer' as developer;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 import 'package:gruve_app/features/app_shell/presentation/screens/intro_screen.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
@@ -98,12 +98,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // Single eager profile load (posts, highlights, avatar) — avoids duplicate profile_data.
       try {
-        final profileProvider = context.read<ProfileProvider>();
-        if (profileProvider.user == null) {
+        final container = ProviderScope.containerOf(context, listen: false);
+        final profileState = container.read(profileNotifierProvider);
+        if (profileState.user == null) {
           unawaited(
-            profileProvider.fetchProfileData(
-              fetchUserReason: 'splash_eager_load',
-            ),
+            container
+                .read(profileNotifierProvider.notifier)
+                .fetchProfileData(fetchUserReason: 'splash_eager_load'),
           );
         }
       } catch (e) {
@@ -199,7 +200,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/splash_screen_logo/image 43.png',
+                      AppAssets.footerLogo,
                       width: context.rw(16),
                       height: context.rh(16),
                     ),

@@ -1,28 +1,64 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Global state manager for tracking which stories are added to highlights
-/// This is needed because the API doesn't provide stories data in highlights response
-class HighlightStateManager extends ChangeNotifier {
-  static const String _highlightedStoriesKey = 'highlighted_story_ids';
+/// Immutable state for [HighlightStateNotifier] tracking highlighted story IDs.
+@immutable
+class HighlightState {
+  final Set<String> highlightedStoryIds;
 
-  final Set<String> _highlightedStoryIds = <String>{};
-
-  /// Get all highlighted story IDs
-  Set<String> get highlightedStoryIds => _highlightedStoryIds.toSet();
+  const HighlightState({this.highlightedStoryIds = const <String>{}});
 
   /// Check if a specific story is highlighted
   bool isStoryHighlighted(String storyId) {
-    return _highlightedStoryIds.contains(storyId);
+    return highlightedStoryIds.contains(storyId);
+  }
+
+  HighlightState copyWith({Set<String>? highlightedStoryIds}) {
+    return HighlightState(
+      highlightedStoryIds: highlightedStoryIds ?? this.highlightedStoryIds,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is HighlightState &&
+        setEquals(other.highlightedStoryIds, highlightedStoryIds);
+  }
+
+  @override
+  int get hashCode => Object.hashAll(highlightedStoryIds);
+}
+
+/// Riverpod Notifier replacing the legacy [HighlightStateManager] ChangeNotifier.
+/// Tracks which stories are added to highlights and persists them in SharedPreferences.
+class HighlightStateNotifier extends Notifier<HighlightState> {
+  static const String _highlightedStoriesKey = 'highlighted_story_ids';
+
+  @override
+  HighlightState build() {
+    unawaited(loadFromPreferences());
+    return const HighlightState();
+  }
+
+  /// Get all highlighted story IDs
+  Set<String> get highlightedStoryIds => state.highlightedStoryIds;
+
+  /// Check if a specific story is highlighted
+  bool isStoryHighlighted(String storyId) {
+    return state.isStoryHighlighted(storyId);
   }
 
   /// Mark a story as highlighted
   Future<void> markStoryAsHighlighted(String storyId) async {
     if (storyId.isNotEmpty) {
-      _highlightedStoryIds.add(storyId);
+      final updated = Set<String>.from(state.highlightedStoryIds)..add(storyId);
+      state = state.copyWith(highlightedStoryIds: updated);
       await _saveToPreferences();
-      notifyListeners();
       AppLogger.d(
         '[HighlightStateManager] Story $storyId marked as highlighted',
       );
@@ -36,9 +72,10 @@ class HighlightStateManager extends ChangeNotifier {
 
   /// Remove a story from highlighted list (if needed)
   Future<void> removeStoryFromHighlighted(String storyId) async {
-    _highlightedStoryIds.remove(storyId);
+    final updated = Set<String>.from(state.highlightedStoryIds)
+      ..remove(storyId);
+    state = state.copyWith(highlightedStoryIds: updated);
     await _saveToPreferences();
-    notifyListeners();
     AppLogger.d(
       '[HighlightStateManager] Story $storyId removed from highlighted list',
     );
@@ -46,9 +83,8 @@ class HighlightStateManager extends ChangeNotifier {
 
   /// Clear all highlighted stories (for logout/reset)
   Future<void> clearAllHighlightedStories() async {
-    _highlightedStoryIds.clear();
+    state = state.copyWith(highlightedStoryIds: <String>{});
     await _saveToPreferences();
-    notifyListeners();
     AppLogger.d('[HighlightStateManager] All highlighted stories cleared');
   }
 
@@ -56,7 +92,7 @@ class HighlightStateManager extends ChangeNotifier {
   Future<void> _saveToPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final storyIdsList = _highlightedStoryIds.toList();
+      final storyIdsList = state.highlightedStoryIds.toList();
       await prefs.setStringList(_highlightedStoriesKey, storyIdsList);
       AppLogger.d(
         '[HighlightStateManager] Saved ${storyIdsList.length} highlighted stories to preferences',
@@ -71,10 +107,7 @@ class HighlightStateManager extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final storyIdsList = prefs.getStringList(_highlightedStoriesKey) ?? [];
-      _highlightedStoryIds
-        ..clear()
-        ..addAll(storyIdsList);
-      notifyListeners();
+      state = state.copyWith(highlightedStoryIds: storyIdsList.toSet());
       AppLogger.d(
         '[HighlightStateManager] Loaded ${storyIdsList.length} highlighted stories from preferences',
       );
@@ -83,3 +116,9 @@ class HighlightStateManager extends ChangeNotifier {
     }
   }
 }
+
+/// App-scoped provider for [HighlightStateNotifier]
+final highlightStateNotifierProvider =
+    NotifierProvider<HighlightStateNotifier, HighlightState>(
+      HighlightStateNotifier.new,
+    );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class AlsoShareSheet extends StatefulWidget {
   const AlsoShareSheet({super.key});
@@ -127,7 +128,7 @@ class _AlsoShareSheetState extends State<AlsoShareSheet> {
   Widget _buildUserList() {
     if (_isSearching) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+        child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
       );
     }
 

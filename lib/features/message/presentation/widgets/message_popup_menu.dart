@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 enum MessageAction { reply, edit, pin, report, delete }
 
@@ -79,7 +80,7 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF311B36),
+              color: AppColors.chatBackground,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:record/record.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ChatInputField extends StatefulWidget {
   final Function(String) onSendMessage;
@@ -103,7 +104,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
   void _showMediaBottomSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF311B36),
+      backgroundColor: AppColors.chatBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

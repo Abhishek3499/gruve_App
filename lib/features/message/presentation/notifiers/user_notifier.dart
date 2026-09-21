@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/core/network/api_client.dart';
+import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
 import 'package:gruve_app/features/message/domain/repository/user_repository.dart';
 import 'package:gruve_app/features/message/domain/entities/user_entity.dart';
 import 'package:gruve_app/features/message/data/repo/user_repository_impl.dart';
@@ -13,17 +16,56 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 
-class UserProvider extends ChangeNotifier {
-  final UserRepository repository;
-  UserProvider(this.repository) {
-    AppLogger.d('🔥 UserProvider CONSTRUCTOR CALLED');
-    _trackedAuthUserId = AuthStateManager().currentUserId;
-    _localSubscribedUserIds = _collectLocalSubscribedUserIds(
-      SubscribeNotifier(),
+@immutable
+class UserState {
+  final List<UserEntity> users;
+  final bool isLoading;
+  final bool isFetchingMore;
+  final bool hasNext;
+  final int currentPage;
+  final String? errorMessage;
+  final bool hasInitialized;
+
+  const UserState({
+    this.users = const [],
+    this.isLoading = false,
+    this.isFetchingMore = false,
+    this.hasNext = true,
+    this.currentPage = 1,
+    this.errorMessage,
+    this.hasInitialized = false,
+  });
+
+  UserState copyWith({
+    List<UserEntity>? users,
+    bool? isLoading,
+    bool? isFetchingMore,
+    bool? hasNext,
+    int? currentPage,
+    String? errorMessage,
+    bool? hasInitialized,
+    bool clearError = false,
+  }) {
+    return UserState(
+      users: users ?? this.users,
+      isLoading: isLoading ?? this.isLoading,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
+      hasNext: hasNext ?? this.hasNext,
+      currentPage: currentPage ?? this.currentPage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      hasInitialized: hasInitialized ?? this.hasInitialized,
     );
-    _listenToSubscriptions();
-    AuthStateManager().addListener(_onAuthStateChanged);
   }
+}
+
+/// Replaces the previous `UserProvider` (ChangeNotifier). Owns the
+/// subscribed user list, pagination, Hive caching, and subscription/auth listeners.
+class UserNotifier extends Notifier<UserState> {
+  final UserRepository repository;
+
+  UserNotifier({UserRepository? repository})
+    : repository =
+          repository ?? UserRepositoryImpl(UserRemoteDataSource(ApiClient()));
 
   Timer? _subscriptionDebounceTimer;
   bool _needsRefreshAfterCurrent = false;
@@ -31,8 +73,38 @@ class UserProvider extends ChangeNotifier {
   Set<String> _localSubscribedUserIds = {};
   String? _trackedAuthUserId;
 
-  void _listenToSubscriptions() {
+  CancelToken? _cancelToken;
+  DateTime? _lastFetchTime;
+  Future<void>? _fetchInFlight;
+  Future<void>? _loadMoreInFlight;
+  String? _lastLoadMoreKey;
+
+  static const _cacheValidDuration = Duration(minutes: 2);
+  static const _cacheBypassReasons = {
+    'subscription_change',
+    'pull_to_refresh',
+    'tab_visible',
+  };
+
+  @override
+  UserState build() {
+    AppLogger.d('🔥 UserNotifier BUILD CALLED');
+    _trackedAuthUserId = AuthStateManager().currentUserId;
+    _localSubscribedUserIds = _collectLocalSubscribedUserIds(
+      SubscribeNotifier(),
+    );
     SubscribeNotifier().addListener(_onSubscriptionChanged);
+    AuthStateManager().addListener(_onAuthStateChanged);
+
+    ref.onDispose(() {
+      AuthStateManager().removeListener(_onAuthStateChanged);
+      SubscribeNotifier().removeListener(_onSubscriptionChanged);
+      _subscriptionDebounceTimer?.cancel();
+      cancelActiveRequests();
+      AppLogger.d('🗑️ [UserNotifier] Disposed');
+    });
+
+    return const UserState();
   }
 
   void _onAuthStateChanged() {
@@ -40,29 +112,22 @@ class UserProvider extends ChangeNotifier {
     if (authUserId == _trackedAuthUserId) return;
 
     AppLogger.d(
-      '🔄 [UserProvider] Auth user changed $_trackedAuthUserId -> $authUserId, clearing list',
+      '🔄 [UserNotifier] Auth user changed $_trackedAuthUserId -> $authUserId, clearing list',
     );
     _trackedAuthUserId = authUserId;
     _clearUserListState();
-    notifyListeners();
   }
 
   void _clearUserListState() {
     _subscriptionDebounceTimer?.cancel();
     _needsRefreshAfterCurrent = false;
-    _users.clear();
-    _isLoading = false;
-    _isFetchingMore = false;
-    _hasNext = true;
-    _currentPage = 1;
-    _errorMessage = null;
-    _hasInitialized = false;
     _lastFetchTime = null;
     _fetchInFlight = null;
     _loadMoreInFlight = null;
     _lastLoadMoreKey = null;
     _subscriptionListDirty = false;
     _localSubscribedUserIds = {};
+    state = const UserState();
   }
 
   Set<String> _collectLocalSubscribedUserIds(SubscribeNotifier controller) {
@@ -87,7 +152,7 @@ class UserProvider extends ChangeNotifier {
     }
 
     AppLogger.d(
-      '🔔 [UserProvider] Subscription delta — added: $newlySubscribed removed: $newlyUnsubscribed',
+      '🔔 [UserNotifier] Subscription delta — added: $newlySubscribed removed: $newlyUnsubscribed',
     );
 
     _localSubscribedUserIds = currentLocalSubscribed;
@@ -99,21 +164,17 @@ class UserProvider extends ChangeNotifier {
     );
     unawaited(CacheManager().invalidatePattern(ApiConstants.users));
 
-    var changed = false;
-
     if (newlyUnsubscribed.isNotEmpty) {
-      final beforeCount = _users.length;
-      _users.removeWhere((user) => newlyUnsubscribed.contains(user.userId));
-      if (_users.length != beforeCount) {
-        changed = true;
+      final beforeCount = state.users.length;
+      final updatedUsers = state.users
+          .where((user) => !newlyUnsubscribed.contains(user.userId))
+          .toList();
+      if (updatedUsers.length != beforeCount) {
         AppLogger.d(
-          '⚡ [UserProvider] Removed unsubscribed users -> total: ${_users.length}',
+          '⚡ [UserNotifier] Removed unsubscribed users -> total: ${updatedUsers.length}',
         );
+        state = state.copyWith(users: updatedUsers);
       }
-    }
-
-    if (changed) {
-      notifyListeners();
     }
 
     _scheduleSubscriptionRefresh();
@@ -122,8 +183,8 @@ class UserProvider extends ChangeNotifier {
   void _scheduleSubscriptionRefresh() {
     _subscriptionDebounceTimer?.cancel();
     _subscriptionDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-      AppLogger.d('🔄 [UserProvider] Subscription refresh debounce fired');
-      if (!_isLoading) {
+      AppLogger.d('🔄 [UserNotifier] Subscription refresh debounce fired');
+      if (!state.isLoading) {
         unawaited(fetchUsers(reason: 'subscription_change'));
       } else {
         _needsRefreshAfterCurrent = true;
@@ -134,7 +195,7 @@ class UserProvider extends ChangeNotifier {
   /// Call when the Messages tab becomes visible.
   Future<void> refreshOnTabVisible() async {
     AppLogger.d(
-      '🔄 [UserProvider] Tab visible — refreshing subscribed user list',
+      '🔄 [UserNotifier] Tab visible — refreshing subscribed user list',
     );
     _lastFetchTime = null;
     await _invalidateUserListCaches();
@@ -144,14 +205,11 @@ class UserProvider extends ChangeNotifier {
   /// Call when the Messages tab becomes visible to pick up subscription changes.
   Future<void> refreshIfSubscriptionDirty() async {
     if (!_subscriptionListDirty) return;
-    AppLogger.d('🔄 [UserProvider] Refreshing dirty subscription user list');
+    AppLogger.d('🔄 [UserNotifier] Refreshing dirty subscription user list');
     _lastFetchTime = null;
     await _invalidateUserListCaches();
     await fetchUsers(loadMore: false, reason: 'subscription_change');
   }
-
-  List<UserEntity> _users = [];
-  CancelToken? _cancelToken;
 
   CancelToken _getCancelToken() {
     _cancelToken ??= CancelToken();
@@ -162,23 +220,6 @@ class UserProvider extends ChangeNotifier {
     _cancelToken?.cancel('Screen disposed');
     _cancelToken = null;
   }
-
-  bool _isLoading = false;
-  bool _isFetchingMore = false;
-  bool _hasNext = true;
-  int _currentPage = 1;
-  String? _errorMessage;
-  bool _hasInitialized = false;
-  DateTime? _lastFetchTime;
-  Future<void>? _fetchInFlight;
-  Future<void>? _loadMoreInFlight;
-  String? _lastLoadMoreKey;
-  static const _cacheValidDuration = Duration(minutes: 2);
-  static const _cacheBypassReasons = {
-    'subscription_change',
-    'pull_to_refresh',
-    'tab_visible',
-  };
 
   bool _shouldBypassCache(String reason) =>
       _cacheBypassReasons.contains(reason);
@@ -221,13 +262,13 @@ class UserProvider extends ChangeNotifier {
   }
 
   // Getters
-  List<UserEntity> get users => _users;
-  bool get isLoading => _isLoading;
-  bool get isFetchingMore => _isFetchingMore;
-  bool get hasNext => _hasNext;
-  int get currentPage => _currentPage;
-  String? get errorMessage => _errorMessage;
-  bool get hasInitialized => _hasInitialized;
+  List<UserEntity> get users => state.users;
+  bool get isLoading => state.isLoading;
+  bool get isFetchingMore => state.isFetchingMore;
+  bool get hasNext => state.hasNext;
+  int get currentPage => state.currentPage;
+  String? get errorMessage => state.errorMessage;
+  bool get hasInitialized => state.hasInitialized;
 
   Future<void> fetchUsers({
     bool loadMore = false,
@@ -236,22 +277,22 @@ class UserProvider extends ChangeNotifier {
     if (loadMore) {
       if (_loadMoreInFlight != null) {
         AppLogger.d(
-          '⏳ [UserProvider] Joining in-flight loadMore (reason=$reason)',
+          '⏳ [UserNotifier] Joining in-flight loadMore (reason=$reason)',
         );
         return _loadMoreInFlight!;
       }
-      if (_isFetchingMore || !_hasNext) {
+      if (state.isFetchingMore || !state.hasNext) {
         AppLogger.d(
-          '⏸️ [UserProvider] loadMore skipped reason=$reason '
-          'isFetchingMore=$_isFetchingMore hasNext=$_hasNext',
+          '⏸️ [UserNotifier] loadMore skipped reason=$reason '
+          'isFetchingMore=${state.isFetchingMore} hasNext=${state.hasNext}',
         );
         return;
       }
 
-      final requestKey = 'page=$_currentPage';
+      final requestKey = 'page=${state.currentPage}';
       if (_lastLoadMoreKey == requestKey) {
         AppLogger.d(
-          '⏸️ [UserProvider] loadMore skipped duplicate params '
+          '⏸️ [UserNotifier] loadMore skipped duplicate params '
           'reason=$reason $requestKey',
         );
         return;
@@ -270,7 +311,7 @@ class UserProvider extends ChangeNotifier {
     }
 
     if (_fetchInFlight != null) {
-      AppLogger.d('⏳ [UserProvider] Joining in-flight user fetch');
+      AppLogger.d('⏳ [UserNotifier] Joining in-flight user fetch');
       return _fetchInFlight!;
     }
 
@@ -291,26 +332,25 @@ class UserProvider extends ChangeNotifier {
   }) async {
     // 🚀 Cache-then-Network: Load from Hive offline storage first if we don't have users in memory
     final bypassCache = _shouldBypassCache(reason);
-    if (!loadMore && _users.isEmpty && !bypassCache) {
+    if (!loadMore && state.users.isEmpty && !bypassCache) {
       final cachedData = HiveService().getCachedData(
         HiveService.userCacheBoxName,
         'users_list',
       );
       if (cachedData is List) {
         AppLogger.d(
-          '📦 [UserProvider] Cache HIT. Restoring users from Hive Cache first.',
+          '📦 [UserNotifier] Cache HIT. Restoring users from Hive Cache first.',
         );
         try {
-          _users = _usersFromApi(
+          final cachedUsers = _usersFromApi(
             cachedData.map(
               (e) =>
                   UserModel.fromJson(Map<String, dynamic>.from(e)).toEntity(),
             ),
           );
-          _hasInitialized = true;
-          notifyListeners();
+          state = state.copyWith(users: cachedUsers, hasInitialized: true);
         } catch (e) {
-          AppLogger.d('🚨 [UserProvider] Error parsing Hive cached users: $e');
+          AppLogger.d('🚨 [UserNotifier] Error parsing Hive cached users: $e');
         }
       }
     }
@@ -321,44 +361,43 @@ class UserProvider extends ChangeNotifier {
         !_subscriptionListDirty &&
         _lastFetchTime != null &&
         DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration &&
-        _users.isNotEmpty) {
+        state.users.isNotEmpty) {
       AppLogger.d(
-        '✅ [UserProvider] Using cached users (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
+        '✅ [UserNotifier] Using cached users (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
       );
       return;
     }
 
     // Prevent duplicate calls
-    if (loadMore && (_isFetchingMore || !_hasNext)) {
+    if (loadMore && (state.isFetchingMore || !state.hasNext)) {
       AppLogger.d(
-        '⏸️ [UserProvider] Skipping fetchMore - isFetchingMore: $_isFetchingMore, hasNext: $_hasNext',
+        '⏸️ [UserNotifier] Skipping fetchMore - isFetchingMore: ${state.isFetchingMore}, hasNext: ${state.hasNext}',
       );
       return;
     }
 
-    if (!loadMore && _isLoading) {
-      AppLogger.d('⏸️ [UserProvider] Skipping initial fetch - already loading');
+    if (!loadMore && state.isLoading) {
+      AppLogger.d('⏸️ [UserNotifier] Skipping initial fetch - already loading');
       return;
     }
 
     AppLogger.d(
-      '📡 [UserProvider] fetch trigger=$reason page=$_currentPage loadMore=$loadMore',
+      '📡 [UserNotifier] fetch trigger=$reason page=${state.currentPage} loadMore=$loadMore',
     );
 
     // Set loading states immediately so scroll spam cannot slip through.
     if (loadMore) {
-      _isFetchingMore = true;
+      state = state.copyWith(isFetchingMore: true, clearError: true);
     } else {
-      _isLoading = true;
-      _currentPage = 1;
-      _hasNext = true;
       _lastLoadMoreKey = null;
-      if (bypassCache) {
-        _users.clear();
-      }
+      state = state.copyWith(
+        isLoading: true,
+        currentPage: 1,
+        hasNext: true,
+        clearError: true,
+        users: bypassCache ? const [] : null,
+      );
     }
-    _errorMessage = null;
-    notifyListeners();
 
     if (!loadMore && bypassCache) {
       await _invalidateUserListCaches();
@@ -367,13 +406,13 @@ class UserProvider extends ChangeNotifier {
     try {
       final repo = repository as UserRepositoryImpl;
       final response = await repo.fetchUsersPaginated(
-        page: _currentPage,
+        page: state.currentPage,
         cancelToken: _getCancelToken(),
         skipCache: bypassCache,
       );
 
       AppLogger.d(
-        '📩 [UserProvider] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}',
+        '📩 [UserNotifier] API response — returned ${response.users.length} users | hasNext: ${response.hasNext} | page: ${response.page}',
       );
 
       // Save initial page list to Hive cache
@@ -396,64 +435,67 @@ class UserProvider extends ChangeNotifier {
       }
 
       if (response.users.isEmpty) {
-        AppLogger.d('⚠️ [UserProvider] API returned EMPTY user list');
+        AppLogger.d('⚠️ [UserNotifier] API returned EMPTY user list');
       } else {
         final ids = response.users.map((u) => u.userId).take(5).toList();
-        AppLogger.d('👤 [UserProvider] userIDs (first 5): $ids');
+        AppLogger.d('👤 [UserNotifier] userIDs (first 5): $ids');
       }
 
       // Update users list
       if (loadMore) {
-        final beforeCount = _users.length;
-        _users = _usersFromApi([
-          ..._users,
+        final beforeCount = state.users.length;
+        final updatedUsers = _usersFromApi([
+          ...state.users,
           ...response.users.map((m) => m.toEntity()),
         ]);
         AppLogger.d(
-          '➕ [UserProvider] Appended ${_users.length - beforeCount} users — total: ${_users.length}',
+          '➕ [UserNotifier] Appended ${updatedUsers.length - beforeCount} users — total: ${updatedUsers.length}',
+        );
+        state = state.copyWith(
+          users: updatedUsers,
+          hasNext: response.hasNext,
+          currentPage: response.hasNext ? response.page + 1 : state.currentPage,
         );
       } else {
         final apiUsers = _usersFromApi(response.users.map((m) => m.toEntity()));
-        _users = apiUsers;
         _syncSubscribedUsersFromApi(apiUsers);
         _lastFetchTime = DateTime.now();
-        _hasInitialized = true;
         AppLogger.d(
-          '🔄 [UserProvider] API list applied with ${_users.length} users (raw API=${response.users.length})',
+          '🔄 [UserNotifier] API list applied with ${apiUsers.length} users (raw API=${response.users.length})',
+        );
+        state = state.copyWith(
+          users: apiUsers,
+          hasInitialized: true,
+          hasNext: response.hasNext,
+          currentPage: response.hasNext ? response.page + 1 : state.currentPage,
         );
       }
 
-      // Update pagination state
-      _hasNext = response.hasNext;
-      if (response.hasNext) {
-        _currentPage = response.page + 1;
-      }
       _lastLoadMoreKey = null;
 
       AppLogger.d(
-        '✅ [UserProvider] Fetch complete — total: ${_users.length} | hasNext: $_hasNext | nextPage: $_currentPage',
+        '✅ [UserNotifier] Fetch complete — total: ${state.users.length} | hasNext: ${state.hasNext} | nextPage: ${state.currentPage}',
       );
       _subscriptionListDirty = false;
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [UserProvider] Request cancelled');
+        AppLogger.d('🚫 [UserNotifier] Request cancelled');
         return;
       }
       _lastLoadMoreKey = null;
-      _errorMessage = e.toString();
-      AppLogger.d('❌ [UserProvider] Error: $e');
+      state = state.copyWith(errorMessage: e.toString());
+      AppLogger.d('❌ [UserNotifier] Error: $e');
     } finally {
       // Clear loading states
       if (loadMore) {
-        _isFetchingMore = false;
+        state = state.copyWith(isFetchingMore: false);
       } else {
-        _isLoading = false;
+        state = state.copyWith(isLoading: false);
       }
 
       AppLogger.d(
-        '🏁 [UserProvider] Loading states cleared - isLoading: $_isLoading, isFetchingMore: $_isFetchingMore',
+        '🏁 [UserNotifier] Loading states cleared - isLoading: ${state.isLoading}, isFetchingMore: ${state.isFetchingMore}',
       );
-      notifyListeners();
 
       if (!loadMore && _needsRefreshAfterCurrent) {
         _needsRefreshAfterCurrent = false;
@@ -480,7 +522,7 @@ class UserProvider extends ChangeNotifier {
 
   // Method to reset pagination state (for pull-to-refresh)
   Future<void> refreshUsers() async {
-    AppLogger.d('🔄 [UserProvider] Refreshing users...');
+    AppLogger.d('🔄 [UserNotifier] Refreshing users...');
     _lastFetchTime = null;
     await _invalidateUserListCaches();
     await fetchUsers(loadMore: false, reason: 'pull_to_refresh');
@@ -490,17 +532,10 @@ class UserProvider extends ChangeNotifier {
   void reset() {
     _trackedAuthUserId = AuthStateManager().currentUserId;
     _clearUserListState();
-    AppLogger.d('🔄 [UserProvider] Provider state reset');
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    AuthStateManager().removeListener(_onAuthStateChanged);
-    SubscribeNotifier().removeListener(_onSubscriptionChanged);
-    _subscriptionDebounceTimer?.cancel();
-    cancelActiveRequests();
-    AppLogger.d('🗑️ [UserProvider] Disposed');
-    super.dispose();
+    AppLogger.d('🔄 [UserNotifier] Provider state reset');
   }
 }
+
+final userNotifierProvider = NotifierProvider<UserNotifier, UserState>(
+  UserNotifier.new,
+);

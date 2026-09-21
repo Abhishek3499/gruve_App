@@ -19,6 +19,7 @@ import 'package:gruve_app/main.dart';
 import 'package:gruve_app/features/auth/presentation/controllers/auth_session_helper.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   // final AuthFlow authFlow;
@@ -420,7 +421,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
 
                             child: Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFFB86AD0),
+                                color: AppColors.lavenderPurple,
 
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -470,7 +471,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                                   TextSpan(
                                     text: 'Code ',
 
-                                    style: TextStyle(color: Color(0xFFB86AD0)),
+                                    style: TextStyle(
+                                      color: AppColors.lavenderPurple,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -502,7 +505,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                                     : widget.identifier,
 
                                 style: TextStyle(
-                                  color: const Color(0xFFB86AD0),
+                                  color: AppColors.lavenderPurple,
 
                                   fontSize: context.rf(14),
 
@@ -518,7 +521,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                                 child: Icon(
                                   Icons.edit,
 
-                                  color: const Color(0xFFB86AD0),
+                                  color: AppColors.lavenderPurple,
 
                                   size: context.rw(16),
                                 ),
@@ -580,7 +583,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                                       "Resend code",
 
                                       style: TextStyle(
-                                        color: const Color(0xFFB86AD0),
+                                        color: AppColors.lavenderPurple,
 
                                         fontSize: context.rf(12),
                                       ),

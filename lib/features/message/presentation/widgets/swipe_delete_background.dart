@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SwipeDeleteBackground extends StatelessWidget {
   final VoidCallback onDelete;
@@ -8,7 +9,7 @@ class SwipeDeleteBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF311B36), // Background color matching chat theme
+      color: AppColors.chatBackground, // Background color matching chat theme
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 20),
       child: Container(

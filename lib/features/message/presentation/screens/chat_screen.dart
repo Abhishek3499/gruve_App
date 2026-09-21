@@ -26,6 +26,7 @@ import 'package:gruve_app/features/message/presentation/widgets/reply_preview_ba
 import 'package:gruve_app/features/message/presentation/widgets/shimmer/chat_shimmer.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   // New explicit parameters for direct user data passing
@@ -1127,7 +1128,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF311B36),
+        backgroundColor: AppColors.chatBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Delete Message?',
@@ -1336,7 +1337,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             gradient: LinearGradient(
               begin: Alignment(-0.95, 0.31),
               end: Alignment(0.95, -0.31),
-              colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+              colors: [
+                AppColors.deepPlum,
+                Color(0xFF210C26),
+                Color(0xFF000000),
+              ],
               stops: [0.0, 0.42, 1.0],
             ),
           ),
@@ -1646,7 +1651,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onPressed: _unblockUser,
             child: const Text(
               'Unblock',
-              style: TextStyle(color: Color(0xFFCD72E3)),
+              style: TextStyle(color: AppColors.softPurple),
             ),
           ),
         ],

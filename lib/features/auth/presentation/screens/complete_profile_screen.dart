@@ -9,6 +9,7 @@ import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 import 'package:gruve_app/core/services/image_picker_service.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class CompleteProfileScreen extends ConsumerStatefulWidget {
   const CompleteProfileScreen({super.key});
@@ -202,7 +203,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                           TextSpan(text: 'Complete '),
                           TextSpan(
                             text: 'Profile',
-                            style: TextStyle(color: Color(0xFFB86AD0)),
+                            style: TextStyle(color: AppColors.lavenderPurple),
                           ),
                         ],
                       ),

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/features/story_preview/presentation/screens/story_preview_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/post_preview_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_sheet.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:gruve_app/core/constants/app_assets.dart';
-import 'package:gruve_app/features/story_preview/presentation/screens/story_preview_screen.dart';
 import 'package:gruve_app/features/analytics/ideas/presentation/screens/ideas_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/features/camera/utils/camera_logger.dart';
 import 'package:gruve_app/features/camera/data/datasource/mode_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -78,12 +76,9 @@ class _ModeSelectorState extends State<ModeSelector> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ChangeNotifierProvider(
-                create: (_) => StoryController(),
-                child: StoryPreviewScreen(
-                  mediaPath: pickedFile.path,
-                  mediaMimeType: pickedFile.mimeType,
-                ),
+              builder: (_) => StoryPreviewScreen(
+                mediaPath: pickedFile.path,
+                mediaMimeType: pickedFile.mimeType,
               ),
             ),
           );

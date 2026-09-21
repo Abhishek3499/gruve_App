@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
-import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/user_notifier.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
 import 'package:gruve_app/features/share/presentation/controller/post_share_provider.dart';
 
 import 'package:gruve_app/features/share/presentation/widgets/share_user_item.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ShareUserGrid extends ConsumerStatefulWidget {
   const ShareUserGrid({super.key});
@@ -28,7 +28,7 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<UserProvider>().fetchUsers(reason: 'initial');
+        ref.read(userNotifierProvider.notifier).fetchUsers(reason: 'initial');
       }
     });
   }
@@ -45,16 +45,18 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
     if (!_scrollController.hasClients) return;
     if (_searchController.text.trim().isNotEmpty) return;
 
-    final provider = context.read<UserProvider>();
+    final userState = ref.read(userNotifierProvider);
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
-      isLoading: provider.isLoading || provider.isFetchingMore,
-      hasMore: provider.hasNext,
+      isLoading: userState.isLoading || userState.isFetchingMore,
+      hasMore: userState.hasNext,
     )) {
       return;
     }
 
-    provider.fetchUsers(loadMore: true, reason: 'scroll');
+    ref
+        .read(userNotifierProvider.notifier)
+        .fetchUsers(loadMore: true, reason: 'scroll');
   }
 
   void _onSearchChanged(String query) {
@@ -115,7 +117,7 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
 
     if (isSearching) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+        child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
       );
     }
 
@@ -161,26 +163,27 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
     }
 
     // 2. General Users List Mode (Initial/Cached List)
-    final provider = context.watch<UserProvider>();
+    final userState = ref.watch(userNotifierProvider);
 
-    if (provider.isLoading && provider.users.isEmpty) {
+    if (userState.isLoading && userState.users.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+        child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
       );
     }
 
-    if (provider.errorMessage != null && provider.users.isEmpty) {
+    if (userState.errorMessage != null && userState.users.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              provider.errorMessage!,
+              userState.errorMessage!,
               style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () => provider.fetchUsers(),
+              onPressed: () =>
+                  ref.read(userNotifierProvider.notifier).fetchUsers(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 120, 2, 99),
                 foregroundColor: Colors.white,
@@ -192,7 +195,7 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
       );
     }
 
-    final generalUsers = provider.users;
+    final generalUsers = userState.users;
     if (generalUsers.isEmpty) {
       return const Center(
         child: Text(
@@ -211,11 +214,11 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.75,
       ),
-      itemCount: generalUsers.length + (provider.isFetchingMore ? 1 : 0),
+      itemCount: generalUsers.length + (userState.isFetchingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == generalUsers.length && provider.isFetchingMore) {
+        if (index == generalUsers.length && userState.isFetchingMore) {
           return const Center(
-            child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+            child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
           );
         }
 

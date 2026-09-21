@@ -9,6 +9,7 @@ class TokenStorage {
   static const String _refreshTokenKey = 'refresh_token';
   static const String _resetTokenKey = 'reset_token';
   static const String _currentUserIdKey = 'current_user_id';
+  static const String _unreadCountsKey = 'unread_counts_map';
 
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -136,7 +137,7 @@ class TokenStorage {
     try {
       _prefs ??= await SharedPreferences.getInstance();
       await _prefs?.remove(_currentUserIdKey);
-      await _prefs?.remove('unread_counts_map');
+      await _prefs?.remove(_unreadCountsKey);
     } catch (e) {
       _log('Failed to clear current user ID from SharedPreferences: $e');
     }
@@ -159,7 +160,7 @@ class TokenStorage {
   }
 
   static Map<String, int> getUnreadCounts() {
-    final String? jsonStr = _prefs?.getString('unread_counts_map');
+    final String? jsonStr = _prefs?.getString(_unreadCountsKey);
     if (jsonStr == null || jsonStr.isEmpty) return {};
     try {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
@@ -174,7 +175,7 @@ class TokenStorage {
   static Future<void> saveUnreadCounts(Map<String, int> counts) async {
     try {
       _prefs ??= await SharedPreferences.getInstance();
-      await _prefs?.setString('unread_counts_map', jsonEncode(counts));
+      await _prefs?.setString(_unreadCountsKey, jsonEncode(counts));
     } catch (_) {}
   }
 

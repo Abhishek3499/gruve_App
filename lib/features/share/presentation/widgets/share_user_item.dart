@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ShareUserItem extends StatelessWidget {
   final SearchUser user;
@@ -37,7 +38,7 @@ class ShareUserItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isSelected
-                          ? const Color(0xFFD42BC2)
+                          ? AppColors.vibrantMagenta
                           : Colors.white.withValues(alpha: 0.3),
                       width: isSelected ? 2.5 : 2,
                     ),
@@ -90,7 +91,7 @@ class ShareUserItem extends StatelessWidget {
                       width: 20,
                       height: 20,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFD42BC2),
+                        color: AppColors.vibrantMagenta,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(

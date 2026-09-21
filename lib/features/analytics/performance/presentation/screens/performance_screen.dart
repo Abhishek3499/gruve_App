@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PerformanceScreen extends StatelessWidget {
   const PerformanceScreen({super.key});
@@ -14,7 +15,7 @@ class PerformanceScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF9544A7), Color(0xFF42174C)],
+            colors: [Color(0xFF9544A7), AppColors.deepPlum],
           ),
         ),
         child: SafeArea(
@@ -84,11 +85,7 @@ class PerformanceScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        'assets/splash_screen_logo/image 43.png',
-                        width: 16,
-                        height: 16,
-                      ),
+                      Image.asset(AppAssets.footerLogo, width: 16, height: 16),
                       const SizedBox(width: 3),
                       const Text(
                         'Made in India',

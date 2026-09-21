@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ProfileImagePicker extends StatefulWidget {
   final String currentImagePath;
@@ -277,7 +278,7 @@ class _OptionTile extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 32, color: const Color(0xFFB86AD0)),
+            Icon(icon, size: 32, color: AppColors.lavenderPurple),
             const SizedBox(height: 10),
             Text(
               label,

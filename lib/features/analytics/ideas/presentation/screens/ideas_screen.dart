@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/analytics/ideas/domain/entities/idea_item.dart';
 import 'package:gruve_app/features/analytics/ideas/presentation/widgets/ideas_column.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class IdeasScreen extends StatelessWidget {
   const IdeasScreen({super.key});
@@ -87,7 +88,7 @@ class IdeasScreen extends StatelessWidget {
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF42174C), // Deep plum purple
+              AppColors.deepPlum, // Deep plum purple
               Color(0xFF9544A7), // Light magenta/purple
             ],
             begin: Alignment.topCenter,

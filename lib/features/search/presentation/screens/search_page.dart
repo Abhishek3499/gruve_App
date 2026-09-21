@@ -13,6 +13,7 @@ import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   final SearchNavigationType navigationType;
@@ -256,7 +257,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             gradient: LinearGradient(
               begin: Alignment(-0.2, -1.0),
               end: Alignment(0.2, 1.0),
-              colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+              colors: [
+                AppColors.deepPlum,
+                Color(0xFF210C26),
+                Color(0xFF000000),
+              ],
               stops: [0.0, 0.4172, 0.9933],
             ),
           ),
@@ -353,7 +358,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 child: Text(
                                   'Clear all',
                                   style: TextStyle(
-                                    color: Color(0xFFD42BC2),
+                                    color: AppColors.vibrantMagenta,
                                     fontSize: context.rf(14),
                                     fontWeight: FontWeight.w500,
                                   ),

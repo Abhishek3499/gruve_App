@@ -155,7 +155,7 @@ class CacheInterceptor extends Interceptor {
           CacheData.fromEmpty(),
       config,
       () => _performRequest(options),
-      toJson: (data) => data?.toJson(),
+      toJson: (data) => data.toJson(),
     );
 
     if (cacheResult.hasData && !cacheResult.isStale) {
@@ -231,7 +231,7 @@ class CacheInterceptor extends Interceptor {
         cacheKey,
         cacheData,
         config,
-        toJson: (data) => data?.toJson(),
+        toJson: (data) => data.toJson(),
       );
 
       AppLogger.d(
@@ -368,6 +368,8 @@ class CacheInterceptor extends Interceptor {
       '/delete',
       '/update',
       '/create',
+      'posts/drafts',
+      'drafts',
     };
 
     final method = options.method.toUpperCase();
@@ -532,6 +534,9 @@ class CacheInvalidationHelper {
       case CacheActionType.highlightUpdate:
         await _invalidateOnHighlightUpdate(resourceId);
         break;
+      case CacheActionType.draft:
+        await _invalidateOnDraft();
+        break;
     }
   }
 
@@ -542,6 +547,10 @@ class CacheInvalidationHelper {
 
     // Invalidate user profile
     await _cacheManager.invalidatePattern('profile');
+
+    // Invalidate drafts cache if post was created from draft
+    await _cacheManager.invalidatePattern(ApiConstants.postDrafts);
+    await _cacheManager.invalidatePattern('drafts');
 
     AppLogger.d(
       '🗑️ [CacheInvalidation] Invalidated caches for new post: $postId',
@@ -629,6 +638,12 @@ class CacheInvalidationHelper {
       '🗑️ [CacheInvalidation] Invalidated caches for highlight update: $highlightId',
     );
   }
+
+  Future<void> _invalidateOnDraft() async {
+    await _cacheManager.invalidatePattern(ApiConstants.postDrafts);
+    await _cacheManager.invalidatePattern('drafts');
+    AppLogger.d('🗑️ [CacheInvalidation] Invalidated caches for drafts');
+  }
 }
 
 /// Cache action types for invalidation
@@ -641,6 +656,7 @@ enum CacheActionType {
   profileUpdate,
   storyCreate,
   highlightUpdate,
+  draft,
 }
 
 /// Cache action for invalidation

@@ -6,7 +6,6 @@ import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/profile/data/repo/profile_repository.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
 
 import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
@@ -60,7 +59,6 @@ class _TabPaginationState {
 class ProfileController {
   final ProfileRepository _repository;
   final PostService _postService;
-  final HighlightStateManager? _highlightStateManager;
 
   // Pagination states for each tab
   final _TabPaginationState _allTabState = _TabPaginationState();
@@ -91,13 +89,9 @@ class ProfileController {
   /// After gateway/timeouts, block rapid re-fetch (scroll spam).
   DateTime? _profileFetchBackoffUntil;
 
-  ProfileController({
-    ProfileRepository? repository,
-    PostService? postService,
-    HighlightStateManager? highlightStateManager,
-  }) : _repository = repository ?? ProfileRepository(),
-       _postService = postService ?? PostService(),
-       _highlightStateManager = highlightStateManager;
+  ProfileController({ProfileRepository? repository, PostService? postService})
+    : _repository = repository ?? ProfileRepository(),
+      _postService = postService ?? PostService();
 
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   final ValueNotifier<ProfileStatsModel> statsNotifier = ValueNotifier(
@@ -1348,133 +1342,6 @@ class ProfileController {
         '✅ [ProfileController] Story added to highlight: $highlightId',
       );
     }
-  }
-
-  /// Get stories from StoryController and convert to ProfileController format
-  List<Map<String, dynamic>> get storiesFromStoryController {
-    if (_disposed) return [];
-
-    try {
-      // For now, create dummy stories from HighlightStateManager to test
-      // In a real implementation, this should get stories from StoryController
-      final highlightedStoryIds =
-          _highlightStateManager?.highlightedStoryIds ?? <String>{};
-
-      AppLogger.d(
-        '🔍 [ProfileController] Creating stories from ${highlightedStoryIds.length} highlighted story IDs',
-      );
-
-      // Create dummy stories for testing
-      final stories = highlightedStoryIds
-          .map(
-            (storyId) => {
-              'id': storyId,
-              'imageUrl': 'https://via.placeholder.com/60x60', // Dummy image
-              'username': user?.username ?? 'User',
-              'hasSeen': false,
-              'isHighlighted': true,
-              'mediaUrl': 'https://via.placeholder.com/60x60',
-              'mediaKind': 'image',
-              'caption': null,
-            },
-          )
-          .toList();
-
-      AppLogger.d(
-        '✅ [ProfileController] Created ${stories.length} dummy stories from HighlightStateManager',
-      );
-      return stories;
-    } catch (e) {
-      AppLogger.d('❌ [ProfileController] Error creating stories: $e');
-      return [];
-    }
-  }
-
-  /// Get only highlighted stories from StoryController (for own profile)
-  List<Map<String, dynamic>> get highlightedStoriesOnly {
-    if (_disposed) return [];
-
-    AppLogger.d(
-      '🔍 [ProfileController] Getting highlighted stories from StoryController...',
-    );
-
-    // Get stories from StoryController
-    final allStories = storiesFromStoryController;
-
-    if (allStories.isEmpty) {
-      AppLogger.d(
-        '⚠️ [ProfileController] No stories from StoryController, trying local storyList...',
-      );
-      return _getHighlightedStoriesFromLocalList();
-    }
-
-    final highlightedStoryIds =
-        _highlightStateManager?.highlightedStoryIds ?? <String>{};
-
-    AppLogger.d(
-      '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
-    );
-
-    final highlightedStories = allStories.where((story) {
-      final storyId = story['id']?.toString() ?? '';
-      final isHighlighted =
-          _highlightStateManager?.isStoryHighlighted(storyId) ?? false;
-      AppLogger.d(
-        '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
-      );
-      return isHighlighted;
-    }).toList();
-
-    AppLogger.d(
-      '🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories',
-    );
-
-    // If no highlighted stories, try alternative approach
-    if (highlightedStories.isEmpty && allStories.isNotEmpty) {
-      AppLogger.d(
-        '🔄 [ProfileController] No highlighted stories found, trying alternative approach...',
-      );
-      final storiesFromHighlights = this.storiesFromHighlights;
-      if (storiesFromHighlights.isNotEmpty) {
-        return storiesFromHighlights;
-      }
-      AppLogger.d(
-        '⚠️ [ProfileController] No stories in highlights either, showing all stories as fallback',
-      );
-      return allStories;
-    }
-
-    return highlightedStories;
-  }
-
-  /// Fallback method to get highlighted stories from local storyList
-  List<Map<String, dynamic>> _getHighlightedStoriesFromLocalList() {
-    AppLogger.d(
-      '🔍 [ProfileController] Total stories in local storyList: ${storyList.value.length}',
-    );
-
-    final allStories = storyList.value;
-    final highlightedStoryIds =
-        _highlightStateManager?.highlightedStoryIds ?? <String>{};
-
-    AppLogger.d(
-      '🔍 [ProfileController] Highlighted story IDs in state manager: $highlightedStoryIds',
-    );
-
-    final highlightedStories = allStories.where((story) {
-      final storyId = story['id']?.toString() ?? '';
-      final isHighlighted =
-          _highlightStateManager?.isStoryHighlighted(storyId) ?? false;
-      AppLogger.d(
-        '🔍 [ProfileController] Story $storyId is highlighted: $isHighlighted',
-      );
-      return isHighlighted;
-    }).toList();
-
-    AppLogger.d(
-      '🌟 [ProfileController] Filtered ${highlightedStories.length} highlighted stories from ${allStories.length} total stories',
-    );
-    return highlightedStories;
   }
 
   /// Get stories from highlights directly (alternative approach)

@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_controller_notifier.dart';
 import 'package:gruve_app/features/highlights/presentation/screens/highlight_viewer_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 /// Reusable highlights list for user profile
 /// Similar to StoryList but without "Add Story" button
-class UserHighlightsList extends StatelessWidget {
+class UserHighlightsList extends ConsumerWidget {
   final List<HighlightModel> highlights;
   final bool isOwnProfile;
-  final ProfileController? controller;
 
   const UserHighlightsList({
     super.key,
     required this.highlights,
     this.isOwnProfile = false,
-    this.controller,
   });
 
   void _log(String message) {
@@ -27,7 +24,7 @@ class UserHighlightsList extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     _log('[UserHighlightsList] Building with ${highlights.length} highlights');
     _log('[UserHighlightsList] isOwnProfile: $isOwnProfile');
 
@@ -43,13 +40,17 @@ class UserHighlightsList extends StatelessWidget {
         padding: EdgeInsets.only(left: context.rw(30)),
         itemCount: highlights.length,
         itemBuilder: (context, index) {
-          return _buildHighlightItem(context, highlights[index]);
+          return _buildHighlightItem(context, ref, highlights[index]);
         },
       ),
     );
   }
 
-  Widget _buildHighlightItem(BuildContext context, HighlightModel highlight) {
+  Widget _buildHighlightItem(
+    BuildContext context,
+    WidgetRef ref,
+    HighlightModel highlight,
+  ) {
     final cover = highlight.coverPreviewUrl;
 
     return Padding(
@@ -57,7 +58,9 @@ class UserHighlightsList extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           _log('[UserHighlightsList] Highlight tapped: ${highlight.title}');
-          context.read<HighlightController>().cacheHighlightStories(highlight);
+          ref
+              .read(highlightControllerProvider.notifier)
+              .cacheHighlightStories(highlight);
           Navigator.push(
             context,
             MaterialPageRoute(

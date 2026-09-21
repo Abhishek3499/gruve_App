@@ -16,6 +16,7 @@ import 'package:gruve_app/features/auth/presentation/widgets/inputs/neon_passwor
 
 import 'package:gruve_app/features/auth/presentation/screens/email_login_screen.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String identifier;
@@ -154,7 +155,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                               TextSpan(
                                 text: 'Password',
 
-                                style: TextStyle(color: Color(0xFFB86AD0)),
+                                style: TextStyle(
+                                  color: AppColors.lavenderPurple,
+                                ),
                               ),
                             ],
                           ),

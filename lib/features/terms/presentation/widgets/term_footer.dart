@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/constants/app_assets.dart';
 
 class TermFooter extends StatelessWidget {
   const TermFooter({super.key});
@@ -15,11 +16,7 @@ class TermFooter extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/splash_screen_logo/image 43.png',
-              width: 16,
-              height: 16,
-            ),
+            Image.asset(AppAssets.footerLogo, width: 16, height: 16),
             const SizedBox(width: 3),
             const Text(
               'Made in India',

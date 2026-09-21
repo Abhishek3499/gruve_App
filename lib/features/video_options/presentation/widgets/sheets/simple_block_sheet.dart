@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SimpleBlockSheet extends StatelessWidget {
   final String? userName;
@@ -18,7 +19,7 @@ class SimpleBlockSheet extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+          colors: [AppColors.softPurple, AppColors.sheetDark],
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(45)),
       ),
@@ -138,7 +139,7 @@ class SimpleBlockSheet extends StatelessWidget {
                   width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCD72E3),
+                    color: AppColors.softPurple,
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: Material(

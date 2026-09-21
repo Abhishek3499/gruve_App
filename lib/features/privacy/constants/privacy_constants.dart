@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/privacy/domain/entities/privacy_option_model.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PrivacyConstants {
   static const List<PrivacyOptionModel> privacyOptions = [
@@ -38,7 +39,7 @@ class PrivacyConstants {
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF9544A7), Color(0xFF42174C)],
+    colors: [Color(0xFF9544A7), AppColors.deepPlum],
   );
 
   static const LinearGradient cardGradient = LinearGradient(

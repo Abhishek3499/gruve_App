@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class MockTrack {
   final String id;
@@ -57,7 +58,7 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       durationStr: '3:05',
       totalDurationSeconds: 185.0,
       coverGradient: const LinearGradient(
-        colors: [Color(0xFFC358D7), Color(0xFF72008D)],
+        colors: [AppColors.accentPurple, Color(0xFF72008D)],
       ),
     ),
     MockTrack(
@@ -127,7 +128,7 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
       durationStr: '3:33',
       totalDurationSeconds: 213.0,
       coverGradient: const LinearGradient(
-        colors: [Color(0xFF5AC8FA), Color(0xFFC358D7)],
+        colors: [Color(0xFF5AC8FA), AppColors.accentPurple],
       ),
     ),
   ];
@@ -260,7 +261,7 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                         child: const Text(
                           'Done',
                           style: TextStyle(
-                            color: Color(0xFFC358D7),
+                            color: AppColors.accentPurple,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -372,7 +373,7 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                             ? Icons.pause_circle_filled
                             : Icons.play_circle_filled,
                         color: isPlaying
-                            ? const Color(0xFFC358D7)
+                            ? AppColors.accentPurple
                             : Colors.white70,
                         size: 30,
                       ),
@@ -470,7 +471,7 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFFC358D7) : Colors.white10,
+                      color: isSel ? AppColors.accentPurple : Colors.white10,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: isSel ? Colors.white24 : Colors.transparent,
@@ -567,11 +568,11 @@ class _StoryMusicPickerState extends State<StoryMusicPicker> {
                           width: max(highlightWidth, 30.0),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFC358D7,
-                              ).withValues(alpha: 0.25),
+                              color: AppColors.accentPurple.withValues(
+                                alpha: 0.25,
+                              ),
                               border: Border.all(
-                                color: const Color(0xFFC358D7),
+                                color: AppColors.accentPurple,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(8),

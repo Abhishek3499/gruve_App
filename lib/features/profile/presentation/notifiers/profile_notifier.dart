@@ -2,36 +2,109 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
-import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
-import 'package:gruve_app/features/profile/domain/entities/profile_stats_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/core/media/video_frame_cache.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/highlights/data/datasource/highlight_service.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
-import 'package:gruve_app/core/media/video_frame_cache.dart';
-import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/profile/data/dto/edit_profile_response.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
+import 'package:gruve_app/features/profile/domain/entities/profile_stats_model.dart';
+import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
+import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 
-class ProfileProvider extends ChangeNotifier {
-  ProfileProvider({
+@immutable
+class ProfileState {
+  const ProfileState({
+    this.user,
+    this.stats = const ProfileStatsModel.empty(),
+    this.posts = const [],
+    this.highlights = const [],
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  final ProfileModel? user;
+  final ProfileStatsModel stats;
+  final List<Post> posts;
+  final List<HighlightModel> highlights;
+  final bool isLoading;
+  final String? errorMessage;
+
+  ProfileModel? get profile => user;
+  ProfileModel? get cachedUser => user;
+
+  ProfileState copyWith({
+    ProfileModel? user,
+    ProfileStatsModel? stats,
+    List<Post>? posts,
+    List<HighlightModel>? highlights,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
+    bool clearUser = false,
+  }) {
+    return ProfileState(
+      user: clearUser ? null : (user ?? this.user),
+      stats: stats ?? this.stats,
+      posts: posts ?? this.posts,
+      highlights: highlights ?? this.highlights,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ProfileState &&
+        other.user == user &&
+        other.stats == stats &&
+        listEquals(other.posts, posts) &&
+        listEquals(other.highlights, highlights) &&
+        other.isLoading == isLoading &&
+        other.errorMessage == errorMessage;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    user,
+    stats,
+    Object.hashAll(posts),
+    Object.hashAll(highlights),
+    isLoading,
+    errorMessage,
+  );
+}
+
+class ProfileNotifier extends Notifier<ProfileState> {
+  ProfileNotifier({
     ProfileController? controller,
     HighlightService? highlightService,
-    HighlightStateManager? highlightStateManager,
-  }) : controller =
-           controller ??
-           ProfileController(highlightStateManager: highlightStateManager),
+  }) : controller = controller ?? ProfileController(),
        _highlightService = highlightService ?? HighlightService();
 
-  final ProfileController controller;
+  late final ProfileController controller;
   final HighlightService _highlightService;
 
-  /// False until a fetch actually starts — avoids "loading forever" when no request runs.
-  bool isLoading = false;
-  String? errorMessage;
-
   CancelToken? _cancelToken;
+  Future<void>? _profileFetchInFlight;
+  DateTime? _profileFetchStartedAt;
+  DateTime? _lastProfileFetch;
+  DateTime? _lastHighlightsFetch;
+  int _profileFetchGeneration = 0;
+  bool _isFetchingHighlights = false;
+
+  @override
+  ProfileState build() {
+    ref.onDispose(() {
+      cancelActiveRequests();
+      controller.dispose();
+    });
+    return const ProfileState();
+  }
 
   CancelToken _getCancelToken() {
     _cancelToken ??= CancelToken();
@@ -44,30 +117,22 @@ class ProfileProvider extends ChangeNotifier {
     controller.cancelActiveRequests();
   }
 
-  Future<void>? _profileFetchInFlight;
-  DateTime? _profileFetchStartedAt;
-  DateTime? _lastProfileFetch;
-  DateTime? _lastHighlightsFetch;
-  int _profileFetchGeneration = 0;
-  bool _isFetchingHighlights = false;
-
-  ProfileModel? user;
-  ProfileModel? get profile => user;
-  ProfileStatsModel stats = const ProfileStatsModel.empty();
-  List<Post> posts = const [];
-  List<HighlightModel> highlights = const [];
+  ProfileModel? get user => state.user;
+  ProfileModel? get profile => state.user;
+  ProfileModel? get cachedUser => state.user;
+  ProfileStatsModel get stats => state.stats;
+  List<Post> get posts => state.posts;
+  List<HighlightModel> get highlights => state.highlights;
+  bool get isLoading => state.isLoading;
+  String? get errorMessage => state.errorMessage;
 
   Listenable get contentListenable => controller.contentListenable;
 
-  /// NEW: Check if cached profile is fresh (call this synchronously)
   bool get hasFreshProfile {
-    if (user == null || _lastProfileFetch == null) return false;
+    if (state.user == null || _lastProfileFetch == null) return false;
     final age = DateTime.now().difference(_lastProfileFetch!);
     return age < const Duration(minutes: 5);
   }
-
-  /// NEW: Get cached user immediately (no async)
-  ProfileModel? get cachedUser => user;
 
   void _log(String message) {
     AppLogger.d(message);
@@ -88,8 +153,7 @@ class ProfileProvider extends ChangeNotifier {
       _log('[Profile] Clearing stale in-flight fetch');
       _profileFetchInFlight = null;
       _profileFetchStartedAt = null;
-      isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
 
     final generation = ++_profileFetchGeneration;
@@ -119,7 +183,7 @@ class ProfileProvider extends ChangeNotifier {
     final now = DateTime.now();
     final shouldFetchProfile =
         force ||
-        user == null ||
+        state.user == null ||
         _lastProfileFetch == null ||
         now.difference(_lastProfileFetch!) >= const Duration(minutes: 5);
 
@@ -135,9 +199,7 @@ class ProfileProvider extends ChangeNotifier {
       return;
     }
 
-    isLoading = true;
-    errorMessage = null;
-    notifyListeners();
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final futures = <Future<void>>[];
       if (shouldFetchProfile) {
@@ -147,11 +209,12 @@ class ProfileProvider extends ChangeNotifier {
               .timeout(const Duration(seconds: 8))
               .then((_) {
                 _lastProfileFetch = DateTime.now();
-                user = controller.user;
+                final fetchedUser = controller.user;
+                state = state.copyWith(user: fetchedUser);
 
                 // Pre-cache avatar after successful fetch
-                if (user != null) {
-                  unawaited(_precacheUserAvatar(user!));
+                if (fetchedUser != null) {
+                  unawaited(_precacheUserAvatar(fetchedUser));
                 }
               }),
         );
@@ -163,30 +226,35 @@ class ProfileProvider extends ChangeNotifier {
       await Future.wait(futures);
 
       if (shouldFetchProfile) {
-        user = controller.user;
-        if (user == null) {
+        final fetchedUser = controller.user;
+        if (fetchedUser == null) {
           throw StateError('Profile API did not return user data');
         }
 
-        stats = controller.stats;
-        posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
+        final fetchedStats = controller.stats;
+        final fetchedPosts = List<Post>.unmodifiable(
+          controller.getPostsForTab(0),
+        );
+        state = state.copyWith(
+          user: fetchedUser,
+          stats: fetchedStats,
+          posts: fetchedPosts,
+        );
       }
 
       _log('[Profile] API success');
       if (shouldFetchProfile) {
-        _log('[Profile] Posts count: ${posts.length}');
+        _log('[Profile] Posts count: ${state.posts.length}');
       }
     } catch (error, stackTrace) {
-      if (error is TimeoutException) {
-        errorMessage = 'Profile load timeout. Check your connection.';
-      } else {
-        errorMessage = 'Failed to load profile';
-      }
+      final errorMsg = error is TimeoutException
+          ? 'Profile load timeout. Check your connection.'
+          : 'Failed to load profile';
+      state = state.copyWith(errorMessage: errorMsg);
       _log('[Profile] API failed: $error');
       _log('$stackTrace');
     } finally {
-      isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
   }
 
@@ -198,20 +266,21 @@ class ProfileProvider extends ChangeNotifier {
       final response = await _highlightService
           .fetchMyHighlights(cancelToken: _getCancelToken())
           .timeout(const Duration(seconds: 12));
-      highlights = List<HighlightModel>.unmodifiable(
+      final loadedHighlights = List<HighlightModel>.unmodifiable(
         response.success ? response.data.highlights : const [],
       );
-      controller.highlightList.value = highlights;
-      _log('[Profile] Highlights count: ${highlights.length}');
+      state = state.copyWith(highlights: loadedHighlights);
+      controller.highlightList.value = loadedHighlights;
+      _log('[Profile] Highlights count: ${loadedHighlights.length}');
 
       if (response.success) {
         _lastHighlightsFetch = DateTime.now();
       }
 
-      unawaited(_precacheHighlightCovers(highlights));
+      unawaited(_precacheHighlightCovers(loadedHighlights));
     } catch (error) {
       if (error is DioException && CancelToken.isCancel(error)) {
-        AppLogger.d('[ProfileProvider] Highlights cancelled');
+        AppLogger.d('[ProfileNotifier] Highlights cancelled');
         return;
       }
       _log('[Profile] Highlights failed: $error');
@@ -277,10 +346,8 @@ class ProfileProvider extends ChangeNotifier {
   Future<void> refreshCounts({String reason = 'counts_refresh'}) async {
     try {
       await controller.refreshCounts(reason: reason);
-      user = controller.user;
-      stats = controller.stats;
       _lastProfileFetch = DateTime.now();
-      notifyListeners();
+      state = state.copyWith(user: controller.user, stats: controller.stats);
       _log('[Profile] Counts refresh success');
     } catch (error, stackTrace) {
       _log('[Profile] Counts refresh failed: $error');
@@ -290,8 +357,9 @@ class ProfileProvider extends ChangeNotifier {
 
   Future<void> ensureTabLoaded(int tabIndex) async {
     await controller.ensureTabLoaded(tabIndex);
-    posts = List<Post>.unmodifiable(controller.getPostsForTab(0));
-    notifyListeners();
+    state = state.copyWith(
+      posts: List<Post>.unmodifiable(controller.getPostsForTab(0)),
+    );
   }
 
   void requestLoadMoreThrottled(int tabIndex) {
@@ -308,7 +376,7 @@ class ProfileProvider extends ChangeNotifier {
 
     if (currentUser == null) return;
 
-    controller.user = ProfileModel(
+    final updatedUser = ProfileModel(
       id: updated.userId ?? currentUser.id,
       fullName: updated.fullName.trim().isEmpty
           ? currentUser.fullName
@@ -323,52 +391,59 @@ class ProfileProvider extends ChangeNotifier {
       hasActiveStory: currentUser.hasActiveStory,
       storyCount: currentUser.storyCount,
     );
-    user = controller.user;
-    notifyListeners();
+    controller.user = updatedUser;
+    state = state.copyWith(user: updatedUser);
   }
 
   /// Refresh profile data (used on login)
   Future<void> refreshProfile() async {
-    AppLogger.d('🔄 [ProfileProvider] Refreshing profile data...');
+    AppLogger.d('🔄 [ProfileNotifier] Refreshing profile data...');
     await fetchProfileData(fetchUserReason: 'login_refresh', force: true);
-    AppLogger.d('✅ [ProfileProvider] refreshProfile completed');
+    AppLogger.d('✅ [ProfileNotifier] refreshProfile completed');
   }
 
   /// Reset all profile data on logout
   void reset() {
-    AppLogger.d('🔄 [ProfileProvider] Resetting profile data...');
+    AppLogger.d('🔄 [ProfileNotifier] Resetting profile data...');
     controller.reset();
-    user = null;
-    stats = const ProfileStatsModel.empty();
-    posts = [];
-    highlights = [];
-    controller.highlightList.value = const [];
-    isLoading = false;
     _isFetchingHighlights = false;
     _profileFetchInFlight = null;
     _profileFetchStartedAt = null;
     _lastProfileFetch = null;
     _lastHighlightsFetch = null;
     _profileFetchGeneration++;
-    errorMessage = null;
-    notifyListeners();
-    AppLogger.d('✅ [ProfileProvider] Profile data reset complete');
+    state = const ProfileState();
+    AppLogger.d('✅ [ProfileNotifier] Profile data reset complete');
   }
 
   /// Remove highlight locally from the UI state
   void removeHighlightLocally(String highlightId) {
-    final updated = highlights.where((h) => h.id != highlightId).toList();
-    highlights = List<HighlightModel>.unmodifiable(updated);
-    controller.highlightList.value = highlights;
-    notifyListeners();
+    final updated = state.highlights.where((h) => h.id != highlightId).toList();
+    final immutableList = List<HighlightModel>.unmodifiable(updated);
+    controller.highlightList.value = immutableList;
+    state = state.copyWith(highlights: immutableList);
   }
 
-  /// NEW: Quick fetch for avatar only (skip highlights)
+  /// Update highlights list directly (e.g. after adding or creating highlight)
+  void updateHighlights(List<HighlightModel> highlights) {
+    final immutableList = List<HighlightModel>.unmodifiable(highlights);
+    controller.highlightList.value = immutableList;
+    _lastHighlightsFetch = DateTime.now();
+    state = state.copyWith(highlights: immutableList);
+  }
+
+  /// Force-refresh highlights from the network
+  Future<void> refreshHighlights() async {
+    _lastHighlightsFetch = null;
+    return _loadHighlights();
+  }
+
+  /// Quick fetch for avatar only (skip highlights)
   Future<void> fetchAvatarOnly() async {
     return _runProfileFetch(fetchUserReason: 'avatar_only', avatarOnly: true);
   }
 
-  /// NEW: Pre-cache avatar after profile fetch
+  /// Pre-cache avatar after profile fetch
   Future<void> _precacheUserAvatar(ProfileModel user) async {
     final imageUrl = user.profileImage.trim();
     if (imageUrl.isEmpty || !imageUrl.startsWith('http')) return;
@@ -404,16 +479,13 @@ class ProfileProvider extends ChangeNotifier {
         },
       );
 
-      AppLogger.d('✅ [ProfileProvider] Pre-cached user avatar');
+      AppLogger.d('✅ [ProfileNotifier] Pre-cached user avatar');
     } catch (e) {
-      AppLogger.d('⚠️ [ProfileProvider] Avatar pre-cache failed: $e');
+      AppLogger.d('⚠️ [ProfileNotifier] Avatar pre-cache failed: $e');
     }
   }
-
-  @override
-  void dispose() {
-    cancelActiveRequests();
-    controller.dispose();
-    super.dispose();
-  }
 }
+
+final profileNotifierProvider = NotifierProvider<ProfileNotifier, ProfileState>(
+  ProfileNotifier.new,
+);

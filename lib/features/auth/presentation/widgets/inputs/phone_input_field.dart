@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class PhoneInputField extends StatefulWidget {
   final TextEditingController? controller;
@@ -121,7 +122,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
             border: Border.all(
               color: effectiveErrorText != null
                   ? const Color(0xFFFF6B6B)
-                  : const Color(0xFFB86AD0),
+                  : AppColors.lavenderPurple,
               width: 1.2,
             ),
           ),
@@ -150,18 +151,18 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
                         ),
                         prefixIcon: const Icon(
                           Icons.search,
-                          color: Color(0xFFB86AD0),
+                          color: AppColors.lavenderPurple,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: const BorderSide(
-                            color: Color(0xFFB86AD0),
+                            color: AppColors.lavenderPurple,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: const BorderSide(
-                            color: Color(0xFFB86AD0),
+                            color: AppColors.lavenderPurple,
                             width: 1.5,
                           ),
                         ),
@@ -211,7 +212,7 @@ class _PhoneInputFieldState extends State<PhoneInputField> {
               Container(
                 height: 30,
                 width: 1.2,
-                color: const Color(0xFFB86AD0).withValues(alpha: 0.6),
+                color: AppColors.lavenderPurple.withValues(alpha: 0.6),
               ),
 
               // ── PHONE INPUT ──────────────────────────────

@@ -7,6 +7,7 @@ import 'package:gruve_app/features/analytics/views/presentation/screens/views_sc
 import 'package:gruve_app/features/analytics/presentation/widgets/insight_list_tile.dart';
 import 'package:gruve_app/features/analytics/presentation/widgets/insight_footer.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ProfessionalDashboardScreen extends StatelessWidget {
   const ProfessionalDashboardScreen({super.key});
@@ -21,7 +22,7 @@ class ProfessionalDashboardScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF9544A7), Color(0xFF42174C)],
+            colors: [Color(0xFF9544A7), AppColors.deepPlum],
           ),
         ),
         child: SafeArea(

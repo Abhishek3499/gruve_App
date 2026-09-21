@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_view_bottom.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_viewer_topbar.dart';
-import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class StoryViewScreen extends StatefulWidget {
+class StoryViewScreen extends ConsumerStatefulWidget {
   final String? userId;
   final List<String> mediaPaths;
   final String displayName;
@@ -38,13 +38,12 @@ class StoryViewScreen extends StatefulWidget {
   });
 
   @override
-  State<StoryViewScreen> createState() => _StoryViewScreenState();
+  ConsumerState<StoryViewScreen> createState() => _StoryViewScreenState();
 }
 
-class _StoryViewScreenState extends State<StoryViewScreen>
+class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late final StoryStateController _storyStateController;
 
   int currentIndex = 0;
   VideoPlayerController? _videoController;
@@ -63,10 +62,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
       '[StoryViewScreen] initState - isOwnProfile: ${widget.isOwnProfile}',
     );
 
-    _storyStateController = context.read<StoryStateController>();
-
     _playbackController.initialize();
-    _initializeCurrentStory();
 
     _animationController = AnimationController(
       vsync: this,
@@ -84,6 +80,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     _playbackController.addListener(_onPlaybackStateChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _initializeCurrentStory();
       _initializeMedia();
     });
   }
@@ -102,7 +100,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     final mediaPath = widget.mediaPaths[index];
     final storyId = widget.storyIds != null && index < widget.storyIds!.length
         ? widget.storyIds![index]
-        : _storyStateController.getStoryIdByMediaPath(mediaPath);
+        : ref.read(storyStateNotifierProvider).getStoryIdByMediaPath(mediaPath);
     final createdAt =
         widget.timestamps != null && index < widget.timestamps!.length
         ? widget.timestamps![index]
@@ -161,7 +159,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
       return;
     }
 
-    _storyStateController.setCurrentStory(storyItem);
+    ref.read(storyStateNotifierProvider.notifier).setCurrentStory(storyItem);
     AppLogger.d(
       '[Playback] story changed: index=$currentIndex, '
       'id=${storyItem.id.isEmpty ? 'MISSING' : storyItem.id}, reason=$reason',

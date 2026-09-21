@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
 
 /// Test suite for story preview loading optimizations
-/// 
+///
 /// Tests verify:
 /// 1. Cache check works synchronously
 /// 2. Profile not re-fetched when cache is fresh
@@ -13,52 +14,34 @@ import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
 /// 4. Pre-caching doesn't block main thread
 void main() {
   setUpAll(() async {
-    dotenv.testLoad(fileInput: '''
+    dotenv.testLoad(
+      fileInput: '''
 BASE_URL=https://gruve-api.hardkore.tech/api/v1/
 WS_URL=wss://gruve-api.hardkore.tech/ws
 GOOGLE_WEB_CLIENT_ID=911374841840-vldpe65qb65ohi6bfnll6ulh09m0qpgn.apps.googleusercontent.com
-''');
+''',
+    );
     await EnvironmentConfig.initialize();
   });
 
-  group('ProfileProvider Cache Optimizations', () {
+  group('ProfileNotifier Cache Optimizations', () {
     test('hasFreshProfile returns false when user is null', () {
-      final provider = ProfileProvider();
-      
-      expect(provider.hasFreshProfile, false);
-      expect(provider.cachedUser, null);
+      final container = ProviderContainer();
+      final notifier = container.read(profileNotifierProvider.notifier);
+
+      expect(notifier.hasFreshProfile, false);
+      expect(notifier.cachedUser, null);
     });
 
-    test('hasFreshProfile returns true for fresh cache', () {
-      final provider = ProfileProvider();
-      
-      // Simulate profile fetch
-      provider.user = ProfileModel(
-        id: 'test-id',
-        fullName: 'Test User',
-        username: 'testuser',
-        profileImage: 'https://example.com/avatar.jpg',
-        isFollowing: false,
-        hasActiveStory: false,
-        storyCount: 0,
-      );
-      
-      // Set last fetch to now
-      // Note: _lastProfileFetch is private, so in real test you'd need to
-      // actually call fetchProfileData() and wait for it to complete
-      
-      // expect(provider.hasFreshProfile, true);
-      expect(provider.cachedUser, isNotNull);
+    test('hasFreshProfile returns false when no fetch completed', () {
+      final container = ProviderContainer();
+      final notifier = container.read(profileNotifierProvider.notifier);
+
+      expect(notifier.hasFreshProfile, false);
     });
 
     test('cachedUser returns user immediately without async', () {
-      final provider = ProfileProvider();
-      
-      // Initially null
-      expect(provider.cachedUser, null);
-      
-      // Set user
-      provider.user = ProfileModel(
+      final user = ProfileModel(
         id: 'test-id',
         fullName: 'Test User',
         username: 'testuser',
@@ -67,10 +50,12 @@ GOOGLE_WEB_CLIENT_ID=911374841840-vldpe65qb65ohi6bfnll6ulh09m0qpgn.apps.googleus
         hasActiveStory: false,
         storyCount: 0,
       );
-      
+
+      final state = ProfileState(user: user);
+
       // Now available synchronously
-      expect(provider.cachedUser, isNotNull);
-      expect(provider.cachedUser!.username, 'testuser');
+      expect(state.cachedUser, isNotNull);
+      expect(state.cachedUser!.username, 'testuser');
     });
   });
 
@@ -88,32 +73,32 @@ GOOGLE_WEB_CLIENT_ID=911374841840-vldpe65qb65ohi6bfnll6ulh09m0qpgn.apps.googleus
 }
 
 /// Manual testing checklist:
-/// 
+///
 /// Test 1: Avatar loads instantly when cached
 /// - Open story preview
 /// - Go back
 /// - Open story preview again
 /// - Expected: Avatar appears in < 100ms
-/// 
+///
 /// Test 2: Avatar loads within 2s on first launch
 /// - Clear app data
 /// - Launch app and login
 /// - Open story preview
 /// - Expected: Avatar loads in 1-2s
-/// 
+///
 /// Test 3: No API call when cache is fresh
 /// - Enable network logging in DevTools
 /// - Open story preview (first time)
 /// - Go back
 /// - Open story preview (second time)
 /// - Expected: No /profile/ API call on second open
-/// 
+///
 /// Test 4: Works offline with cached avatar
 /// - Open story preview with network on
 /// - Enable airplane mode
 /// - Close and reopen story preview
 /// - Expected: Avatar still appears
-/// 
+///
 /// Test 5: No UI jank when avatar loads
 /// - Open DevTools Performance tab
 /// - Open story preview

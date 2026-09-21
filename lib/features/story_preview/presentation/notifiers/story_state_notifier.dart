@@ -1,45 +1,99 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Story data model for better organization
+/// Story data model for organization
 class StoryData {
   final String mediaPath;
   final DateTime createdAt;
   final String? id; // Story UUID for API calls
 
-  StoryData({required this.mediaPath, required this.createdAt, this.id});
+  const StoryData({required this.mediaPath, required this.createdAt, this.id});
 }
 
-/// Optimized controller for managing story state across the app
-class StoryStateController extends ChangeNotifier {
-  static final StoryStateController _instance =
-      StoryStateController._internal();
-  factory StoryStateController() => _instance;
-  StoryStateController._internal() {
-    _currentUserId = null; // Will be set when needed
-    _isLoadingFromStorage = false; // Don't auto-load on init
+/// Immutable state for [StoryStateNotifier]
+class StoryState {
+  final List<StoryData> userStories;
+  final String? username;
+  final String? avatarUrl;
+  final bool isLoadingFromStorage;
+  final String? currentUserId; // Track current user for cache isolation
+  final StoryItem? currentStory; // Current story being viewed
+
+  const StoryState({
+    this.userStories = const [],
+    this.username,
+    this.avatarUrl,
+    this.isLoadingFromStorage = false,
+    this.currentUserId,
+    this.currentStory,
+  });
+
+  bool get hasUserStory => userStories.isNotEmpty;
+
+  List<String> get currentUserStoryMediaPaths =>
+      userStories.map((s) => s.mediaPath).toList();
+
+  List<String?> get currentUserStoryIds =>
+      userStories.map((s) => s.id).toList();
+
+  DateTime? get storyCreatedAt =>
+      userStories.isNotEmpty ? userStories.first.createdAt : null;
+
+  List<DateTime> get storyTimestamps =>
+      userStories.map((s) => s.createdAt).toList();
+
+  /// Get current story ID (UUID) for API calls
+  String? get currentStoryId =>
+      currentStory?.id ??
+      (userStories.isNotEmpty ? userStories.first.id : null);
+
+  /// Get story ID by media path
+  String? getStoryIdByMediaPath(String mediaPath) {
+    final story = userStories.firstWhere(
+      (s) => s.mediaPath == mediaPath,
+      orElse: () => StoryData(mediaPath: mediaPath, createdAt: DateTime.now()),
+    );
+    return story.id;
   }
 
-  static StoryStateController ensureRegistered() {
-    return StoryStateController();
+  StoryState copyWith({
+    List<StoryData>? userStories,
+    String? username,
+    bool clearUsername = false,
+    String? avatarUrl,
+    bool clearAvatarUrl = false,
+    bool? isLoadingFromStorage,
+    String? currentUserId,
+    bool clearCurrentUserId = false,
+    StoryItem? currentStory,
+    bool clearCurrentStory = false,
+  }) {
+    return StoryState(
+      userStories: userStories ?? this.userStories,
+      username: clearUsername ? null : (username ?? this.username),
+      avatarUrl: clearAvatarUrl ? null : (avatarUrl ?? this.avatarUrl),
+      isLoadingFromStorage: isLoadingFromStorage ?? this.isLoadingFromStorage,
+      currentUserId: clearCurrentUserId
+          ? null
+          : (currentUserId ?? this.currentUserId),
+      currentStory: clearCurrentStory
+          ? null
+          : (currentStory ?? this.currentStory),
+    );
   }
+}
 
-  List<StoryData> _userStories = [];
-  String? _username;
-  String? _avatarUrl;
-  bool _isLoadingFromStorage = false;
-  String? _currentUserId; // Track current user for cache isolation
-
-  // Current story being viewed
-  StoryItem? _currentStory;
-
+/// Riverpod Notifier replacing the legacy `StoryStateController` ChangeNotifier.
+class StoryStateNotifier extends Notifier<StoryState> {
   // Cache expiry duration (5 minutes)
   static const Duration _cacheExpiry = Duration(minutes: 5);
+
+  // Debounced save to prevent excessive storage writes
+  Timer? _saveTimer;
 
   // Storage key helpers (per-user)
   String _getStoriesKey(String? userId) => 'stories_${userId ?? 'me'}';
@@ -48,35 +102,14 @@ class StoryStateController extends ChangeNotifier {
   String _getTimestampKey(String? userId) =>
       'story_timestamp_${userId ?? 'me'}';
 
-  bool get hasUserStory => _userStories.isNotEmpty;
-  bool get isLoadingFromStorage => _isLoadingFromStorage;
-  List<String> get currentUserStoryMediaPaths =>
-      _userStories.map((s) => s.mediaPath).toList();
-  List<String?> get currentUserStoryIds =>
-      _userStories.map((s) => s.id).toList();
-  DateTime? get storyCreatedAt =>
-      _userStories.isNotEmpty ? _userStories.first.createdAt : null;
-  String? get username => _username;
-  String? get avatarUrl => _avatarUrl;
-  List<DateTime> get storyTimestamps =>
-      _userStories.map((s) => s.createdAt).toList();
+  @override
+  StoryState build() {
+    ref.onDispose(() {
+      _saveTimer?.cancel();
+    });
 
-  /// Get current story ID (UUID) for API calls
-  String? get currentStoryId =>
-      _currentStory?.id ??
-      (_userStories.isNotEmpty ? _userStories.first.id : null);
-
-  /// Get story ID by media path
-  String? getStoryIdByMediaPath(String mediaPath) {
-    final story = _userStories.firstWhere(
-      (s) => s.mediaPath == mediaPath,
-      orElse: () => StoryData(mediaPath: mediaPath, createdAt: DateTime.now()),
-    );
-    return story.id;
+    return const StoryState();
   }
-
-  /// Get current story being viewed
-  StoryItem? get currentStory => _currentStory;
 
   /// Set current story being viewed
   void setCurrentStory(StoryItem? story) {
@@ -84,70 +117,73 @@ class StoryStateController extends ChangeNotifier {
       '[StoryState] currentStory set: '
       'id=${story?.id ?? 'NULL'}, media=${story?.mediaUrl ?? 'NULL'}',
     );
-    _currentStory = story;
-    notifyListeners();
+    state = state.copyWith(
+      currentStory: story,
+      clearCurrentStory: story == null,
+    );
   }
-
-  // Debounced save to prevent excessive storage writes
-  Timer? _saveTimer;
 
   void _debouncedSaveToStorage() {
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 500), () {
-      _saveStoriesToStorage(_currentUserId);
+      _saveStoriesToStorage(state.currentUserId);
     });
+  }
+
+  /// Sort stories by creation time (newest first)
+  List<StoryData> _sortStoriesByTime(List<StoryData> stories) {
+    final sorted = List<StoryData>.from(stories);
+    sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return sorted;
   }
 
   /// Update story status with validation
   Future<void> updateStory({String? mediaPath, DateTime? createdAt}) async {
     if (mediaPath == null || mediaPath.isEmpty) {
-      clearStory();
+      await clearStory();
       return;
     }
 
-    // Check if story already exists to avoid duplicates
-    final existingIndex = _userStories.indexWhere(
+    final currentStories = List<StoryData>.from(state.userStories);
+    final existingIndex = currentStories.indexWhere(
       (story) => story.mediaPath == mediaPath,
     );
 
     if (existingIndex == -1) {
-      // Add new story if it doesn't exist
-      _userStories.add(
+      currentStories.add(
         StoryData(mediaPath: mediaPath, createdAt: createdAt ?? DateTime.now()),
       );
     } else {
-      // Update existing story timestamp
-      _userStories[existingIndex] = StoryData(
+      currentStories[existingIndex] = StoryData(
         mediaPath: mediaPath,
         createdAt: createdAt ?? DateTime.now(),
       );
     }
 
-    _sortStoriesByTime();
-    notifyListeners();
-    // Debounce storage save to avoid excessive writes
+    final sorted = _sortStoriesByTime(currentStories);
+    state = state.copyWith(userStories: sorted);
     _debouncedSaveToStorage();
   }
 
   /// Add a new story to the list
   Future<void> addStory(String mediaPath, {DateTime? createdAt}) async {
     if (mediaPath.isNotEmpty) {
-      _userStories.add(
+      final currentStories = List<StoryData>.from(state.userStories);
+      currentStories.add(
         StoryData(mediaPath: mediaPath, createdAt: createdAt ?? DateTime.now()),
       );
-      _sortStoriesByTime();
-      notifyListeners();
-      // Debounce storage save to avoid excessive writes
+      final sorted = _sortStoriesByTime(currentStories);
+      state = state.copyWith(userStories: sorted);
       _debouncedSaveToStorage();
     }
   }
 
   /// Set user info from profile
   Future<void> setUserInfo({String? username, String? avatarUrl}) async {
-    _username = username;
-    _avatarUrl = avatarUrl;
-    notifyListeners();
-    // Debounce storage save to avoid excessive writes
+    state = state.copyWith(
+      username: username ?? state.username,
+      avatarUrl: avatarUrl ?? state.avatarUrl,
+    );
     _debouncedSaveToStorage();
   }
 
@@ -159,19 +195,15 @@ class StoryStateController extends ChangeNotifier {
     String? userId,
   }) async {
     // Clear previous user's data if switching users
-    if (userId != null && _currentUserId != null && userId != _currentUserId) {
-      await _clearUserCache(_currentUserId);
+    if (userId != null &&
+        state.currentUserId != null &&
+        userId != state.currentUserId) {
+      await _clearUserCache(state.currentUserId);
     }
 
-    _currentUserId = userId;
-    _userStories.clear();
-
-    // Update user info if provided
-    if (username != null) _username = username;
-    if (avatarUrl != null) _avatarUrl = avatarUrl;
-
+    final newStories = <StoryData>[];
     for (final storyItem in storyItems) {
-      _userStories.add(
+      newStories.add(
         StoryData(
           mediaPath: storyItem.mediaUrl,
           createdAt: storyItem.createdAt,
@@ -180,13 +212,26 @@ class StoryStateController extends ChangeNotifier {
       );
     }
 
+    final sorted = _sortStoriesByTime(newStories);
+
     // Set the first story as current if no current story is set
-    if (_currentStory == null && storyItems.isNotEmpty) {
-      setCurrentStory(storyItems.first);
+    StoryItem? nextCurrentStory = state.currentStory;
+    if (nextCurrentStory == null && storyItems.isNotEmpty) {
+      nextCurrentStory = storyItems.first;
+      AppLogger.d(
+        '[StoryState] currentStory set: '
+        'id=${nextCurrentStory.id}, media=${nextCurrentStory.mediaUrl}',
+      );
     }
 
-    _sortStoriesByTime();
-    notifyListeners();
+    state = state.copyWith(
+      currentUserId: userId,
+      userStories: sorted,
+      username: username ?? state.username,
+      avatarUrl: avatarUrl ?? state.avatarUrl,
+      currentStory: nextCurrentStory,
+    );
+
     await _saveStoriesToStorage(userId);
   }
 
@@ -200,21 +245,17 @@ class StoryStateController extends ChangeNotifier {
     String? userId,
   }) async {
     // Clear previous user's data if switching users
-    if (userId != null && _currentUserId != null && userId != _currentUserId) {
-      await _clearUserCache(_currentUserId);
+    if (userId != null &&
+        state.currentUserId != null &&
+        userId != state.currentUserId) {
+      await _clearUserCache(state.currentUserId);
     }
 
-    _currentUserId = userId;
-    _userStories.clear();
-
-    // Update user info if provided
-    if (username != null) _username = username;
-    if (avatarUrl != null) _avatarUrl = avatarUrl;
-
+    final newStories = <StoryData>[];
     for (int i = 0; i < mediaPaths.length; i++) {
       final mediaPath = mediaPaths[i];
       if (mediaPath.isNotEmpty) {
-        _userStories.add(
+        newStories.add(
           StoryData(
             mediaPath: mediaPath,
             createdAt: createdAts != null && i < createdAts.length
@@ -226,14 +267,16 @@ class StoryStateController extends ChangeNotifier {
       }
     }
 
-    _sortStoriesByTime();
-    notifyListeners();
-    await _saveStoriesToStorage(userId);
-  }
+    final sorted = _sortStoriesByTime(newStories);
 
-  /// Sort stories by creation time (newest first)
-  void _sortStoriesByTime() {
-    _userStories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    state = state.copyWith(
+      currentUserId: userId,
+      userStories: sorted,
+      username: username ?? state.username,
+      avatarUrl: avatarUrl ?? state.avatarUrl,
+    );
+
+    await _saveStoriesToStorage(userId);
   }
 
   /// Mark story as shared (simplified method)
@@ -245,10 +288,8 @@ class StoryStateController extends ChangeNotifier {
 
   /// Clear story state
   Future<void> clearStory() async {
-    _userStories = [];
-    _currentStory = null;
-    notifyListeners();
-    await _saveStoriesToStorage(_currentUserId);
+    state = state.copyWith(userStories: const [], clearCurrentStory: true);
+    await _saveStoriesToStorage(state.currentUserId);
   }
 
   /// Reset controller state
@@ -258,12 +299,7 @@ class StoryStateController extends ChangeNotifier {
 
   /// Clear all story data including user info (for logout)
   Future<void> clearAllData() async {
-    _userStories = [];
-    _currentStory = null;
-    _username = null;
-    _avatarUrl = null;
-    _currentUserId = null;
-    notifyListeners();
+    state = const StoryState();
     await _clearAllCache();
   }
 
@@ -310,9 +346,8 @@ class StoryStateController extends ChangeNotifier {
 
   /// Load stories from SharedPreferences (public method)
   Future<void> loadStoriesFromStorage(String? userId) async {
-    if (_isLoadingFromStorage) return;
-    _isLoadingFromStorage = true;
-    notifyListeners();
+    if (state.isLoadingFromStorage) return;
+    state = state.copyWith(isLoadingFromStorage: true);
     await _loadStoriesFromStorage(userId);
   }
 
@@ -324,16 +359,16 @@ class StoryStateController extends ChangeNotifier {
       // Check if cache is expired
       if (await _isCacheExpired(userId)) {
         await _clearUserCache(userId);
-        _isLoadingFromStorage = false;
-        notifyListeners();
+        state = state.copyWith(isLoadingFromStorage: false);
         return;
       }
 
       // Load stories
+      var loadedStories = <StoryData>[];
       final storiesJson = prefs.getString(_getStoriesKey(userId));
       if (storiesJson != null) {
         final List<dynamic> storiesList = jsonDecode(storiesJson);
-        _userStories = storiesList.map((storyJson) {
+        loadedStories = storiesList.map((storyJson) {
           final story = storyJson as Map<String, dynamic>;
           return StoryData(
             mediaPath: story['mediaPath'],
@@ -344,14 +379,17 @@ class StoryStateController extends ChangeNotifier {
       }
 
       // Load user info
-      _username = prefs.getString(_getUsernameKey(userId));
-      _avatarUrl = prefs.getString(_getAvatarKey(userId));
+      final loadedUsername = prefs.getString(_getUsernameKey(userId));
+      final loadedAvatarUrl = prefs.getString(_getAvatarKey(userId));
 
-      _isLoadingFromStorage = false;
-      notifyListeners();
+      state = state.copyWith(
+        userStories: loadedStories,
+        username: loadedUsername,
+        avatarUrl: loadedAvatarUrl,
+        isLoadingFromStorage: false,
+      );
     } catch (e) {
-      _isLoadingFromStorage = false;
-      notifyListeners();
+      state = state.copyWith(isLoadingFromStorage: false);
     }
   }
 
@@ -362,7 +400,7 @@ class StoryStateController extends ChangeNotifier {
 
       // Save stories
       final storiesJson = jsonEncode(
-        _userStories
+        state.userStories
             .map(
               (story) => {
                 'mediaPath': story.mediaPath,
@@ -382,21 +420,19 @@ class StoryStateController extends ChangeNotifier {
       );
 
       // Save user info
-      if (_username != null) {
-        await prefs.setString(_getUsernameKey(userId), _username!);
+      if (state.username != null) {
+        await prefs.setString(_getUsernameKey(userId), state.username!);
       }
 
-      if (_avatarUrl != null) {
-        await prefs.setString(_getAvatarKey(userId), _avatarUrl!);
+      if (state.avatarUrl != null) {
+        await prefs.setString(_getAvatarKey(userId), state.avatarUrl!);
       }
     } catch (e) {
       // Silently handle storage errors to avoid UI blocking
     }
   }
-
-  @override
-  void dispose() {
-    _saveTimer?.cancel();
-    super.dispose();
-  }
 }
+
+/// App-scoped provider for [StoryStateNotifier]
+final storyStateNotifierProvider =
+    NotifierProvider<StoryStateNotifier, StoryState>(StoryStateNotifier.new);

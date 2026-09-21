@@ -174,7 +174,7 @@ class _CommentSheetState extends State<CommentSheet> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+          colors: [AppColors.softPurple, AppColors.sheetDark],
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
       ),

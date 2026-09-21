@@ -3,6 +3,7 @@ import 'package:gruve_app/features/story_preview/presentation/widgets/more_widge
 import 'package:gruve_app/features/story_preview/presentation/widgets/more_widgets/replying_card.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/more_widgets/view_card.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class StorySettingsScreen extends StatelessWidget {
   const StorySettingsScreen({super.key});
@@ -17,7 +18,7 @@ class StorySettingsScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF42174C), Color(0xFF9544A7)],
+            colors: [AppColors.deepPlum, Color(0xFF9544A7)],
           ),
         ),
         child: Stack(

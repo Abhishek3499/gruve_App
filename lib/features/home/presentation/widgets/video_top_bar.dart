@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/notification/presentation/screens/notification_screen.dart';
 import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class VideoTopBar extends StatelessWidget {
   final String selectedTab;
@@ -188,11 +189,11 @@ class VideoTopBar extends StatelessWidget {
             height: 2,
             width: isSelected ? 40 : 0,
             decoration: BoxDecoration(
-              color: const Color(0xFFC358D7),
+              color: AppColors.accentPurple,
               borderRadius: BorderRadius.circular(1),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFC358D7).withValues(alpha: 0.5),
+                  color: AppColors.accentPurple.withValues(alpha: 0.5),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),

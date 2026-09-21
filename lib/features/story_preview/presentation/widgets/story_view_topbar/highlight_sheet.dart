@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_controller_notifier.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_state_notifier.dart';
 import 'package:gruve_app/features/highlights/domain/entities/highlight_model.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_flow_provider.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_create_controller.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_flow_notifier.dart';
+import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_create_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_selector_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/app_cached_image.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
@@ -19,12 +19,11 @@ void _log(String message) {
 
 void showInstagramHighlightSheet(BuildContext context) {
   final playbackController = StoryPlaybackController();
-  final storyStateController = context.read<StoryStateController>();
-  final highlightController = context.read<HighlightController>();
+  final container = ProviderScope.containerOf(context, listen: false);
+  final currentStory = container.read(storyStateNotifierProvider).currentStory;
 
   _log('[HighlightSheet] Opening sheet -> Pause Story');
 
-  final currentStory = storyStateController.currentStory;
   _log(
     '[HighlightSheet] Current story when opening sheet: '
     '${currentStory?.id ?? 'NULL'}',
@@ -51,83 +50,79 @@ void showInstagramHighlightSheet(BuildContext context) {
     _log('[HighlightSheet] Sheet closed -> Resume Story');
     playbackController.resumeStory(reason: 'Highlight Sheet Closed');
 
-    highlightController.fetchMyHighlights();
+    container.read(highlightControllerProvider.notifier).fetchMyHighlights();
   });
 }
 
-class HighlightSheetContent extends StatefulWidget {
+class HighlightSheetContent extends ConsumerStatefulWidget {
   const HighlightSheetContent({super.key});
 
   @override
-  State<HighlightSheetContent> createState() => _HighlightSheetContentState();
+  ConsumerState<HighlightSheetContent> createState() =>
+      _HighlightSheetContentState();
 }
 
-class _HighlightSheetContentState extends State<HighlightSheetContent> {
+class _HighlightSheetContentState extends ConsumerState<HighlightSheetContent> {
   int selectedIndex = -1;
   bool _isLoadingHighlights = true;
-
-  late final HighlightController _highlightController;
-  late final HighlightCreateController _createController;
-  late final HighlightStateManager _highlightStateManager;
-  late final StoryStateController _storyStateController;
 
   @override
   void initState() {
     super.initState();
-    _storyStateController = context.read<StoryStateController>();
-    _highlightController = context.read<HighlightController>();
-    _createController = context.read<HighlightCreateController>();
-    _highlightStateManager = context.read<HighlightStateManager>();
     _log('[HighlightSheet] initState - Fetching highlights');
 
-    final currentStory = _storyStateController.currentStory;
+    final currentStory = ref.read(storyStateNotifierProvider).currentStory;
     _log(
       '[HighlightSheet] Current story on init: ${currentStory?.id ?? 'NULL'}',
     );
 
-    _fetchHighlights();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchHighlights();
+      }
+    });
   }
 
   Future<void> _fetchHighlights() async {
+    if (!mounted) return;
     setState(() => _isLoadingHighlights = true);
 
-    await _highlightController.fetchMyHighlights();
+    await ref.read(highlightControllerProvider.notifier).fetchMyHighlights();
 
     if (!mounted) return;
     setState(() => _isLoadingHighlights = false);
   }
 
   bool _isStoryAlreadyAdded(HighlightModel highlight) {
-    final currentStory = _storyStateController.currentStory;
+    final currentStory = ref.read(storyStateNotifierProvider).currentStory;
     if (currentStory == null || currentStory.id.isEmpty) return false;
     return highlight.containsStory(currentStory.id);
   }
 
   bool _isSelectedStoryAlreadyAdded() {
-    if (selectedIndex < 0 ||
-        selectedIndex >= _highlightController.highlights.length) {
+    final highlights = ref.read(highlightControllerProvider).highlights;
+    if (selectedIndex < 0 || selectedIndex >= highlights.length) {
       return false;
     }
 
-    return _isStoryAlreadyAdded(_highlightController.highlights[selectedIndex]);
+    return _isStoryAlreadyAdded(highlights[selectedIndex]);
   }
 
   Future<void> _handleDonePressed() async {
-    final flowProvider = context.read<HighlightFlowProvider>();
+    final isProcessing = ref.read(highlightFlowNotifierProvider);
 
-    if (flowProvider.isProcessing) return;
+    if (isProcessing) return;
 
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final sheetNavigator = Navigator.of(context);
     final rootNavigator = Navigator.of(context, rootNavigator: true);
 
-    flowProvider.setProcessing(true);
+    ref.read(highlightFlowNotifierProvider.notifier).setProcessing(true);
 
-    final currentStory = _storyStateController.currentStory;
-    final highlight =
-        selectedIndex >= 0 &&
-            selectedIndex < _highlightController.highlights.length
-        ? _highlightController.highlights[selectedIndex]
+    final currentStory = ref.read(storyStateNotifierProvider).currentStory;
+    final highlights = ref.read(highlightControllerProvider).highlights;
+    final highlight = selectedIndex >= 0 && selectedIndex < highlights.length
+        ? highlights[selectedIndex]
         : null;
 
     _log('[Flow] Start Add to Highlight');
@@ -148,20 +143,26 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
       if (highlight == null) {
         _log(
           '[HighlightSheet] Invalid index: $selectedIndex, highlights count: '
-          '${_highlightController.highlights.length}',
+          '${highlights.length}',
         );
         return;
       }
 
-      await _createController.addStoryToHighlight(
-        highlightId: highlight.id,
-        storyId: currentStory.id,
-      );
+      await ref
+          .read(highlightCreateNotifierProvider.notifier)
+          .addStoryToHighlight(
+            highlightId: highlight.id,
+            storyId: currentStory.id,
+          );
 
-      if (_createController.isSuccess) {
+      final createState = ref.read(highlightCreateNotifierProvider);
+
+      if (createState.isSuccess) {
         _log('[Flow] API SUCCESS');
 
-        await _highlightStateManager.addHighlightedStory(currentStory.id);
+        await ref
+            .read(highlightStateNotifierProvider.notifier)
+            .addHighlightedStory(currentStory.id);
 
         if (!mounted) return;
 
@@ -172,20 +173,23 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
         rootNavigator.pop();
       } else {
         _log('[Flow] API FAILED');
-        if (mounted && _createController.message.isNotEmpty) {
+        if (mounted && createState.message.isNotEmpty) {
           scaffoldMessenger.showSnackBar(
-            SnackBar(content: Text(_createController.message)),
+            SnackBar(content: Text(createState.message)),
           );
         }
       }
     } finally {
-      flowProvider.setProcessing(false);
+      ref.read(highlightFlowNotifierProvider.notifier).setProcessing(false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final flowProvider = context.watch<HighlightFlowProvider>();
+    final isProcessing = ref.watch(highlightFlowNotifierProvider);
+    final highlights = ref.watch(
+      highlightControllerProvider.select((state) => state.highlights),
+    );
 
     return Stack(
       children: [
@@ -226,7 +230,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
                           ),
                         ),
                       )
-                    : _buildHighlightsList(),
+                    : _buildHighlightsList(highlights),
               ),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -258,7 +262,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
             ],
           ),
         ),
-        if (flowProvider.isProcessing)
+        if (isProcessing)
           Positioned.fill(
             child: Container(
               color: Colors.black.withValues(alpha: 0.4),
@@ -278,9 +282,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
     );
   }
 
-  Widget _buildHighlightsList() {
-    final highlights = _highlightController.highlights;
-
+  Widget _buildHighlightsList(List<HighlightModel> highlights) {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -301,7 +303,7 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
               _log(
                 '[HighlightSheet] Duplicate detected: '
                 'highlight_id=${highlight.id}, '
-                'story_id=${_storyStateController.currentStory?.id}',
+                'story_id=${ref.read(storyStateNotifierProvider).currentStory?.id}',
               );
               ScaffoldMessenger.of(
                 context,
@@ -328,7 +330,9 @@ class _HighlightSheetContentState extends State<HighlightSheetContent> {
             onTap: () async {
               _log('[HighlightSheet] Navigating to CreateHighlightSheet');
 
-              final currentStory = _storyStateController.currentStory;
+              final currentStory = ref
+                  .read(storyStateNotifierProvider)
+                  .currentStory;
 
               if (currentStory == null) {
                 _log('[HighlightSheet] ERROR: No story selected');

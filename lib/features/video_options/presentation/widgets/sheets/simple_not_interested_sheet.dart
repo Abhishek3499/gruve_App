@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SimpleNotInterestedSheet extends StatefulWidget {
   const SimpleNotInterestedSheet({super.key});
@@ -27,7 +28,7 @@ class _SimpleNotInterestedSheetState extends State<SimpleNotInterestedSheet> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFCD72E3), Color(0xFF3C034A)],
+          colors: [AppColors.softPurple, AppColors.sheetDark],
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

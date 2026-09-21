@@ -43,6 +43,31 @@ class AppColors {
   static const Color green = Colors.green;
   static const Color transparent = Colors.transparent;
 
+  // ============ HIGH-FREQUENCY PALETTE ============
+  /// Bright neon purple accent used for active indicators, cursor, camera/video editor
+  static const Color accentPurple = Color(0xFFC358D7);
+
+  /// Light lilac/lavender purple used for auth headers, subtitles, input borders
+  static const Color lavenderPurple = Color(0xFFB86AD0);
+
+  /// Deep plum purple used for cards, dialogs, profile gradients, and navigation
+  static const Color deepPlum = Color(0xFF42174C);
+
+  /// Vibrant magenta pink used for progress loaders, story rings, and share buttons
+  static const Color vibrantMagenta = Color(0xFFD42BC2);
+
+  /// Soft lilac purple used for bottom sheet gradients and sheet action accents
+  static const Color softPurple = Color(0xFFCD72E3);
+
+  /// Dark purple background used across modal bottom sheets and option panels
+  static const Color sheetDark = Color(0xFF3C034A);
+
+  /// Dark muted purple background for chat screen, message list, and message popups
+  static const Color chatBackground = Color(0xFF311B36);
+
+  /// Very dark plum surface used for post detail background and draft tiles
+  static const Color surfaceDark = Color(0xFF1E092D);
+
   // ============ LOADER COLORS ============
   /// Primary loader color - used for circular progress indicators
   static const Color loaderPrimary = Color(0xFF9544A7);

@@ -350,7 +350,7 @@ class ProfileMenuDrawer extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Image.asset(
-                                  'assets/splash_screen_logo/image 43.png',
+                                  AppAssets.footerLogo,
                                   width: 16,
                                   height: 16,
                                 ),

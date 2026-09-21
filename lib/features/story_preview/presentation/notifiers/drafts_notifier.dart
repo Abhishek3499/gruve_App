@@ -1,43 +1,69 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_draft_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class DraftsProvider extends ChangeNotifier {
-  final PostService _postService = PostService();
-  List<PostDraft> _drafts = [];
-  bool _isLoading = false;
-  String? _errorMessage;
+@immutable
+class DraftsState {
+  final List<PostDraft> drafts;
+  final bool isLoading;
+  final String? errorMessage;
 
-  List<PostDraft> get drafts => _drafts;
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
+  const DraftsState({
+    this.drafts = const [],
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  DraftsState copyWith({
+    List<PostDraft>? drafts,
+    bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return DraftsState(
+      drafts: drafts ?? this.drafts,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    );
+  }
+}
+
+class DraftsNotifier extends Notifier<DraftsState> {
+  final PostService _postService = PostService();
+
+  @override
+  DraftsState build() => const DraftsState();
 
   Future<void> fetchDrafts({bool silent = false}) async {
     if (!silent) {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
+      state = state.copyWith(isLoading: true, clearError: true);
     }
 
     try {
       final response = await _postService.getDrafts(page: 1, limit: 50);
-      _drafts = response.results;
-      _errorMessage = null;
+      AppLogger.d(
+        "📦 [DraftsNotifier] Fetched ${response.results.length} drafts",
+      );
+      state = state.copyWith(drafts: response.results, clearError: true);
     } catch (e) {
       AppLogger.d("Error fetching drafts in provider: $e");
-      _errorMessage = "Failed to load drafts. Please try again.";
+      state = state.copyWith(
+        errorMessage: "Failed to load drafts. Please try again.",
+      );
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
   }
 
   Future<void> deleteDraft(String draftId) async {
     try {
       await _postService.deleteDraft(draftId);
-      _drafts.removeWhere((item) => item.id == draftId);
-      notifyListeners();
+      final updatedList = state.drafts
+          .where((item) => item.id != draftId)
+          .toList();
+      state = state.copyWith(drafts: updatedList);
     } catch (e) {
       AppLogger.d("Error deleting draft in provider: $e");
       rethrow;
@@ -71,11 +97,19 @@ class DraftsProvider extends ChangeNotifier {
       );
 
       final dynamic rawData = responseMap['data'] ?? responseMap;
-      if (rawData != null) {
+      if (rawData != null && rawData is Map) {
         final newDraft = PostDraft.fromJson(Map<String, dynamic>.from(rawData));
-        _drafts.insert(0, newDraft);
-        notifyListeners();
+        if (newDraft.id.isNotEmpty) {
+          state = state.copyWith(
+            drafts: [
+              newDraft,
+              ...state.drafts.where((d) => d.id != newDraft.id),
+            ],
+          );
+        }
       }
+      // Silently sync latest from server
+      await fetchDrafts(silent: true);
     } catch (e) {
       AppLogger.d("Error saving draft in provider: $e");
       rethrow;
@@ -97,7 +131,7 @@ class DraftsProvider extends ChangeNotifier {
     bool clearMedia = false,
   }) async {
     AppLogger.d(
-      "🔄 [DraftsProvider] updateDraft - draftId: '$draftId', caption: '$caption'",
+      "🔄 [DraftsNotifier] updateDraft - draftId: '$draftId', caption: '$caption'",
     );
     try {
       final responseMap = await _postService.updateDraft(
@@ -117,31 +151,32 @@ class DraftsProvider extends ChangeNotifier {
 
       final dynamic rawData = responseMap['data'] ?? responseMap;
       AppLogger.d(
-        "🔄 [DraftsProvider] updateDraft API response rawData keys: ${rawData is Map ? rawData.keys : rawData.runtimeType}",
+        "🔄 [DraftsNotifier] updateDraft API response rawData keys: ${rawData is Map ? rawData.keys : rawData.runtimeType}",
       );
       if (rawData != null) {
         final updatedDraft = PostDraft.fromJson(
           Map<String, dynamic>.from(rawData),
         );
         AppLogger.d(
-          "🔄 [DraftsProvider] parsed updatedDraft.id: '${updatedDraft.id}'",
+          "🔄 [DraftsNotifier] parsed updatedDraft.id: '${updatedDraft.id}'",
         );
-        final idx = _drafts.indexWhere((d) => d.id == draftId);
+        final list = List<PostDraft>.from(state.drafts);
+        final idx = list.indexWhere((d) => d.id == draftId);
         AppLogger.d(
-          "🔄 [DraftsProvider] index of original draft ID in local list: $idx",
+          "🔄 [DraftsNotifier] index of original draft ID in local list: $idx",
         );
         if (idx != -1) {
-          _drafts[idx] = updatedDraft;
+          list[idx] = updatedDraft;
           AppLogger.d(
-            "🔄 [DraftsProvider] Updated local list draft at index $idx",
+            "🔄 [DraftsNotifier] Updated local list draft at index $idx",
           );
         } else {
-          _drafts.insert(0, updatedDraft);
+          list.insert(0, updatedDraft);
           AppLogger.d(
-            "🔄 [DraftsProvider] Inserted updatedDraft at index 0 because it was not in list",
+            "🔄 [DraftsNotifier] Inserted updatedDraft at index 0 because it was not in list",
           );
         }
-        notifyListeners();
+        state = state.copyWith(drafts: list);
       }
     } catch (e) {
       AppLogger.d("Error updating draft in provider: $e");
@@ -150,9 +185,10 @@ class DraftsProvider extends ChangeNotifier {
   }
 
   void reset() {
-    _drafts = [];
-    _isLoading = false;
-    _errorMessage = null;
-    notifyListeners();
+    state = const DraftsState();
   }
 }
+
+final draftsNotifierProvider = NotifierProvider<DraftsNotifier, DraftsState>(
+  DraftsNotifier.new,
+);

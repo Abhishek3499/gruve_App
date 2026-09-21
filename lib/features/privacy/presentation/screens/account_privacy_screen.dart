@@ -6,6 +6,7 @@ import 'package:gruve_app/features/privacy/presentation/widgets/account_privacy_
 import 'package:gruve_app/features/privacy/presentation/widgets/privacy_card.dart';
 import 'package:gruve_app/features/privacy/presentation/widgets/privacy_toggle_tile.dart';
 import 'package:gruve_app/features/privacy/presentation/widgets/account_privacy_footer.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class AccountPrivacyScreen extends StatefulWidget {
   const AccountPrivacyScreen({super.key});
@@ -35,7 +36,7 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
           gradient: LinearGradient(
             begin: Alignment(0.8, -1.0),
             end: Alignment(-0.8, 1.0),
-            colors: [Color(0xFF42174C), Color(0xFF210C26), Color(0xFF000000)],
+            colors: [AppColors.deepPlum, Color(0xFF210C26), Color(0xFF000000)],
             stops: [0.0, 0.3, 1.0],
           ),
         ),

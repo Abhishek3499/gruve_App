@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 enum GiftCategory { new_, general, love }
 
@@ -67,7 +68,7 @@ class GiftCategoryTabs extends StatelessWidget {
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           style: TextStyle(
-            color: isActive ? const Color(0xFFCD72E3) : Colors.white,
+            color: isActive ? AppColors.softPurple : Colors.white,
             fontSize: 14,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
           ),

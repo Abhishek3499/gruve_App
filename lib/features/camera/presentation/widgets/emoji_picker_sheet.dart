@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class EmojiPickerSheet extends StatefulWidget {
   const EmojiPickerSheet({super.key});
@@ -722,7 +723,7 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet>
                 child: TextField(
                   controller: _searchController,
                   style: const TextStyle(color: Colors.white, fontSize: 15),
-                  cursorColor: const Color(0xFFC358D7),
+                  cursorColor: AppColors.accentPurple,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
                       Icons.search,
@@ -756,7 +757,7 @@ class _EmojiPickerSheetState extends State<EmojiPickerSheet>
                 TabBar(
                   controller: _tabController,
                   isScrollable: false,
-                  indicatorColor: const Color(0xFFC358D7),
+                  indicatorColor: AppColors.accentPurple,
                   labelPadding: EdgeInsets.zero,
                   tabs: _emojiCategories.keys.map((category) {
                     return Tab(

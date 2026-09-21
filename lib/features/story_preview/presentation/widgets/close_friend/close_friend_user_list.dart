@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 
 import 'package:gruve_app/features/story_preview/presentation/widgets/close_friend/close_friend_user_tile.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class CloseFriendUserList extends StatelessWidget {
   final List<SearchUser> users;
@@ -25,7 +26,7 @@ class CloseFriendUserList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isSearching) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFD42BC2)),
+        child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
       );
     }
 

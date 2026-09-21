@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class CustomSearchBar extends StatelessWidget {
   final TextEditingController? controller;
@@ -37,7 +38,7 @@ class CustomSearchBar extends StatelessWidget {
     this.backgroundColor = const Color(0xFF7A1FA2),
     this.border,
     this.borderGradient = const LinearGradient(
-      colors: [Color(0xFFD42BC2), Color(0xFF6BA9F6)],
+      colors: [AppColors.vibrantMagenta, Color(0xFF6BA9F6)],
     ),
     this.backgroundGradient,
     this.borderWidth = 2,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/subscription/presentation/widgets/slanted_card_clipper.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final String iconPath;
@@ -177,7 +178,7 @@ class SubscriptionCardPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB86AD0), Color(0xFF72008D)],
+          colors: [AppColors.lavenderPurple, Color(0xFF72008D)],
         ).createShader(rect)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0;

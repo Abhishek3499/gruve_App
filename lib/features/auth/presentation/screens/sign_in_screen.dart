@@ -18,6 +18,7 @@ import 'package:gruve_app/features/auth/presentation/widgets/outline_button.dart
 import 'package:gruve_app/shared/widgets/video_background.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -184,7 +185,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         TextSpan(
                           text: 'Sign Up',
                           style: TextStyle(
-                            color: const Color(0xFFB86AD0),
+                            color: AppColors.lavenderPurple,
                             fontWeight: FontWeight.w700,
                             fontSize: context.rf(14),
                             fontFamily: AppAssets.montserratfont,

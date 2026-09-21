@@ -6,24 +6,10 @@ import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/theme/app_theme.dart';
-import 'package:gruve_app/routes/app_routes.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_controller.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_state_manager.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_flow_provider.dart';
-import 'package:gruve_app/features/highlights/presentation/controller/highlight_create_controller.dart';
-import 'package:gruve_app/features/profile/presentation/controller/profile_provider.dart';
-import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_provider.dart';
-import 'package:gruve_app/features/user_profile/data/datasource/user_profile_service.dart';
+import 'package:gruve_app/core/navigation/app_routes.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
-import 'package:gruve_app/features/story_preview/presentation/controller/story_controller.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/story_state_controller.dart';
-import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
-import 'package:gruve_app/features/message/data/repo/user_repository_impl.dart';
-import 'package:gruve_app/features/message/data/datasource/user_remote_datasource.dart';
-import 'package:gruve_app/core/network/api_client.dart';
-import 'package:gruve_app/features/story_preview/presentation/controller/drafts_provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 
@@ -89,56 +75,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(
           value: authStateManager ?? AuthStateManager(),
         ),
-        ChangeNotifierProvider.value(value: StoryStateController()),
-        ChangeNotifierProvider(
-          create: (_) => HighlightStateManager()..loadFromPreferences(),
-        ),
-        ChangeNotifierProxyProvider<HighlightStateManager, StoryController>(
-          create: (_) => StoryController(),
-          update: (_, stateManager, controller) =>
-              (controller ?? StoryController())
-                ..attachHighlightStateManager(stateManager),
-        ),
-        ChangeNotifierProxyProvider<HighlightStateManager, HighlightController>(
-          create: (_) => HighlightController(),
-          update: (_, stateManager, controller) =>
-              (controller ?? HighlightController())
-                ..attachStateManager(stateManager),
-        ),
-        ChangeNotifierProxyProvider2<
-          HighlightController,
-          HighlightStateManager,
-          HighlightCreateController
-        >(
-          create: (context) => HighlightCreateController(
-            highlightController: context.read<HighlightController>(),
-            stateManager: context.read<HighlightStateManager>(),
-          ),
-          update: (_, highlightController, stateManager, controller) =>
-              controller ??
-              HighlightCreateController(
-                highlightController: highlightController,
-                stateManager: stateManager,
-              ),
-        ),
-        ChangeNotifierProvider(create: (_) => HighlightFlowProvider()),
-        ChangeNotifierProxyProvider<HighlightStateManager, ProfileProvider>(
-          create: (context) => ProfileProvider(
-            highlightStateManager: context.read<HighlightStateManager>(),
-          ),
-          update: (_, stateManager, provider) =>
-              provider ?? ProfileProvider(highlightStateManager: stateManager),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => UserProfileProvider(service: UserProfileService()),
-        ),
-        ChangeNotifierProvider(
-          lazy: true,
-          create: (_) => UserProvider(
-            UserRepositoryImpl(UserRemoteDataSource(ApiClient())),
-          ),
-        ),
-        ChangeNotifierProvider(create: (_) => DraftsProvider()),
       ],
       child: MaterialApp(
         title: 'Gruve',

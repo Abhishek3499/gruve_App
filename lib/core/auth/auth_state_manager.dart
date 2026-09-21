@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
@@ -218,9 +217,4 @@ class AuthStateManager extends ChangeNotifier {
     _currentUserId = null;
     notifyListeners();
   }
-}
-
-/// Provider extension for easy access
-extension AuthStateProvider on BuildContext {
-  AuthStateManager get authState => read<AuthStateManager>();
 }

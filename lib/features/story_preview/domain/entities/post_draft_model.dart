@@ -114,19 +114,22 @@ class PaginatedDraftsResponse {
   });
 
   factory PaginatedDraftsResponse.fromJson(Map<String, dynamic> json) {
-    final resultsList = json['results'] as List<dynamic>? ?? [];
+    final dynamic rawList = json['results'] ?? json['data'] ?? json['drafts'];
+    final resultsList = rawList is List ? rawList : <dynamic>[];
     return PaginatedDraftsResponse(
       count: json['count'] is int
           ? json['count'] as int
-          : (int.tryParse(json['count']?.toString() ?? '') ?? 0),
+          : (int.tryParse(json['count']?.toString() ?? '') ??
+                resultsList.length),
       page: json['page'] is int
           ? json['page'] as int
           : (int.tryParse(json['page']?.toString() ?? '') ?? 1),
       limit: json['limit'] is int
           ? json['limit'] as int
-          : (int.tryParse(json['limit']?.toString() ?? '') ?? 20),
+          : (int.tryParse(json['limit']?.toString() ?? '') ?? 50),
       hasNext: json['has_next'] == true || json['has_next'] == 'true',
       results: resultsList
+          .whereType<Map>()
           .map((e) => PostDraft.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
     );

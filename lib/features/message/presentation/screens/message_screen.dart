@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/features/message/presentation/controller/user_provider.dart';
-import 'package:provider/provider.dart' hide Consumer;
+import 'package:gruve_app/features/message/presentation/notifiers/user_notifier.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
 import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
@@ -15,6 +14,7 @@ import 'package:gruve_app/features/message/presentation/screens/chat_screen.dart
 
 import 'package:gruve_app/features/message/presentation/widgets/shimmer/chat_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class MessageScreen extends ConsumerStatefulWidget {
   const MessageScreen({super.key});
@@ -27,13 +27,6 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   bool _isLoadingMoreConversations = false;
   bool _startedUserPrefetch = false;
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
-  UserProvider? _userProvider;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _userProvider ??= context.read<UserProvider>();
-  }
 
   @override
   void initState() {
@@ -48,7 +41,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   @override
   void dispose() {
     ref.read(messageNotifierProvider.notifier).cancelActiveRequests();
-    _userProvider?.cancelActiveRequests();
+    ref.read(userNotifierProvider.notifier).cancelActiveRequests();
     super.dispose();
   }
 
@@ -63,13 +56,15 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   void _prefetchUsersForAvatarRow() {
     if (!mounted) return;
 
-    final userProvider = context.read<UserProvider>();
-    if (userProvider.isLoading) return;
+    final userState = ref.read(userNotifierProvider);
+    if (userState.isLoading) return;
 
-    if (_startedUserPrefetch || userProvider.hasInitialized) return;
+    if (_startedUserPrefetch || userState.hasInitialized) return;
 
     _startedUserPrefetch = true;
-    unawaited(userProvider.fetchUsers(reason: 'initial'));
+    unawaited(
+      ref.read(userNotifierProvider.notifier).fetchUsers(reason: 'initial'),
+    );
   }
 
   Future<void> _handleRefresh() async {
@@ -77,10 +72,10 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
 
     // Clear cache timestamps to force fresh data
     final messageNotifier = ref.read(messageNotifierProvider.notifier);
-    final userProvider = context.read<UserProvider>();
+    final userNotifier = ref.read(userNotifierProvider.notifier);
 
     await messageNotifier.refreshConversations();
-    unawaited(userProvider.refreshUsers());
+    unawaited(userNotifier.refreshUsers());
 
     AppLogger.d('✅ [MessageScreen] Refresh completed');
   }
@@ -92,7 +87,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF311B36),
+        backgroundColor: AppColors.chatBackground,
         title: const Text(
           'Delete Conversation',
           style: TextStyle(color: Colors.white, fontSize: 18),
@@ -154,7 +149,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
           RefreshIndicator(
             onRefresh: _handleRefresh,
             color: Colors.white,
-            backgroundColor: const Color(0xFF42174C),
+            backgroundColor: AppColors.deepPlum,
             child: Column(
               children: [
                 /// 🔥 HEADER + LIST OVERLAP AREA

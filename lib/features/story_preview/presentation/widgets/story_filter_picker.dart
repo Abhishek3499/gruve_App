@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/camera/domain/entities/filter_model.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class StoryFilterPicker extends StatefulWidget {
   final FilterModel initialFilter;
@@ -122,7 +123,7 @@ class _StoryFilterPickerState extends State<StoryFilterPicker> {
                   child: const Text(
                     'Done',
                     style: TextStyle(
-                      color: Color(0xFFC358D7),
+                      color: AppColors.accentPurple,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),

@@ -7,6 +7,7 @@ import 'package:gruve_app/features/account/domain/entities/profile_model.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/personal_info_card.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_image_picker.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final ProfileModel? initialProfile;
@@ -238,7 +239,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF42174C), Color(0xFF7A2C8F)],
+                colors: [AppColors.deepPlum, Color(0xFF7A2C8F)],
               ),
             ),
             child: SafeArea(
