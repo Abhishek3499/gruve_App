@@ -9,21 +9,16 @@ class SubscribeApiService {
 
   late final Dio _dio;
 
-  void _log(String message) {
-    AppLogger.d('🌐 [SubscribeApiService] $message');
-  }
+  static const String _tag = 'SubscribeApiService';
 
   SubscribeApiService() {
     _dio = AppDio.getInstance();
-    _log('Initialized shared Dio client');
+    AppLogger.debug(_tag, 'client_initialized');
   }
 
   Future<bool> toggleSubscription(String userId) async {
     try {
-      _log('🚀 toggleSubscription start for userId=$userId');
       final token = await TokenStorage.getAccessToken();
-      _log('📡 POST $_toggleEndpoint');
-      _log('📦 request body={user_id: $userId}');
 
       final response = await _dio.post(
         _toggleEndpoint,
@@ -34,18 +29,26 @@ class SubscribeApiService {
         ),
       );
 
-      _log('✅ response status=${response.statusCode}');
-      _log('🧾 response data=${response.data}');
       final isFollowing = _extractSubscriptionState(response.data);
-      _log('🎯 parsed subscription state=$isFollowing');
+      AppLogger.debug(
+        _tag,
+        'subscription_parsed',
+        data: {'endpoint': _toggleEndpoint, 'isFollowing': isFollowing},
+      );
       return isFollowing;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       final responseData = e.response?.data;
-      _log('❌ DioException type=${e.type}');
-      _log('❌ statusCode=$statusCode');
-      _log('❌ responseData=$responseData');
-      _log('❌ message=${e.message}');
+      AppLogger.warning(
+        _tag,
+        'api_error',
+        data: {
+          'method': 'POST',
+          'endpoint': _toggleEndpoint,
+          'type': e.type.name,
+          'statusCode': statusCode,
+        },
+      );
 
       if (statusCode == 400 &&
           responseData is Map &&
@@ -61,9 +64,7 @@ class SubscribeApiService {
   }
 
   bool _extractSubscriptionState(dynamic payload) {
-    final result = _findSubscriptionState(payload) ?? false;
-    _log('🧠 _extractSubscriptionState result=$result');
-    return result;
+    return _findSubscriptionState(payload) ?? false;
   }
 
   bool? _findSubscriptionState(dynamic payload) {
@@ -78,11 +79,9 @@ class SubscribeApiService {
         _asBool(map['following']) ??
         _asBool(map['subscribed']);
     if (directValue != null) {
-      _log('🔎 direct subscription key matched value=$directValue');
       return directValue;
     }
 
-    _log('🪆 no direct key matched, checking nested data');
     return _findSubscriptionState(map['data']);
   }
 

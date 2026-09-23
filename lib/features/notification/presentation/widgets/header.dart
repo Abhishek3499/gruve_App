@@ -8,7 +8,9 @@ class Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = ref.watch(notificationNotifierProvider);
+    final (unreadCount, unreadOnly) = ref.watch(
+      notificationNotifierProvider.select((s) => (s.unreadCount, s.unreadOnly)),
+    );
     final notifier = ref.read(notificationNotifierProvider.notifier);
 
     return Container(
@@ -36,7 +38,7 @@ class Header extends ConsumerWidget {
               ),
               const Spacer(),
               // Double checkmark to mark all as read
-              if (provider.unreadCount > 0)
+              if (unreadCount > 0)
                 IconButton(
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -76,11 +78,11 @@ class Header extends ConsumerWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        decoration: !provider.unreadOnly
+                        decoration: !unreadOnly
                             ? TextDecoration.underline
                             : TextDecoration.none,
                         decorationColor: Colors.white,
-                        fontWeight: !provider.unreadOnly
+                        fontWeight: !unreadOnly
                             ? FontWeight.w700
                             : FontWeight.w500,
                       ),
@@ -104,7 +106,7 @@ class Header extends ConsumerWidget {
                             radius: 16,
                             backgroundImage: AssetImage(AppAssets.nprofile),
                           ),
-                          if (provider.unreadCount > 0)
+                          if (unreadCount > 0)
                             Positioned(
                               right: -5,
                               bottom: -5,
@@ -117,9 +119,9 @@ class Header extends ConsumerWidget {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    provider.unreadCount > 99
+                                    unreadCount > 99
                                         ? "99+"
-                                        : provider.unreadCount.toString(),
+                                        : unreadCount.toString(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 8,
@@ -137,11 +139,11 @@ class Header extends ConsumerWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
-                          decoration: provider.unreadOnly
+                          decoration: unreadOnly
                               ? TextDecoration.underline
                               : TextDecoration.none,
                           decorationColor: Colors.white,
-                          fontWeight: provider.unreadOnly
+                          fontWeight: unreadOnly
                               ? FontWeight.w700
                               : FontWeight.w500,
                         ),

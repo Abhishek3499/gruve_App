@@ -3,12 +3,13 @@ import 'dart:collection';
 
 import 'package:video_player/video_player.dart';
 
-/// Keeps initialized video controllers alive for instant thumbnail reuse.
+/// 🎥 VideoFrameCache
+/// Preloads and caches video player controllers for instant video playback in feeds and profile grids.
 class VideoFrameCache {
   VideoFrameCache._();
 
-  static const int _maxEntries = 6;
-  static const int _maxConcurrentInit = 1;
+  static const int _maxEntries = 16;
+  static const int _maxConcurrentInit = 4;
 
   static final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
   static final Queue<String> _lru = Queue<String>();
@@ -17,6 +18,11 @@ class VideoFrameCache {
   static int _activeInits = 0;
   static final Queue<Completer<void>> _initWaitQueue = Queue<Completer<void>>();
 
+  // ==========================================
+  // Public Cache Operations
+  // ==========================================
+
+  /// Checks if a controller is already initialized and ready without acquiring a reference
   static VideoPlayerController? peekReady(String url) {
     final key = url.trim();
     if (key.isEmpty) return null;
@@ -29,7 +35,7 @@ class VideoFrameCache {
     return null;
   }
 
-  /// Transfers a warmed controller to the feed player pool (no shared refs).
+  /// Transfers a warmed controller exclusively to the video feed pool
   static Future<VideoPlayerController?> takeForFeed(String url) async {
     final key = url.trim();
     if (key.isEmpty) return null;
@@ -54,6 +60,7 @@ class VideoFrameCache {
     return null;
   }
 
+  /// Acquires an initialized controller from cache or creates a new one
   static Future<VideoPlayerController?> acquire(String url) async {
     final key = url.trim();
     if (key.isEmpty) return null;
@@ -99,6 +106,7 @@ class VideoFrameCache {
     }
   }
 
+  /// Releases a hold on a cached controller
   static void release(String url) {
     final key = url.trim();
     final entry = _cache[key];
@@ -109,15 +117,7 @@ class VideoFrameCache {
     }
   }
 
-  static Future<void> disposeAll() async {
-    for (final entry in _cache.values) {
-      await entry.controller.dispose();
-    }
-    _cache.clear();
-    _lru.clear();
-    _inFlight.clear();
-  }
-
+  /// Preloads a single video in the background
   static Future<void> warmup(String url) async {
     final controller = await acquire(url);
     if (controller != null) {
@@ -126,7 +126,7 @@ class VideoFrameCache {
     }
   }
 
-  /// Preload many video first-frames in parallel (grids + feed posters).
+  /// Preloads multiple videos in parallel (e.g. for grid thumbnails)
   static Future<void> warmupMany(
     Iterable<String> urls, {
     int concurrency = _maxConcurrentInit,
@@ -148,7 +148,7 @@ class VideoFrameCache {
     }
   }
 
-  /// Pauses every cached controller so only one clip can output audio at a time.
+  /// Pauses all cached controllers to prevent audio overlap
   static Future<void> pauseAll({
     String? activeUrl,
     double activeVolume = 1.0,
@@ -171,6 +171,20 @@ class VideoFrameCache {
       } catch (_) {}
     }
   }
+
+  /// Disposes all cached video controllers (e.g. on low memory or logout)
+  static Future<void> disposeAll() async {
+    for (final entry in _cache.values) {
+      await entry.controller.dispose();
+    }
+    _cache.clear();
+    _lru.clear();
+    _inFlight.clear();
+  }
+
+  // ==========================================
+  // Internal Helpers & Eviction
+  // ==========================================
 
   static Future<VideoPlayerController?> _createController(String key) async {
     await _acquireInitSlot();

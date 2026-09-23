@@ -34,8 +34,6 @@ class HighlightState {
   int get hashCode => Object.hashAll(highlightedStoryIds);
 }
 
-/// Riverpod Notifier replacing the legacy [HighlightStateManager] ChangeNotifier.
-/// Tracks which stories are added to highlights and persists them in SharedPreferences.
 class HighlightStateNotifier extends Notifier<HighlightState> {
   static const String _highlightedStoriesKey = 'highlighted_story_ids';
 
@@ -60,7 +58,7 @@ class HighlightStateNotifier extends Notifier<HighlightState> {
       state = state.copyWith(highlightedStoryIds: updated);
       await _saveToPreferences();
       AppLogger.d(
-        '[HighlightStateManager] Story $storyId marked as highlighted',
+        '[HighlightStateNotifier] Story $storyId marked as highlighted',
       );
     }
   }
@@ -77,7 +75,7 @@ class HighlightStateNotifier extends Notifier<HighlightState> {
     state = state.copyWith(highlightedStoryIds: updated);
     await _saveToPreferences();
     AppLogger.d(
-      '[HighlightStateManager] Story $storyId removed from highlighted list',
+      '[HighlightStateNotifier] Story $storyId removed from highlighted list',
     );
   }
 
@@ -85,7 +83,7 @@ class HighlightStateNotifier extends Notifier<HighlightState> {
   Future<void> clearAllHighlightedStories() async {
     state = state.copyWith(highlightedStoryIds: <String>{});
     await _saveToPreferences();
-    AppLogger.d('[HighlightStateManager] All highlighted stories cleared');
+    AppLogger.d('[HighlightStateNotifier] All highlighted stories cleared');
   }
 
   /// Save highlighted story IDs to SharedPreferences
@@ -95,10 +93,10 @@ class HighlightStateNotifier extends Notifier<HighlightState> {
       final storyIdsList = state.highlightedStoryIds.toList();
       await prefs.setStringList(_highlightedStoriesKey, storyIdsList);
       AppLogger.d(
-        '[HighlightStateManager] Saved ${storyIdsList.length} highlighted stories to preferences',
+        '[HighlightStateNotifier] Saved ${storyIdsList.length} highlighted stories to preferences',
       );
     } catch (e) {
-      AppLogger.d('[HighlightStateManager] Error saving to preferences: $e');
+      AppLogger.d('[HighlightStateNotifier] Error saving to preferences: $e');
     }
   }
 
@@ -109,10 +107,12 @@ class HighlightStateNotifier extends Notifier<HighlightState> {
       final storyIdsList = prefs.getStringList(_highlightedStoriesKey) ?? [];
       state = state.copyWith(highlightedStoryIds: storyIdsList.toSet());
       AppLogger.d(
-        '[HighlightStateManager] Loaded ${storyIdsList.length} highlighted stories from preferences',
+        '[HighlightStateNotifier] Loaded ${storyIdsList.length} highlighted stories from preferences',
       );
     } catch (e) {
-      AppLogger.d('[HighlightStateManager] Error loading from preferences: $e');
+      AppLogger.d(
+        '[HighlightStateNotifier] Error loading from preferences: $e',
+      );
     }
   }
 }

@@ -124,7 +124,7 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
 
   Future<void> fetchMyHighlights() async {
     try {
-      _log('[HighlightController] fetchMyHighlights start');
+      _log('[HighlightControllerNotifier] fetchMyHighlights start');
 
       state = state.copyWith(isLoading: true, isSuccess: false, message: '');
 
@@ -132,9 +132,9 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
         cancelToken: _getCancelToken(),
       );
 
-      _log('[HighlightController] API success: ${response.success}');
+      _log('[HighlightControllerNotifier] API success: ${response.success}');
       _log(
-        '[HighlightController] Highlights total: '
+        '[HighlightControllerNotifier] Highlights total: '
         '${response.data.highlights.length}',
       );
 
@@ -151,7 +151,7 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
 
         for (final highlight in newHighlights) {
           _log(
-            '[HighlightController] Highlight: ${highlight.title}, '
+            '[HighlightControllerNotifier] Highlight: ${highlight.title}, '
             'stories=${highlight.stories.map((story) => story.id).toList()}',
           );
         }
@@ -167,14 +167,16 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
       }
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
-        AppLogger.d('[HighlightController] fetchMyHighlights cancelled');
+        AppLogger.d(
+          '[HighlightControllerNotifier] fetchMyHighlights cancelled',
+        );
         return;
       }
-      _log('[HighlightController] error: $e');
+      _log('[HighlightControllerNotifier] error: $e');
       state = state.copyWith(message: 'Something went wrong', isSuccess: false);
     } finally {
       state = state.copyWith(isLoading: false);
-      _log('[HighlightController] fetchMyHighlights end');
+      _log('[HighlightControllerNotifier] fetchMyHighlights end');
     }
   }
 
@@ -184,19 +186,21 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
   }) async {
     try {
       _log(
-        '[HighlightController] fetchHighlightStories called with ID: '
+        '[HighlightControllerNotifier] fetchHighlightStories called with ID: '
         '$highlightId, force: $force',
       );
 
       if (highlightId.isEmpty) {
-        _log('[HighlightController] empty highlightId provided');
+        _log('[HighlightControllerNotifier] empty highlightId provided');
         return null;
       }
 
       if (!force) {
         final cached = _highlightStoriesCache[highlightId];
         if (cached != null && cached.stories.isNotEmpty) {
-          _log('[HighlightController] Returning cached highlight stories');
+          _log(
+            '[HighlightControllerNotifier] Returning cached highlight stories',
+          );
           return cached;
         }
       }
@@ -208,28 +212,30 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
 
       if (response.success) {
         _log(
-          '[HighlightController] API success - stories count: '
+          '[HighlightControllerNotifier] API success - stories count: '
           '${response.data.stories.length}',
         );
         cacheHighlightStories(response.data);
         return response.data;
       } else {
-        _log('[HighlightController] API failed: ${response.message}');
+        _log('[HighlightControllerNotifier] API failed: ${response.message}');
         return null;
       }
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
-        AppLogger.d('[HighlightController] fetchHighlightStories cancelled');
+        AppLogger.d(
+          '[HighlightControllerNotifier] fetchHighlightStories cancelled',
+        );
         return null;
       }
-      _log('[HighlightController] error: $e');
+      _log('[HighlightControllerNotifier] error: $e');
       return null;
     }
   }
 
   Future<bool> deleteHighlight(String highlightId) async {
     try {
-      _log('[HighlightController] deleteHighlight start: $highlightId');
+      _log('[HighlightControllerNotifier] deleteHighlight start: $highlightId');
       state = state.copyWith(isLoading: true, isSuccess: false, message: '');
 
       // Invalidate memory and HTTP caches
@@ -243,7 +249,9 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
           .where((h) => h.id != highlightId)
           .toList();
 
-      _log('[HighlightController] deleteHighlight simulated local success');
+      _log(
+        '[HighlightControllerNotifier] deleteHighlight simulated local success',
+      );
       state = state.copyWith(
         highlights: List<HighlightModel>.unmodifiable(updated),
         totalCount: updated.length,
@@ -252,7 +260,7 @@ class HighlightControllerNotifier extends Notifier<HighlightControllerState> {
       );
       return true;
     } catch (e) {
-      _log('[HighlightController] delete error: $e');
+      _log('[HighlightControllerNotifier] delete error: $e');
       state = state.copyWith(
         message: 'Failed to delete highlight',
         isSuccess: false,

@@ -59,7 +59,7 @@ class LogoutWidget extends ConsumerWidget {
                           onTap: isLoading
                               ? null
                               : () {
-                                  authLogger.d("🔥 YES CLICKED");
+                                  authLogger.d("YES CLICKED");
                                   final notifier = ref.read(
                                     logoutNotifierProvider.notifier,
                                   );
@@ -73,7 +73,7 @@ class LogoutWidget extends ConsumerWidget {
                                   notifier.logout(context: providerContext);
 
                                   authLogger.d(
-                                    "🚀 [LogoutWidget] Navigating to SignIn immediately...",
+                                    "[LogoutWidget] Navigating to SignIn immediately...",
                                   );
                                   Navigator.of(
                                     context,
@@ -88,7 +88,7 @@ class LogoutWidget extends ConsumerWidget {
                                         (route) => false,
                                       );
                                   authLogger.d(
-                                    "🚀 [LogoutWidget] Instant navigation completed.",
+                                    "[LogoutWidget] Instant navigation completed.",
                                   );
                                 },
                           child: Container(

@@ -187,10 +187,24 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             },
             child: Consumer(
               builder: (context, ref, child) {
-                final provider = ref.watch(notificationNotifierProvider);
+                final (
+                  isLoading,
+                  errorMessage,
+                  notifications,
+                  isLoadingMore,
+                ) = ref.watch(
+                  notificationNotifierProvider.select(
+                    (s) => (
+                      s.isLoading,
+                      s.errorMessage,
+                      s.notifications,
+                      s.isLoadingMore,
+                    ),
+                  ),
+                );
                 Widget content;
 
-                if (provider.isLoading) {
+                if (isLoading) {
                   content = SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +215,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                       ],
                     ),
                   );
-                } else if (provider.errorMessage.isNotEmpty) {
+                } else if (errorMessage.isNotEmpty) {
                   content = SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
@@ -223,7 +237,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                               ),
                               SizedBox(height: context.rh(16)),
                               Text(
-                                provider.errorMessage,
+                                errorMessage,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.white70,
@@ -252,17 +266,22 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                       ],
                     ),
                   );
-                } else if (provider.notifications.isEmpty) {
+                } else if (notifications.isEmpty) {
                   content = const SingleChildScrollView(
                     physics: AlwaysScrollableScrollPhysics(),
                     child: Column(children: [Header(), _EmptyNotifications()]),
                   );
                 } else {
-                  final showNew = provider.newNotifications.isNotEmpty;
-                  final showToday = provider.todayNotifications.isNotEmpty;
-                  final showThisWeek =
-                      provider.thisWeekNotifications.isNotEmpty;
-                  final showEarlier = provider.earlierNotifications.isNotEmpty;
+                  // Grouping getters depend only on `notifications`, so
+                  // deriving them here (instead of watching the full state)
+                  // keeps this rebuild scoped to the fields actually used.
+                  final grouped = NotificationState(
+                    notifications: notifications,
+                  );
+                  final showNew = grouped.newNotifications.isNotEmpty;
+                  final showToday = grouped.todayNotifications.isNotEmpty;
+                  final showThisWeek = grouped.thisWeekNotifications.isNotEmpty;
+                  final showEarlier = grouped.earlierNotifications.isNotEmpty;
 
                   content = SingleChildScrollView(
                     controller: _scrollController,
@@ -273,29 +292,29 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                         const Header(),
                         if (showNew) ...[
                           _buildSectionHeader("New"),
-                          ...provider.newNotifications.map(
+                          ...grouped.newNotifications.map(
                             (n) => _buildNotificationTile(n),
                           ),
                         ],
                         if (showToday) ...[
                           _buildSectionHeader("Today"),
-                          ...provider.todayNotifications.map(
+                          ...grouped.todayNotifications.map(
                             (n) => _buildNotificationTile(n),
                           ),
                         ],
                         if (showThisWeek) ...[
                           _buildSectionHeader("This Week"),
-                          ...provider.thisWeekNotifications.map(
+                          ...grouped.thisWeekNotifications.map(
                             (n) => _buildNotificationTile(n),
                           ),
                         ],
                         if (showEarlier) ...[
                           _buildSectionHeader("Earlier"),
-                          ...provider.earlierNotifications.map(
+                          ...grouped.earlierNotifications.map(
                             (n) => _buildNotificationTile(n),
                           ),
                         ],
-                        if (provider.isLoadingMore)
+                        if (isLoadingMore)
                           Padding(
                             padding: EdgeInsets.symmetric(
                               vertical: context.rh(24),

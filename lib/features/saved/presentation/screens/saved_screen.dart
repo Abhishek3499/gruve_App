@@ -54,14 +54,23 @@ class _SavedScreenContent extends StatelessWidget {
               Expanded(
                 child: Consumer(
                   builder: (context, ref, _) {
-                    final provider = ref.watch(savePostNotifierProvider);
-                    if (provider.isLoadingSavedPosts) {
+                    final (isLoading, savedPostsError, savedPostsList) = ref
+                        .watch(
+                          savePostNotifierProvider.select(
+                            (s) => (
+                              s.isLoadingSavedPosts,
+                              s.savedPostsError,
+                              s.savedPostsList,
+                            ),
+                          ),
+                        );
+                    if (isLoading) {
                       return const Center(
                         child: CircularProgressIndicator(color: Colors.white),
                       );
                     }
 
-                    if (provider.savedPostsError != null) {
+                    if (savedPostsError != null) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -73,7 +82,7 @@ class _SavedScreenContent extends StatelessWidget {
                             ),
                             SizedBox(height: context.rh(16)),
                             Text(
-                              provider.savedPostsError!,
+                              savedPostsError,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: context.rf(16),
@@ -93,7 +102,7 @@ class _SavedScreenContent extends StatelessWidget {
                       );
                     }
 
-                    if (provider.savedPostsList.isEmpty) {
+                    if (savedPostsList.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -134,9 +143,9 @@ class _SavedScreenContent extends StatelessWidget {
                             mainAxisSpacing: 8,
                             childAspectRatio: 0.7,
                           ),
-                      itemCount: provider.savedPostsList.length,
+                      itemCount: savedPostsList.length,
                       itemBuilder: (context, index) {
-                        final post = provider.savedPostsList[index];
+                        final post = savedPostsList[index];
                         return GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -146,7 +155,7 @@ class _SavedScreenContent extends StatelessWidget {
                                     (context, animation, secondaryAnimation) {
                                       return PostDetailScreen(
                                         post: post,
-                                        allPosts: provider.savedPostsList,
+                                        allPosts: savedPostsList,
                                         initialIndex: index,
                                       );
                                     },

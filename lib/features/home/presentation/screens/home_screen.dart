@@ -405,8 +405,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _handleTabChange(int newIndex) {
-    AppLogger.d(
-      "🏠 Home Screen: Tab changed to $newIndex, previous: ${_previousIndex.value}",
+    AppLogger.debug(
+      'HomeScreen',
+      'tab_changed',
+      data: {'newIndex': newIndex, 'previousIndex': _previousIndex.value},
     );
 
     // Check if we're switching back to home tab and need refresh

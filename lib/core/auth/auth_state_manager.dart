@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
@@ -9,6 +10,11 @@ import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
+
+/// Riverpod provider exposing the singleton [AuthStateManager] to the widget tree.
+final authStateProvider = ChangeNotifierProvider<AuthStateManager>((ref) {
+  return AuthStateManager();
+});
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation
@@ -63,10 +69,7 @@ class AuthStateManager extends ChangeNotifier {
         '🔐 [AuthState] Initialized - Authenticated: $_isAuthenticated, UserId: $_currentUserId',
       );
 
-      // I-2: Inform the socket layer whether reconnects are permitted at
-      // cold start. If _isAuthenticated is false (no stored token / expired),
-      // SocketReconnectManager._scheduleReconnect() becomes a no-op so the
-      // "missing auth token" reconnect loop cannot start during the login flow.
+      // Inform the socket layer about auth status to prevent reconnect loops when not logged in
       SocketService().setAuthState(_isAuthenticated);
     } catch (e) {
       AppLogger.d('🚨 [AuthState] Initialization failed, resetting state: $e');
@@ -110,9 +113,7 @@ class AuthStateManager extends ChangeNotifier {
 
     await _clearSessionScopedState();
 
-    // I-2: Open the socket reconnect gate BEFORE connect() is called by
-    // AuthSessionHelper / SplashScreen so that any failure inside
-    // _performConnect can legitimately schedule a reconnect attempt.
+    // Enable socket reconnects upon successful authentication
     SocketService().setAuthState(true);
 
     AppLogger.d('✅ [AuthState] Authentication successful for user: $userId');
@@ -120,13 +121,6 @@ class AuthStateManager extends ChangeNotifier {
   }
 
   /// Called when authentication fails (logout, token refresh failure)
-  ///
-  /// [message], when provided, marks this as a *forced* logout (e.g. the
-  /// refresh token was invalid/expired or the refresh call failed): the
-  /// user is shown why they were signed out and is navigated straight to
-  /// [SignInScreen] via [rootNavigatorKey], regardless of which screen is
-  /// currently open. Manual logout (see [logout]) calls this with no
-  /// message and stays silent — [LogoutWidget] handles its own navigation.
   Future<void> onAuthFailure({String? message}) async {
     AppLogger.d(
       '🚨 [AuthState] Authentication failed - initiating logout flow',
@@ -147,13 +141,8 @@ class AuthStateManager extends ChangeNotifier {
       await hive.clearCache(HiveService.userCacheBoxName);
       await hive.clearCache(HiveService.feedCacheBoxName);
 
-      // I-2: Close the socket reconnect gate BEFORE disconnect() so the
-      // pending reconnect timer (if any) is cancelled and cannot fire after
-      // tokens are wiped.  disconnect() then sets _manualDisconnect = true
-      // as a belt-and-suspenders guard.
+      // Disable socket reconnects and cleanly disconnect
       SocketService().setAuthState(false);
-
-      // Disconnect socket
       SocketService().disconnect();
 
       // Clear all caches

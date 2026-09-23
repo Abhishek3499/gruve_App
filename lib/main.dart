@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
@@ -60,34 +59,23 @@ Future<void> main() async {
     AppLogger.d('🚨 [Main] AuthStateManager initialization failed: $e');
   }
 
-  runApp(ProviderScope(child: MyApp(authStateManager: authStateManager)));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
-  final AuthStateManager? authStateManager;
-
-  const MyApp({super.key, this.authStateManager});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(
-          value: authStateManager ?? AuthStateManager(),
-        ),
-      ],
-      child: MaterialApp(
-        title: 'Gruve',
-        debugShowCheckedModeBanner: false,
-        navigatorKey: rootNavigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-
-        theme: AppTheme.darkTheme,
-
-        initialRoute: AppRoutes.initialRoute,
-        routes: AppRoutes.routes,
-        navigatorObservers: [routeObserver],
-      ),
+    return MaterialApp(
+      title: 'Gruve',
+      debugShowCheckedModeBanner: false,
+      navigatorKey: rootNavigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      theme: AppTheme.darkTheme,
+      initialRoute: AppRoutes.initialRoute,
+      routes: AppRoutes.routes,
+      navigatorObservers: [routeObserver],
     );
   }
 }

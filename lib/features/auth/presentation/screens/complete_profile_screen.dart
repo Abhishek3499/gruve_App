@@ -7,7 +7,7 @@ import 'package:gruve_app/shared/widgets/video_background.dart';
 import 'package:gruve_app/features/auth/presentation/notifiers/complete_profile_notifier.dart';
 import 'package:gruve_app/features/auth/validators/signup_validator.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
-import 'package:gruve_app/core/services/image_picker_service.dart';
+import 'package:gruve_app/shared/widgets/image_picker_bottom_sheet.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
@@ -106,7 +106,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   }
 
   Future<void> _pickProfileImage() async {
-    ImagePickerService.showImagePickerBottomSheet(
+    ImagePickerBottomSheet.show(
       context,
       onImageSelected: (image) async {
         if (image.path.trim().isEmpty) {

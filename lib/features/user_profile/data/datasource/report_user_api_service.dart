@@ -45,14 +45,10 @@ class ReportUserApiService {
         ),
       );
 
-      _log('Success status=${response.statusCode}');
       return ReportUserResponseModel.fromJson(
         Map<String, dynamic>.from(response.data as Map),
       );
-    } on DioException catch (e) {
-      _log(
-        'DioException status=${e.response?.statusCode} data=${e.response?.data}',
-      );
+    } on DioException {
       rethrow;
     }
   }

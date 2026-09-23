@@ -82,20 +82,18 @@ class HighlightCreateService {
     try {
       final uniqueStoryIds = storyIds.toSet();
       if (uniqueStoryIds.length != storyIds.length) {
-        AppLogger.d('[Highlight] Duplicate story_id detected in request body');
+        AppLogger.warning(
+          'HighlightCreateService',
+          'duplicate_story_id',
+          data: {'endpoint': ApiConstants.createHighlight},
+        );
         return HighlightCreateResponse.failure(
           message: 'Story already added to this highlight',
           statusCode: 400,
         );
       }
 
-      AppLogger.d('[Highlight] POST highlights/');
-
       final token = await TokenStorage.getAccessToken();
-      AppLogger.d(
-        '[Highlight] Authorization Token: '
-        '${token?.isNotEmpty == true ? 'Present' : 'Missing'}',
-      );
 
       final Map<String, dynamic> requestData = {
         'title': title,
@@ -106,23 +104,24 @@ class HighlightCreateService {
         requestData['highlight_id'] = highlightId;
       }
 
-      AppLogger.d('[Highlight] Request Body: $requestData');
-
       final response = await _dio.post(
         ApiConstants.createHighlight,
         data: requestData,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      AppLogger.d('[Highlight] Response status=${response.statusCode}');
-      AppLogger.d('[Highlight] Response data=${response.data}');
-
       return HighlightCreateResponse.fromJson(response.data);
     } on DioException catch (e) {
-      AppLogger.d('[Highlight] Error: DioException');
-      AppLogger.d('[Highlight] Status Code: ${e.response?.statusCode}');
-      AppLogger.d('[Highlight] Error Data: ${e.response?.data}');
-      AppLogger.d('[Highlight] Message: ${e.message}');
+      AppLogger.warning(
+        'HighlightCreateService',
+        'api_error',
+        data: {
+          'method': 'POST',
+          'endpoint': ApiConstants.createHighlight,
+          'type': e.type.name,
+          'statusCode': e.response?.statusCode,
+        },
+      );
 
       final responseData = e.response?.data;
       if (responseData is Map<String, dynamic>) {
@@ -143,8 +142,12 @@ class HighlightCreateService {
         statusCode: e.response?.statusCode,
       );
     } catch (e) {
-      AppLogger.d('[Highlight] Error: Unknown Exception');
-      AppLogger.d('[Highlight] Message: $e');
+      AppLogger.error(
+        'HighlightCreateService',
+        'unexpected_error',
+        data: {'endpoint': ApiConstants.createHighlight},
+        error: e,
+      );
       return HighlightCreateResponse.failure(message: 'Something went wrong');
     }
   }

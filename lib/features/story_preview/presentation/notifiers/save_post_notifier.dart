@@ -57,7 +57,15 @@ class SavePostNotifier extends Notifier<SavePostState> {
   static const _savedPostsCacheTtl = Duration(minutes: 3);
 
   @override
-  SavePostState build() => const SavePostState();
+  SavePostState build() {
+    ref.onDispose(() {
+      for (final timer in _debounceTimers.values) {
+        timer.cancel();
+      }
+      _debounceTimers.clear();
+    });
+    return const SavePostState();
+  }
 
   bool isSaved(String postId) => state.isSaved(postId);
   bool isLoading(String postId) => state.isLoading(postId);

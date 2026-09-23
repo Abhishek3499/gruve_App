@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
-import 'package:gruve_app/features/auth/data/services/auth_api_logger.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/features/auth/data/dto/logout_model.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
@@ -35,26 +34,14 @@ class LogoutService {
           "Authorization": "Bearer $accessTokenValue",
       };
 
-      AuthApiLogger.request(
-        'Logout',
-        dio: dio,
-        endpoint: endpoint,
-        method: 'POST',
-        body: {'refresh_token': 'present'},
-      );
-
       final response = await dio.post(
         endpoint,
         data: requestData,
         options: Options(headers: headers),
       );
 
-      AuthApiLogger.response('Logout', response);
-
       return LogoutResponse.fromJson(response.data);
     } on DioException catch (e) {
-      AuthApiLogger.error('Logout', e);
-
       final responseData = e.response?.data;
       if (responseData is Map<String, dynamic>) {
         if (responseData["message"] != null) {

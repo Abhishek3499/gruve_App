@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/user_profile/presentation/controller/user_profile_controller.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
@@ -167,7 +166,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final currentUserId = Provider.of<AuthStateManager>(context).currentUserId;
+    final currentUserId = ref.read(authStateProvider).currentUserId;
 
     if (currentUserId != _lastLoggedInUserId) {
       _lastLoggedInUserId = currentUserId;

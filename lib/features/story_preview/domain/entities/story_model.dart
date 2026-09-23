@@ -1,23 +1,4 @@
 import 'package:gruve_app/features/story_preview/domain/entities/story_media_model.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
-
-class CreateStoryRequest {
-  final String caption;
-  final String file; // file path OR file url
-
-  CreateStoryRequest({required this.caption, required this.file});
-  Map<String, dynamic> toJson() {
-    AppLogger.d("📤 Sending Create Story Request:");
-    AppLogger.d("👉 Caption: $caption");
-    AppLogger.d("👉 File: $file");
-
-    final data = {"caption": caption, "file": file};
-
-    AppLogger.d("👉 Final JSON: $data");
-
-    return data;
-  }
-}
 
 /// Individual story item from the API
 class StoryItem {
@@ -49,19 +30,6 @@ class StoryItem {
   });
 
   factory StoryItem.fromJson(Map<String, dynamic> json) {
-    AppLogger.d("📦 [StoryItem] Raw Data: $json");
-    AppLogger.d("🆔 [StoryItem] ID: ${json['id']}");
-    AppLogger.d("📺 [StoryItem] Media URL: ${json['media_url']}");
-    AppLogger.d("📎 [StoryItem] MIME Type: ${json['media_mime_type']}");
-    AppLogger.d("🎬 [StoryItem] Media Kind: ${json['media_kind']}");
-    AppLogger.d("📝 [StoryItem] Caption: ${json['caption']}");
-    AppLogger.d("📅 [StoryItem] Created At: ${json['created_at']}");
-    AppLogger.d("⏰ [StoryItem] Expires At: ${json['expires_at']}");
-    AppLogger.d("👤 [StoryItem] User ID: ${json['user_id']}");
-    AppLogger.d("👤 [StoryItem] Username: ${json['username']}");
-    AppLogger.d("🖼️ [StoryItem] Avatar URL: ${json['avatar_url']}");
-    AppLogger.d("⭐ [StoryItem] Is Highlighted: ${json['is_highlighted']}");
-
     return StoryItem(
       id: json['id']?.toString() ?? '',
       mediaUrl: json['media_url']?.toString() ?? '',
@@ -107,12 +75,6 @@ class StoriesResponse {
   });
 
   factory StoriesResponse.fromJson(Map<String, dynamic> json) {
-    AppLogger.d("📥 [StoriesResponse] Raw Response: $json");
-    AppLogger.d("🔢 [StoriesResponse] Code: ${json['code']}");
-    AppLogger.d("✅ [StoriesResponse] Success: ${json['success']}");
-    AppLogger.d("💬 [StoriesResponse] Message: ${json['message']}");
-    AppLogger.d("📦 [StoriesResponse] Data: ${json['data']}");
-
     return StoriesResponse(
       code: json['code'] ?? 200,
       success: json['success'] ?? false,
@@ -139,21 +101,10 @@ class StoriesData {
   });
 
   factory StoriesData.fromJson(Map<String, dynamic> json) {
-    AppLogger.d("📊 [StoriesData] Raw Data: $json");
-    AppLogger.d("🔢 [StoriesData] Count: ${json['count']}");
-    AppLogger.d("📄 [StoriesData] Page: ${json['page']}");
-    AppLogger.d("📏 [StoriesData] Limit: ${json['limit']}");
-    AppLogger.d("➡️ [StoriesData] Has Next: ${json['has_next']}");
-
     final storiesList = json['stories'] as List?;
-    AppLogger.d(
-      "📚 [StoriesData] Stories count in list: ${storiesList?.length ?? 0}",
-    );
 
     final stories =
         storiesList?.map((item) => StoryItem.fromJson(item)).toList() ?? [];
-
-    AppLogger.d("✅ [StoriesData] Parsed ${stories.length} stories");
 
     return StoriesData(
       count: json['count'] ?? 0,

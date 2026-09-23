@@ -32,6 +32,12 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.transparent,

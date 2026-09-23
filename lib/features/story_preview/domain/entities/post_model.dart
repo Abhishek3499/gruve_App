@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 
 class CreatePostResponse {
   final bool success;
@@ -10,8 +8,6 @@ class CreatePostResponse {
   CreatePostResponse({required this.success, required this.message, this.data});
 
   factory CreatePostResponse.fromJson(Map<String, dynamic> json) {
-    AppLogger.d("Create response json: $json");
-
     return CreatePostResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? "",
@@ -152,8 +148,6 @@ class Post {
       if (nestedStr == 'video' ||
           nestedStr == 'image' ||
           nestedStr == 'carousel') {
-        AppLogger.d('🎥 [Post] nested media.type=$nestedStr');
-
         if (nestedStr == 'video') return 'video';
       }
     }
@@ -185,8 +179,6 @@ class Post {
     if (postType != null && postType.isNotEmpty) {
       const videoish = {'video', 'reel', 'clip', 'short', 'shorts', 'igtv'};
       if (videoish.contains(postType) || postType.contains('video')) {
-        AppLogger.d('🎥 [Post] post type hints video: $postType');
-
         return 'video';
       }
       if (postType == 'image' ||
@@ -205,15 +197,6 @@ class Post {
     final mediaUrl = _extractPrimaryMediaUrl(json);
 
     final mediaType = _resolveMediaType(json, mediaUrl);
-
-    if (kDebugMode) {
-      final kind = mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl)
-          ? '🎥 video'
-          : '🖼 image';
-      AppLogger.d(
-        '📡 [Post.fromJson] $kind detected id=${json['id']} mediaType=$mediaType url=${mediaUrl.length > 80 ? '${mediaUrl.substring(0, 80)}…' : mediaUrl}',
-      );
-    }
 
     final rawTagged =
         json['tagged_users'] as List<dynamic>? ??

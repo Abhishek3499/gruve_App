@@ -4,7 +4,6 @@ import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart'
     show TokenStorage;
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
-import 'package:gruve_app/features/auth/data/services/auth_api_logger.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:gruve_app/features/auth/data/dto/complete_profile_request.dart';
 import 'package:gruve_app/features/auth/data/dto/complete_profile_response.dart';
@@ -56,21 +55,11 @@ class CompleteProfileService {
       const endpoint = ApiConstants.completeProfile;
       final headers = <String, dynamic>{"Authorization": "Bearer $token"};
 
-      AuthApiLogger.request(
-        'CompleteProfile',
-        dio: dio,
-        endpoint: endpoint,
-        method: 'POST',
-        body: {'username': request.username, 'hasFile': upload != null},
-      );
-
       final response = await dio.post(
         endpoint,
         data: formData,
         options: Options(headers: headers),
       );
-
-      AuthApiLogger.response('CompleteProfile', response);
 
       final status = response.statusCode ?? 0;
       if (status < 200 || status >= 300) {
@@ -89,7 +78,6 @@ class CompleteProfileService {
           : result.message;
       throw Exception(msg);
     } on DioException catch (e) {
-      AuthApiLogger.error('CompleteProfile', e);
       final data = e.response?.data;
       if (data is Map) {
         final m = Map<String, dynamic>.from(data);

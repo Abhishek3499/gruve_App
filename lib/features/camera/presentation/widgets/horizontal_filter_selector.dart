@@ -91,6 +91,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     _initSub?.cancel();
     _zoomSub?.cancel();
     _recordingTimer?.cancel();
+    ModeService().cancelCountdown();
     _pageController.dispose();
     super.dispose();
   }

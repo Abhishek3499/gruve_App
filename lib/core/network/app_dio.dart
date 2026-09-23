@@ -1,16 +1,15 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
+import 'package:gruve_app/core/network/api_logger.dart';
 import 'package:gruve_app/core/network/refresh_token_interceptor.dart';
 
 import 'package:gruve_app/core/network/request_deduplication_manager.dart';
 import 'package:gruve_app/core/cache/cache_interceptor.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
-import 'package:gruve_app/core/monitoring/network_monitor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class AppDio {
@@ -92,51 +91,11 @@ class AppDio {
           handler.next(options);
         },
         onResponse: (response, handler) {
-          final startTime =
-              response.requestOptions.extra['request_start_time'] as DateTime?;
-          if (startTime != null) {
-            final duration = DateTime.now().difference(startTime);
-            NetworkMonitor().logApiCall(
-              method: response.requestOptions.method,
-              endpoint: response.requestOptions.path,
-              duration: duration,
-              statusCode: response.statusCode ?? 0,
-            );
-          }
-
-          // 📊 Log response size in debug mode to track GZIP decompression/payloads
-          if (kDebugMode) {
-            final contentLength =
-                response.headers.value(Headers.contentLengthHeader) ??
-                response.headers.value('content-length');
-            int sizeInBytes = 0;
-            if (contentLength != null) {
-              sizeInBytes = int.tryParse(contentLength) ?? 0;
-            } else if (response.data != null) {
-              try {
-                sizeInBytes = response.data.toString().length;
-              } catch (_) {}
-            }
-            AppLogger.d(
-              '📊 [Response Size] ${response.requestOptions.method} ${response.requestOptions.path} | Size: ${(sizeInBytes / 1024).toStringAsFixed(2)} KB ($sizeInBytes bytes)',
-            );
-          }
-
+          ApiLogger.logResponse(response);
           handler.next(response);
         },
         onError: (error, handler) {
-          final startTime =
-              error.requestOptions.extra['request_start_time'] as DateTime?;
-          if (startTime != null) {
-            final duration = DateTime.now().difference(startTime);
-            NetworkMonitor().logApiCall(
-              method: error.requestOptions.method,
-              endpoint: error.requestOptions.path,
-              duration: duration,
-              statusCode: error.response?.statusCode ?? 0,
-              error: error.message,
-            );
-          }
+          ApiLogger.logError(error);
           handler.next(error);
         },
       ),
@@ -167,7 +126,7 @@ class AppDio {
   }
 }
 
-/// 🚀 Configurable Dio Interceptor that retries failed requests with a 1s delay
+/// Configurable Dio Interceptor that retries failed requests with a 1s delay
 class RetryInterceptor extends Interceptor {
   final Dio dio;
   final int maxRetries;
@@ -181,17 +140,29 @@ class RetryInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    AppLogger.d(
-      'DEBUG: RetryInterceptor.onError CALLED for ${err.requestOptions.method} ${err.requestOptions.path} with type ${err.type}',
-    );
-
     final requestOptions = err.requestOptions;
+
+    AppLogger.debug(
+      'RetryInterceptor',
+      'error_received',
+      data: {
+        'method': requestOptions.method,
+        'endpoint': requestOptions.path,
+        'type': err.type.name,
+      },
+    );
 
     // Check if request is explicitly marked for no retries
     final noRetry = requestOptions.extra['noRetry'] == true;
     if (noRetry) {
-      AppLogger.d(
-        '⏭️ [RetryInterceptor] Skipping retry as noRetry is set for ${requestOptions.method} ${requestOptions.path}',
+      AppLogger.debug(
+        'RetryInterceptor',
+        'retry_skipped',
+        data: {
+          'method': requestOptions.method,
+          'endpoint': requestOptions.path,
+          'reason': 'noRetry',
+        },
       );
       return super.onError(err, handler);
     }
@@ -212,11 +183,18 @@ class RetryInterceptor extends Interceptor {
     if (isTransient && attempts < maxRetries) {
       requestOptions.extra['retry_attempts'] = attempts + 1;
 
-      if (kDebugMode) {
-        AppLogger.d(
-          '🔄 [RetryInterceptor] Failed with ${err.type} (Status: ${err.response?.statusCode}). Retrying ${requestOptions.method} ${requestOptions.path} (Attempt ${attempts + 1}/$maxRetries) in 1s...',
-        );
-      }
+      AppLogger.debug(
+        'RetryInterceptor',
+        'retrying',
+        data: {
+          'method': requestOptions.method,
+          'endpoint': requestOptions.path,
+          'type': err.type.name,
+          'statusCode': err.response?.statusCode,
+          'attempt': attempts + 1,
+          'maxRetries': maxRetries,
+        },
+      );
 
       // Delay 1 second before retry
       await Future<void>.delayed(const Duration(seconds: 1));

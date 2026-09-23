@@ -94,7 +94,6 @@ class MessageNotifier extends Notifier<MessageState> {
 
   @override
   MessageState build() {
-    AppLogger.d('🏗️ [MessageNotifier] Notifier initialized');
     _initializeSocketListener();
 
     ref.onDispose(() {
@@ -102,9 +101,7 @@ class MessageNotifier extends Notifier<MessageState> {
       _socketSubscription?.cancel();
       _socketSubscription = null;
       _cancelToken?.cancel('Notifier disposed');
-      AppLogger.d(
-        '🗑️ [MessageNotifier] Disposed and socket listener cancelled',
-      );
+      AppLogger.d('[MessageNotifier] Disposed and socket listener cancelled');
     });
 
     return const MessageState();
@@ -112,11 +109,11 @@ class MessageNotifier extends Notifier<MessageState> {
 
   void _initializeSocketListener() {
     if (_socketSubscription != null) {
-      AppLogger.d('🎧 [MessageNotifier] Socket listener already active');
+      AppLogger.d('[MessageNotifier] Socket listener already active');
       return;
     }
 
-    AppLogger.d('🎧 [MessageNotifier] Socket listener initialized');
+    AppLogger.d('[MessageNotifier] Socket listener initialized');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
       if (!_isMessageSocketEvent(data)) return;
@@ -134,7 +131,7 @@ class MessageNotifier extends Notifier<MessageState> {
         _patchConversationFromSocket(data, conversationId);
         _scheduleBackgroundRefresh();
       } catch (e) {
-        AppLogger.d('💥 SOCKET LISTENER ERROR: $e');
+        AppLogger.d('[MessageNotifier] Socket listener error: $e');
       }
     });
   }
@@ -346,7 +343,7 @@ class MessageNotifier extends Notifier<MessageState> {
   void _setError(String? error) {
     if (state.error != error) {
       state = state.copyWith(error: error, clearError: error == null);
-      AppLogger.d('❌ [MessageNotifier] Error state changed: $error');
+      AppLogger.d('[MessageNotifier] Error state changed: $error');
     }
   }
 
@@ -370,7 +367,7 @@ class MessageNotifier extends Notifier<MessageState> {
             const Duration(minutes: 2) &&
         state.allConversations.isNotEmpty) {
       AppLogger.d(
-        '✅ [MessageNotifier] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
+        '[MessageNotifier] Using cached conversations (age: ${DateTime.now().difference(_lastFetchTime!).inSeconds}s)',
       );
       return;
     }
@@ -378,7 +375,7 @@ class MessageNotifier extends Notifier<MessageState> {
     final fetchKey = '${refresh ? 'refresh' : 'page'}:$requestedPage';
     final inFlight = _inFlightFetches[fetchKey];
     if (inFlight != null) {
-      AppLogger.d('⏳ [MessageNotifier] Joining in-flight fetch $fetchKey');
+      AppLogger.d('[MessageNotifier] Joining in-flight fetch $fetchKey');
       return inFlight;
     }
 
@@ -404,7 +401,7 @@ class MessageNotifier extends Notifier<MessageState> {
     final isPagination = !refresh && requestedPage > 1;
 
     AppLogger.d(
-      '📡 [MessageNotifier] fetchConversations trigger=$reason '
+      '[MessageNotifier] fetchConversations trigger=$reason '
       'page=$requestedPage refresh=$refresh',
     );
 
@@ -432,13 +429,6 @@ class MessageNotifier extends Notifier<MessageState> {
       );
       final apiTime = DateTime.now().difference(apiStart);
 
-      AppLogger.d(
-        '📩 [MessageNotifier] API response received in ${apiTime.inMilliseconds}ms',
-      );
-      AppLogger.d(
-        '📊 [MessageNotifier] API returned ${fetched.length} conversations',
-      );
-
       final preserveLocalUnread = reason == 'background_refresh' || !refresh;
 
       List<ConversationModel> newConversations;
@@ -458,7 +448,7 @@ class MessageNotifier extends Notifier<MessageState> {
         ], preserveLocalUnread: preserveLocalUnread);
         final addedCount = newConversations.length - beforeCount;
         AppLogger.d(
-          '📊 [MessageNotifier] Added $addedCount new conversations (${fetched.length - addedCount} duplicates/invalid skipped)',
+          '[MessageNotifier] Added $addedCount new conversations (${fetched.length - addedCount} duplicates/invalid skipped)',
         );
         if (isPagination && addedCount <= 0) {
           hasMoreData = false;
@@ -484,19 +474,19 @@ class MessageNotifier extends Notifier<MessageState> {
 
       final totalTime = DateTime.now().difference(fetchStart);
       developer.log(
-        '🌐 [PERF] MessageNotifier fetch: API ${apiTime.inMilliseconds}ms, Sort ${sortTime.inMilliseconds}ms, Total ${totalTime.inMilliseconds}ms',
+        '[PERF] MessageNotifier fetch: API ${apiTime.inMilliseconds}ms, Sort ${sortTime.inMilliseconds}ms, Total ${totalTime.inMilliseconds}ms',
         name: 'MessageNotifier',
       );
 
       AppLogger.d(
-        '✅ [MessageNotifier] Fetch complete — total: ${newConversations.length} | totalUnread: ${state.totalUnreadCount} | hasMore: ${state.hasMoreData}',
+        '[MessageNotifier] Fetch complete - total: ${newConversations.length} | totalUnread: ${state.totalUnreadCount} | hasMore: ${state.hasMoreData}',
       );
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageNotifier] fetchConversations cancelled');
+        AppLogger.d('[MessageNotifier] fetchConversations cancelled');
         return;
       }
-      AppLogger.d('💥 [MessageNotifier] Error fetching conversations: $e');
+      AppLogger.d('[MessageNotifier] Error fetching conversations: $e');
       _setError(e.toString());
     } finally {
       if (refresh) {
@@ -511,7 +501,7 @@ class MessageNotifier extends Notifier<MessageState> {
 
   /// Pull-to-refresh functionality
   Future<void> refreshConversations() async {
-    AppLogger.d('🔄 [MessageNotifier] Refresh conversations requested');
+    AppLogger.d('[MessageNotifier] Refresh conversations requested');
     await fetchConversations(refresh: true, reason: 'manual_refresh');
   }
 
@@ -522,7 +512,7 @@ class MessageNotifier extends Notifier<MessageState> {
         state.isRefreshing ||
         !state.hasMoreData) {
       AppLogger.d(
-        '⏸️ [MessageNotifier] Skipping load more reason=$reason - '
+        '[MessageNotifier] Skipping load more reason=$reason - '
         'Loading: ${state.isLoading}, LoadingMore: ${state.isLoadingMore}, '
         'Refreshing: ${state.isRefreshing}, HasMore: ${state.hasMoreData}',
       );
@@ -558,9 +548,7 @@ class MessageNotifier extends Notifier<MessageState> {
 
       return success;
     } catch (e) {
-      AppLogger.d(
-        '💥 [MessageNotifier] Error marking conversation as read: $e',
-      );
+      AppLogger.d('[MessageNotifier] Error marking conversation as read: $e');
       return false;
     }
   }
@@ -588,7 +576,7 @@ class MessageNotifier extends Notifier<MessageState> {
 
       return success;
     } catch (e) {
-      AppLogger.d('💥 [MessageNotifier] Error deleting conversation: $e');
+      AppLogger.d('[MessageNotifier] Error deleting conversation: $e');
       _setError('Failed to delete conversation');
       return false;
     } finally {
@@ -622,7 +610,7 @@ class MessageNotifier extends Notifier<MessageState> {
 
       state = state.copyWith(allConversations: cleaned);
     } catch (e) {
-      AppLogger.d('💥 [MessageNotifier] Error updating conversation: $e');
+      AppLogger.d('[MessageNotifier] Error updating conversation: $e');
     }
   }
 
@@ -632,7 +620,7 @@ class MessageNotifier extends Notifier<MessageState> {
   void addConversation(ConversationModel conversation) {
     if (!_isRenderableConversation(conversation)) {
       AppLogger.d(
-        '🚫 [MessageNotifier] Invalid conversation skipped: ${conversation.id}',
+        '[MessageNotifier] Invalid conversation skipped: ${conversation.id}',
       );
       return;
     }
@@ -640,7 +628,7 @@ class MessageNotifier extends Notifier<MessageState> {
     final key = _conversationKey(conversation);
     if (state.allConversations.any((item) => _conversationKey(item) == key)) {
       AppLogger.d(
-        '🔒 [MessageNotifier] Duplicate conversation skipped: ${conversation.id}',
+        '[MessageNotifier] Duplicate conversation skipped: ${conversation.id}',
       );
       return;
     }
@@ -730,7 +718,7 @@ class MessageNotifier extends Notifier<MessageState> {
     _inFlightFetches.clear();
     _seenRealtimeEventKeys.clear();
     state = const MessageState();
-    AppLogger.d('🔄 [MessageNotifier] State reset');
+    AppLogger.d('[MessageNotifier] State reset');
   }
 }
 

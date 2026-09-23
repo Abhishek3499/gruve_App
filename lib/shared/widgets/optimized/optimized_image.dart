@@ -1,20 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/core/debug/debug_logger.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:shimmer/shimmer.dart';
 
-class OptimizedImage extends StatelessWidget {
+/// Not used directly outside this file — [OptimizedAvatar] is the public
+/// entry point; this holds the shared image-loading implementation.
+class _OptimizedImage extends StatelessWidget {
   final String? imageUrl;
   final double? width;
   final double? height;
   final BoxFit fit;
   final Widget? placeholder;
   final Widget? errorWidget;
-  final Duration? fadeInDuration;
-  final bool useMemCache;
 
-  const OptimizedImage({
+  const _OptimizedImage({
     super.key,
     required this.imageUrl,
     this.width,
@@ -22,8 +22,6 @@ class OptimizedImage extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.placeholder,
     this.errorWidget,
-    this.fadeInDuration,
-    this.useMemCache = true,
   });
 
   static String? normalizeImageUrl(String? value) {
@@ -60,12 +58,12 @@ class OptimizedImage extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
-      memCacheWidth: useMemCache ? _cacheExtent(context, width) : null,
-      memCacheHeight: useMemCache ? _cacheExtent(context, height) : null,
-      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 180),
+      memCacheWidth: _cacheExtent(context, width),
+      memCacheHeight: _cacheExtent(context, height),
+      fadeInDuration: const Duration(milliseconds: 180),
       placeholder: (context, url) => placeholder ?? _buildDefaultPlaceholder(),
       errorWidget: (context, url, error) {
-        debugLog.image(url, operation: 'ERROR', error: error.toString());
+        AppLogger.d('🚨 [OptimizedImage] Error loading $url: $error');
         return errorWidget ?? _buildDefaultError();
       },
       imageBuilder: (context, imageProvider) {
@@ -122,7 +120,7 @@ class OptimizedAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = radius * 2;
-    final normalizedUrl = OptimizedImage.normalizeImageUrl(imageUrl);
+    final normalizedUrl = _OptimizedImage.normalizeImageUrl(imageUrl);
 
     return ClipOval(
       child: SizedBox(
@@ -130,7 +128,7 @@ class OptimizedAvatar extends StatelessWidget {
         height: size,
         child: normalizedUrl == null
             ? _buildFallback()
-            : OptimizedImage(
+            : _OptimizedImage(
                 imageUrl: normalizedUrl,
                 width: size,
                 height: size,
@@ -175,116 +173,6 @@ class OptimizedAvatar extends StatelessWidget {
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
     return '${parts.first.characters.first}${parts[1].characters.first}'
         .toUpperCase();
-  }
-}
-
-class OptimizedProfileImage extends StatelessWidget {
-  final String imageUrl;
-  final double size;
-  final Widget? overlay;
-
-  const OptimizedProfileImage({
-    super.key,
-    required this.imageUrl,
-    this.size = 80,
-    this.overlay,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(size * 0.1),
-              child: OptimizedImage(
-                imageUrl: imageUrl,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          if (overlay != null) Positioned(bottom: 0, right: 0, child: overlay!),
-        ],
-      ),
-    );
-  }
-}
-
-class OptimizedStoryImage extends StatelessWidget {
-  final String imageUrl;
-  final double? width;
-  final double aspectRatio;
-  final Widget? overlay;
-
-  const OptimizedStoryImage({
-    super.key,
-    required this.imageUrl,
-    this.width,
-    this.aspectRatio = 1.0,
-    this.overlay,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final height = width != null ? width! / aspectRatio : null;
-
-    return AspectRatio(
-      aspectRatio: aspectRatio,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          OptimizedImage(
-            imageUrl: imageUrl,
-            width: width,
-            height: height,
-            fit: BoxFit.cover,
-          ),
-          ?overlay,
-        ],
-      ),
-    );
-  }
-}
-
-class OptimizedGridImage extends StatelessWidget {
-  final String imageUrl;
-  final double size;
-  final VoidCallback? onTap;
-  final BorderRadius? borderRadius;
-
-  const OptimizedGridImage({
-    super.key,
-    required this.imageUrl,
-    this.size = 120,
-    this.onTap,
-    this.borderRadius,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedBorderRadius = borderRadius ?? BorderRadius.circular(4);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: ClipRRect(
-          borderRadius: resolvedBorderRadius,
-          child: OptimizedImage(
-            imageUrl: imageUrl,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-    );
   }
 }
 

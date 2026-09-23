@@ -34,19 +34,16 @@ class HighlightService {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      _log('[HighlightService] response status: ${response.statusCode}');
-
       return HighlightsResponse.fromJson(response.data);
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [HighlightService] fetchMyHighlights cancelled');
+        AppLogger.d('[HighlightService] fetchMyHighlights cancelled');
         return HighlightsResponse(
           code: 200,
           success: false,
           data: HighlightsData(highlights: []),
         );
       }
-      _log('[HighlightService] Dio error status: ${e.response?.statusCode}');
       rethrow;
     } catch (e) {
       _log('[HighlightService] unknown error: $e');
@@ -74,18 +71,10 @@ class HighlightService {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      _log('[HighlightService] response status: ${response.statusCode}');
-
-      if (response.data['stories'] != null) {
-        _log(
-          '[HighlightService] stories count: ${response.data['stories'].length}',
-        );
-      }
-
       return HighlightResponse.fromJson(response.data);
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [HighlightService] fetchHighlightStories cancelled');
+        AppLogger.d('[HighlightService] fetchHighlightStories cancelled');
         return HighlightResponse(
           code: 200,
           success: false,
@@ -99,7 +88,6 @@ class HighlightService {
           ),
         );
       }
-      _log('[HighlightService] Dio error status: ${e.response?.statusCode}');
       _log('[HighlightService] endpoint: /highlights/$highlightId/stories/');
       rethrow;
     } catch (e) {

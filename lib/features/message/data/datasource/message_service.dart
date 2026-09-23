@@ -20,7 +20,6 @@ class MessageService {
 
   MessageService() {
     _dio = AppDio.getInstance();
-    AppLogger.d('🏗️ [MessageService] Service initialized with Dio client');
   }
 
   /// Fetches the list of conversations from the API
@@ -34,10 +33,6 @@ class MessageService {
     CancelToken? cancelToken,
   }) async {
     try {
-      AppLogger.d(
-        '📡 [MessageService] 🚀 Fetching conversations from $_conversationsEndpoint',
-      );
-
       final response = await _dio.get<dynamic>(
         _conversationsEndpoint,
         queryParameters: page > 1
@@ -56,48 +51,31 @@ class MessageService {
         ),
       );
 
-      SafeParsingHelpers.logResponseInfo(
-        response.data,
-        '💬 Conversations API Response',
-      );
-
       if (response.statusCode == 200) {
         final responseData = _extractConversationList(response.data);
 
         final conversations = <ConversationModel>[];
         for (int i = 0; i < responseData.length; i++) {
           try {
-            AppLogger.d(
-              '🔄 [MessageService] 📝 Processing conversation at index $i',
-            );
             final conversationJson = SafeParsingHelpers.safeMapParse(
               responseData[i],
-              context: '💬 getConversationList[$i]',
+              context: 'getConversationList[$i]',
             );
             if (conversationJson.isNotEmpty) {
               final conversation = ConversationModel.fromJson(conversationJson);
               conversations.add(conversation);
-              AppLogger.d(
-                '✅ [MessageService] ✨ Successfully parsed conversation ${conversation.id}',
-              );
             } else {
               AppLogger.d(
-                '⚠️ [MessageService] 🚫 Skipping empty conversation data at index $i',
+                '[MessageService] Skipping empty conversation data at index $i',
               );
             }
           } catch (e) {
             AppLogger.d(
-              '💥 [MessageService] ❌ Failed to parse conversation at index $i: $e',
-            );
-            AppLogger.d(
-              '📄 [MessageService] 📋 Problematic data: ${responseData[i]}',
+              '[MessageService] Failed to parse conversation at index $i: $e',
             );
           }
         }
 
-        AppLogger.d(
-          '🎉 [MessageService] 🏆 Successfully parsed ${conversations.length}/${responseData.length} conversations',
-        );
         return conversations;
       } else {
         throw ApiException(
@@ -107,16 +85,10 @@ class MessageService {
       }
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] getConversationList cancelled');
         return [];
       }
-      AppLogger.d('💥 [MessageService] DioException: ${e.message}');
-      AppLogger.d(
-        '[MessageService] Response status: ${e.response?.statusCode}',
-      );
       throw ApiException.fromDio(e, fallback: 'Failed to fetch conversations');
     } catch (e) {
-      AppLogger.d('💥 [MessageService] Unexpected error: $e');
       if (e is ApiException) rethrow;
       throw ApiException('Failed to fetch conversations');
     }
@@ -138,10 +110,6 @@ class MessageService {
     final endpoint = ApiConstants.conversationMessages(conversationId);
 
     try {
-      AppLogger.d(
-        '[MessageService] 📡 GET $endpoint 📄 page=$page forceRefresh=$forceRefresh',
-      );
-
       final response = await _dio.get<dynamic>(
         endpoint,
         queryParameters: page > 1 ? {'page': page} : null,
@@ -156,27 +124,14 @@ class MessageService {
         ),
       );
 
-      AppLogger.d(
-        '[MessageService] 📊 Messages response status=${response.statusCode}',
-      );
-
-      SafeParsingHelpers.logResponseInfo(
-        response.data,
-        '💬 Messages API Response',
-      );
-
       final rawMessages = _extractMessageList(response.data);
-      AppLogger.d(
-        '[MessageService] 📋 Extracted ${rawMessages.length} 📨 raw message items',
-      );
 
       final messages = <MessageModel>[];
       for (int i = 0; i < rawMessages.length; i++) {
         try {
-          AppLogger.d('🔄 [MessageService] 📝 Processing message at index $i');
           final messageJson = SafeParsingHelpers.safeMapParse(
             rawMessages[i],
-            context: '💬 getMessages[$i]',
+            context: 'getMessages[$i]',
           );
           if (messageJson.isNotEmpty) {
             final message = MessageModel.fromJson(
@@ -185,52 +140,33 @@ class MessageService {
               receiverUserId: receiverUserId,
             );
             messages.add(message);
-            AppLogger.d(
-              '✅ [MessageService] ✨ Successfully parsed message ${message.id}',
-            );
           } else {
             AppLogger.d(
-              '⚠️ [MessageService] 🚫 Skipping empty message data at index $i',
+              '[MessageService] Skipping empty message data at index $i',
             );
           }
         } catch (e) {
           AppLogger.d(
-            '💥 [MessageService] ❌ Failed to parse message at index $i: $e',
-          );
-          AppLogger.d(
-            '📄 [MessageService] 📋 Problematic data: ${rawMessages[i]}',
+            '[MessageService] Failed to parse message at index $i: $e',
           );
         }
       }
 
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-      AppLogger.d(
-        '[MessageService] 🎉 🏆 Parsed ${messages.length}/${rawMessages.length} 📨 messages for $conversationId',
-      );
       return messages;
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] getMessages cancelled');
         return [];
       }
-      AppLogger.d('[MessageService] Messages DioException: ${e.message}');
-      AppLogger.d(
-        '[MessageService] Messages error response: ${e.response?.data}',
-      );
       throw ApiException.fromDio(e, fallback: 'Failed to fetch messages');
     } catch (e) {
-      AppLogger.d('[MessageService] Messages unexpected error: $e');
       if (e is ApiException) rethrow;
       throw ApiException('Failed to fetch messages');
     }
   }
 
   List<dynamic> _extractMessageList(dynamic data) {
-    AppLogger.d('🔍 [MessageService] 🚀 Starting message list extraction');
-
-    SafeParsingHelpers.logResponseInfo(data, '📋 _extractMessageList input');
-
     if (data is List) {
       return data;
     }
@@ -252,8 +188,6 @@ class MessageService {
         }
       }
     }
-
-    AppLogger.d('⚠️ [_extractMessageList] 🚫 No list found');
 
     return [];
   }
@@ -370,7 +304,6 @@ class MessageService {
     final fileName = filePath.split('/').last.split('\\').last;
 
     try {
-      AppLogger.d('[MessageService] 📤 POST multipart $endpoint');
       final mediaType = _getMediaType(filePath);
       final formData = FormData.fromMap({
         'media': await MultipartFile.fromFile(
@@ -404,10 +337,8 @@ class MessageService {
       );
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] uploadMessageMedia cancelled');
         rethrow;
       }
-      AppLogger.d('[MessageService] Upload media DioException: ${e.message}');
       throw ApiException.fromDio(e, fallback: 'Failed to upload media');
     }
   }
@@ -446,15 +377,10 @@ class MessageService {
     if (media != null) body['media'] = media;
 
     try {
-      AppLogger.d('[MessageService] 📤 POST $endpoint');
       final response = await _dio.post<dynamic>(
         endpoint,
         data: body,
         cancelToken: cancelToken,
-      );
-
-      AppLogger.d(
-        '[MessageService] 📊 Send message response status=${response.statusCode}',
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -462,13 +388,10 @@ class MessageService {
         final messageData = _unwrapMessagePayload(response.data);
         final responseMap = SafeParsingHelpers.safeMapParse(
           messageData,
-          context: '📤 sendMessage',
+          context: 'sendMessage',
         );
 
         if (responseMap.isEmpty) {
-          AppLogger.d(
-            '[MessageService] Send accepted (${response.statusCode}) with empty body',
-          );
           return null;
         }
 
@@ -485,16 +408,10 @@ class MessageService {
       );
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] sendMessage cancelled');
         return null;
       }
-      AppLogger.d('[MessageService] Send message DioException: ${e.message}');
-      AppLogger.d(
-        '[MessageService] Send message error response: ${e.response?.data}',
-      );
       throw ApiException.fromDio(e, fallback: 'Failed to send message');
     } catch (e) {
-      AppLogger.d('[MessageService] Send message unexpected error: $e');
       if (e is ApiException) rethrow;
       throw ApiException('Failed to send message');
     }
@@ -510,35 +427,19 @@ class MessageService {
     }
 
     try {
-      AppLogger.d(
-        '🔍 [MessageService] 🚀 Fetching conversation by ID: $conversationId',
-      );
-
       final response = await _dio.get<Map<String, dynamic>>(
         '$_conversationsEndpoint/$conversationId',
         cancelToken: cancelToken,
       );
 
       if (response.statusCode == 200) {
-        SafeParsingHelpers.logResponseInfo(
-          response.data,
-          '💬 Conversation by ID Response',
-        );
-
         final conversationData = SafeParsingHelpers.safeMapParse(
           _unwrapResponseData(response.data),
-          context: '🔍 getConversationById',
+          context: 'getConversationById',
         );
         if (conversationData.isNotEmpty) {
-          final conversation = ConversationModel.fromJson(conversationData);
-          AppLogger.d(
-            '✅ [MessageService] 🎉 Successfully fetched conversation: ${conversation.id}',
-          );
-          return conversation;
+          return ConversationModel.fromJson(conversationData);
         } else {
-          AppLogger.d(
-            '❌ [MessageService] 🚫 Conversation data is empty after parsing',
-          );
           throw ApiException('Conversation data is empty');
         }
       } else {
@@ -549,21 +450,14 @@ class MessageService {
       }
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] getConversationById cancelled');
         rethrow;
       }
-      AppLogger.d(
-        '💥 [MessageService] DioException fetching conversation: ${e.message}',
-      );
 
       if (e.response?.statusCode == 404) {
         throw ApiException('Conversation not found', statusCode: 404);
       }
       throw ApiException.fromDio(e, fallback: 'Failed to fetch conversation');
     } catch (e) {
-      AppLogger.d(
-        '💥 [MessageService] Unexpected error fetching conversation: $e',
-      );
       if (e is ApiException) rethrow;
       throw ApiException('Failed to fetch conversation');
     }
@@ -582,7 +476,6 @@ class MessageService {
     final endpoint = ApiConstants.conversationMessagesRead(conversationId);
 
     try {
-      AppLogger.d('👁️ [MessageService] POST $endpoint');
       final data = messageIds != null
           ? {'message_ids': messageIds}
           : <String, dynamic>{};
@@ -592,15 +485,9 @@ class MessageService {
         cancelToken: cancelToken,
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        AppLogger.d(
-          '✅ [MessageService] Conversation marked as read: $conversationId',
-        );
-        return true;
-      }
-      return false;
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      AppLogger.d('💥 [MessageService] Error marking conversation as read: $e');
+      AppLogger.d('[MessageService] Error marking conversation as read: $e');
       return false;
     }
   }
@@ -615,43 +502,20 @@ class MessageService {
     }
 
     try {
-      AppLogger.d(
-        '🚀 [MessageService] Creating/getting conversation with receiver: $receiverId',
-      );
-
       final response = await _dio.post<Map<String, dynamic>>(
         ApiConstants.conversations,
         data: {'receiver_id': receiverId},
         cancelToken: cancelToken,
       );
 
-      AppLogger.d(
-        '📊 [MessageService] Conversation creation response status: ${response.statusCode}',
-      );
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        SafeParsingHelpers.logResponseInfo(
-          response.data,
-          '💬 Create/Get Conversation Response',
-        );
-
         final conversationData = SafeParsingHelpers.safeMapParse(
           _unwrapResponseData(response.data),
-          context: '🚀 createOrGetConversation',
+          context: 'createOrGetConversation',
         );
         if (conversationData.isNotEmpty) {
-          final conversation = ConversationModel.fromJson(conversationData);
-          AppLogger.d(
-            '✅ [MessageService] 🎉 Successfully created/retrieved conversation: ${conversation.id}',
-          );
-          AppLogger.d(
-            '💬 [MessageService] 👤 Participants: ${conversation.participant1Id} & ${conversation.participant2Id}',
-          );
-          return conversation;
+          return ConversationModel.fromJson(conversationData);
         } else {
-          AppLogger.d(
-            '❌ [MessageService] 🚫 Conversation data is empty after parsing',
-          );
           throw ApiException('Conversation data is empty');
         }
       } else {
@@ -662,20 +526,13 @@ class MessageService {
       }
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] createOrGetConversation cancelled');
         rethrow;
       }
-      AppLogger.d(
-        '💥 [MessageService] DioException creating/getting conversation: ${e.message}',
-      );
       throw ApiException.fromDio(
         e,
         fallback: 'Failed to create/get conversation',
       );
     } catch (e) {
-      AppLogger.d(
-        '💥 [MessageService] Unexpected error creating/getting conversation: $e',
-      );
       if (e is ApiException) rethrow;
       throw ApiException('Failed to create/get conversation');
     }
@@ -693,24 +550,14 @@ class MessageService {
     final endpoint = '$_conversationsEndpoint$conversationId';
 
     try {
-      AppLogger.d('🗑️ [MessageService] 🚀 DELETE $endpoint');
-
       final response = await _dio.delete<dynamic>(
         endpoint,
         cancelToken: cancelToken,
       );
 
-      AppLogger.d(
-        '📊 [MessageService] ✅ Delete response status: ${response.statusCode}',
-      );
-
       if (response.statusCode == 204) {
-        AppLogger.d('✅ [MessageService] 🎉 Conversation deleted successfully');
         return true;
       } else {
-        AppLogger.d(
-          '⚠️ [MessageService] ❌ Unexpected status code: ${response.statusCode}',
-        );
         throw ApiException(
           'Failed to delete conversation',
           statusCode: response.statusCode,
@@ -718,10 +565,8 @@ class MessageService {
       }
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] deleteConversation cancelled');
         return false;
       }
-      AppLogger.d('💥 [MessageService] ❌ DioException: ${e.message}');
 
       final statusCode = e.response?.statusCode;
       if (statusCode == 403) {
@@ -735,7 +580,6 @@ class MessageService {
       }
       throw ApiException.fromDio(e, fallback: 'Failed to delete conversation');
     } catch (e) {
-      AppLogger.d('💥 [MessageService] ❌ Unexpected error: $e');
       if (e is ApiException) rethrow;
       throw ApiException('Failed to delete conversation');
     }
@@ -760,26 +604,14 @@ class MessageService {
     );
 
     try {
-      AppLogger.d('🗑️ [MessageService] 🚀 DELETE $endpoint');
-      AppLogger.d('💬 [MessageService] 🆔 Conversation: $conversationId');
-      AppLogger.d('📨 [MessageService] 🆔 Message: $messageId');
-
       final response = await _dio.delete<dynamic>(
         endpoint,
         cancelToken: cancelToken,
       );
 
-      AppLogger.d(
-        '📊 [MessageService] ✅ Delete response status: ${response.statusCode}',
-      );
-
       if (response.statusCode == 200 || response.statusCode == 204) {
-        AppLogger.d('✅ [MessageService] 🎉 Message deleted successfully');
         return true;
       } else {
-        AppLogger.d(
-          '⚠️ [MessageService] ❌ Unexpected status code: ${response.statusCode}',
-        );
         throw ApiException(
           'Failed to delete message',
           statusCode: response.statusCode,
@@ -787,15 +619,8 @@ class MessageService {
       }
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] deleteMessage cancelled');
         return false;
       }
-      AppLogger.d(
-        '💥 [MessageService] ❌ DioException deleting message: ${e.message}',
-      );
-      AppLogger.d(
-        '[MessageService] Response status: ${e.response?.statusCode}',
-      );
 
       final statusCode = e.response?.statusCode;
       if (statusCode == 404) {
@@ -809,9 +634,6 @@ class MessageService {
       }
       throw ApiException.fromDio(e, fallback: 'Failed to delete message');
     } catch (e) {
-      AppLogger.d(
-        '💥 [MessageService] ❌ Unexpected error deleting message: $e',
-      );
       if (e is ApiException) rethrow;
       throw ApiException('Failed to delete message');
     }
@@ -844,16 +666,10 @@ class MessageService {
     );
 
     try {
-      AppLogger.d('[MessageService] ✏️ PATCH $endpoint');
-
       final response = await _dio.patch<dynamic>(
         endpoint,
         data: {'content': trimmedContent},
         cancelToken: cancelToken,
-      );
-
-      AppLogger.d(
-        '[MessageService] Edit message response status=${response.statusCode}',
       );
 
       if (response.statusCode == 200) {
@@ -865,7 +681,7 @@ class MessageService {
             : responseData;
         final responseMap = SafeParsingHelpers.safeMapParse(
           messageData,
-          context: '✏️ editMessage',
+          context: 'editMessage',
         );
 
         if (responseMap.isEmpty) return null;
@@ -883,16 +699,10 @@ class MessageService {
       );
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        AppLogger.d('🚫 [MessageService] editMessage cancelled');
         return null;
       }
-      AppLogger.d('[MessageService] Edit message DioException: ${e.message}');
-      AppLogger.d(
-        '[MessageService] Edit message error response: ${e.response?.data}',
-      );
       throw ApiException.fromDio(e, fallback: 'Failed to edit message');
     } catch (e) {
-      AppLogger.d('[MessageService] Edit message unexpected error: $e');
       if (e is ApiException) rethrow;
       throw ApiException('Failed to edit message');
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gruve_app/features/share/presentation/controller/post_share_provider.dart';
+import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
+import 'package:gruve_app/features/share/presentation/notifiers/post_share_notifier.dart';
 import 'package:gruve_app/features/share/presentation/widgets/share_user_grid.dart';
 import 'package:gruve_app/features/share/presentation/widgets/share_social_buttons.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
@@ -26,10 +27,11 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
     super.dispose();
   }
 
-  Widget _buildSendButton(BuildContext context, PostShareState shareState) {
-    final selectedUsers = shareState.selectedUsers;
-    final isSending = shareState.isSending;
-
+  Widget _buildSendButton(
+    BuildContext context,
+    Set<SearchUser> selectedUsers,
+    bool isSending,
+  ) {
     return Padding(
       key: const ValueKey('send'),
       padding: EdgeInsets.symmetric(
@@ -90,8 +92,9 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final shareState = ref.watch(postShareNotifierProvider);
-    final selectedUsers = shareState.selectedUsers;
+    final (selectedUsers, isSending) = ref.watch(
+      postShareNotifierProvider.select((s) => (s.selectedUsers, s.isSending)),
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -138,7 +141,7 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
                 );
               },
               child: selectedUsers.isNotEmpty
-                  ? _buildSendButton(context, shareState)
+                  ? _buildSendButton(context, selectedUsers, isSending)
                   : const ShareSocialButtons(key: ValueKey('social')),
             ),
 

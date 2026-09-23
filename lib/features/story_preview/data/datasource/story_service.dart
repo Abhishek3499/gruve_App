@@ -16,7 +16,6 @@ class StoryService {
   late final Dio _dio;
 
   StoryService() {
-    AppLogger.d('🌍 [StoryService] Initialized');
     _dio = AppDio.getInstance();
   }
 
@@ -38,22 +37,22 @@ class StoryService {
     );
 
     AppLogger.d(
-      '🎞️ [StoryService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
+      '[StoryService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
     );
 
     File uploadFile = file;
     if (!isVideo) {
-      AppLogger.d('🗜️ [StoryService] Compressing image...');
+      AppLogger.d('[StoryService] Compressing image...');
       uploadFile = await ImageFilterProcessor.compressImageForUpload(
         file,
         maxFileSizeKB: 400,
       );
     } else {
-      AppLogger.d('⏭️ [StoryService] Skipping compression for video');
+      AppLogger.d('[StoryService] Skipping compression for video');
     }
 
     final fileSizeKB = await uploadFile.length() ~/ 1024;
-    AppLogger.d('📏 [StoryService] Upload file size: ${fileSizeKB}KB');
+    AppLogger.d('[StoryService] Upload file size: ${fileSizeKB}KB');
 
     // Always create a fresh FormData — reusing a finalized instance causes errors
     return FormData.fromMap({
@@ -75,13 +74,9 @@ class StoryService {
     bool isMuted = false,
   }) async {
     try {
-      AppLogger.d('\n🚀 [StoryService] ===== CREATE STORY START =====');
-      AppLogger.d('📁 [StoryService] mediaPath: $mediaPath');
-      AppLogger.d('📝 [StoryService] caption: $caption');
-
       final file = File(mediaPath);
       if (!file.existsSync()) {
-        AppLogger.d('❌ [StoryService] File not found at path!');
+        AppLogger.d('[StoryService] File not found at path!');
         throw Exception('File not found');
       }
 
@@ -95,8 +90,6 @@ class StoryService {
         isMuted: isMuted,
       );
 
-      AppLogger.d('🌐 [StoryService] POST stories/');
-
       final res = await _dio.post(
         ApiConstants.stories,
         data: formData,
@@ -107,23 +100,15 @@ class StoryService {
         ),
       );
 
-      AppLogger.d('✅ [StoryService] Status: ${res.statusCode}');
-      AppLogger.d('[StoryService] Response status: ${res.statusCode}');
-      AppLogger.d('🏁 [StoryService] ===== CREATE STORY END =====\n');
-
       final response = CreateStoryResponse.fromJson(res.data);
       if (response.success) {
         await CacheInvalidationService().onStoryCreated('');
       }
       return response;
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [StoryService] DIO ERROR');
-      AppLogger.d('⚠️ [StoryService] type: ${e.type}');
-      AppLogger.d('📊 [StoryService] status: ${e.response?.statusCode}');
-      AppLogger.d('📥 [StoryService] response: ${e.response?.data}');
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('\n💥 [StoryService] UNKNOWN ERROR: $e');
+      AppLogger.d('[StoryService] UNKNOWN ERROR: $e');
       rethrow;
     }
   }
@@ -134,17 +119,10 @@ class StoryService {
     int limit = 5,
   }) async {
     try {
-      AppLogger.d('\n🚀 [StoryService] ===== FETCH STORIES START =====');
-      AppLogger.d(
-        '👤 [StoryService] userId: ${userId ?? 'me'} | page: $page | limit: $limit',
-      );
-
       final token = await TokenStorage.getAccessToken();
       final endpoint = userId == null
           ? ApiConstants.myStories
           : ApiConstants.userStories(userId);
-
-      AppLogger.d('🌐 [StoryService] GET $endpoint');
 
       final res = await _dio.get(
         endpoint,
@@ -152,20 +130,11 @@ class StoryService {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      AppLogger.d('✅ [StoryService] Status: ${res.statusCode}');
-      final count = res.data['data']?['stories']?.length ?? 0;
-      AppLogger.d('📊 [StoryService] Stories count: $count');
-      AppLogger.d('🏁 [StoryService] ===== FETCH STORIES END =====\n');
-
       return StoriesResponse.fromJson(res.data);
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [StoryService] DIO ERROR');
-      AppLogger.d('⚠️ [StoryService] type: ${e.type}');
-      AppLogger.d('📊 [StoryService] status: ${e.response?.statusCode}');
-      AppLogger.d('📥 [StoryService] response: ${e.response?.data}');
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('\n💥 [StoryService] UNKNOWN ERROR: $e');
+      AppLogger.d('[StoryService] UNKNOWN ERROR: $e');
       rethrow;
     }
   }

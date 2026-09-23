@@ -17,11 +17,11 @@ class UserRepositoryImpl implements UserRepository {
         cancelToken: cancelToken,
       );
       AppLogger.d(
-        '🧠 [UserRepositoryImpl] Initial load: ${response.users.length} users',
+        '[UserRepositoryImpl] Initial load: ${response.users.length} users',
       );
       return response.users.map((m) => m.toEntity()).toList();
     } catch (e) {
-      AppLogger.d('💥 [UserRepositoryImpl] Error in initial load: $e');
+      AppLogger.d('[UserRepositoryImpl] Error in initial load: $e');
       rethrow;
     }
   }
@@ -32,18 +32,17 @@ class UserRepositoryImpl implements UserRepository {
     bool skipCache = false,
   }) async {
     try {
-      AppLogger.d('🧠 [UserRepositoryImpl] Fetching page $page');
       final response = await dataSource.fetchUsers(
         page: page,
         cancelToken: cancelToken,
         skipCache: skipCache,
       );
       AppLogger.d(
-        '✅ [UserRepositoryImpl] Page $page fetched: ${response.users.length} users',
+        '[UserRepositoryImpl] Page $page fetched: ${response.users.length} users',
       );
       return response;
     } catch (e) {
-      AppLogger.d('💥 [UserRepositoryImpl] Error fetching page $page: $e');
+      AppLogger.d('[UserRepositoryImpl] Error fetching page $page: $e');
       rethrow;
     }
   }

@@ -102,11 +102,6 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
     bool isMuted = false,
   }) async {
     try {
-      AppLogger.d("\n🎬 ===== CONTROLLER START =====");
-      AppLogger.d("⏳ Loading started...");
-      AppLogger.d("📝 Caption: $caption");
-      AppLogger.d("📁 Media Path: $mediaPath");
-
       state = state.copyWith(isLoading: true, isSuccess: false, message: "");
 
       final response = await _service.createStory(
@@ -115,8 +110,6 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
         isMuted: isMuted,
       );
 
-      AppLogger.d("📥 API Response: ${response.message}");
-
       state = state.copyWith(
         message: response.message,
         isSuccess: response.success,
@@ -124,22 +117,17 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
 
       if (kDebugMode) {
         if (state.isSuccess) {
-          AppLogger.d("✅ Story created successfully 🎉");
+          AppLogger.d("Story created successfully");
         } else {
-          AppLogger.d("❌ Story failed: ${response.message}");
+          AppLogger.d("Story failed: ${response.message}");
         }
       }
     } catch (e) {
-      AppLogger.d("💥 Controller error: $e");
+      AppLogger.d("Controller error: $e");
 
-      state = state.copyWith(
-        message: "Something went wrong 😓",
-        isSuccess: false,
-      );
+      state = state.copyWith(message: "Something went wrong", isSuccess: false);
     } finally {
       state = state.copyWith(isLoading: false);
-
-      AppLogger.d("🏁 ===== CONTROLLER END =====\n");
     }
   }
 
@@ -149,13 +137,6 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
     int limit = 5,
   }) async {
     try {
-      AppLogger.d("\n🎬 ===== FETCH STORIES CONTROLLER START =====");
-      AppLogger.d("🧠 FetchStories:");
-      AppLogger.d("➡️ userId: ${userId ?? 'me (own stories)'}");
-      AppLogger.d("⏳ Loading started...");
-      AppLogger.d("📄 Page: $page");
-      AppLogger.d("📏 Limit: $limit");
-
       state = state.copyWith(isLoading: true, isSuccess: false, message: "");
 
       final response = await _service.fetchStories(
@@ -164,11 +145,7 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
         limit: limit,
       );
 
-      AppLogger.d("📥 API Response: ${response.message}");
-
       if (response.success) {
-        AppLogger.d("✅ Stories fetched successfully 🎉");
-
         final newStories = List<StoryItem>.unmodifiable(response.data.stories);
         final newTotalCount = response.data.count;
         final newCurrentPage = response.data.page;
@@ -190,29 +167,19 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
                 .markStoryAsHighlighted(story.id);
           }
         }
-
-        AppLogger.d("📚 Total stories: ${newStories.length}");
-        AppLogger.d("🔢 Total count: $newTotalCount");
-        AppLogger.d("📄 Current page: $newCurrentPage");
-        AppLogger.d("➡️ Has next: $newHasNext");
       } else {
-        AppLogger.d("❌ Stories fetch failed: ${response.message}");
+        AppLogger.d("Stories fetch failed: ${response.message}");
         state = state.copyWith(
           message: response.message,
           isSuccess: response.success,
         );
       }
     } catch (e) {
-      AppLogger.d("💥 Controller error: $e");
+      AppLogger.d("Controller error: $e");
 
-      state = state.copyWith(
-        message: "Something went wrong 😓",
-        isSuccess: false,
-      );
+      state = state.copyWith(message: "Something went wrong", isSuccess: false);
     } finally {
       state = state.copyWith(isLoading: false);
-
-      AppLogger.d("🏁 ===== FETCH STORIES CONTROLLER END =====\n");
     }
   }
 }

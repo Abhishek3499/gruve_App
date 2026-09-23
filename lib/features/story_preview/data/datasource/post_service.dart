@@ -51,9 +51,6 @@ class PostService {
 
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        AppLogger.d(
-          '🌐 [PostService] GET $path attempt $attempt/$maxAttempts query=$queryParameters',
-        );
         return await _dio.get(
           path,
           queryParameters: queryParameters,
@@ -62,8 +59,17 @@ class PostService {
       } on DioException catch (e) {
         lastError = e;
         final transient = _isTransientDioFailure(e);
-        AppLogger.d(
-          '⚠️ [PostService] GET failed attempt=$attempt type=${e.type} status=${e.response?.statusCode} transient=$transient',
+        AppLogger.warning(
+          'PostService',
+          'api_error',
+          data: {
+            'method': 'GET',
+            'endpoint': path,
+            'attempt': attempt,
+            'type': e.type.name,
+            'statusCode': e.response?.statusCode,
+            'transient': transient,
+          },
         );
 
         if (!transient || attempt == maxAttempts) {
@@ -95,25 +101,27 @@ class PostService {
       isVideo: isVideo,
     );
 
-    AppLogger.d(
-      '🎞️ [PostService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
+    AppLogger.debug(
+      'PostService',
+      'upload_file_prepared',
+      data: {'mediaType': isVideo ? 'video' : 'image', 'fileName': fileName},
     );
 
     File uploadFile = file;
     if (!isVideo) {
-      AppLogger.d('🗜️ [PostService] Compressing image for post...');
       try {
         uploadFile = await ImageFilterProcessor.compressImageForUpload(
           file,
           maxFileSizeKB: 400,
         );
       } catch (e) {
-        AppLogger.d(
-          '⚠️ [PostService] Image compression failed, using original: $e',
+        AppLogger.warning(
+          'PostService',
+          'image_compression_failed',
+          data: {'error': e.toString()},
         );
       }
     } else {
-      AppLogger.d('🗜️ [PostService] Compressing video for post...');
       try {
         final mediaInfo = await VideoCompress.compressVideo(
           file.path,
@@ -126,14 +134,21 @@ class PostService {
           if (compressedFile.existsSync()) {
             uploadFile = compressedFile;
             onCompressedVideo?.call(compressedFile);
-            AppLogger.d(
-              '🗜️ [PostService] Video compressed successfully: ${file.lengthSync()} -> ${compressedFile.lengthSync()} bytes',
+            AppLogger.debug(
+              'PostService',
+              'video_compressed',
+              data: {
+                'originalBytes': file.lengthSync(),
+                'compressedBytes': compressedFile.lengthSync(),
+              },
             );
           }
         }
       } catch (e) {
-        AppLogger.d(
-          '⚠️ [PostService] Video compression failed, using original: $e',
+        AppLogger.warning(
+          'PostService',
+          'video_compression_failed',
+          data: {'error': e.toString()},
         );
       }
     }
@@ -165,9 +180,6 @@ class PostService {
               mimeType: mediaMimeType,
             )
           : false;
-      AppLogger.d('\n🚀 [PostService] ===== CREATE POST START =====');
-      AppLogger.d('📁 [PostService] mediaPath: $mediaPath (isVideo=$isVideo)');
-
       final token = await TokenStorage.getAccessToken();
 
       final formData = FormData();
@@ -206,16 +218,17 @@ class PostService {
         File file;
         if (mediaPath.startsWith('http://') ||
             mediaPath.startsWith('https://')) {
-          AppLogger.d(
-            '📥 [PostService] Downloading remote draft media: $mediaPath',
-          );
           final tempDir = Directory.systemTemp;
           final fileName = mediaPath.split('/').last.split('?').first;
           final tempFile = File('${tempDir.path}/$fileName');
           await Dio().download(mediaPath, tempFile.path);
           file = tempFile;
           tempDownloadedFile = tempFile;
-          AppLogger.d('📥 [PostService] Downloaded to: ${file.path}');
+          AppLogger.debug(
+            'PostService',
+            'remote_media_downloaded',
+            data: {'path': file.path},
+          );
         } else {
           file = File(mediaPath);
         }
@@ -241,12 +254,14 @@ class PostService {
             ),
           );
         } else {
-          AppLogger.d('❌ [PostService] File not found at path: ${file.path}');
+          AppLogger.error(
+            'PostService',
+            'file_not_found',
+            data: {'path': file.path},
+          );
           throw Exception('File not found at path');
         }
       }
-
-      AppLogger.d('🌐 [PostService] POST posts/create-post/');
 
       final res = await _dio.post(
         ApiConstants.createPost,
@@ -258,52 +273,55 @@ class PostService {
         ),
       );
 
-      AppLogger.d('✅ [PostService] Status: ${res.statusCode}');
-      AppLogger.d('🏁 [PostService] ===== POST SUCCESS =====\n');
-
       final response = CreatePostResponse.fromJson(res.data);
       if (response.success) {
         await CacheInvalidationService().onPostCreated(response.data?.id ?? '');
       }
       return response;
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [PostService] DIO ERROR');
-      AppLogger.d('⚠️ [PostService] type: ${e.type}');
-      AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
-      AppLogger.d(
-        '📥 [PostService] response status: ${e.response?.statusCode}',
-      );
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('\n💥 [PostService] UNKNOWN ERROR: $e');
+      AppLogger.error(
+        'PostService',
+        'unexpected_error',
+        data: {'endpoint': ApiConstants.createPost},
+        error: e,
+      );
       rethrow;
     } finally {
       if (tempDownloadedFile != null && tempDownloadedFile.existsSync()) {
         try {
           await tempDownloadedFile.delete();
-          AppLogger.d('🧹 [PostService] Temporary downloaded file deleted');
         } catch (e) {
-          AppLogger.d('⚠️ [PostService] Failed to delete temp file: $e');
+          AppLogger.warning(
+            'PostService',
+            'temp_file_delete_failed',
+            data: {'error': e.toString()},
+          );
         }
       }
       final compressedTemp = tempCompressedVideo;
       if (compressedTemp != null && compressedTemp.existsSync()) {
         try {
           await compressedTemp.delete();
-          AppLogger.d(
-            '🧹 [PostService] Temporary compressed video file deleted',
-          );
         } catch (e) {
-          AppLogger.d('⚠️ [PostService] Failed to delete compressed file: $e');
+          AppLogger.warning(
+            'PostService',
+            'compressed_file_delete_failed',
+            data: {'error': e.toString()},
+          );
         }
       }
       try {
         if (isVideo) {
           await VideoCompress.deleteAllCache();
-          AppLogger.d('🧹 [PostService] VideoCompress cache cleared');
         }
       } catch (e) {
-        AppLogger.d('⚠️ [PostService] Failed to clear VideoCompress cache: $e');
+        AppLogger.warning(
+          'PostService',
+          'video_cache_clear_failed',
+          data: {'error': e.toString()},
+        );
       }
     }
   }
@@ -321,7 +339,6 @@ class PostService {
     bool hideShareCount = false,
   }) async {
     try {
-      AppLogger.d('\n🚀 [PostService] ===== SAVE DRAFT START =====');
       final token = await TokenStorage.getAccessToken();
 
       final Map<String, dynamic> dataMap = {
@@ -356,8 +373,6 @@ class PostService {
 
       final formData = FormData.fromMap(dataMap);
 
-      AppLogger.d('🌐 [PostService] POST posts/drafts/');
-
       final res = await _dio.post(
         ApiConstants.postDrafts,
         data: formData,
@@ -368,24 +383,19 @@ class PostService {
         ),
       );
 
-      AppLogger.d('✅ [PostService] Save Draft Status: ${res.statusCode}');
-      AppLogger.d('📥 [PostService] Save Draft Response body: ${res.data}');
-      AppLogger.d('🏁 [PostService] ===== SAVE DRAFT SUCCESS =====\n');
-
       await CacheManager().invalidatePattern(ApiConstants.postDrafts);
       await CacheManager().invalidatePattern('drafts');
 
       return Map<String, dynamic>.from(res.data);
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [PostService] SAVE DRAFT DIO ERROR');
-      AppLogger.d('⚠️ [PostService] type: ${e.type}');
-      AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
-      AppLogger.d(
-        '📥 [PostService] response status: ${e.response?.statusCode}',
-      );
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('\n💥 [PostService] SAVE DRAFT UNKNOWN ERROR: $e');
+      AppLogger.error(
+        'PostService',
+        'unexpected_error',
+        data: {'endpoint': ApiConstants.postDrafts},
+        error: e,
+      );
       rethrow;
     }
   }
@@ -395,7 +405,6 @@ class PostService {
     int limit = 20,
   }) async {
     try {
-      AppLogger.d('🚀 [PostService] ===== GET DRAFTS START =====');
       final token = await TokenStorage.getAccessToken();
       final queryParams = {'page': page, 'limit': limit};
 
@@ -407,10 +416,6 @@ class PostService {
           extra: {'skipCache': true, 'bypassCache': true, 'noCache': true},
         ),
       );
-
-      AppLogger.d('✅ [PostService] Get Drafts Status: ${res.statusCode}');
-      AppLogger.d('📥 [PostService] Get Drafts Response: ${res.data}');
-      AppLogger.d('🏁 [PostService] ===== GET DRAFTS SUCCESS =====\n');
 
       final dynamic raw = res.data;
       if (raw is List) {
@@ -453,11 +458,15 @@ class PostService {
         hasNext: false,
         results: [],
       );
-    } on DioException catch (e) {
-      AppLogger.d('❌ [PostService] GET DRAFTS DIO ERROR: $e');
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('❌ [PostService] GET DRAFTS UNKNOWN ERROR: $e');
+      AppLogger.error(
+        'PostService',
+        'unexpected_error',
+        data: {'endpoint': ApiConstants.postDrafts},
+        error: e,
+      );
       rethrow;
     }
   }
@@ -477,9 +486,6 @@ class PostService {
     bool clearMedia = false,
   }) async {
     try {
-      AppLogger.d('\n🚀 [PostService] ===== UPDATE DRAFT START =====');
-      AppLogger.d('🆔 [PostService] draftId: $draftId');
-      AppLogger.d('📁 [PostService] mediaPath: $mediaPath');
       final token = await TokenStorage.getAccessToken();
 
       final Map<String, dynamic> dataMap = {
@@ -493,8 +499,6 @@ class PostService {
         'hide_share_count': ?hideShareCount,
         'clear_media': clearMedia,
       };
-
-      AppLogger.d('📦 [PostService] updateDraft dataMap: $dataMap');
 
       if (mediaPath != null &&
           mediaPath.isNotEmpty &&
@@ -518,11 +522,10 @@ class PostService {
       }
 
       final formData = FormData.fromMap(dataMap);
-
-      AppLogger.d('🌐 [PostService] PUT posts/drafts/$draftId/');
+      final endpoint = ApiConstants.postDraft(draftId);
 
       final res = await _dio.put(
-        ApiConstants.postDraft(draftId),
+        endpoint,
         data: formData,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -531,53 +534,44 @@ class PostService {
         ),
       );
 
-      AppLogger.d('✅ [PostService] Update Draft Status: ${res.statusCode}');
-      AppLogger.d('📥 [PostService] Update Draft Response body: ${res.data}');
-      AppLogger.d('🏁 [PostService] ===== UPDATE DRAFT SUCCESS =====\n');
-
       await CacheManager().invalidatePattern(ApiConstants.postDrafts);
       await CacheManager().invalidatePattern('drafts');
 
       return Map<String, dynamic>.from(res.data);
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [PostService] UPDATE DRAFT DIO ERROR');
-      AppLogger.d('⚠️ [PostService] type: ${e.type}');
-      AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
-      AppLogger.d(
-        '📥 [PostService] response status: ${e.response?.statusCode}',
-      );
-      AppLogger.d('📥 [PostService] response body: ${e.response?.data}');
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('\n💥 [PostService] UPDATE DRAFT UNKNOWN ERROR: $e');
+      AppLogger.error(
+        'PostService',
+        'unexpected_error',
+        data: {'endpoint': ApiConstants.postDraft(draftId)},
+        error: e,
+      );
       rethrow;
     }
   }
 
   Future<void> deleteDraft(String draftId) async {
+    final endpoint = ApiConstants.postDraft(draftId);
     try {
-      AppLogger.d('\n🚀 [PostService] ===== DELETE DRAFT START =====');
       final token = await TokenStorage.getAccessToken();
 
-      AppLogger.d('🌐 [PostService] DELETE posts/drafts/$draftId/');
-
-      final res = await _dio.delete(
-        ApiConstants.postDraft(draftId),
+      await _dio.delete(
+        endpoint,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      AppLogger.d('✅ [PostService] Delete Draft Status: ${res.statusCode}');
-      AppLogger.d('🏁 [PostService] ===== DELETE DRAFT SUCCESS =====\n');
-
       await CacheManager().invalidatePattern(ApiConstants.postDrafts);
       await CacheManager().invalidatePattern('drafts');
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [PostService] DELETE DRAFT DIO ERROR');
-      AppLogger.d('⚠️ [PostService] type: ${e.type}');
-      AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
+    } on DioException {
       rethrow;
     } catch (e) {
-      AppLogger.d('\n💥 [PostService] DELETE DRAFT UNKNOWN ERROR: $e');
+      AppLogger.error(
+        'PostService',
+        'unexpected_error',
+        data: {'endpoint': endpoint},
+        error: e,
+      );
       rethrow;
     }
   }
@@ -588,12 +582,15 @@ class PostService {
     bool refresh = false,
     String? feed,
   }) async {
-    final isInitialLoad = cursor == null || !cursor.isValid;
     final requestKey =
         '${refresh ? 'refresh' : 'page'}_${cursor?.toString() ?? 'first'}_${limit}_${feed ?? 'none'}';
     final inFlight = _inFlightPageRequests[requestKey];
     if (inFlight != null) {
-      AppLogger.d('🔄 PostService: Joining duplicate paginated request');
+      AppLogger.debug(
+        'PostService',
+        'duplicate_request_joined',
+        data: {'requestKey': requestKey},
+      );
       return inFlight;
     }
 
@@ -607,7 +604,11 @@ class PostService {
     );
 
     if (_isLoading && !refresh && _lastRequestKey == requestKey) {
-      AppLogger.d('🔄 PostService: Skipping duplicate request');
+      AppLogger.debug(
+        'PostService',
+        'duplicate_request_skipped',
+        data: {'requestKey': requestKey},
+      );
       final result = PaginatedPostsResponse(
         posts: [],
         nextCursor: null,
@@ -622,10 +623,6 @@ class PostService {
     _lastRequestKey = requestKey;
 
     try {
-      AppLogger.d(
-        '📡 ${isInitialLoad ? "Initial Load" : "Load More"} API Hit for feed: ${feed ?? "default"}',
-      );
-
       final token = await TokenStorage.getAccessToken();
       final queryParams = <String, dynamic>{
         'limit': limit.clamp(1, 20),
@@ -637,9 +634,6 @@ class PostService {
 
       if (cursor?.isValid == true) {
         queryParams.addAll(cursor!.toJson());
-        AppLogger.d(
-          '📍 Next Cursor: {created_at: ${cursor.createdAt}, id: ${cursor.id}}',
-        );
       }
 
       final res = await _getWithRetry(
@@ -656,26 +650,19 @@ class PostService {
       for (final raw in rawPosts) {
         try {
           final post = Post.fromJson(Map<String, dynamic>.from(raw));
-
           posts.add(post);
-
-          AppLogger.d(
-            '✅ Parsed post: ${post.id} '
-            'video=${post.isVideo} '
-            'media=${post.media}',
-          );
         } catch (e, stack) {
-          AppLogger.d('❌ Failed parsing post: $e');
-          AppLogger.d('❌ Raw post: $raw');
-          AppLogger.d(stack.toString());
+          AppLogger.error(
+            'PostService',
+            'post_parse_failed',
+            error: e,
+            stackTrace: stack,
+          );
         }
       }
 
       final videoCount = posts.where((p) => p.isVideo).length;
       final imageCount = posts.length - videoCount;
-      AppLogger.d(
-        '📡 feed API: get-post parsed ${posts.length} posts (🎥 $videoCount videos, 🖼 $imageCount images)',
-      );
 
       final nextCursor = responseData['next_cursor'] != null
           ? CursorModel.fromJson(
@@ -685,8 +672,17 @@ class PostService {
 
       final hasMore = responseData['has_more'] as bool? ?? true;
 
-      AppLogger.d('📊 Has More: $hasMore');
-      AppLogger.d('📊 API Posts Count: ${posts.length}');
+      AppLogger.debug(
+        'PostService',
+        'api_response',
+        data: {
+          'endpoint': ApiConstants.getPost,
+          'posts': posts.length,
+          'videos': videoCount,
+          'images': imageCount,
+          'hasMore': hasMore,
+        },
+      );
 
       final result = PaginatedPostsResponse(
         posts: posts,
@@ -696,10 +692,14 @@ class PostService {
       completer.complete(result);
       return result;
     } catch (e) {
-      AppLogger.d("❌ GET PAGINATED POSTS ERROR: $e");
+      AppLogger.error(
+        'PostService',
+        'get_paginated_posts_failed',
+        data: {'endpoint': ApiConstants.getPost},
+        error: e,
+      );
       if (e is DioException) {
         if (e.response?.statusCode == 401) {
-          AppLogger.d("Unauthorized error");
           final result = PaginatedPostsResponse(
             posts: [],
             nextCursor: null,
@@ -729,7 +729,11 @@ class PostService {
       final data = res.data['data'];
 
       if (data == null) {
-        AppLogger.d("❌ Invalid response structure - no data field");
+        AppLogger.warning(
+          'PostService',
+          'invalid_response',
+          data: {'endpoint': ApiConstants.getPost, 'reason': 'no_data_field'},
+        );
         return [];
       }
 
@@ -739,25 +743,35 @@ class PostService {
       } else if (data['results'] != null) {
         list = data['results'];
       } else {
-        AppLogger.d("❌ Invalid response structure - no posts or results field");
+        AppLogger.warning(
+          'PostService',
+          'invalid_response',
+          data: {
+            'endpoint': ApiConstants.getPost,
+            'reason': 'no_posts_or_results_field',
+          },
+        );
         return [];
       }
 
-      AppLogger.d("📊 TOTAL POSTS FROM API: ${list.length}");
+      AppLogger.debug(
+        'PostService',
+        'api_response',
+        data: {'endpoint': ApiConstants.getPost, 'posts': list.length},
+      );
 
-      return list.map((e) {
-        final post = Post.fromJson(Map<String, dynamic>.from(e));
-
-        AppLogger.d("✅ PARSED POST:");
-        AppLogger.d("ID: ${post.id}");
-
-        return post;
-      }).toList();
+      return list
+          .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (e) {
-      AppLogger.d("❌ GET POSTS ERROR: $e");
+      AppLogger.error(
+        'PostService',
+        'get_posts_failed',
+        data: {'endpoint': ApiConstants.getPost},
+        error: e,
+      );
       if (e is DioException) {
         if (e.response?.statusCode == 401) {
-          AppLogger.d("Unauthorized error");
           return [];
         }
         rethrow;
@@ -776,20 +790,17 @@ class PostService {
     final token = await TokenStorage.getAccessToken();
 
     try {
-      final res = await _dio.post(
+      await _dio.post(
         ApiConstants.postLikeToggle,
         data: {"post_id": postId},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      AppLogger.d("✅ LIKE SUCCESS: ${res.data}");
       return true;
     } catch (e) {
-      AppLogger.d("❌ LIKE ERROR: $e");
       if (e is DioException) {
         final status = e.response?.statusCode;
         if (status == 401) {
-          AppLogger.d("Unauthorized error");
           return false;
         }
         if (status != null && status >= 500) {
@@ -806,60 +817,47 @@ class PostService {
   }) async {
     final token = await TokenStorage.getAccessToken();
     try {
-      AppLogger.d(
-        '🚀 [PostService] sharePost START postId=$postId, recipients=$recipientUserIds',
-      );
       final res = await _dio.post(
         ApiConstants.postShare,
         data: {"post_id": postId, "recipient_user_ids": recipientUserIds},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      AppLogger.d("✅ [PostService] SHARE SUCCESS: ${res.data}");
       return res.statusCode == 200 || res.statusCode == 201;
     } catch (e) {
-      AppLogger.d("❌ [PostService] SHARE ERROR: $e");
+      AppLogger.error(
+        'PostService',
+        'share_post_failed',
+        data: {'endpoint': ApiConstants.postShare},
+        error: e,
+      );
       rethrow;
     }
   }
 
   Future<Map<String, dynamic>> toggleSavePost(String postId) async {
-    AppLogger.d('🚀 [PostService] toggleSavePost START postId=$postId');
     final token = await TokenStorage.getAccessToken();
 
-    try {
-      final res = await _dio.post(
-        ApiConstants.postSaveToggle,
-        data: {"post_id": postId},
-        options: Options(headers: {"Authorization": "Bearer $token"}),
-      );
+    final res = await _dio.post(
+      ApiConstants.postSaveToggle,
+      data: {"post_id": postId},
+      options: Options(headers: {"Authorization": "Bearer $token"}),
+    );
 
-      AppLogger.d("✅ [PostService] SAVE TOGGLE SUCCESS: ${res.data}");
+    final data = res.data['data'];
+    final isSaved = data['is_saved'] as bool;
+    final returnedPostId = data['post_id'] as String;
 
-      final data = res.data['data'];
-      final isSaved = data['is_saved'] as bool;
-      final returnedPostId = data['post_id'] as String;
+    AppLogger.debug(
+      'PostService',
+      'post_save_toggled',
+      data: {'isSaved': isSaved, 'postId': returnedPostId},
+    );
 
-      AppLogger.d('✅ [PostService] isSaved=$isSaved postId=$returnedPostId');
-
-      return {'is_saved': isSaved, 'post_id': returnedPostId};
-    } catch (e) {
-      AppLogger.d("❌ [PostService] SAVE TOGGLE ERROR: $e");
-      if (e is DioException) {
-        AppLogger.d("❌ [PostService] Status: ${e.response?.statusCode}");
-        AppLogger.d(
-          "❌ [PostService] Response status: ${e.response?.statusCode}",
-        );
-        if (e.response?.statusCode == 401) {
-          AppLogger.d("❌ [PostService] Unauthorized error");
-        }
-      }
-      rethrow;
-    }
+    return {'is_saved': isSaved, 'post_id': returnedPostId};
   }
 
   Future<List<Post>> fetchSavedPosts() async {
-    AppLogger.d('🚀 [PostService] fetchSavedPosts START');
     final token = await TokenStorage.getAccessToken();
 
     try {
@@ -868,8 +866,6 @@ class PostService {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      AppLogger.d("✅ [PostService] SAVED POSTS SUCCESS: ${res.data}");
-
       final data = res.data['data'];
       final List<dynamic> postsJson = data['posts'] ?? data['results'] ?? [];
 
@@ -877,17 +873,20 @@ class PostService {
           .map((json) => Post.fromJson(Map<String, dynamic>.from(json)))
           .toList();
 
-      AppLogger.d('✅ [PostService] Fetched ${posts.length} saved posts');
+      AppLogger.debug(
+        'PostService',
+        'saved_posts_fetched',
+        data: {'posts': posts.length},
+      );
 
       return posts;
     } catch (e) {
-      AppLogger.d("❌ [PostService] FETCH SAVED POSTS ERROR: $e");
-      if (e is DioException) {
-        AppLogger.d("❌ [PostService] Status: ${e.response?.statusCode}");
-        AppLogger.d(
-          "❌ [PostService] Response status: ${e.response?.statusCode}",
-        );
-      }
+      AppLogger.error(
+        'PostService',
+        'fetch_saved_posts_failed',
+        data: {'endpoint': ApiConstants.savedPosts},
+        error: e,
+      );
       rethrow;
     }
   }
@@ -896,47 +895,36 @@ class PostService {
     final token = await TokenStorage.getAccessToken();
 
     try {
-      AppLogger.d("💬 ADD COMMENT → $text");
-
-      final res = await _dio.post(
+      await _dio.post(
         ApiConstants.getPost,
         data: {"post_id": postId, "comment": text},
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
-
-      AppLogger.d("✅ COMMENT RESPONSE status: ${res.statusCode}");
-    } catch (e) {
-      if (e is DioException) {
-        AppLogger.d("❌ STATUS CODE: ${e.response?.statusCode}");
-        AppLogger.d("❌ RESPONSE status: ${e.response?.statusCode}");
-      } else {
-        AppLogger.d("❌ ERROR: $e");
-      }
+    } catch (_) {
+      // Intentionally swallowed: caller does not surface comment-post failures.
     }
   }
 
   Future<bool> deletePost(String postId) async {
+    final endpoint = ApiConstants.post(postId);
     try {
-      AppLogger.d('\n🚀 [PostService] ===== DELETE POST START =====');
       final token = await TokenStorage.getAccessToken();
 
-      AppLogger.d('🌐 [PostService] DELETE posts/$postId/');
-
       final res = await _dio.delete(
-        ApiConstants.post(postId),
+        endpoint,
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      AppLogger.d('✅ [PostService] Delete Post Status: ${res.statusCode}');
-      AppLogger.d('🏁 [PostService] ===== DELETE POST SUCCESS =====\n');
       return res.statusCode == 200 || res.statusCode == 204;
-    } on DioException catch (e) {
-      AppLogger.d('\n❌ [PostService] DELETE POST DIO ERROR');
-      AppLogger.d('⚠️ [PostService] type: ${e.type}');
-      AppLogger.d('📊 [PostService] status: ${e.response?.statusCode}');
+    } on DioException {
       return false;
     } catch (e) {
-      AppLogger.d('\n💥 [PostService] DELETE POST UNKNOWN ERROR: $e');
+      AppLogger.error(
+        'PostService',
+        'unexpected_error',
+        data: {'endpoint': endpoint},
+        error: e,
+      );
       return false;
     }
   }
@@ -953,8 +941,10 @@ class PostService {
     final cacheKey = '$cleanPostId|$authorId|p=$allowProfileFallback';
     final inFlight = _inFlightFetchById[cacheKey];
     if (inFlight != null) {
-      AppLogger.d(
-        '🔄 [PostService] Joining duplicate fetchPostById for $cleanPostId',
+      AppLogger.debug(
+        'PostService',
+        'duplicate_fetch_by_id_joined',
+        data: {'postId': cleanPostId},
       );
       return inFlight;
     }
@@ -984,7 +974,6 @@ class PostService {
 
     // Backend only supports GET posts/get-post/?post_id= (GET posts/{id}/ → 405).
     try {
-      AppLogger.d('🌐 [PostService] GET posts/get-post/?post_id=$cleanPostId');
       final res = await _dio.get(
         ApiConstants.getPost,
         queryParameters: {"post_id": cleanPostId},
@@ -996,8 +985,15 @@ class PostService {
         resolved = _tryParsePostResponse(responseData, cleanPostId);
       }
     } catch (e) {
-      AppLogger.d(
-        '⚠️ [PostService] posts/get-post/?post_id=$cleanPostId failed: $e',
+      AppLogger.warning(
+        'PostService',
+        'api_error',
+        data: {
+          'method': 'GET',
+          'endpoint': ApiConstants.getPost,
+          'postId': cleanPostId,
+          'error': e.toString(),
+        },
       );
     }
 
@@ -1086,8 +1082,16 @@ class PostService {
       throw Exception('Post media not available: $cleanPostId');
     }
 
-    AppLogger.d(
-      '✅ [PostService] fetchPostById $cleanPostId → id=${post.id}, media=${post.media.length > 80 ? '${post.media.substring(0, 80)}…' : post.media}, likes=${post.likesCount}, comments=${post.commentsCount}, avatar=${post.profilePicture.isNotEmpty}',
+    AppLogger.debug(
+      'PostService',
+      'fetch_post_by_id_resolved',
+      data: {
+        'postId': cleanPostId,
+        'resolvedId': post.id,
+        'likes': post.likesCount,
+        'comments': post.commentsCount,
+        'hasAvatar': post.profilePicture.isNotEmpty,
+      },
     );
     return post;
   }
@@ -1130,12 +1134,20 @@ class PostService {
       if (res.statusCode != 200 || res.data == null) return null;
       return _extractPostFromProfilePayload(res.data, postId);
     } on DioException catch (e) {
-      AppLogger.d(
-        '⚠️ [PostService] profile lookup for post $postId user $userId: ${e.response?.statusCode}',
+      AppLogger.warning(
+        'PostService',
+        'profile_lookup_failed',
+        data: {
+          'postId': postId,
+          'userId': userId,
+          'statusCode': e.response?.statusCode,
+        },
       );
     } catch (e) {
-      AppLogger.d(
-        '⚠️ [PostService] profile lookup for post $postId user $userId failed: $e',
+      AppLogger.warning(
+        'PostService',
+        'profile_lookup_failed',
+        data: {'postId': postId, 'userId': userId, 'error': e.toString()},
       );
     }
     return null;
@@ -1196,7 +1208,11 @@ class PostService {
     try {
       return _postFromResponseData(responseData, postId);
     } catch (e) {
-      AppLogger.d('⚠️ [PostService] Could not parse post $postId: $e');
+      AppLogger.warning(
+        'PostService',
+        'post_response_parse_failed',
+        data: {'postId': postId, 'error': e.toString()},
+      );
       return null;
     }
   }

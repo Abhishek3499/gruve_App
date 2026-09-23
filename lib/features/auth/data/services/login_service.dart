@@ -3,7 +3,6 @@ import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
-import 'package:gruve_app/features/auth/data/services/auth_api_logger.dart';
 
 import 'package:gruve_app/features/auth/data/dto/login_model.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
@@ -47,25 +46,14 @@ class EmailSignInService {
     try {
       const endpoint = ApiConstants.login;
 
-      AuthApiLogger.request(
-        logLabel,
-        dio: _dio,
-        endpoint: endpoint,
-        method: 'POST',
-        body: body,
-      );
-
       final response = await _dio.post(
         endpoint,
         data: body,
         options: AuthEndpointPaths.skipAuthOptions(),
       );
 
-      AuthApiLogger.response(logLabel, response);
-
       return EmailSignInResponse.fromJson(response.data);
     } on DioException catch (e) {
-      AuthApiLogger.error(logLabel, e);
       throw AuthApiException.extractMessage(e, fallback: fallbackMessage);
     } catch (e) {
       authLogger.d("$logLabel failed: $e");

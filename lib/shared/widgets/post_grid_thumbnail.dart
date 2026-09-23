@@ -121,17 +121,6 @@ class PostGridThumbnail extends StatelessWidget {
 
   const PostGridThumbnail({super.key, required this.post});
 
-  static Future<void> warmupPost(Post post) async {
-    final images = <String>{};
-    final videos = <String>{};
-    _collectWarmupUrls(post, images, videos);
-
-    await Future.wait([
-      if (images.isNotEmpty) _warmupImagesParallel(images.toList()),
-      if (videos.isNotEmpty) VideoFrameCache.warmupMany(videos),
-    ]);
-  }
-
   static void warmupPosts(Iterable<Post> posts, {int max = 60}) {
     unawaited(warmupPostsAwait(posts, max: max));
   }

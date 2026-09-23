@@ -15,6 +15,8 @@ class EditProfileService {
 
   final Dio dio;
 
+  static const String _tag = 'EditProfileService';
+
   static Map<String, dynamic> _asJsonMap(dynamic data) {
     if (data is Map<String, dynamic>) {
       return Map<String, dynamic>.from(data);
@@ -57,9 +59,6 @@ class EditProfileService {
   }
 
   Future<dynamic> _buildUpdatePayload(EditProfileRequest request) async {
-    AppLogger.d(
-      '[EditProfileService] Always using FormData for profile update...',
-    );
     final baseData = request.toJson();
     final formData = FormData.fromMap(
       baseData.map((key, value) => MapEntry(key, value.toString())),
@@ -83,55 +82,37 @@ class EditProfileService {
             ),
           ),
         );
-        AppLogger.d('[EditProfileService] Added local file: ${file.path}');
-      } else {
-        // Remote image URL, add as string field
-        // Remote images handled by FormData.fromMap(baseData)
-        AppLogger.d(
-          '[EditProfileService] Added remote image URL: $profilePicture',
-        );
       }
-    } else {
-      AppLogger.d('[EditProfileService] No profile_picture provided, omitted');
     }
 
-    AppLogger.d(
-      '[EditProfileService] FormData: ${formData.fields.length} fields, ${formData.files.length} files',
+    AppLogger.debug(
+      _tag,
+      'payload_built',
+      data: {
+        'fields': formData.fields.length,
+        'files': formData.files.length,
+        'hasProfilePicture':
+            profilePicture != null && profilePicture.isNotEmpty,
+      },
     );
     return formData;
   }
 
   Future<EditProfileResponse> fetchProfile() async {
+    const endpoint = ApiConstants.fetchProfile;
     try {
       final token = await TokenStorage.getAccessToken();
-
-      AppLogger.d('=== FETCH PROFILE REQUEST ===');
-      AppLogger.d(
-        'TOKEN: ${token == null || token.isEmpty ? "missing" : "present"}',
-      );
 
       if (token == null || token.isEmpty) {
         throw Exception('Authentication token is missing');
       }
 
-      const endpoint = ApiConstants.fetchProfile;
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
-
-      AppLogger.d('=== FETCH PROFILE REQUEST DETAILS ===');
-      AppLogger.d('URL: ${dio.options.baseUrl}$endpoint');
-      AppLogger.d('METHOD: GET');
-      AppLogger.d(
-        "HEADERS: authorization=${headers.containsKey('Authorization')}",
-      );
 
       final response = await dio.get(
         endpoint,
         options: Options(headers: headers),
       );
-
-      AppLogger.d('=== FETCH PROFILE RESPONSE ===');
-      AppLogger.d('STATUS CODE: ${response.statusCode}');
-      AppLogger.d('RESPONSE DATA TYPE: ${response.data.runtimeType}');
 
       if (response.statusCode == 200 && response.data != null) {
         final responseData = _asJsonMap(response.data);
@@ -140,10 +121,16 @@ class EditProfileService {
 
       throw Exception('Failed to fetch profile: ${response.statusCode}');
     } on DioException catch (e) {
-      AppLogger.d('=== FETCH PROFILE DIO ERROR ===');
-      AppLogger.d('ERROR TYPE: ${e.type}');
-      AppLogger.d('ERROR MESSAGE: ${e.message}');
-      AppLogger.d('STATUS CODE: ${e.response?.statusCode}');
+      AppLogger.warning(
+        _tag,
+        'api_error',
+        data: {
+          'method': 'GET',
+          'endpoint': endpoint,
+          'type': e.type.name,
+          'statusCode': e.response?.statusCode,
+        },
+      );
 
       String errorMessage = 'Network error occurred';
       final backendMessage = _extractErrorMessage(e.response?.data);
@@ -169,8 +156,12 @@ class EditProfileService {
 
       throw Exception(errorMessage);
     } catch (e) {
-      AppLogger.d('=== FETCH PROFILE GENERAL ERROR ===');
-      AppLogger.d('ERROR: $e');
+      AppLogger.error(
+        _tag,
+        'unexpected_error',
+        data: {'endpoint': endpoint},
+        error: e,
+      );
       throw Exception('Failed to fetch profile: $e');
     }
   }
@@ -178,57 +169,16 @@ class EditProfileService {
   Future<EditProfileResponse> updateProfile({
     required EditProfileRequest request,
   }) async {
-    AppLogger.d('[EditProfileService] Starting updateProfile...');
-    AppLogger.d(
-      '[EditProfileService] Service initialized with base URL: ${dio.options.baseUrl}',
-    );
-
+    const endpoint = ApiConstants.updateProfile;
     try {
-      AppLogger.d('[EditProfileService] Getting access token...');
       final token = await TokenStorage.getAccessToken();
-      final tokenPreview = token == null || token.isEmpty
-          ? 'null_or_empty'
-          : '${token.substring(0, token.length > 12 ? 12 : token.length)}...';
-
-      AppLogger.d('[EditProfileService] Token status: $tokenPreview');
 
       if (token == null || token.isEmpty) {
-        AppLogger.d('[EditProfileService] Authentication token is missing');
         throw Exception('Authentication token is missing');
       }
 
-      const endpoint = ApiConstants.updateProfile;
       final headers = <String, dynamic>{'Authorization': 'Bearer $token'};
       final requestData = await _buildUpdatePayload(request);
-
-      AppLogger.d('[EditProfileService] PATCH $endpoint');
-      AppLogger.d('[EditProfileService] Headers: $headers');
-      AppLogger.d('[EditProfileService] Request object analysis:');
-      AppLogger.d(
-        "  fullname='${request.fullname}' length=${request.fullname.length}",
-      );
-      AppLogger.d(
-        "  username='${request.username}' length=${request.username.length}",
-      );
-      AppLogger.d(
-        "  bio='${request.bio ?? 'null'}' ${request.bio != null ? 'length=${request.bio!.length}' : ''}",
-      );
-      AppLogger.d(
-        "  profile_picture='${request.profilePicture ?? 'null'}' isFile=${_isLocalFilePath(request.profilePicture)}",
-      );
-
-      if (requestData is FormData) {
-        AppLogger.d(
-          '[EditProfileService] Request fields: ${requestData.fields}',
-        );
-        AppLogger.d(
-          '[EditProfileService] Request files: ${requestData.files.map((file) => '${file.key}: ${file.value.filename}').toList()}',
-        );
-      } else {
-        AppLogger.d('[EditProfileService] Request data: $requestData');
-      }
-
-      AppLogger.d('[EditProfileService] Making API call...');
 
       final response = await dio.patch(
         endpoint,
@@ -236,32 +186,24 @@ class EditProfileService {
         options: Options(headers: headers),
       );
 
-      AppLogger.d('[EditProfileService] Response received');
-      AppLogger.d('[EditProfileService] Status code: ${response.statusCode}');
-      AppLogger.d('[EditProfileService] Response data: ${response.data}');
-
       if (response.statusCode == 200 && response.data != null) {
         final responseData = _asJsonMap(response.data);
         final parsedResponse = EditProfileResponse.fromJson(responseData);
-        AppLogger.d(
-          '[EditProfileService] Profile updated successfully: ${parsedResponse.message}',
-        );
         return parsedResponse;
       }
 
       throw Exception('Failed to update profile: ${response.statusCode}');
     } on DioException catch (e) {
-      AppLogger.d('[EditProfileService] DioException caught');
-      AppLogger.d('[EditProfileService] Error type: ${e.type}');
-      AppLogger.d('[EditProfileService] Error message: ${e.message}');
-      AppLogger.d(
-        '[EditProfileService] Status code: ${e.response?.statusCode}',
+      AppLogger.warning(
+        _tag,
+        'api_error',
+        data: {
+          'method': 'PATCH',
+          'endpoint': endpoint,
+          'type': e.type.name,
+          'statusCode': e.response?.statusCode,
+        },
       );
-      if (e.response?.data != null) {
-        AppLogger.d(
-          '[EditProfileService] Backend error response: ${e.response?.data}',
-        );
-      }
 
       String errorMessage = 'Network error occurred';
       final backendMessage = _extractErrorMessage(e.response?.data);
@@ -291,7 +233,12 @@ class EditProfileService {
 
       throw Exception(errorMessage);
     } catch (e) {
-      AppLogger.d('[EditProfileService] General exception caught: $e');
+      AppLogger.error(
+        _tag,
+        'unexpected_error',
+        data: {'endpoint': endpoint},
+        error: e,
+      );
       throw Exception('Failed to update profile: $e');
     }
   }

@@ -12,15 +12,6 @@ import 'package:gruve_app/features/message/presentation/widgets/shared_post_prev
 import 'package:gruve_app/features/message/presentation/widgets/voice_message_player.dart';
 import 'package:gruve_app/features/message/presentation/screens/fullscreen_media_viewer.dart';
 
-class ChatBubble extends MessageBubble {
-  const ChatBubble({
-    super.key,
-    required super.message,
-    super.onActionSelected,
-    super.onLongPress,
-  });
-}
-
 class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final Function(MessageAction)? onActionSelected;

@@ -7,10 +7,27 @@
       "Bash(xargs -I{} echo {})",
       "Bash(xargs grep -l \"MultipartFile\\\\|FormData\")",
       "Bash(grep -rohE \"Color\\\\\\(0x[A-Fa-f0-9]{6,8}\\\\\\)\" lib --include=\"*.dart\")",
-      "Bash(rm \"lib/features/search/presentation/widgets/profile_avatar.dart\" && echo deleted)"
+      "Bash(rm \"lib/features/search/presentation/widgets/profile_avatar.dart\" && echo deleted)",
+      "Bash(cd \"c:/Users/Acer/Desktop/projects/hardkore_projects/gruve_app\" && mkdir -p lib/features/share/presentation/notifiers && git mv lib/features/share/presentation/controller/post_share_provider.dart lib/features/share/presentation/notifiers/post_share_notifier.dart && git status --short)",
+      "Bash(find lib *)",
+      "Bash(python3 -)",
+      "Bash(sort -t: -k3)",
+      "Bash(awk -F: '{print $3}')",
+      "Bash(sed 's/^class //')",
+      "Bash(sed -E 's/.*class \\([A-Za-z0-9_]+\\).*/\\\\1/')",
+      "Bash(awk '$1>1')",
+      "Bash(echo \"exit:$?\")",
+      "Bash(mkdir -p tool_tmp)",
+      "Bash(cp /tmp/test_logger.dart tool_tmp/test_logger.dart)",
+      "Bash(rm -rf tool_tmp && ls test 2>&1 | head -5)",
+      "Bash(flutter test *)",
+      "Bash(grep -n \"^  Future\\\\|^  void\\\\|^  String\\\\|^  bool\\\\|^  int\\\\|^  //\\\\|^  /// \" lib/core/cache/cache_manager.dart)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\Acer\\Desktop\\projects\\hardkore_projects\\gruve_app\\lib\\features\\search\\presentation\\widgets"
+      "C:\\Users\\Acer\\Desktop\\projects\\hardkore_projects\\gruve_app\\lib\\features\\search\\presentation\\widgets",
+      "c:\\Users\\Acer\\Desktop\\projects\\hardkore_projects\\gruve_app\\lib\\features\\share\\presentation",
+      "\\tmp",
+      "C:\\Users\\Acer\\Desktop\\projects\\hardkore_projects\\gruve_app\\tool_tmp"
     ]
   }
 }

@@ -54,7 +54,7 @@ class ExploreReelsController extends ChangeNotifier {
     if (_isLoading) return;
 
     AppLogger.d(
-      '📡 [ExploreReelsController] loadInitial trigger=${refresh ? 'refresh' : 'initial'} '
+      '[ExploreReelsController] loadInitial trigger=${refresh ? 'refresh' : 'initial'} '
       'page=1 sort=$_sort',
     );
 
@@ -84,7 +84,7 @@ class ExploreReelsController extends ChangeNotifier {
       _service.prefetchReels(_reels);
     } catch (e) {
       if (generation != _loadGeneration) return;
-      AppLogger.d('❌ [ExploreReelsController] loadInitial: $e');
+      AppLogger.d('[ExploreReelsController] loadInitial: $e');
       _error = 'Failed to load explore reels';
       if (refresh) _reels.clear();
     } finally {
@@ -101,7 +101,7 @@ class ExploreReelsController extends ChangeNotifier {
     final requestKey = 'page=$_page|sort=$_sort';
     if (_lastLoadMoreKey == requestKey) {
       AppLogger.d(
-        '⏸️ [ExploreReelsController] loadMore skipped duplicate params '
+        '[ExploreReelsController] loadMore skipped duplicate params '
         'reason=$reason $requestKey',
       );
       return;
@@ -109,7 +109,7 @@ class ExploreReelsController extends ChangeNotifier {
     _lastLoadMoreKey = requestKey;
 
     AppLogger.d(
-      '📡 [ExploreReelsController] loadMore trigger=$reason $requestKey',
+      '[ExploreReelsController] loadMore trigger=$reason $requestKey',
     );
 
     final generation = _loadGeneration;
@@ -136,7 +136,7 @@ class ExploreReelsController extends ChangeNotifier {
     } catch (e) {
       if (generation != _loadGeneration) return;
       _lastLoadMoreKey = null;
-      AppLogger.d('❌ [ExploreReelsController] loadMore: $e');
+      AppLogger.d('[ExploreReelsController] loadMore: $e');
     } finally {
       if (generation == _loadGeneration) {
         _isLoadingMore = false;

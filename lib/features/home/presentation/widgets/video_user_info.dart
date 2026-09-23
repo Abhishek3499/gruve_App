@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music/presentation/screens/music_screen.dart';
@@ -436,7 +435,7 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final currentUserId = Provider.of<AuthStateManager>(context).currentUserId;
+    final currentUserId = AuthStateManager().currentUserId;
 
     if (currentUserId != _lastLoggedInUserId) {
       _lastLoggedInUserId = currentUserId;

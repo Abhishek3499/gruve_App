@@ -1,115 +1,252 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
-/// Single centralized logging utility for the app.
-/// All logging goes through here — no raw [debugPrint] in feature code.
-/// Logs are suppressed automatically in release/profile builds and rendered
-/// with the same pretty box-style printer used by [authLogger].
+import 'package:gruve_app/core/utils/legacy_log_adapter.dart';
+import 'package:gruve_app/core/utils/log_printer.dart';
+import 'package:gruve_app/core/utils/log_sanitizer.dart';
+
+/// Centralized application logger.
+///
+/// Logs are rendered as pretty JSON:
+/// {
+///   "level": "debug",
+///   "tag": "API",
+///   "event": "request_started",
+///   "message": "...",
+///   "data": {}
+/// }
+///
+/// Debug/info logs are disabled in release builds.
+/// Warning/error logs remain enabled.
+///
+/// Sensitive values such as tokens, passwords, OTPs and authorization
+/// headers are automatically redacted (see [LogSanitizer]).
 class AppLogger {
   AppLogger._();
 
-  static bool _enableLogs = kDebugMode;
+  static bool _enabled = kDebugMode;
 
   static final Logger _logger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 0,
-      errorMethodCount: 5,
-      lineLength: 100,
-      colors: true,
-      printEmojis: true,
-      dateTimeFormat: DateTimeFormat.none,
-    ),
-    filter: _AppLogFilter(),
+    printer: AppLogPrinter(),
+    filter: AppLogFilter(() => _enabled),
+    level: Level.debug,
   );
 
-  /// Enable or disable logging (still no-op outside debug mode).
+  // ---------------------------------------------------------------------------
+  // Configuration
+  // ---------------------------------------------------------------------------
+
+  static bool get isEnabled => _enabled;
+
   static void setEnabled(bool enabled) {
-    _enableLogs = enabled && kDebugMode;
+    _enabled = enabled && kDebugMode;
   }
 
-  static bool get isEnabled => _enableLogs;
+  // ---------------------------------------------------------------------------
+  // Structured logging
+  // ---------------------------------------------------------------------------
 
-  /// Debug log — primary method for general messages.
+  static void debug(
+    String tag,
+    String event, {
+    String? message,
+    Map<String, dynamic>? data,
+  }) {
+    _emit(level: 'debug', tag: tag, event: event, message: message, data: data);
+  }
+
+  static void info(
+    String tag,
+    String event, {
+    String? message,
+    Map<String, dynamic>? data,
+  }) {
+    _emit(level: 'info', tag: tag, event: event, message: message, data: data);
+  }
+
+  static void warning(
+    String tag,
+    String event, {
+    String? message,
+    Map<String, dynamic>? data,
+  }) {
+    _emit(
+      level: 'warning',
+      tag: tag,
+      event: event,
+      message: message,
+      data: data,
+    );
+  }
+
+  static void error(
+    String tag,
+    String event, {
+    String? message,
+    Map<String, dynamic>? data,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    final payload = <String, dynamic>{
+      if (data != null) ...data,
+      if (error != null) 'error': error.toString(),
+    };
+
+    _emit(
+      level: 'error',
+      tag: tag,
+      event: event,
+      message: message,
+      data: payload.isEmpty ? null : payload,
+      stackTrace: stackTrace,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Legacy logging methods
+  // ---------------------------------------------------------------------------
+
   static void d(String message, {String? tag}) {
-    _logger.d(tag != null ? '[$tag] $message' : message);
+    _legacy('debug', message, tag);
   }
 
-  /// Alias for [d].
-  static void log(String message, {String? tag}) => d(message, tag: tag);
+  static void log(String message, {String? tag}) {
+    d(message, tag: tag);
+  }
 
-  /// Info log.
   static void i(String message, {String? tag}) {
-    final prefix = tag != null ? '[$tag] ' : '';
-    _logger.d('ℹ️ $prefix$message');
+    _legacy('info', message, tag);
   }
 
-  /// Info alias.
-  static void info(String message, {String? tag}) => i(message, tag: tag);
-
-  /// Warning log.
   static void w(String message, {String? tag}) {
-    final prefix = tag != null ? '[$tag] ' : '';
-    _logger.d('⚠️ $prefix$message');
+    _legacy('warning', message, tag);
   }
 
-  /// Warning alias.
-  static void warning(String message, {String? tag}) => w(message, tag: tag);
-
-  /// Error log (debug-only; use crash reporting separately for production).
   static void e(
     String message, {
     String? tag,
     Object? error,
     StackTrace? stackTrace,
   }) {
-    final prefix = tag != null ? '[$tag] ' : '';
-    _logger.e('❌ $prefix$message', error: error, stackTrace: stackTrace);
+    final parsed = LegacyLogAdapter.parse(message, tag);
+
+    _emit(
+      level: 'error',
+      tag: parsed.tag,
+      event: 'log',
+      message: parsed.message,
+      data: error == null ? null : {'error': error.toString()},
+      stackTrace: stackTrace,
+    );
   }
 
-  /// Error alias.
-  static void error(
-    String message, {
+  static void _legacy(String level, String message, String? tag) {
+    final parsed = LegacyLogAdapter.parse(message, tag);
+
+    _emit(level: level, tag: parsed.tag, event: 'log', message: parsed.message);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Core logger
+  // ---------------------------------------------------------------------------
+
+  static void _emit({
+    required String level,
     String? tag,
-    Object? error,
+    String? event,
+    String? message,
+    Map<String, dynamic>? data,
     StackTrace? stackTrace,
-  }) => e(message, tag: tag, error: error, stackTrace: stackTrace);
-
-  /// Success log.
-  static void success(String message, {String? tag}) {
-    final prefix = tag != null ? '[$tag] ' : '';
-    _logger.d('✅ $prefix$message');
-  }
-
-  /// API request log.
-  static void api(
-    String method,
-    String endpoint, {
-    Map<String, dynamic>? params,
   }) {
-    var message = '📡 API: $method $endpoint';
-    if (params != null && params.isNotEmpty) {
-      message += '\nParams: $params';
+    final isDebugLevel = level == 'debug' || level == 'info';
+
+    if (isDebugLevel && !_enabled) {
+      return;
     }
-    _logger.d(message);
+
+    try {
+      final entry = <String, dynamic>{'level': level};
+
+      final cleanTag = LogSanitizer.cleanText(tag);
+      if (cleanTag != null && cleanTag.isNotEmpty) {
+        entry['tag'] = cleanTag;
+      }
+
+      final cleanEvent = LogSanitizer.cleanText(event);
+      if (cleanEvent != null && cleanEvent.isNotEmpty) {
+        entry['event'] = cleanEvent;
+      }
+
+      final cleanMessage = LogSanitizer.cleanText(message);
+      if (cleanMessage != null && cleanMessage.isNotEmpty) {
+        entry['message'] = cleanMessage;
+      }
+
+      if (data != null) {
+        final sanitizedData = LogSanitizer.sanitizeValue(data);
+
+        if (sanitizedData is Map && sanitizedData.isNotEmpty) {
+          entry['data'] = sanitizedData;
+        }
+      }
+
+      final json = _encode(entry);
+
+      switch (level) {
+        case 'error':
+          _logger.e(json, stackTrace: stackTrace);
+          break;
+
+        case 'warning':
+          _logger.w(json);
+          break;
+
+        case 'info':
+          _logger.i(json);
+          break;
+
+        default:
+          _logger.d(json);
+      }
+    } catch (_) {
+      // Logging must never crash the application.
+    }
   }
 
-  /// Performance timing log.
-  static void performance(String operation, Duration duration) {
-    _logger.d('⚡ PERF: $operation took ${duration.inMilliseconds}ms');
+  // ---------------------------------------------------------------------------
+  // JSON encoding
+  // ---------------------------------------------------------------------------
+
+  // Compact (single-line) JSON — a pretty-printed, multi-line encoder floods
+  // the console with 5-8 lines per log call, which buries real output during
+  // a busy debugging session. One line per log entry stays valid JSON while
+  // staying readable in a scrolling terminal.
+  static const JsonEncoder _encoder = JsonEncoder(_toEncodable);
+
+  static dynamic _toEncodable(dynamic value) {
+    return value.toString();
   }
 
-  /// Navigation log.
-  static void navigation(String from, String to) {
-    _logger.d('🧭 NAV: $from → $to');
+  static String _encode(Map<String, dynamic> entry) {
+    try {
+      return _encoder.convert(entry);
+    } catch (error) {
+      return _fallbackEncode(entry, error);
+    }
   }
 
-  /// State change log.
-  static void state(String stateName, dynamic oldValue, dynamic newValue) {
-    _logger.d('🔄 STATE: $stateName changed from $oldValue to $newValue');
+  static String _fallbackEncode(Map<String, dynamic> entry, Object error) {
+    try {
+      return _encoder.convert({
+        'level': entry['level'],
+        'event': entry['event'] ?? 'log',
+        'message': 'unserializable log payload',
+        'data': {'error': error.toString()},
+      });
+    } catch (_) {
+      return '{"level":"${entry['level']}","message":"log encoding failed"}';
+    }
   }
-}
-
-class _AppLogFilter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) => AppLogger.isEnabled;
 }

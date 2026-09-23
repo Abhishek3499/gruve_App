@@ -4,7 +4,7 @@ import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/message/presentation/notifiers/user_notifier.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/features/search/presentation/widgets/search_bar.dart';
-import 'package:gruve_app/features/share/presentation/controller/post_share_provider.dart';
+import 'package:gruve_app/features/share/presentation/notifiers/post_share_notifier.dart';
 
 import 'package:gruve_app/features/share/presentation/widgets/share_user_item.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
@@ -67,8 +67,8 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
     ref.read(postShareNotifierProvider.notifier).toggleUser(user);
   }
 
-  bool _isUserSelected(PostShareState shareState, SearchUser user) {
-    return shareState.selectedUsers.any((u) => u.id == user.id);
+  bool _isUserSelected(Set<SearchUser> selectedUsers, SearchUser user) {
+    return selectedUsers.any((u) => u.id == user.id);
   }
 
   @override
@@ -110,10 +110,11 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
   }
 
   Widget _buildContent() {
-    final shareState = ref.watch(postShareNotifierProvider);
-    final isSearching = shareState.isSearching;
-    final searchError = shareState.searchError;
-    final searchResults = shareState.searchResults;
+    final (isSearching, searchError, searchResults, selectedUsers) = ref.watch(
+      postShareNotifierProvider.select(
+        (s) => (s.isSearching, s.searchError, s.searchResults, s.selectedUsers),
+      ),
+    );
 
     if (isSearching) {
       return const Center(
@@ -155,7 +156,7 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
           final user = searchResults[index];
           return ShareUserItem(
             user: user,
-            isSelected: _isUserSelected(shareState, user),
+            isSelected: _isUserSelected(selectedUsers, user),
             onTap: () => _onUserTap(user),
           );
         },
@@ -235,7 +236,7 @@ class _ShareUserGridState extends ConsumerState<ShareUserGrid> {
 
         return ShareUserItem(
           user: searchUser,
-          isSelected: _isUserSelected(shareState, searchUser),
+          isSelected: _isUserSelected(selectedUsers, searchUser),
           onTap: () => _onUserTap(searchUser),
         );
       },

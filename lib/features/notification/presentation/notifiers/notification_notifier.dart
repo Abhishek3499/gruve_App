@@ -145,12 +145,12 @@ class NotificationNotifier extends Notifier<NotificationState> {
             type.contains('comment') ||
             type.contains('follow')) {
           AppLogger.d(
-            '🔔 [NotificationNotifier] Socket notification received. Refreshing list...',
+            '[NotificationNotifier] Socket notification received. Refreshing list...',
           );
           fetchInitialNotifications(showLoading: false);
         }
       } catch (e) {
-        AppLogger.d('❌ [NotificationNotifier] Socket error: $e');
+        AppLogger.d('[NotificationNotifier] Socket error: $e');
       }
     });
   }
@@ -192,14 +192,14 @@ class NotificationNotifier extends Notifier<NotificationState> {
         AppLogger.d('[NotificationNotifier] fetchUnreadCount cancelled');
         return;
       }
-      AppLogger.d('❌ Error fetching unread count: $e');
+      AppLogger.d('Error fetching unread count: $e');
     }
   }
 
   /// Fetch initial list of notifications.
   Future<void> fetchInitialNotifications({bool showLoading = true}) async {
     AppLogger.d(
-      '📡 [NotificationNotifier] fetchInitial trigger=${showLoading ? 'initial' : 'refresh'} '
+      '[NotificationNotifier] fetchInitial trigger=${showLoading ? 'initial' : 'refresh'} '
       'page=1 unreadOnly=${state.unreadOnly}',
     );
 
@@ -248,7 +248,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     final requestKey = 'page=$nextPage|unreadOnly=${state.unreadOnly}';
     if (_lastPaginationKey == requestKey) {
       AppLogger.d(
-        '⏸️ [NotificationNotifier] fetchNextPage skipped duplicate '
+        '[NotificationNotifier] fetchNextPage skipped duplicate '
         'reason=$reason $requestKey',
       );
       return;
@@ -256,7 +256,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     _lastPaginationKey = requestKey;
 
     AppLogger.d(
-      '📡 [NotificationNotifier] fetchNextPage trigger=$reason $requestKey',
+      '[NotificationNotifier] fetchNextPage trigger=$reason $requestKey',
     );
 
     state = state.copyWith(isLoadingMore: true);
@@ -283,7 +283,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         return;
       }
       _lastPaginationKey = null;
-      AppLogger.d('❌ Error loading next page: $e');
+      AppLogger.d('Error loading next page: $e');
     } finally {
       state = state.copyWith(isLoadingMore: false);
     }

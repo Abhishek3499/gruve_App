@@ -25,12 +25,10 @@ class UserModel {
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    AppLogger.d('👤 [UserModel] 🔍 Starting user parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
-      context: '👤 UserModel.fromJson',
+      context: 'UserModel.fromJson',
     );
-    AppLogger.d('👤 [UserModel] 🗺️ User keys: ${safeJson.keys.toList()}');
 
     final fullName = SafeParsingHelpers.safeString(safeJson, const [
       'full_name',
@@ -44,7 +42,6 @@ class UserModel {
     ], fallback: '');
     final finalUsername = username.isNotEmpty ? username : fullName;
 
-    AppLogger.d('👤 [UserModel] 📝 Parsing user: ${safeJson['user_id']}');
     return UserModel(
       userId: SafeParsingHelpers.safeString(safeJson, const [
         'user_id',
@@ -86,23 +83,16 @@ class PaginatedUserResponse {
   });
 
   factory PaginatedUserResponse.fromJson(Map<String, dynamic> json) {
-    AppLogger.d(
-      '📦 [PaginatedUserResponse] 🔍 Starting paginated response parsing',
-    );
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
-      context: '📦 PaginatedUserResponse.fromJson',
-    );
-    AppLogger.d(
-      '📦 [PaginatedUserResponse] 🗺️ Response keys: ${safeJson.keys.toList()}',
+      context: 'PaginatedUserResponse.fromJson',
     );
 
     final data = SafeParsingHelpers.safeMapParse(
       safeJson['data'],
-      context: '📦 PaginatedUserResponse.data',
+      context: 'PaginatedUserResponse.data',
     );
     if (data.isEmpty) {
-      AppLogger.d('❌ [PaginatedUserResponse] 🚫 No data field in response');
       return PaginatedUserResponse(
         users: [],
         page: 1,
@@ -113,42 +103,30 @@ class PaginatedUserResponse {
 
     final resultsList = SafeParsingHelpers.safeListParse(
       data['results'],
-      context: '📦 PaginatedUserResponse.results',
+      context: 'PaginatedUserResponse.results',
     );
     final users = <UserModel>[];
 
-    AppLogger.d(
-      '📦 [PaginatedUserResponse] 📝 Processing ${resultsList.length} users',
-    );
     for (int i = 0; i < resultsList.length; i++) {
       try {
         final userJson = SafeParsingHelpers.safeMapParse(
           resultsList[i],
-          context: '📦 PaginatedUserResponse[$i]',
+          context: 'PaginatedUserResponse[$i]',
         );
         if (userJson.isNotEmpty) {
           final user = UserModel.fromJson(userJson);
           if (user.isSubscribed) {
             users.add(user);
-            AppLogger.d(
-              '✅ [PaginatedUserResponse] ✨ Successfully parsed user at index $i',
-            );
-          } else {
-            AppLogger.d(
-              '⏭️ [PaginatedUserResponse] Skipped unsubscribed user at index $i',
-            );
           }
         }
       } catch (e) {
-        AppLogger.d(
-          '💥 [PaginatedUserResponse] ❌ Failed to parse user at index $i: $e',
+        AppLogger.warning(
+          'PaginatedUserResponse',
+          'parse_failed',
+          data: {'index': i, 'error': e.toString()},
         );
       }
     }
-
-    AppLogger.d(
-      '📦 [PaginatedUserResponse] 🏆 Parsed ${users.length}/${resultsList.length} users from page ${data['page']}',
-    );
 
     return PaginatedUserResponse(
       users: users,

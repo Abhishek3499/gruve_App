@@ -28,12 +28,12 @@ class _MessageAvatarListState extends ConsumerState<MessageAvatarList> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
-    AppLogger.d('🚀 [MessageAvatarList] Initialized');
+    AppLogger.d('[MessageAvatarList] Initialized');
   }
 
   @override
   void dispose() {
-    AppLogger.d('🗑️ [MessageAvatarList] Disposed');
+    AppLogger.d('[MessageAvatarList] Disposed');
 
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -53,7 +53,7 @@ class _MessageAvatarListState extends ConsumerState<MessageAvatarList> {
       return;
     }
 
-    AppLogger.d('📜 [MessageAvatarList] Near end reached → load more users');
+    AppLogger.d('[MessageAvatarList] Near end reached - load more users');
     ref
         .read(userNotifierProvider.notifier)
         .fetchUsers(loadMore: true, reason: 'scroll');
@@ -67,7 +67,7 @@ class _MessageAvatarListState extends ConsumerState<MessageAvatarList> {
       valueListenable: _socketService.onlineUsers,
       builder: (context, onlineUsers, _) {
         AppLogger.d(
-          '🔄 [MessageAvatarList] REBUILD | '
+          '[MessageAvatarList] Rebuild | '
           'users: ${p.users.length} | '
           'loading: ${p.isLoading} | '
           'fetchingMore: ${p.isFetchingMore}',
@@ -75,14 +75,14 @@ class _MessageAvatarListState extends ConsumerState<MessageAvatarList> {
 
         // Initial loading or refreshing subscribed list from API
         if ((p.isLoading || !p.hasInitialized) && p.users.isEmpty) {
-          AppLogger.d('⏳ [MessageAvatarList] Showing skeleton loader');
+          AppLogger.d('[MessageAvatarList] Showing skeleton loader');
 
           return const MessageAvatarShimmer(avatarCount: 6);
         }
 
         // Empty State
         if (p.users.isEmpty && !p.isLoading) {
-          AppLogger.d('📭 [MessageAvatarList] No users found');
+          AppLogger.d('[MessageAvatarList] No users found');
 
           return const SizedBox(
             height: 90,
@@ -117,7 +117,7 @@ class _MessageAvatarListState extends ConsumerState<MessageAvatarList> {
             itemBuilder: (context, index) {
               // Pagination Loader
               if (index == p.users.length && p.isFetchingMore) {
-                AppLogger.d('⏳ [MessageAvatarList] Showing pagination loader');
+                AppLogger.d('[MessageAvatarList] Showing pagination loader');
 
                 return const MessageAvatarPaginationShimmer();
               }

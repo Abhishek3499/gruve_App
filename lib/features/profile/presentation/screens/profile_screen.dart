@@ -196,17 +196,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
     } else {
       // Other user's profile - use UserProfileNotifier
-      final userProfileState = ref.watch(userProfileNotifierProvider);
+      final userProfileState = ref.watch(
+        userProfileNotifierProvider.select(
+          (s) => (
+            state: s.state,
+            profile: s.profile,
+            errorMessage: s.errorMessage,
+          ),
+        ),
+      );
+      final isLoading = userProfileState.state == UserProfileState.loading;
+      final hasError = userProfileState.state == UserProfileState.error;
+      final hasData =
+          userProfileState.state == UserProfileState.loaded &&
+          userProfileState.profile != null;
       return Scaffold(
         extendBody: true,
         backgroundColor: AppColors.deepPlum,
         body: Builder(
           builder: (context) {
-            if (userProfileState.isLoading) {
+            if (isLoading) {
               return _buildProfileShimmer();
             }
 
-            if (userProfileState.hasError) {
+            if (hasError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -233,7 +246,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               );
             }
 
-            if (userProfileState.hasData) {
+            if (hasData) {
               return _buildMainContentForOtherUser(userProfileState.profile!);
             }
 

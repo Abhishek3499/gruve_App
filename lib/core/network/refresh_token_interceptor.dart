@@ -45,21 +45,29 @@ class RefreshTokenInterceptor extends Interceptor {
 
     // Check if this request was already retried
     if (err.requestOptions.extra['retry'] == true) {
-      AppLogger.d('❌ [RefreshInterceptor] Request already retried, failing');
+      AppLogger.warning(
+        'RefreshTokenInterceptor',
+        'retry_already_attempted',
+        data: {'endpoint': err.requestOptions.path},
+      );
       handler.next(err);
       return;
     }
 
-    AppLogger.d(
-      '🔄 [RefreshInterceptor] 401 detected, attempting token refresh',
+    AppLogger.debug(
+      'RefreshTokenInterceptor',
+      'refresh_started',
+      data: {'endpoint': err.requestOptions.path},
     );
 
     try {
       final newTokens = await _refreshService.refreshTokens();
 
       if (newTokens != null) {
-        AppLogger.d(
-          '✅ [RefreshInterceptor] Token refresh successful, retrying request',
+        AppLogger.debug(
+          'RefreshTokenInterceptor',
+          'refresh_succeeded',
+          data: {'endpoint': err.requestOptions.path},
         );
 
         final retryOptions = _cloneRequestOptions(err.requestOptions);
@@ -72,7 +80,11 @@ class RefreshTokenInterceptor extends Interceptor {
           handler.resolve(response);
           return;
         } catch (retryError) {
-          AppLogger.d('❌ [RefreshInterceptor] Retry failed: $retryError');
+          AppLogger.warning(
+            'RefreshTokenInterceptor',
+            'retry_after_refresh_failed',
+            data: {'endpoint': err.requestOptions.path},
+          );
 
           if (retryError is DioException &&
               retryError.response?.statusCode == 401) {
@@ -87,16 +99,21 @@ class RefreshTokenInterceptor extends Interceptor {
           return;
         }
       } else {
-        AppLogger.d(
-          '❌ [RefreshInterceptor] Token refresh failed, triggering logout',
+        AppLogger.warning(
+          'RefreshTokenInterceptor',
+          'refresh_failed',
+          data: {'endpoint': err.requestOptions.path},
         );
         await _handleAuthFailure();
         handler.next(err);
         return;
       }
     } catch (refreshError) {
-      AppLogger.d(
-        '❌ [RefreshInterceptor] Refresh process error: $refreshError',
+      AppLogger.error(
+        'RefreshTokenInterceptor',
+        'refresh_error',
+        data: {'endpoint': err.requestOptions.path},
+        error: refreshError,
       );
       await _handleAuthFailure();
       handler.next(err);
@@ -145,14 +162,18 @@ class RefreshTokenInterceptor extends Interceptor {
 
   /// Handles authentication failure by clearing tokens and navigating to login
   Future<void> _handleAuthFailure() async {
-    AppLogger.d('🧪 TEST: Forcing session expiry');
+    AppLogger.debug('RefreshTokenInterceptor', 'auth_failure_triggered');
 
     try {
       await AuthStateManager().onAuthFailure(
         message: 'Your session has expired. Please sign in again.',
       );
     } catch (e) {
-      AppLogger.d('❌ Auth failure test error: $e');
+      AppLogger.error(
+        'RefreshTokenInterceptor',
+        'auth_failure_handling_error',
+        error: e,
+      );
     }
   }
 }

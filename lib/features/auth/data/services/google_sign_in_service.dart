@@ -5,7 +5,6 @@ import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
-import 'package:gruve_app/features/auth/data/services/auth_api_logger.dart';
 
 import 'package:gruve_app/features/auth/data/dto/google_sign_in_model.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
@@ -44,28 +43,17 @@ class GoogleAuthService {
       const endpoint = ApiConstants.googleSignIn;
       final requestData = {'token': idToken};
 
-      AuthApiLogger.request(
-        'GoogleSignIn',
-        dio: _dio,
-        endpoint: endpoint,
-        method: 'POST',
-        body: const {'token': 'present'},
-      );
-
       final response = await _dio.post(
         endpoint,
         data: requestData,
         options: AuthEndpointPaths.skipAuthOptions(),
       );
 
-      AuthApiLogger.response('GoogleSignIn', response);
-
       return GoogleSignInResponse.fromJson(response.data);
     } on GoogleSignInException catch (e) {
       authLogger.d('Google sign-in native error: $e');
       throw AuthApiException(_googleSignInExceptionMessage(e));
     } on DioException catch (e) {
-      AuthApiLogger.error('GoogleSignIn', e);
       throw AuthApiException.extractMessage(
         e,
         fallback: 'Google sign-in failed. Please try again.',

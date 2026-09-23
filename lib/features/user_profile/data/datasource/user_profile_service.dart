@@ -64,9 +64,6 @@ class UserProfileService {
 
         AppLogger.d(" Status Code: ${response.statusCode}");
         AppLogger.d(" Response received successfully");
-        AppLogger.d(
-          "[UserProfileService] RAW RESPONSE TYPE: ${response.data.runtimeType}",
-        );
 
         if (response.data is Map<String, dynamic>) {
           return Map<String, dynamic>.from(response.data);

@@ -1,130 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gruve_app/core/debug/debug_logger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Cache entry with TTL support
-class CacheEntry<T> {
-  final T data;
-  final DateTime createdAt;
-  final Duration ttl;
+import 'package:gruve_app/core/cache/cache_entry.dart';
+import 'package:gruve_app/core/cache/cache_configs.dart';
+import 'package:gruve_app/core/cache/cache_stats.dart';
 
-  CacheEntry({required this.data, required this.ttl})
-    : createdAt = DateTime.now();
-
-  CacheEntry._({
-    required this.data,
-    required this.ttl,
-    required this.createdAt,
-  });
-
-  /// Check if cache entry is still valid
-  bool get isValid => DateTime.now().difference(createdAt) < ttl;
-
-  /// Check if cache entry is stale (expired but can be used for stale-while-revalidate)
-  bool get isStale => !isValid;
-
-  /// Get cache age
-  Duration get age => DateTime.now().difference(createdAt);
-
-  /// Serialize to JSON for disk storage
-  Map<String, dynamic> toJson() {
-    return {
-      'data': data,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'ttl': ttl.inMilliseconds,
-    };
-  }
-
-  /// Deserialize from JSON
-  factory CacheEntry.fromJson(
-    Map<String, dynamic> json,
-    T Function(dynamic) fromJson,
-  ) {
-    return CacheEntry<T>._(
-      data: fromJson(json['data']),
-      ttl: Duration(milliseconds: json['ttl']),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        json['createdAt'] is int ? json['createdAt'] as int : 0,
-      ),
-    );
-  }
-}
-
-/// Cache configuration for different endpoint types
-class CacheConfig {
-  final Duration memoryTTL;
-  final Duration diskTTL;
-  final bool enableStaleWhileRevalidate;
-  final int maxMemoryEntries;
-
-  const CacheConfig({
-    required this.memoryTTL,
-    required this.diskTTL,
-    this.enableStaleWhileRevalidate = true,
-    this.maxMemoryEntries = 100,
-  });
-}
-
-/// Predefined cache configurations
-class CacheConfigs {
-  static const feed = CacheConfig(
-    memoryTTL: Duration(minutes: 2),
-    diskTTL: Duration(minutes: 10),
-    enableStaleWhileRevalidate: true,
-    maxMemoryEntries: 50,
-  );
-
-  static const CacheConfig profile = CacheConfig(
-    memoryTTL: Duration(minutes: 5),
-    diskTTL: Duration(minutes: 30),
-    enableStaleWhileRevalidate: true,
-    maxMemoryEntries: 20,
-  );
-
-  static const CacheConfig stories = CacheConfig(
-    memoryTTL: Duration(minutes: 1),
-    diskTTL: Duration(minutes: 5),
-    enableStaleWhileRevalidate: true,
-    maxMemoryEntries: 30,
-  );
-
-  static const CacheConfig conversations = CacheConfig(
-    memoryTTL: Duration(minutes: 3),
-    diskTTL: Duration(minutes: 15),
-    enableStaleWhileRevalidate: true,
-    maxMemoryEntries: 25,
-  );
-
-  static const CacheConfig search = CacheConfig(
-    memoryTTL: Duration(minutes: 1),
-    diskTTL: Duration(minutes: 5),
-    enableStaleWhileRevalidate: false,
-    maxMemoryEntries: 40,
-  );
-
-  /// Get config based on endpoint path
-  static CacheConfig getConfigForEndpoint(String path) {
-    if (path.contains('/feed') || path.contains('/posts')) {
-      return feed;
-    } else if (path.contains('/profile') || path.contains('/user/')) {
-      return profile;
-    } else if (path.contains('/stories')) {
-      return stories;
-    } else if (path.contains('/conversations') || path.contains('/messages')) {
-      return conversations;
-    } else if (path.contains('/search')) {
-      return search;
-    }
-
-    // Default config
-    return const CacheConfig(
-      memoryTTL: Duration(minutes: 2),
-      diskTTL: Duration(minutes: 10),
-    );
-  }
-}
+export 'package:gruve_app/core/cache/cache_entry.dart';
+export 'package:gruve_app/core/cache/cache_configs.dart';
+export 'package:gruve_app/core/cache/cache_stats.dart';
 
 /// Two-layer cache manager (memory + disk) with stale-while-revalidate
 class CacheManager {
@@ -145,8 +30,9 @@ class CacheManager {
 
   /// Initialize cache manager
   Future<void> initialize() async {
-    _prefs ??= await SharedPreferences.getInstance();
-    AppLogger.d('🗄️ [CacheManager] Initialized');
+    if (_prefs != null) return;
+    _prefs = await SharedPreferences.getInstance();
+    AppLogger.debug('CacheManager', 'initialized');
   }
 
   /// Get cached data or null if not found/expired with enhanced logging
@@ -157,80 +43,27 @@ class CacheManager {
   ) async {
     await initialize();
 
-    AppLogger.d('🔍 [CacheManager] Getting cache for key: $key');
-
-    // Try memory cache first
+    // 1. Check memory cache
     final memoryEntry = _memoryCache[key];
-    if (memoryEntry != null) {
-      if (memoryEntry.isValid) {
-        debugLog.cache(
-          'GET',
-          key,
-          type: 'MEMORY',
-          hit: true,
-          size: _getDataSize(memoryEntry.data),
-        );
-        return memoryEntry.data as T;
-      } else {
-        AppLogger.d(
-          '⏰ [CacheManager] Memory cache entry expired for $key (age: ${memoryEntry.age.inSeconds}s, ttl: ${memoryEntry.ttl.inSeconds}s)',
-        );
-        if (config.enableStaleWhileRevalidate) {
-          debugLog.cache(
-            'GET',
-            key,
-            type: 'STALE',
-            hit: false,
-            size: _getDataSize(memoryEntry.data),
-          );
-          return memoryEntry.data as T;
-        }
-      }
-    } else {
-      AppLogger.d('🔍 [CacheManager] No memory cache entry for $key');
+    if (memoryEntry != null && memoryEntry.isValid) {
+      return memoryEntry.data as T;
     }
 
-    // Try disk cache if memory miss
+    // 2. Check disk cache
     final diskEntry = await _getFromDisk<T>(key, fromJson);
     if (diskEntry != null && diskEntry.isValid) {
-      // Promote to memory cache
       _memoryCache[key] = diskEntry;
-      debugLog.cache(
-        'GET',
-        key,
-        type: 'DISK',
-        hit: true,
-        size: _getDataSize(diskEntry.data),
-      );
       return diskEntry.data;
-    } else if (diskEntry != null) {
-      AppLogger.d(
-        '⏰ [CacheManager] Disk cache entry expired for $key (age: ${diskEntry.age.inSeconds}s, ttl: ${diskEntry.ttl.inSeconds}s)',
-      );
-      if (config.enableStaleWhileRevalidate) {
-        // Promote stale disk entry to memory cache so that synchronous checks (like _isStale) can detect it
-        _memoryCache[key] = diskEntry;
-      }
-    } else {
-      AppLogger.d('🔍 [CacheManager] No disk cache entry for $key');
     }
 
-    // Return stale data if stale-while-revalidate is enabled
+    // 3. Stale fallback if enabled
     if (config.enableStaleWhileRevalidate) {
       final staleData = memoryEntry?.data ?? diskEntry?.data;
       if (staleData != null) {
-        debugLog.cache(
-          'GET',
-          key,
-          type: 'STALE',
-          hit: memoryEntry?.isValid == true || diskEntry?.isValid == true,
-          size: _getDataSize(staleData),
-        );
         return staleData as T;
       }
     }
 
-    debugLog.cache('GET', key, type: 'MISS', hit: false);
     return null;
   }
 
@@ -247,17 +80,16 @@ class CacheManager {
 
     // Memory optimization: Check if we're approaching limits
     if (_memoryCache.length >= config.maxMemoryEntries) {
-      AppLogger.d(
-        '⚠️ [CacheManager] Memory cache full (${_memoryCache.length}/${config.maxMemoryEntries}), triggering cleanup before put',
-      );
       _cleanupMemoryCache(config.maxMemoryEntries - 1); // Make space
     }
 
     final entry = CacheEntry<T>(data: data, ttl: config.memoryTTL);
     _memoryCache[key] = entry;
 
-    AppLogger.d(
-      '💾 [CacheManager] PUT $key (MEMORY, size: ${dataSize}B, entries: ${_memoryCache.length})',
+    AppLogger.debug(
+      'CacheManager',
+      'cache_put',
+      data: {'key': key, 'sizeBytes': dataSize, 'entries': _memoryCache.length},
     );
 
     // Store to disk if serializer is provided and data is not too large
@@ -265,8 +97,10 @@ class CacheManager {
       // 1MB limit for disk cache
       await _putToDisk(key, entry, toJson);
     } else if (dataSize >= 1024 * 1024) {
-      AppLogger.d(
-        '⚠️ [CacheManager] Skipping disk cache for large data (${(dataSize / 1024 / 1024).toStringAsFixed(2)}MB): $key',
+      AppLogger.debug(
+        'CacheManager',
+        'disk_cache_skipped',
+        data: {'key': key, 'sizeMb': double.parse((dataSize / 1024 / 1024).toStringAsFixed(2))},
       );
     }
 
@@ -286,7 +120,6 @@ class CacheManager {
 
     // Check if background refresh is already in progress
     if (_backgroundRefreshes.containsKey(key)) {
-      AppLogger.d('⏳ [CacheManager] Background refresh in progress: $key');
       final cached = await get<T>(key, fromJson, config);
       return CacheResult<T>(
         data: cached,
@@ -316,7 +149,7 @@ class CacheManager {
     await initialize();
     _memoryCache.remove(key);
     await _prefs?.remove(_getPrefixedKey(key));
-    AppLogger.d('🗑️ [CacheManager] Invalidated: $key');
+    AppLogger.debug('CacheManager', 'cache_invalidated', data: {'key': key});
   }
 
   /// Invalidate cache entries by pattern
@@ -343,8 +176,10 @@ class CacheManager {
       }
     }
 
-    AppLogger.d(
-      '🗑️ [CacheManager] Invalidated pattern "$pattern": ${keysToRemove.length} entries',
+    AppLogger.debug(
+      'CacheManager',
+      'cache_pattern_invalidated',
+      data: {'pattern': pattern, 'entries': keysToRemove.length},
     );
   }
 
@@ -362,9 +197,7 @@ class CacheManager {
         await _prefs!.remove(key);
       }
     }
-    AppLogger.d(
-      '🧹 [CacheManager] Cleared all cache starting with http_cache_',
-    );
+    AppLogger.debug('CacheManager', 'cache_cleared');
   }
 
   /// Get comprehensive cache statistics
@@ -410,7 +243,7 @@ class CacheManager {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       return CacheEntry.fromJson(json, fromJson);
     } catch (e) {
-      AppLogger.d('❌ [CacheManager] Disk cache error for $key: $e');
+      AppLogger.warning('CacheManager', 'disk_read_failed', data: {'key': key, 'error': e.toString()});
       return null;
     }
   }
@@ -425,15 +258,12 @@ class CacheManager {
       final jsonString = jsonEncode({...json, 'data': toJson(entry.data)});
       await _prefs?.setString(_getPrefixedKey(key), jsonString);
     } catch (e) {
-      AppLogger.d('❌ [CacheManager] Disk cache write error for $key: $e');
+      AppLogger.warning('CacheManager', 'disk_write_failed', data: {'key': key, 'error': e.toString()});
     }
   }
 
   void _cleanupMemoryCache(int maxEntries) {
     if (_memoryCache.length <= maxEntries) {
-      AppLogger.d(
-        '🧹 [CacheManager] No cleanup needed (${_memoryCache.length}/$maxEntries entries)',
-      );
       return;
     }
 
@@ -446,19 +276,20 @@ class CacheManager {
 
     for (int i = 0; i < toRemove; i++) {
       final entry = sortedEntries[i];
-      final age = entry.value.age;
-      final size = _getDataSize(entry.value.data);
       removedKeys.add(entry.key);
       _memoryCache.remove(entry.key);
-      AppLogger.d(
-        '🗑️ [CacheManager] Removed old entry: ${entry.key} (age: ${age.inSeconds}s, size: ${size}B)',
-      );
     }
 
-    AppLogger.d(
-      '🧹 [CacheManager] Cleaned up $toRemove old memory entries. Remaining: ${_memoryCache.length}/$maxEntries',
+    AppLogger.debug(
+      'CacheManager',
+      'cache_cleanup',
+      data: {
+        'removed': toRemove,
+        'remaining': _memoryCache.length,
+        'maxEntries': maxEntries,
+        'removedKeys': removedKeys,
+      },
     );
-    AppLogger.d('🧹 [CacheManager] Removed keys: ${removedKeys.join(', ')}');
   }
 
   bool _isStale(String key, CacheConfig config) {
@@ -477,13 +308,14 @@ class CacheManager {
     _backgroundRefreshes[key] = refreshCompleter.future;
 
     try {
-      AppLogger.d('🔄 [CacheManager] Starting background refresh: $key');
       final freshData = await refreshFunction();
       await put(key, freshData, config, toJson: toJson);
-      AppLogger.d('✅ [CacheManager] Background refresh completed: $key');
+      AppLogger.debug('CacheManager', 'background_refresh_completed', data: {'key': key});
     } catch (e) {
-      AppLogger.d(
-        '❌ [CacheManager] Background refresh failed: $key, error: $e',
+      AppLogger.warning(
+        'CacheManager',
+        'background_refresh_failed',
+        data: {'key': key, 'error': e.toString()},
       );
     } finally {
       _backgroundRefreshes.remove(key);
@@ -494,104 +326,32 @@ class CacheManager {
   /// Calculate approximate size of data in bytes with enhanced logging
   int _getDataSize(dynamic data) {
     if (data == null) {
-      AppLogger.d('📏 [CacheManager] Data is null, size: 0 bytes');
       return 0;
     }
 
-    int size;
-    String type;
-
     try {
       if (data is String) {
-        size = data.length;
-        type = 'String';
+        return data.length;
       } else if (data is Map) {
-        final jsonString = jsonEncode(data);
-        size = jsonString.length;
-        type = 'Map(${data.length} keys)';
+        return jsonEncode(data).length;
       } else if (data is List) {
-        final jsonString = jsonEncode(data);
-        size = jsonString.length;
-        type = 'List(${data.length} items)';
+        return jsonEncode(data).length;
       } else if (data.toString().contains('CacheData')) {
         // Handle CacheData type checking without direct import
-        size = 100; // Estimated size for wrapper objects
-        type = 'CacheData';
+        return 100; // Estimated size for wrapper objects
       } else {
         // For other types, use toString() as approximation
-        final stringRep = data.toString();
-        size = stringRep.length;
-        type = data.runtimeType.toString();
+        return data.toString().length;
       }
-
-      AppLogger.d(
-        '📏 [CacheManager] Data size calculated: $size bytes for type $type',
-      );
-      return size;
     } catch (e) {
       // Fallback to string length if serialization fails
       final fallbackSize = data.toString().length;
-      AppLogger.d(
-        '⚠️ [CacheManager] Size calculation failed for ${data.runtimeType}: $e, using fallback: $fallbackSize bytes',
+      AppLogger.debug(
+        'CacheManager',
+        'size_calc_fallback',
+        data: {'type': data.runtimeType.toString(), 'error': e.toString(), 'fallbackSize': fallbackSize},
       );
       return fallbackSize;
     }
-  }
-}
-
-/// Cache result wrapper
-class CacheResult<T> {
-  final T? data;
-  final bool isFromCache;
-  final bool isStale;
-
-  CacheResult({this.data, required this.isFromCache, required this.isStale});
-
-  bool get hasData => data != null;
-}
-
-/// Enhanced cache statistics with detailed metrics
-class CacheStats {
-  final int memorySize;
-  final int backgroundRefreshes;
-  final int totalMemorySizeBytes;
-  final int expiredEntries;
-  final Duration averageAge;
-  final List<String> inFlightRequests;
-
-  CacheStats({
-    required this.memorySize,
-    required this.backgroundRefreshes,
-    required this.totalMemorySizeBytes,
-    required this.expiredEntries,
-    required this.averageAge,
-    required this.inFlightRequests,
-  });
-
-  /// Get memory size in human readable format
-  String get memorySizeFormatted {
-    if (totalMemorySizeBytes < 1024) return '${totalMemorySizeBytes}B';
-    if (totalMemorySizeBytes < 1024 * 1024)
-      return '${(totalMemorySizeBytes / 1024).toStringAsFixed(1)}KB';
-    return '${(totalMemorySizeBytes / 1024 / 1024).toStringAsFixed(1)}MB';
-  }
-
-  /// Get average age in human readable format
-  String get averageAgeFormatted {
-    if (averageAge.inSeconds < 60) return '${averageAge.inSeconds}s';
-    if (averageAge.inMinutes < 60)
-      return '${averageAge.inMinutes}m ${averageAge.inSeconds % 60}s';
-    return '${averageAge.inHours}h ${averageAge.inMinutes % 60}m';
-  }
-
-  @override
-  String toString() {
-    return 'CacheStats('
-        'entries: $memorySize, '
-        'size: $memorySizeFormatted, '
-        'expired: $expiredEntries, '
-        'avgAge: $averageAgeFormatted, '
-        'refreshing: $backgroundRefreshes, '
-        'inFlight: ${inFlightRequests.length})';
   }
 }

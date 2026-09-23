@@ -6,7 +6,6 @@ import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/auth_dio.dart';
 import 'package:gruve_app/features/auth/data/services/auth_api_exception.dart';
-import 'package:gruve_app/features/auth/data/services/auth_api_logger.dart';
 import 'package:gruve_app/features/auth/data/dto/signup_request.dart';
 import 'package:gruve_app/features/auth/data/dto/signup_response.dart';
 import 'package:gruve_app/features/auth/data/services/auth_logger.dart';
@@ -30,7 +29,6 @@ class SignupService {
         } on AuthApiException {
           rethrow;
         } on DioException catch (retryError) {
-          AuthApiLogger.error('SignupRetry', retryError);
           throw AuthApiException.fromDio(
             retryError,
             fallback: 'Unable to reach server right now. Please try again.',
@@ -38,7 +36,6 @@ class SignupService {
         }
       }
 
-      AuthApiLogger.error('Signup', e);
       throw AuthApiException.fromDio(
         e,
         fallback: 'Unable to reach server right now. Please try again.',
@@ -75,21 +72,11 @@ class SignupService {
     Map<String, dynamic> payload, {
     required String logLabel,
   }) async {
-    AuthApiLogger.request(
-      logLabel,
-      dio: dio,
-      endpoint: endpoint,
-      method: 'POST',
-      body: payload,
-    );
-
     final response = await dio.post(
       endpoint,
       data: payload,
       options: AuthEndpointPaths.skipAuthOptions(),
     );
-
-    AuthApiLogger.response(logLabel, response);
 
     final result = SignupResponse.fromJson(response.data);
     if (result.success == true) {

@@ -18,7 +18,7 @@ import 'package:gruve_app/features/message/presentation/notifiers/message_notifi
 import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart'
     show notificationNotifierProvider;
 import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
-import 'package:gruve_app/features/share/presentation/controller/post_share_provider.dart'
+import 'package:gruve_app/features/share/presentation/notifiers/post_share_notifier.dart'
     show postShareNotifierProvider;
 import 'package:gruve_app/features/story_preview/presentation/notifiers/drafts_notifier.dart'
     show draftsNotifierProvider;

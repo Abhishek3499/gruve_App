@@ -13,22 +13,16 @@ class BlockApiService {
 
   late final Dio _dio;
 
-  void _log(String message) {
-    AppLogger.d('?? [BlockApiService] $message');
-  }
-
   BlockApiService() {
     _dio = AppDio.getInstance();
-    _log('Initialized shared Dio client');
+    AppLogger.debug('BlockApiService', 'client_initialized');
   }
 
   Future<List<BlockedUserModel>> fetchBlockedUsers({
     bool forceRefresh = true,
   }) async {
     try {
-      _log(' API START - fetchBlockedUsers');
       final token = await TokenStorage.getAccessToken();
-      _log('📡 GET $_listEndpoint');
 
       await CacheManager().invalidatePattern(_listEndpoint);
 
@@ -50,9 +44,6 @@ class BlockApiService {
         ),
       );
 
-      _log('✅ API SUCCESS - status=${response.statusCode}');
-      _log('🧾 response data=${response.data}');
-
       // Handle response structure: data.results
       final responseData = response.data;
       if (responseData is Map<String, dynamic>) {
@@ -63,37 +54,48 @@ class BlockApiService {
             final users = results
                 .map((json) => BlockedUserModel.fromJson(json))
                 .toList();
-            _log(
-              '🎯 parsed ${users.length} blocked users (count: ${data['count']})',
+            AppLogger.debug(
+              'BlockApiService',
+              'blocked_users_parsed',
+              data: {'endpoint': _listEndpoint, 'count': users.length},
             );
             return users;
           }
         }
       }
 
-      _log('⚠️ Unexpected response format, returning empty list');
+      AppLogger.warning(
+        'BlockApiService',
+        'unexpected_response_format',
+        data: {'endpoint': _listEndpoint},
+      );
       return [];
     } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final responseData = e.response?.data;
-      _log('❌ API ERROR - DioException type=${e.type}');
-      _log('❌ statusCode=$statusCode');
-      _log('❌ responseData=$responseData');
-      _log('❌ message=${e.message}');
-
+      AppLogger.warning(
+        'BlockApiService',
+        'api_error',
+        data: {
+          'method': 'GET',
+          'endpoint': _listEndpoint,
+          'type': e.type.name,
+          'statusCode': e.response?.statusCode,
+        },
+      );
       rethrow;
     } catch (e) {
-      _log('❌ API ERROR - Unexpected error: $e');
+      AppLogger.error(
+        'BlockApiService',
+        'unexpected_error',
+        data: {'endpoint': _listEndpoint},
+        error: e,
+      );
       rethrow;
     }
   }
 
   Future<BlockToggleResponseModel> toggleBlockUser(String userId) async {
     try {
-      _log('🚀 API START - toggleBlockUser for userId=$userId');
       final token = await TokenStorage.getAccessToken();
-      _log('📡 POST $_toggleEndpoint');
-      _log('📦 request body={user_id: $userId}');
 
       final response = await _dio.post(
         _toggleEndpoint,
@@ -104,26 +106,38 @@ class BlockApiService {
         ),
       );
 
-      _log('✅ API SUCCESS - status=${response.statusCode}');
-      _log('🧾 response data=${response.data}');
-
       final result = BlockToggleResponseModel.fromJson(response.data);
-      _log('🎯 parsed isBlocked=${result.data?.isBlocked}');
+      AppLogger.debug(
+        'BlockApiService',
+        'toggle_parsed',
+        data: {
+          'endpoint': _toggleEndpoint,
+          'isBlocked': result.data?.isBlocked,
+        },
+      );
 
       await CacheManager().invalidatePattern(_listEndpoint);
 
       return result;
     } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final responseData = e.response?.data;
-      _log('❌ API ERROR - DioException type=${e.type}');
-      _log('❌ statusCode=$statusCode');
-      _log('❌ responseData=$responseData');
-      _log('❌ message=${e.message}');
-
+      AppLogger.warning(
+        'BlockApiService',
+        'api_error',
+        data: {
+          'method': 'POST',
+          'endpoint': _toggleEndpoint,
+          'type': e.type.name,
+          'statusCode': e.response?.statusCode,
+        },
+      );
       rethrow;
     } catch (e) {
-      _log('❌ API ERROR - Unexpected error: $e');
+      AppLogger.error(
+        'BlockApiService',
+        'unexpected_error',
+        data: {'endpoint': _toggleEndpoint},
+        error: e,
+      );
       rethrow;
     }
   }

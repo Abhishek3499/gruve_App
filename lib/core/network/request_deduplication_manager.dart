@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:gruve_app/core/auth/auth_endpoint_paths.dart';
-import 'package:gruve_app/core/debug/debug_logger.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Production-grade request deduplication manager
 /// Prevents duplicate in-flight requests and reduces backend stress
@@ -42,14 +42,7 @@ class RequestDeduplicationManager {
       buffer.write('#${sortedData.toString()}');
     }
 
-    final key = buffer.toString();
-    debugLog.network(
-      'KEYGEN',
-      options.path,
-      duration: Duration.zero,
-      properties: {'key': key},
-    );
-    return key;
+    return buffer.toString();
   }
 
   /// Executes a request with deduplication
@@ -63,45 +56,22 @@ class RequestDeduplicationManager {
   ) async {
     final requestKey = _generateRequestKey(options);
 
-    debugLog.network(
-      'EXECUTE',
-      options.path,
-      properties: {
-        'key': requestKey,
-        'inFlightCount': _inFlightRequests.length,
-      },
-    );
-
     // Wait for any ongoing operations to complete
     await _lock.future;
 
     // Check if request is already in flight
     final existingRequest = _inFlightRequests[requestKey];
     if (existingRequest != null && !existingRequest.completer.isCompleted) {
-      debugLog.network(
-        'DUPLICATE_FOUND',
-        options.path,
-        isDuplicate: true,
-        properties: {'key': requestKey},
-      );
-
       try {
         // Wait for existing request to complete
         final response = await existingRequest.completer.future as Response<T>;
-        debugLog.network(
-          'DUPLICATE_REUSE',
-          options.path,
-          fromCache: true,
-          properties: {'key': requestKey},
+        AppLogger.debug(
+          'RequestDeduplication',
+          'duplicate_reused',
+          data: {'endpoint': options.path, 'key': requestKey},
         );
         return response;
       } catch (e) {
-        debugLog.network(
-          'DUPLICATE_FAILED',
-          options.path,
-          error: e.toString(),
-          properties: {'key': requestKey},
-        );
         // Remove failed request and continue with new request
         _inFlightRequests.remove(requestKey);
       }
@@ -117,51 +87,25 @@ class RequestDeduplicationManager {
     final inFlightRequest = _InFlightRequest<T>(completer, options);
     _inFlightRequests[requestKey] = inFlightRequest;
 
-    debugLog.network(
-      'NEW_REQUEST',
-      options.path,
-      properties: {
-        'key': requestKey,
-        'totalInFlight': _inFlightRequests.length,
-      },
-    );
-
-    final stopwatch = Stopwatch()..start();
-
     try {
       final response = await requestFunction();
-      final duration = stopwatch.elapsed;
       completer.complete(response);
-      debugLog.network(
-        'REQUEST_SUCCESS',
-        options.path,
-        statusCode: response.statusCode ?? 0,
-        duration: duration,
-        properties: {'key': requestKey},
-      );
       return response;
     } catch (e) {
-      final duration = stopwatch.elapsed;
       completer.completeError(e);
-      debugLog.network(
-        'REQUEST_FAILED',
-        options.path,
-        error: e.toString(),
-        duration: duration,
-        properties: {'key': requestKey},
+      AppLogger.warning(
+        'RequestDeduplication',
+        'request_failed',
+        data: {
+          'endpoint': options.path,
+          'key': requestKey,
+          'error': e.toString(),
+        },
       );
       rethrow;
     } finally {
       // Clean up completed request
       _inFlightRequests.remove(requestKey);
-      debugLog.network(
-        'CLEANUP',
-        options.path,
-        properties: {
-          'key': requestKey,
-          'remainingInFlight': _inFlightRequests.length,
-        },
-      );
     }
   }
 
@@ -174,14 +118,7 @@ class RequestDeduplicationManager {
 
   /// Cancels all in-flight requests (useful for logout)
   Future<void> cancelAll([String? reason]) async {
-    debugLog.network(
-      'CANCEL_ALL',
-      'all_requests',
-      properties: {
-        'reason': reason ?? 'Deduplication cleanup',
-        'inFlightCount': _inFlightRequests.length,
-      },
-    );
+    final cancelledCount = _inFlightRequests.length;
 
     for (final entry in _inFlightRequests.entries) {
       final request = entry.value;
@@ -197,11 +134,17 @@ class RequestDeduplicationManager {
     }
 
     _inFlightRequests.clear();
-    debugLog.network(
-      'CANCELLED_ALL',
-      'all_requests',
-      properties: {'remainingCount': 0},
-    );
+
+    if (cancelledCount > 0) {
+      AppLogger.debug(
+        'RequestDeduplication',
+        'cancelled_all',
+        data: {
+          'reason': reason ?? 'Deduplication cleanup',
+          'count': cancelledCount,
+        },
+      );
+    }
   }
 
   /// Clears completed requests (maintenance)
@@ -221,11 +164,10 @@ class RequestDeduplicationManager {
     final cleanedCount = beforeCount - afterCount;
 
     if (cleanedCount > 0) {
-      debugLog.cache(
-        'CLEANUP',
-        'completed_requests',
-        source: 'RequestDeduplicationManager',
-        size: completedKeys.length,
+      AppLogger.debug(
+        'RequestDeduplication',
+        'completed_requests_cleared',
+        data: {'count': completedKeys.length},
       );
     }
   }

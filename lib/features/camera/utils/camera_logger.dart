@@ -1,116 +1,87 @@
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Centralized logging utility for camera feature
-/// Provides structured debug logging with consistent formatting
+/// Centralized logging utility for the camera feature. Routes through
+/// [AppLogger] with a fixed `Camera` tag and per-action event names.
 class CameraLogger {
-  static const String _tag = '📷 CameraFeature';
+  static const String _tag = 'Camera';
 
   /// Log camera initialization start
-  static void logInitializationStart() {
-    _log('INIT', 'Camera initialization started');
-  }
+  static void logInitializationStart() => _log('init_start');
 
   /// Log successful camera initialization
-  static void logInitializationSuccess() {
-    _log('SUCCESS', 'Camera initialized successfully');
-  }
+  static void logInitializationSuccess() => _log('init_success');
 
   /// Log camera initialization failure
-  static void logInitializationFailure(String error) {
-    _log('ERROR', 'Camera initialization failed: $error');
-  }
+  static void logInitializationFailure(String error) =>
+      _logError('init_failed', error);
 
   /// Log camera disposal start
-  static void logDisposeStart() {
-    _log('DISPOSE', 'Camera disposal started');
-  }
+  static void logDisposeStart() => _log('dispose_start');
 
   /// Log successful camera disposal
-  static void logDisposeSuccess() {
-    _log('SUCCESS', 'Camera disposed successfully');
-  }
+  static void logDisposeSuccess() => _log('dispose_success');
 
   /// Log camera flip action start
-  static void logCameraFlipStart() {
-    _log('FLIP', 'Camera flip started');
-  }
+  static void logCameraFlipStart() => _log('flip_start');
 
   /// Log successful camera flip
-  static void logCameraFlipSuccess() {
-    _log('SUCCESS', 'Camera flipped successfully');
-  }
+  static void logCameraFlipSuccess() => _log('flip_success');
 
   /// Log camera flip failure
-  static void logCameraFlipFailure(String error) {
-    _log('ERROR', 'Camera flip failed: $error');
-  }
+  static void logCameraFlipFailure(String error) => _logError('flip_failed', error);
 
   /// Log capture action start
-  static void logCaptureStart() {
-    _log('CAPTURE', 'Image capture started');
-  }
+  static void logCaptureStart() => _log('capture_start');
 
   /// Log successful image capture
-  static void logCaptureSuccess(String imagePath) {
-    _log('SUCCESS', 'Image captured successfully: $imagePath');
-  }
+  static void logCaptureSuccess(String imagePath) =>
+      _log('capture_success', data: {'imagePath': imagePath});
 
   /// Log capture failure
-  static void logCaptureFailure(String error) {
-    _log('ERROR', 'Image capture failed: $error');
-  }
+  static void logCaptureFailure(String error) => _logError('capture_failed', error);
 
   /// Log flash toggle action
-  static void logFlashToggle(String flashMode) {
-    _log('FLASH', 'Flash toggled to: $flashMode');
-  }
+  static void logFlashToggle(String flashMode) =>
+      _log('flash_toggle', data: {'mode': flashMode});
 
   /// Log general camera actions
-  static void log(String message) {
-    _log('INFO', message);
-  }
+  static void log(String message) => AppLogger.debug(_tag, 'log', message: message);
 
   /// Log camera controller state changes
-  static void logStateChange(String state) {
-    _log('STATE', 'Camera state changed: $state');
-  }
+  static void logStateChange(String state) =>
+      _log('state_change', data: {'state': state});
 
   /// Log widget lifecycle events
-  static void logLifecycle(String event) {
-    _log('LIFECYCLE', event);
-  }
+  static void logLifecycle(String event) => AppLogger.debug(_tag, 'lifecycle', message: event);
 
   /// Log user interactions
-  static void logUserAction(String action) {
-    _log('USER', action);
-  }
+  static void logUserAction(String action) => AppLogger.debug(_tag, 'user_action', message: action);
 
   /// Log performance metrics
   static void logPerformance(String operation, Duration duration) {
-    _log('PERF', '$operation completed in ${duration.inMilliseconds}ms');
+    AppLogger.debug(
+      _tag,
+      'performance',
+      data: {'operation': operation, 'durationMs': duration.inMilliseconds},
+    );
   }
 
-  /// Internal logging method
-  static void _log(String level, String message) {
-    final timestamp = DateTime.now().toIso8601String().substring(11, 19);
-    AppLogger.d('[$_tag] [$timestamp] [$level] $message');
+  static void _log(String event, {Map<String, dynamic>? data}) {
+    AppLogger.debug(_tag, event, data: data);
+  }
+
+  static void _logError(String event, String error) {
+    AppLogger.error(_tag, event, error: error);
   }
 
   /// Log error with stack trace for debugging
   static void logError(String message, [StackTrace? stackTrace]) {
-    _log('ERROR', message);
-    if (stackTrace != null) {
-      AppLogger.d('[$_tag] StackTrace: $stackTrace');
-    }
+    AppLogger.error(_tag, 'error', message: message, stackTrace: stackTrace);
   }
 
   /// Log warning messages
-  static void logWarning(String message) {
-    _log('WARNING', message);
-  }
+  static void logWarning(String message) => AppLogger.warning(_tag, 'log', message: message);
 
   /// Log verbose debugging information
-  static void logVerbose(String message) {
-    _log('VERBOSE', message);
-  }
+  static void logVerbose(String message) => AppLogger.debug(_tag, 'verbose', message: message);
 }

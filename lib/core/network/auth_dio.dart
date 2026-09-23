@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/network/api_logger.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 
 /// Lightweight Dio client for auth endpoints — no cache, retry, or dedup overhead.
@@ -37,6 +37,24 @@ class AuthDio {
       ),
     );
 
+    // Logger runs first (index 0) so it only observes the final outcome of a
+    // request — including one recovered by RetryInterceptor below — mirroring
+    // the interceptor ordering documented in AppDio._buildDio().
+    if (kDebugMode) {
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onResponse: (response, handler) {
+            ApiLogger.logResponse(response);
+            handler.next(response);
+          },
+          onError: (error, handler) {
+            ApiLogger.logError(error);
+            handler.next(error);
+          },
+        ),
+      );
+    }
+
     // Reuse existing RetryInterceptor configured to:
     // - Retry ONLY 1 time
     // - Retry ONLY on 502, 503, 504 (and connection/timeout/socket exceptions check inside)
@@ -48,42 +66,6 @@ class AuthDio {
         retriableStatuses: const {502, 503, 504},
       ),
     );
-
-    if (kDebugMode) {
-      dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            options.extra['request_start_time'] = DateTime.now();
-            handler.next(options);
-          },
-          onResponse: (response, handler) {
-            final startTime =
-                response.requestOptions.extra['request_start_time']
-                    as DateTime?;
-            if (startTime != null) {
-              final ms = DateTime.now().difference(startTime).inMilliseconds;
-              AppLogger.d(
-                '[AuthDio] ${response.requestOptions.method} '
-                '${response.requestOptions.path} ${response.statusCode} (${ms}ms)',
-              );
-            }
-            handler.next(response);
-          },
-          onError: (error, handler) {
-            final startTime =
-                error.requestOptions.extra['request_start_time'] as DateTime?;
-            if (startTime != null) {
-              final ms = DateTime.now().difference(startTime).inMilliseconds;
-              AppLogger.d(
-                '[AuthDio] ${error.requestOptions.method} '
-                '${error.requestOptions.path} failed (${ms}ms)',
-              );
-            }
-            handler.next(error);
-          },
-        ),
-      );
-    }
 
     return dio;
   }

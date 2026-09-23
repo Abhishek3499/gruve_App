@@ -1,103 +1,99 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// 🚀 Offline-First Caching Service
-/// Handles initialization, storage, retrieval, and eviction of JSON-serialized responses.
+/// 📦 HiveService
+/// A lightweight, offline-first local cache service for fast data storage and retrieval.
 class HiveService {
+  // Singleton instance
   static final HiveService _instance = HiveService._internal();
+  static HiveService get instance => _instance;
   factory HiveService() => _instance;
   HiveService._internal();
 
-  // Box Names for cache isolation
+  // ==========================================
+  // Cache Box Names
+  // ==========================================
   static const String userCacheBoxName = 'user_cache_box';
   static const String feedCacheBoxName = 'feed_cache_box';
 
-  /// Initialize Hive and open caching boxes
+  /// 🚀 1. Initialize Hive and open default cache boxes
   Future<void> init() async {
     try {
       await Hive.initFlutter();
       await Hive.openBox(userCacheBoxName);
       await Hive.openBox(feedCacheBoxName);
-      AppLogger.d(
-        '📦 [HiveService] Hive initialized and cache boxes opened successfully.',
-      );
+      AppLogger.d('📦 [HiveService] Initialized and default boxes opened successfully.');
     } catch (e) {
       AppLogger.d('🚨 [HiveService] Initialization failed: $e');
     }
   }
 
-  /// Cache data (usually JSON list or map) under a specific key in a box
+  /// 💾 2. Save / Cache data by key
   Future<void> cacheData(String boxName, String key, dynamic data) async {
     try {
-      if (!Hive.isBoxOpen(boxName)) {
-        await Hive.openBox(boxName);
-      }
-      final box = Hive.box(boxName);
+      final box = await _openBoxIfNeeded(boxName);
       await box.put(key, data);
-      AppLogger.d(
-        '✅ [HiveService] Cached data in box "$boxName" for key "$key"',
-      );
+      AppLogger.d('✅ [HiveService] Cached "$key" in [$boxName]');
     } catch (e) {
-      AppLogger.d(
-        '🚨 [HiveService] Failed to cache data in box "$boxName" for key "$key": $e',
-      );
+      AppLogger.d('🚨 [HiveService] Failed to cache "$key" in [$boxName]: $e');
     }
   }
 
-  /// Retrieve cached data from a box
+  /// 📖 3. Get cached data by key (returns null if not found)
   dynamic getCachedData(String boxName, String key) {
     try {
-      if (!Hive.isBoxOpen(boxName)) {
-        return null;
-      }
+      if (!Hive.isBoxOpen(boxName)) return null;
+
       final box = Hive.box(boxName);
       final data = box.get(key);
+
       if (data != null) {
-        AppLogger.d(
-          '📖 [HiveService] Cache HIT for key "$key" in box "$boxName"',
-        );
+        AppLogger.d('📖 [HiveService] Cache HIT for "$key" in [$boxName]');
       } else {
-        AppLogger.d(
-          'ℹ️ [HiveService] Cache MISS for key "$key" in box "$boxName"',
-        );
+        AppLogger.d('ℹ️ [HiveService] Cache MISS for "$key" in [$boxName]');
       }
       return data;
     } catch (e) {
-      AppLogger.d(
-        '🚨 [HiveService] Failed to get cached data in box "$boxName" for key "$key": $e',
-      );
+      AppLogger.d('🚨 [HiveService] Failed to read "$key" from [$boxName]: $e');
       return null;
     }
   }
 
-  /// Remove a single cached entry from a box
+  /// 🗑️ 4. Delete a specific key from a box
   Future<void> evictCachedData(String boxName, String key) async {
     try {
-      if (!Hive.isBoxOpen(boxName)) {
-        return;
-      }
+      if (!Hive.isBoxOpen(boxName)) return;
+
       final box = Hive.box(boxName);
       await box.delete(key);
-      AppLogger.d(
-        '🧹 [HiveService] Evicted cache key "$key" from box "$boxName"',
-      );
+      AppLogger.d('🧹 [HiveService] Deleted key "$key" from [$boxName]');
     } catch (e) {
-      AppLogger.d(
-        '🚨 [HiveService] Failed to evict key "$key" from box "$boxName": $e',
-      );
+      AppLogger.d('🚨 [HiveService] Failed to delete key "$key" from [$boxName]: $e');
     }
   }
 
-  /// Evict/clear cache inside a specific box
+  /// 🧹 5. Clear all data inside a specific box (e.g. on Logout)
   Future<void> clearCache(String boxName) async {
     try {
-      if (Hive.isBoxOpen(boxName)) {
-        final box = Hive.box(boxName);
-        await box.clear();
-        AppLogger.d('🧹 [HiveService] Cache cleared for box "$boxName"');
-      }
+      if (!Hive.isBoxOpen(boxName)) return;
+
+      final box = Hive.box(boxName);
+      await box.clear();
+      AppLogger.d('🧹 [HiveService] Cleared all data in [$boxName]');
     } catch (e) {
-      AppLogger.d('🚨 [HiveService] Failed to clear box "$boxName": $e');
+      AppLogger.d('🚨 [HiveService] Failed to clear box [$boxName]: $e');
     }
+  }
+
+  // ==========================================
+  // Helper Methods
+  // ==========================================
+
+  /// Safely gets or opens a box if it is not currently open
+  Future<Box> _openBoxIfNeeded(String boxName) async {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box(boxName);
+    }
+    return await Hive.openBox(boxName);
   }
 }

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
@@ -224,41 +223,6 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
           ],
         ),
       ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// Blur Overlay
-// ─────────────────────────────────────────────
-class MessageBlurOverlay extends StatelessWidget {
-  final Widget child;
-  final bool showBlur;
-  final VoidCallback? onTapOutside;
-
-  const MessageBlurOverlay({
-    super.key,
-    required this.child,
-    this.showBlur = false,
-    this.onTapOutside,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        child,
-        if (showBlur)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: onTapOutside,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                child: Container(color: Colors.black.withValues(alpha: 0.15)),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

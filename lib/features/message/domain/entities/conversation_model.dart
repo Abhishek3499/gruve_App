@@ -1,6 +1,5 @@
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Model representing the other user in a conversation
 class OtherUser {
@@ -11,13 +10,11 @@ class OtherUser {
   const OtherUser({required this.id, required this.name, this.avatar});
 
   factory OtherUser.fromJson(Map<String, dynamic> json) {
-    AppLogger.d('👤 [OtherUser] 🔍 Starting user parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
-      context: '👤 OtherUser.fromJson',
+      context: 'OtherUser.fromJson',
     );
     final flat = _flattenUserJson(safeJson);
-    AppLogger.d('👤 [OtherUser] 🗺️ Flattened keys: ${flat.keys.toList()}');
 
     return OtherUser(
       id: SafeParsingHelpers.safeString(flat, const [
@@ -114,12 +111,10 @@ class LastMessage {
   });
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
-    AppLogger.d('📨 [LastMessage] 🔍 Starting message parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
-      context: '📨 LastMessage.fromJson',
+      context: 'LastMessage.fromJson',
     );
-    AppLogger.d('📨 [LastMessage] 🗺️ Message keys: ${safeJson.keys.toList()}');
 
     return LastMessage(
       content: SafeParsingHelpers.safeString(safeJson, const [
@@ -229,13 +224,9 @@ class ConversationModel {
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
-    AppLogger.d('💬 [ConversationModel] 🔍 Starting conversation parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
-      context: '💬 ConversationModel.fromJson',
-    );
-    AppLogger.d(
-      '💬 [ConversationModel] 🗺️ Conversation keys: ${safeJson.keys.toList()}',
+      context: 'ConversationModel.fromJson',
     );
 
     // Safely extract nested objects
@@ -245,20 +236,13 @@ class ConversationModel {
           safeJson['user'] ??
           safeJson['participant'] ??
           {},
-      context: '💬 ConversationModel.otherUser',
+      context: 'ConversationModel.otherUser',
     );
 
     final rawLastMessage = safeJson['last_message'] ?? safeJson['lastMessage'];
     final lastMessageData = SafeParsingHelpers.safeMapParse(
       rawLastMessage ?? {},
-      context: '💬 ConversationModel.lastMessage',
-    );
-
-    AppLogger.d(
-      '💬 [ConversationModel] 👤 Other user keys: ${otherUserData.keys.toList()}',
-    );
-    AppLogger.d(
-      '💬 [ConversationModel] 📨 Last message keys: ${lastMessageData.keys.toList()}',
+      context: 'ConversationModel.lastMessage',
     );
 
     return ConversationModel(

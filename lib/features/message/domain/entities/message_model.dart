@@ -71,12 +71,10 @@ class MessageModel {
     String? currentUserId,
     String? receiverUserId,
   }) {
-    AppLogger.d('[MessageModel] Starting message parsing');
     final safeJson = SafeParsingHelpers.validateAndCleanMap(
       json,
       context: 'MessageModel.fromJson',
     );
-    AppLogger.d('[MessageModel] Message keys: ${safeJson.keys.toList()}');
 
     final senderObj = safeJson['sender'] is Map
         ? Map<String, dynamic>.from(safeJson['sender'] as Map)
@@ -139,7 +137,7 @@ class MessageModel {
           sharedPost = parsed;
         }
       } catch (e) {
-        AppLogger.d('⚠️ Error parsing sharedPost in MessageModel.fromJson: $e');
+        AppLogger.d('Error parsing sharedPost in MessageModel.fromJson: $e');
       }
     }
 

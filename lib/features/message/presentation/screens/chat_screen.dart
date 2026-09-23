@@ -58,6 +58,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final MessageController _messageController;
+  late final ValueNotifier<bool> _isInitialLoadingNotifier;
   final ScrollController _scrollController = ScrollController();
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
   final TextEditingController _inputController = TextEditingController();
@@ -189,6 +190,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       },
     )..addListener(_onMessageControllerTick);
+    _isInitialLoadingNotifier = ValueNotifier(
+      _messageController.isInitialLoading,
+    );
+    _messageController.addListener(_syncInitialLoadingNotifier);
     _scrollController.addListener(_onMessageScroll);
     _initializeSocketListener();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -204,10 +209,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
         blockNotifier.setBlockState(_userId, isBlocked);
         AppLogger.d(
-          '🔒 [ChatScreen] Block state synced from backend = $isBlocked',
+          '[ChatScreen] Block state synced from backend = $isBlocked',
         );
       } catch (e) {
-        AppLogger.d('⚠️ [ChatScreen] Failed to sync block state: $e');
+        AppLogger.d('[ChatScreen] Failed to sync block state: $e');
       }
     });
     // Requirement: the messages API is called only after ChatScreen opens.
@@ -262,6 +267,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         widget.userOrConversation != oldWidget.userOrConversation) {
       // Socket connection context is no longer needed for heartbeats
     }
+  }
+
+  /// Mirrors [MessageController.isInitialLoading] into a [ValueNotifier] so the
+  /// input-area subtree only rebuilds when this specific flag changes, instead
+  /// of on every unrelated controller notification.
+  void _syncInitialLoadingNotifier() {
+    if (!mounted) return;
+    _isInitialLoadingNotifier.value = _messageController.isInitialLoading;
   }
 
   /// Scroll-only reactions — message list rebuilds via [ListenableBuilder].
@@ -491,11 +504,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _initializeSocketListener() {
     if (_socketSubscription != null) {
-      AppLogger.d('🎧 SOCKET LISTENER ALREADY ACTIVE');
+      AppLogger.d('[ChatScreen] Socket listener already active');
       return;
     }
 
-    AppLogger.d('🎧 SOCKET LISTENER STARTED');
+    AppLogger.d('[ChatScreen] Socket listener initialized');
 
     _socketSubscription = _socketService.messageStream.listen((data) {
       if (!mounted) return;
@@ -518,7 +531,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
         _handleIncomingSocketMessage(data);
       } catch (e) {
-        AppLogger.d('💥 SOCKET ERROR => $e');
+        AppLogger.d('[ChatScreen] Socket listener error: $e');
       }
     });
   }
@@ -1054,7 +1067,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
-    AppLogger.d('[ChatScreen] 🎯 Message action=$action id=${message.id}');
+    AppLogger.d('[ChatScreen] Message action=$action id=${message.id}');
     _dismissPopup();
 
     switch (action) {
@@ -1085,12 +1098,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       case MessageAction.delete:
         // Check if it's user's own message
         if (message.isSent) {
-          AppLogger.d(
-            '[ChatScreen] 🗑️ 👤 Own message - showing delete confirmation',
-          );
+          AppLogger.d('[ChatScreen] Own message - showing delete confirmation');
           _showDeleteConfirmation(message);
         } else {
-          AppLogger.d('[ChatScreen] ⚠️ 🚫 Not own message - cannot delete');
+          AppLogger.d('[ChatScreen] Not own message - cannot delete');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('You can only delete your own messages'),
@@ -1122,7 +1133,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// Show delete confirmation dialog
   Future<void> _showDeleteConfirmation(MessageModel message) async {
     AppLogger.d(
-      '🗑️ [ChatScreen] 💬 Showing delete confirmation for message: ${message.id}',
+      '[ChatScreen] Showing delete confirmation for message: ${message.id}',
     );
 
     final confirmed = await showDialog<bool>(
@@ -1145,7 +1156,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              AppLogger.d('🗑️ [ChatScreen] ❌ Delete cancelled by user');
+              AppLogger.d('[ChatScreen] Delete cancelled by user');
               Navigator.pop(context, false);
             },
             child: const Text(
@@ -1155,7 +1166,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           TextButton(
             onPressed: () {
-              AppLogger.d('🗑️ [ChatScreen] ✅ Delete confirmed by user');
+              AppLogger.d('[ChatScreen] Delete confirmed by user');
               Navigator.pop(context, true);
             },
             style: TextButton.styleFrom(
@@ -1179,39 +1190,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     if (confirmed == true && mounted) {
-      AppLogger.d(
-        '🗑️ [ChatScreen] 🚀 User confirmed - proceeding with delete',
-      );
+      AppLogger.d('[ChatScreen] User confirmed - proceeding with delete');
       await _deleteSingleMessage(message);
     } else {
-      AppLogger.d(
-        '🗑️ [ChatScreen] ⚠️ Delete not confirmed or context unmounted',
-      );
+      AppLogger.d('[ChatScreen] Delete not confirmed or context unmounted');
     }
   }
 
   /// Delete a single message
   Future<void> _deleteSingleMessage(MessageModel message) async {
     AppLogger.d(
-      '🗑️ [ChatScreen] 🚀 Starting delete process for message: ${message.id}',
-    );
-    AppLogger.d(
-      '💬 [ChatScreen] 📝 Message text: ${message.text.substring(0, message.text.length.clamp(0, 50))}${message.text.length > 50 ? "..." : ""}',
+      '[ChatScreen] Starting delete process for message: ${message.id}',
     );
 
     try {
-      AppLogger.d(
-        '📡 [ChatScreen] 🌐 Calling MessageController.deleteMessage...',
-      );
       final success = await _messageController.deleteMessage(message.id);
 
       if (!mounted) {
-        AppLogger.d('⚠️ [ChatScreen] ❌ Context unmounted after delete');
+        AppLogger.d('[ChatScreen] Context unmounted after delete');
         return;
       }
 
       if (success) {
-        AppLogger.d('✅ [ChatScreen] 🎉 Message deleted successfully');
+        AppLogger.d('[ChatScreen] Message deleted successfully');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Message deleted'),
@@ -1220,7 +1221,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         );
       } else {
-        AppLogger.d('❌ [ChatScreen] ⚠️ Delete failed - showing error');
+        AppLogger.d('[ChatScreen] Delete failed - showing error');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to delete message'),
@@ -1230,7 +1231,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       }
     } catch (e) {
-      AppLogger.d('💥 [ChatScreen] ❌ Error deleting message: $e');
+      AppLogger.d('[ChatScreen] Error deleting message: $e');
 
       if (!mounted) return;
 
@@ -1313,8 +1314,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void dispose() {
     _socketSubscription?.cancel();
     _messageController.removeListener(_onMessageControllerTick);
+    _messageController.removeListener(_syncInitialLoadingNotifier);
     _scrollController.removeListener(_onMessageScroll);
     _messageController.dispose();
+    _isInitialLoadingNotifier.dispose();
     _scrollController.dispose();
     _inputController.dispose();
     AppLogger.d('[ChatScreen] dispose conversation=$_conversationId');
@@ -1378,10 +1381,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             (state) => state.isBlocked(_userId),
                           ),
                         );
-                        return ListenableBuilder(
-                          listenable: _messageController,
-                          builder: (context, _) {
-                            if (_messageController.isInitialLoading) {
+                        return ValueListenableBuilder<bool>(
+                          valueListenable: _isInitialLoadingNotifier,
+                          builder: (context, isInitialLoading, _) {
+                            if (isInitialLoading) {
                               return const SizedBox.shrink();
                             }
                             return Column(

@@ -1,22 +1,12 @@
-import 'package:flutter/foundation.dart';
-import 'package:logger/logger.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Pretty-printed debug logger for the auth feature.
-/// Silent outside debug mode — see production rules in features/auth/README.md
-/// (never log passwords, OTPs, tokens, headers, or full response bodies).
-final Logger authLogger = Logger(
-  printer: PrettyPrinter(
-    methodCount: 0,
-    errorMethodCount: 5,
-    lineLength: 100,
-    colors: true,
-    printEmojis: true,
-    dateTimeFormat: DateTimeFormat.none,
-  ),
-  filter: _DebugOnlyFilter(),
-);
+/// Debug logger for the auth feature. Routes through [AppLogger] with a
+/// fixed `Auth` tag, so output is clean JSON in debug builds only.
+/// Never log passwords, OTPs, tokens, headers, or full response bodies.
+class AuthLogger {
+  const AuthLogger();
 
-class _DebugOnlyFilter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) => kDebugMode;
+  void d(Object? message) => AppLogger.d(message.toString(), tag: 'Auth');
 }
+
+final AuthLogger authLogger = const AuthLogger();

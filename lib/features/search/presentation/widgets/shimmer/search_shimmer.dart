@@ -59,36 +59,3 @@ class _SearchRowSkeleton extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RecentSearchShimmer — skeleton for recent searches section while loading
-// from local storage on screen open.
-// ─────────────────────────────────────────────────────────────────────────────
-class RecentSearchShimmer extends StatelessWidget {
-  final int itemCount;
-
-  const RecentSearchShimmer({super.key, this.itemCount = 4});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppShimmer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // "Recent" title placeholder
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: ShimmerBox(width: 70, height: 16, borderRadius: 6),
-          ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: itemCount,
-            itemBuilder: (_, index) =>
-                _SearchRowSkeleton(nameWidth: 100.0 + (index * 15.0)),
-          ),
-        ],
-      ),
-    );
-  }
-}

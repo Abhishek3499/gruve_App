@@ -26,10 +26,6 @@ class AuthApiException extends ApiException {
     // Keep detailed logs only in debug mode
     if (kDebugMode) {
       authLogger.d('[AuthApiException] Extracting message from error: $error');
-      final data = error.response?.data;
-      if (data != null) {
-        authLogger.d('[AuthApiException] Error response data: $data');
-      }
     }
 
     final data = error.response?.data;

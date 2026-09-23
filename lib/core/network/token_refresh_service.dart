@@ -23,7 +23,7 @@ class TokenRefreshService {
   Future<Map<String, String>?> refreshTokens() async {
     // If refresh is already in progress, wait for it
     if (_refreshCompleter != null) {
-      AppLogger.d('🔄 [TokenRefresh] Refresh already in progress, waiting...');
+      AppLogger.debug('TokenRefreshService', 'refresh_already_in_progress');
       return _refreshCompleter!.future;
     }
 
@@ -31,26 +31,28 @@ class TokenRefreshService {
     _refreshCompleter = Completer<Map<String, String>?>();
 
     try {
-      AppLogger.d('🔄 [TokenRefresh] Starting token refresh...');
+      AppLogger.debug('TokenRefreshService', 'refresh_started');
 
       final refreshToken = await TokenStorage.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
-        AppLogger.d('❌ [TokenRefresh] No refresh token available');
+        AppLogger.warning('TokenRefreshService', 'refresh_token_missing');
         _refreshCompleter!.complete(null);
         return null;
       }
 
       final baseUrl = EnvironmentConfig.baseUrl.trim();
       if (baseUrl.isEmpty) {
-        AppLogger.d('❌ [TokenRefresh] No base URL configured');
+        AppLogger.error('TokenRefreshService', 'base_url_missing');
         _refreshCompleter!.complete(null);
         return null;
       }
 
       final dio = AuthDio.getInstance();
 
-      AppLogger.d(
-        '🔄 [TokenRefresh] Sending refresh request to: /auth/refresh',
+      AppLogger.debug(
+        'TokenRefreshService',
+        'api_request',
+        data: {'method': 'POST', 'endpoint': ApiConstants.refreshToken},
       );
 
       final response = await dio.post(
@@ -61,8 +63,14 @@ class TokenRefreshService {
         ),
       );
 
-      AppLogger.d(
-        '📊 [TokenRefresh] Refresh response status: ${response.statusCode}',
+      AppLogger.debug(
+        'TokenRefreshService',
+        'api_response',
+        data: {
+          'method': 'POST',
+          'endpoint': ApiConstants.refreshToken,
+          'statusCode': response.statusCode,
+        },
       );
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data is Map<String, dynamic>
@@ -89,7 +97,7 @@ class TokenRefreshService {
           );
           await SocketService().reconnectWithLatestTokenIfActive();
 
-          AppLogger.d('✅ [TokenRefresh] Tokens refreshed successfully');
+          AppLogger.debug('TokenRefreshService', 'refresh_succeeded');
           _refreshCompleter!.complete({
             'accessToken': newAccessToken,
             'refreshToken': newRefreshToken,
@@ -100,19 +108,21 @@ class TokenRefreshService {
             'refreshToken': newRefreshToken,
           };
         } else {
-          AppLogger.d('❌ [TokenRefresh] Invalid token response format');
+          AppLogger.warning('TokenRefreshService', 'invalid_token_response');
           _refreshCompleter!.complete(null);
           return null;
         }
       } else {
-        AppLogger.d(
-          '❌ [TokenRefresh] Refresh failed with status: ${response.statusCode}',
+        AppLogger.warning(
+          'TokenRefreshService',
+          'refresh_failed',
+          data: {'statusCode': response.statusCode},
         );
         _refreshCompleter!.complete(null);
         return null;
       }
     } catch (e) {
-      AppLogger.d('❌ [TokenRefresh] Refresh error: $e');
+      AppLogger.error('TokenRefreshService', 'refresh_error', error: e);
       _refreshCompleter!.complete(null);
       return null;
     } finally {

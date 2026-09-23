@@ -38,8 +38,12 @@ class _BlockedScreenState extends ConsumerState<BlockedScreen> {
             Expanded(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final provider = ref.watch(blockNotifierProvider);
-                  if (provider.isLoadingList) {
+                  final (isLoadingList, blockedUsers) = ref.watch(
+                    blockNotifierProvider.select(
+                      (s) => (s.isLoadingList, s.blockedUsers),
+                    ),
+                  );
+                  if (isLoadingList) {
                     return const Center(
                       child: CircularProgressIndicator(
                         color: AppColors.softPurple,
@@ -47,7 +51,7 @@ class _BlockedScreenState extends ConsumerState<BlockedScreen> {
                     );
                   }
 
-                  if (provider.blockedUsers.isEmpty) {
+                  if (blockedUsers.isEmpty) {
                     return Center(
                       child: Text(
                         'No blocked users',
@@ -61,9 +65,9 @@ class _BlockedScreenState extends ConsumerState<BlockedScreen> {
 
                   return ListView.builder(
                     padding: EdgeInsets.only(top: context.rh(10)),
-                    itemCount: provider.blockedUsers.length,
+                    itemCount: blockedUsers.length,
                     itemBuilder: (context, index) {
-                      final user = provider.blockedUsers[index];
+                      final user = blockedUsers[index];
                       return BlockedUserTile(
                         image: user.image,
                         name: user.name,
