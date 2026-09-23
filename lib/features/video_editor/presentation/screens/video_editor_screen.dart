@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -67,6 +68,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   late FilterModel _activeFilter;
   bool _isSeeking = false;
   bool _wasPlayingBeforeDrag = false;
+  bool _mediaLoadFailed = false;
+  String? _thumbnailPath;
 
   @override
   void initState() {
@@ -91,9 +94,14 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       }
 
       _isVideo = true;
+      unawaited(_loadThumbnail());
+
       final controller = resolved.controller;
       if (controller == null) {
-        setState(() => _isInitialized = true);
+        setState(() {
+          _mediaLoadFailed = true;
+          _isInitialized = true;
+        });
         return;
       }
 
@@ -131,6 +139,15 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     } catch (e) {
       AppLogger.d('Error initializing video editor: $e');
       if (mounted) setState(() => _isInitialized = true);
+    }
+  }
+
+  Future<void> _loadThumbnail() async {
+    final path = await LocalMediaUtils.generateVideoThumbnail(
+      widget.mediaPath,
+    );
+    if (path != null && mounted) {
+      setState(() => _thumbnailPath = path);
     }
   }
 
@@ -200,6 +217,24 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   }
 
   Widget _buildMediaWidget() {
+    if (_mediaLoadFailed) {
+      if (_thumbnailPath != null) {
+        return Image.file(
+          File(_thumbnailPath!),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+        );
+      }
+      return const Center(
+        child: Icon(
+          Icons.videocam_off_outlined,
+          color: Colors.white54,
+          size: 48,
+        ),
+      );
+    }
+
     Widget preview;
     if (_isVideo && _videoController != null) {
       preview = SizedBox.expand(
@@ -651,13 +686,21 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                               color: Colors.white,
                                               width: 1.5,
                                             ),
-                                            image: const DecorationImage(
-                                              image: AssetImage(AppAssets.img2),
+                                            image: DecorationImage(
+                                              image: _thumbnailPath != null
+                                                  ? FileImage(
+                                                      File(_thumbnailPath!),
+                                                    )
+                                                  : const AssetImage(
+                                                          AppAssets.img2,
+                                                        )
+                                                        as ImageProvider,
                                               fit: BoxFit.cover,
-                                              colorFilter: ColorFilter.mode(
-                                                Colors.black26,
-                                                BlendMode.darken,
-                                              ),
+                                              colorFilter:
+                                                  const ColorFilter.mode(
+                                                    Colors.black26,
+                                                    BlendMode.darken,
+                                                  ),
                                             ),
                                           ),
                                         ),

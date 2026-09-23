@@ -21,7 +21,12 @@
       "Bash(cp /tmp/test_logger.dart tool_tmp/test_logger.dart)",
       "Bash(rm -rf tool_tmp && ls test 2>&1 | head -5)",
       "Bash(flutter test *)",
-      "Bash(grep -n \"^  Future\\\\|^  void\\\\|^  String\\\\|^  bool\\\\|^  int\\\\|^  //\\\\|^  /// \" lib/core/cache/cache_manager.dart)"
+      "Bash(grep -n \"^  Future\\\\|^  void\\\\|^  String\\\\|^  bool\\\\|^  int\\\\|^  //\\\\|^  /// \" lib/core/cache/cache_manager.dart)",
+      "Read(//c//**)",
+      "Bash(xargs grep -l \"getFileThumbnail\")",
+      "Bash(curl -sS -D - -o /dev/null \"https://bookyahook.s3.ap-south-1.amazonaws.com/posts/5ef4d5f4-0a20-4218-be91-12912a77994f/27f578bd73524c49a3ab095479f955b2.mp4\")",
+      "Bash(adb -s 192.168.1.7:36679 logcat -d -t 300)",
+      "Bash(adb -s 192.168.1.7:36679 logcat -d -t 100)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Acer\\Desktop\\projects\\hardkore_projects\\gruve_app\\lib\\features\\search\\presentation\\widgets",

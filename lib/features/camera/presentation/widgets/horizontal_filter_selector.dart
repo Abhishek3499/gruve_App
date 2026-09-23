@@ -7,6 +7,7 @@ import 'package:gruve_app/features/camera/presentation/controller/filter_control
 import 'package:gruve_app/features/camera/presentation/controller/camera_controller_service.dart';
 import 'package:gruve_app/features/camera/data/datasource/mode_service.dart';
 import 'package:gruve_app/features/camera/utils/camera_logger.dart';
+import 'package:gruve_app/features/camera/utils/video_speed_processor.dart';
 
 class HorizontalFilterSelector extends StatefulWidget {
   const HorizontalFilterSelector({super.key});
@@ -308,11 +309,20 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
       if (!mounted) return;
 
+      final speed = ModeService().recordingSpeed;
+      final mediaPath = await VideoSpeedProcessor.applySpeed(
+        video.path,
+        speed,
+      );
+      ModeService().setRecordingSpeed(1.0);
+
+      if (!mounted) return;
+
       final mode = ModeService().selectedMode;
       if (mode == CameraMode.story || mode == CameraMode.groove) {
         Navigator.of(context).pop(
           CameraCaptureResult(
-            mediaPath: video.path,
+            mediaPath: mediaPath,
             mode: mode,
             stickers: List.from(ModeService().stickers),
           ),

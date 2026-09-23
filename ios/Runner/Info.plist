@@ -55,5 +55,7 @@
 		<string>This app requires camera access to capture photos for sending in chat.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>This app requires photo library access to choose images to send in chat.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>This app saves videos to your photo library when you tap Download.</string>
 	</dict>
 </plist>

@@ -38,6 +38,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
     ModeService().clearStickers();
     ModeService().setShootDuration(0);
+    ModeService().setRecordingSpeed(1.0);
     ModeService().addListener(_onStickersChanged);
 
     // Set portrait orientation
@@ -107,7 +108,7 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose video duration (includes 3s countdown)',
+                    'Countdown starts from the selected timer',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 14,
@@ -117,9 +118,10 @@ class _CameraScreenState extends State<CameraScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildTimerOption('Off', 0),
-                      _buildTimerOption('5 Seconds', 5),
-                      _buildTimerOption('10 Seconds', 10),
+                      Expanded(child: _buildTimerOption(context, 'Off', 0)),
+                      Expanded(child: _buildTimerOption(context, '3s', 3)),
+                      Expanded(child: _buildTimerOption(context, '5s', 5)),
+                      Expanded(child: _buildTimerOption(context, '10s', 10)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -132,8 +134,17 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Widget _buildTimerOption(String label, int seconds) {
+  Widget _buildTimerOption(BuildContext context, String label, int seconds) {
     final isSelected = ModeService().shootDuration == seconds;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+    final snackBarLabel = switch (seconds) {
+      0 => 'Off',
+      3 => '3 Seconds',
+      5 => '5 Seconds',
+      _ => '10 Seconds',
+    };
+
     return GestureDetector(
       onTap: () {
         ModeService().setShootDuration(seconds);
@@ -143,7 +154,7 @@ class _CameraScreenState extends State<CameraScreen> {
             content: Text(
               seconds == 0
                   ? 'Timer turned off'
-                  : 'Timer set for $label shooting',
+                  : 'Timer set for $snackBarLabel shooting',
             ),
             backgroundColor: AppColors.accentPurple,
             duration: const Duration(seconds: 1),
@@ -151,7 +162,12 @@ class _CameraScreenState extends State<CameraScreen> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 10 : 20,
+          vertical: 12,
+        ),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected ? AppColors.accentPurple : Colors.white12,
           borderRadius: BorderRadius.circular(16),
@@ -164,6 +180,106 @@ class _CameraScreenState extends State<CameraScreen> {
           label,
           style: TextStyle(
             color: Colors.white,
+            fontSize: isCompact ? 13 : 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSpeedSelection() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              color: const Color(0xEB161616),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Video Speed',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Applies to the next video you record',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: kVideoSpeedOptions
+                        .map(
+                          (speed) =>
+                              Expanded(child: _buildSpeedOption(context, speed)),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSpeedOption(BuildContext context, double speed) {
+    final isSelected = ModeService().recordingSpeed == speed;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 380;
+    final label = speed == speed.roundToDouble()
+        ? '${speed.toInt()}x'
+        : '${speed}x';
+
+    return GestureDetector(
+      onTap: () {
+        ModeService().setRecordingSpeed(speed);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Video speed set to $label'),
+            backgroundColor: AppColors.accentPurple,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 10 : 20,
+          vertical: 12,
+        ),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accentPurple : Colors.white12,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.white24 : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isCompact ? 13 : 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -286,6 +402,7 @@ class _CameraScreenState extends State<CameraScreen> {
             child: SideToolbar(
               onMusicTap: _pickMusic,
               onTimerTap: _showTimerSelection,
+              onSpeedTap: _showSpeedSelection,
               onEmojiSelected: (emoji) {
                 final newSticker = StickerData(
                   id: DateTime.now().millisecondsSinceEpoch.toString(),

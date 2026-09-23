@@ -142,7 +142,10 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
               },
               child: selectedUsers.isNotEmpty
                   ? _buildSendButton(context, selectedUsers, isSending)
-                  : const ShareSocialButtons(key: ValueKey('social')),
+                  : ShareSocialButtons(
+                      key: const ValueKey('social'),
+                      postId: widget.postId,
+                    ),
             ),
 
             SizedBox(height: context.rh(20)),

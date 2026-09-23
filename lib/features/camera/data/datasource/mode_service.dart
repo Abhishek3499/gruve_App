@@ -4,6 +4,9 @@ import 'package:gruve_app/features/camera/domain/entities/sticker_data.dart';
 
 enum CameraMode { story, groove }
 
+/// Supported video recording speed multipliers, in ascending order.
+const List<double> kVideoSpeedOptions = [0.5, 1.0, 1.5, 2.0];
+
 /// Returned when the in-app camera pops after capture; mode is read at tap time.
 class CameraCaptureResult {
   const CameraCaptureResult({
@@ -81,6 +84,16 @@ class ModeService extends ChangeNotifier {
     notifyListeners();
   }
 
+  double _recordingSpeed = 1.0;
+  double get recordingSpeed => _recordingSpeed;
+
+  void setRecordingSpeed(double speed) {
+    if (_recordingSpeed != speed) {
+      _recordingSpeed = speed;
+      notifyListeners();
+    }
+  }
+
   bool _isCountdownRunning = false;
   bool get isCountdownRunning => _isCountdownRunning;
 
@@ -90,7 +103,7 @@ class ModeService extends ChangeNotifier {
   void startCountdown(VoidCallback onFinished) {
     if (_isCountdownRunning) return;
     _isCountdownRunning = true;
-    _countdownValue = 3;
+    _countdownValue = _shootDuration > 0 ? _shootDuration : 3;
     notifyListeners();
 
     Timer.periodic(const Duration(seconds: 1), (timer) {

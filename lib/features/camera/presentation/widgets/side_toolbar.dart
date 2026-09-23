@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/features/camera/data/datasource/mode_service.dart';
 import 'package:gruve_app/features/camera/presentation/controller/camera_controller_service.dart';
 import 'package:gruve_app/features/camera/utils/camera_logger.dart';
 import 'package:gruve_app/features/camera/presentation/widgets/emoji_picker_sheet.dart';
@@ -9,15 +11,18 @@ class SideToolbar extends StatelessWidget {
   final Function(String)? onEmojiSelected;
   final VoidCallback? onMusicTap;
   final VoidCallback? onTimerTap;
+  final VoidCallback? onSpeedTap;
 
   SideToolbar({
     super.key,
     this.onEmojiSelected,
     this.onMusicTap,
     this.onTimerTap,
+    this.onSpeedTap,
   });
 
   final CameraControllerService _cameraService = CameraControllerService();
+  final ModeService _modeService = ModeService();
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +43,8 @@ class SideToolbar extends StatelessWidget {
           _buildFlashButton(),
 
           const SizedBox(height: 28),
+          _buildSpeedButton(),
+          const SizedBox(height: 28),
           _buildEffectsButton(),
           const SizedBox(height: 28),
           _buildemojiButton(),
@@ -50,9 +57,9 @@ class SideToolbar extends StatelessWidget {
   Widget _buildFlashButton() {
     return StreamBuilder<bool>(
       stream: _cameraService.initializationStream,
-      initialData: false,
+      initialData: _cameraService.isInitialized,
       builder: (context, snapshot) {
-        final isInitialized = snapshot.data ?? false;
+        final isInitialized = snapshot.data ?? _cameraService.isInitialized;
 
         if (!isInitialized) {
           return _buildDisabledIcon(Icons.flash_off);
@@ -60,7 +67,7 @@ class SideToolbar extends StatelessWidget {
 
         return StreamBuilder<FlashMode>(
           stream: _cameraService.flashModeStream,
-          initialData: FlashMode.off,
+          initialData: _cameraService.currentFlashMode,
           builder: (context, flashSnapshot) {
             final flashMode = flashSnapshot.data ?? FlashMode.off;
             final isFlashOn = flashMode != FlashMode.off;
@@ -77,6 +84,32 @@ class SideToolbar extends StatelessWidget {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  /// SPEED BUTTON
+  Widget _buildSpeedButton() {
+    return AnimatedBuilder(
+      animation: _modeService,
+      builder: (context, _) {
+        final isActive = _modeService.recordingSpeed != 1.0;
+
+        return GestureDetector(
+          onTap: () {
+            CameraLogger.logUserAction('Speed button pressed');
+            if (onSpeedTap != null) {
+              onSpeedTap!();
+            } else {
+              _showComingSoon('Speed');
+            }
+          },
+          child: Icon(
+            Icons.speed,
+            color: isActive ? AppColors.accentPurple : Colors.white,
+            size: 28,
+          ),
         );
       },
     );

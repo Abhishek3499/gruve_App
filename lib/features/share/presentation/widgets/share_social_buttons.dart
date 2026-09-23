@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/constants/api_constants.dart';
 
 class ShareSocialButtons extends StatelessWidget {
-  const ShareSocialButtons({super.key});
+  final String postId;
 
-  void _onSocialButtonTap(BuildContext context, String platform) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Share via $platform'),
-        backgroundColor: const Color(0xFF7A1FA2),
-        duration: const Duration(seconds: 2),
+  const ShareSocialButtons({super.key, required this.postId});
+
+  String get _postLink => '${ApiConstants.baseUrl}${ApiConstants.post(postId)}';
+
+  void _onSocialButtonTap(BuildContext context) {
+    SharePlus.instance.share(
+      ShareParams(
+        text: 'Check this out on Gruve! $_postLink',
+        subject: 'Gruve',
       ),
     );
   }
 
   void _onCopyLink(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: _postLink));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Link copied to clipboard!'),
@@ -33,17 +40,17 @@ class ShareSocialButtons extends StatelessWidget {
         children: [
           _SocialButton(
             iconPath: AppAssets.whatsapps,
-            onTap: () => _onSocialButtonTap(context, 'WhatsApp'),
+            onTap: () => _onSocialButtonTap(context),
           ),
 
           _SocialButton(
             iconPath: AppAssets.social,
-            onTap: () => _onSocialButtonTap(context, 'Instagram'),
+            onTap: () => _onSocialButtonTap(context),
           ),
 
           _SocialButton(
             iconPath: AppAssets.snapchats,
-            onTap: () => _onSocialButtonTap(context, 'Snapchat'),
+            onTap: () => _onSocialButtonTap(context),
           ),
 
           _SocialButton(

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 
 enum LocalMediaKind { image, video, unknown }
@@ -141,6 +142,25 @@ class LocalMediaUtils {
     final kind = await resolveKind(trimmed, mimeType: mimeType);
     AppLogger.d('[LocalMediaUtils] Upload probe => $kind');
     return kind == LocalMediaKind.video;
+  }
+
+  /// Generates a JPEG thumbnail for a local video file. Returns null on
+  /// failure (e.g. unsupported codec) so callers can fall back to a
+  /// placeholder instead of crashing.
+  static Future<String?> generateVideoThumbnail(
+    String path, {
+    int quality = 60,
+  }) async {
+    try {
+      final file = await VideoCompress.getFileThumbnail(
+        path,
+        quality: quality,
+      );
+      return file.path;
+    } catch (e) {
+      AppLogger.d('[LocalMediaUtils] Thumbnail generation failed: $e');
+      return null;
+    }
   }
 
   static String uploadFilename(String path, {required bool isVideo}) {

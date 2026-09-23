@@ -190,6 +190,8 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
                       userName: post.username,
                       profileImage: post.profilePicture,
                       postId: post.id,
+                      mediaUrl: post.playbackMediaUrl,
+                      isVideo: post.isVideo,
                     ),
                   );
                 },

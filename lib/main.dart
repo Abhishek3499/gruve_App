@@ -21,7 +21,7 @@ Future<void> main() async {
   try {
     await HiveService().init();
   } catch (e) {
-    AppLogger.d('🚨 [Main] HiveService initialization failed: $e');
+    AppLogger.d(' [Main] HiveService initialization failed: $e');
   }
 
   // AppLogger suppresses all output in release/profile builds.
@@ -36,13 +36,13 @@ Future<void> main() async {
   try {
     await EnvironmentConfig.initialize(); // 👈 CRITICAL - Initialize environment config
   } catch (e) {
-    AppLogger.d('🚨 [Main] EnvironmentConfig initialization failed: $e');
+    AppLogger.d(' [Main] EnvironmentConfig initialization failed: $e');
   }
 
   try {
     await TokenStorage.init(); // Ensure SharedPreferences and cached userId are ready
   } catch (e) {
-    AppLogger.d('🚨 [Main] TokenStorage initialization failed: $e');
+    AppLogger.d(' [Main] TokenStorage initialization failed: $e');
   }
 
   final authStateManager = AuthStateManager();
@@ -56,7 +56,7 @@ Future<void> main() async {
       );
     }
   } catch (e) {
-    AppLogger.d('🚨 [Main] AuthStateManager initialization failed: $e');
+    AppLogger.d(' [Main] AuthStateManager initialization failed: $e');
   }
 
   runApp(const ProviderScope(child: MyApp()));

@@ -482,6 +482,15 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                           GestureDetector(
                             onTap: () async {
                               try {
+                                // Fully release this controller (not just pause) before
+                                // VideoEditorScreen opens its own on the same file — the
+                                // underlying hardware decoder/texture stays attached until
+                                // dispose(), and most devices only support one decoder
+                                // instance per file, so a mere pause() still made the
+                                // editor's controller fail to initialize.
+                                _videoController?.dispose();
+                                _videoController = null;
+
                                 final result =
                                     await Navigator.push<VideoEditorResult>(
                                       context,
@@ -494,7 +503,9 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                         ),
                                       ),
                                     );
-                                if (result != null && mounted) {
+                                if (!mounted) return;
+
+                                if (result != null) {
                                   setState(() {
                                     _mediaPath =
                                         result.trimmedPath ?? _mediaPath;
@@ -503,10 +514,8 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                     _activeFilter = result.filter;
                                     _isMuted = result.isMuted;
                                   });
-                                  _videoController?.dispose();
-                                  _videoController = null;
-                                  _initializeMedia();
                                 }
+                                _initializeMedia();
                               } catch (e) {
                                 AppLogger.d(
                                   'Error navigating to video editor: $e',
@@ -565,10 +574,12 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
 
                                 if (!context.mounted) return;
 
-                                // Stop this screen's video/audio before handing off to
-                                // SharePostScreen, which is pushed on top (not a replacement),
-                                // so playback would otherwise keep running underneath it.
-                                _videoController?.pause();
+                                // Fully release this controller (not just pause) before
+                                // SharePostScreen opens its own controller on the same
+                                // file — otherwise the two decoder instances contend and
+                                // SharePostScreen's controller can fail to initialize.
+                                _videoController?.dispose();
+                                _videoController = null;
 
                                 AppLogger.d(
                                   'PostPreviewScreen navigating with mediaPath: $finalPath',
@@ -586,7 +597,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                                 );
 
                                 if (mounted && _isVideo) {
-                                  _videoController?.play();
+                                  _initializeMedia();
                                 }
                               } catch (e) {
                                 AppLogger.d('Navigation error: $e');

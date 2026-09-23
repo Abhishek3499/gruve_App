@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,6 +67,7 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
   bool _isVideo = false;
   bool _isVideoInitialized = false;
   bool _isSharing = false;
+  String? _thumbnailPath;
 
   // Save Draft settings states
   late bool isEveryone;
@@ -135,6 +137,8 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
       return;
     }
 
+    unawaited(_loadThumbnail());
+
     final controller = resolved.controller;
     if (controller == null) {
       setState(() => _isVideoInitialized = false);
@@ -150,6 +154,15 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
       AppLogger.d('SharePostScreen video preview error: $e');
       if (!mounted) return;
       setState(() => _isVideoInitialized = false);
+    }
+  }
+
+  Future<void> _loadThumbnail() async {
+    final path = await LocalMediaUtils.generateVideoThumbnail(
+      widget.mediaPath,
+    );
+    if (path != null && mounted) {
+      setState(() => _thumbnailPath = path);
     }
   }
 
@@ -746,8 +759,15 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
         width: double.infinity,
         height: double.infinity,
         color: Colors.grey[800],
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_thumbnailPath != null)
+              Image.file(File(_thumbnailPath!), fit: BoxFit.cover),
+            const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          ],
         ),
       );
     }

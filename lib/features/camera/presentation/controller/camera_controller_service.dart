@@ -272,6 +272,7 @@ class CameraControllerService {
       _isInitialized = true;
       _initializationStreamController.add(true);
       _zoomStreamController.add(_displayZoom);
+      _flashModeStreamController.add(_controller!.value.flashMode);
     } catch (e) {
       _errorStreamController.add('Failed to switch camera: ${e.toString()}');
     }

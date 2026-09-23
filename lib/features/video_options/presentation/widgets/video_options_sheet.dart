@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gal/gal.dart';
 import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
+import 'package:gruve_app/features/video_options/presentation/notifiers/download_notifier.dart';
+import 'package:gruve_app/core/services/media_download_service.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/option_button.dart';
 import 'package:gruve_app/features/video_options/presentation/widgets/option_item.dart';
@@ -19,6 +22,8 @@ class VideoOptionsSheet extends ConsumerStatefulWidget {
   final String? userName;
   final String? profileImage;
   final String? postId;
+  final String? mediaUrl;
+  final bool isVideo;
 
   const VideoOptionsSheet({
     super.key,
@@ -27,6 +32,8 @@ class VideoOptionsSheet extends ConsumerStatefulWidget {
     this.userName,
     this.profileImage,
     this.postId,
+    this.mediaUrl,
+    this.isVideo = true,
   });
 
   @override
@@ -80,6 +87,145 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
 
     // Close the sheet
     Navigator.of(context).pop();
+  }
+
+  Future<void> _handleDownload(WidgetRef ref) async {
+    final mediaUrl = widget.mediaUrl;
+    final isVideo = widget.isVideo;
+    final mediaLabel = isVideo ? 'video' : 'image';
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    navigator.pop();
+
+    if (mediaUrl == null || mediaUrl.isEmpty) {
+      _showErrorSnackBar(
+        'No $mediaLabel available to download',
+        scaffoldMessenger,
+      );
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Downloading $mediaLabel...',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.softPurple,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        duration: const Duration(seconds: 30),
+        elevation: 8,
+      ),
+    );
+
+    final downloadNotifier = ref.read(downloadNotifierProvider.notifier);
+    final downloadId = widget.postId ?? mediaUrl;
+
+    try {
+      await downloadNotifier.downloadMedia(
+        downloadId,
+        mediaUrl,
+        isVideo: isVideo,
+      );
+
+      scaffoldMessenger.removeCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${isVideo ? 'Video' : 'Image'} saved to gallery',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.softPurple,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          duration: const Duration(milliseconds: 1500),
+          elevation: 8,
+        ),
+      );
+    } catch (e, stackTrace) {
+      AppLogger.d('[Download] Failed to download $mediaLabel: $e');
+      AppLogger.d('[Download] $stackTrace');
+
+      final isAccessDenied =
+          e is MediaGalleryAccessDeniedException ||
+          (e is GalException && e.type == GalExceptionType.accessDenied);
+
+      _showErrorSnackBar(
+        isAccessDenied
+            ? 'Enable photo library access in Settings to download media'
+            : 'Failed to download $mediaLabel',
+        scaffoldMessenger,
+      );
+    }
+  }
+
+  void _showErrorSnackBar(String message, ScaffoldMessengerState messenger) {
+    messenger.removeCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color.fromARGB(97, 225, 221, 220),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        duration: const Duration(milliseconds: 1500),
+        elevation: 8,
+      ),
+    );
   }
 
   void _showActionSnackBar(String message, BuildContext context) {
@@ -317,7 +463,7 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                           OptionItem(
                             title: 'Download',
                             icon: AppAssets.downloads,
-                            onTap: () => _handleAction('Download'),
+                            onTap: () => _handleDownload(ref),
                           ),
                           if (!isSelf) const SizedBox(height: 12),
                           if (!isSelf)
@@ -347,12 +493,12 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                                 );
 
                                 AppLogger.d(
-                                  '🔴 SimpleBlockSheet returned: $result',
+                                  ' SimpleBlockSheet returned: $result',
                                 );
 
                                 // If user confirmed block action
                                 if (result == true) {
-                                  AppLogger.d('🔴 User confirmed block');
+                                  AppLogger.d(' User confirmed block');
 
                                   // 🚀 INSTANT SNACKBAR - Show immediately
                                   scaffoldMessenger.showSnackBar(
@@ -510,9 +656,10 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                               hasArrow: true,
                               onTap: () {
                                 final userId = widget.userId;
-                                Navigator.of(context).pop();
+                                final navigator = Navigator.of(context);
+                                navigator.pop();
                                 ReportUserFlow.showAndSubmit(
-                                  context: context,
+                                  context: navigator.context,
                                   userId: userId,
                                   target: ReportSheetTarget.post,
                                 );

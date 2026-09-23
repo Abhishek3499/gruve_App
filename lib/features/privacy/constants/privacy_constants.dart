@@ -18,7 +18,7 @@ class PrivacyConstants {
     ),
   ];
 
-  // 👇 YAHAN ADD KARNA HAI (Text Styles)
+  //
 
   static const TextStyle titleStyle = TextStyle(
     color: Colors.white,
