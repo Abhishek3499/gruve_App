@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/analytics/activity/domain/entities/activity_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 enum FilterType { weekly, monthly, yearly }
 
-class ActivityController extends ChangeNotifier {
-  ActivityModel _activityModel = const ActivityModel(
+class ActivityController extends Notifier<ActivityModel> {
+  static const ActivityModel _initialActivityModel = ActivityModel(
     totalTime: '9h 12m',
     description:
         "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.",
@@ -44,29 +44,34 @@ class ActivityController extends ChangeNotifier {
     selectedPeriod: 'Weekly',
   );
 
-  ActivityModel get activityModel => _activityModel;
+  @override
+  ActivityModel build() => _initialActivityModel;
+
+  ActivityModel get activityModel => state;
 
   void updatePeriod(String period) {
     AppLogger.d("[ActivityController] Period updated to: $period");
-    _activityModel = _activityModel.copyWith(selectedPeriod: period);
-    notifyListeners();
+    state = state.copyWith(selectedPeriod: period);
   }
 
   List<ActivityData> getDataFor(FilterType type) {
     switch (type) {
       case FilterType.weekly:
-        return _activityModel.weeklyData;
+        return state.weeklyData;
       case FilterType.monthly:
-        return _activityModel.monthlyData;
+        return state.monthlyData;
       case FilterType.yearly:
-        return _activityModel.yearlyData;
+        return state.yearlyData;
     }
   }
 
-  List<ActivityData> get weeklyData => _activityModel.weeklyData;
-  List<ActivityData> get monthlyData => _activityModel.monthlyData;
-  List<ActivityData> get yearlyData => _activityModel.yearlyData;
-  String get totalTime => _activityModel.totalTime;
-  String get description => _activityModel.description;
-  String get selectedPeriod => _activityModel.selectedPeriod;
+  List<ActivityData> get weeklyData => state.weeklyData;
+  List<ActivityData> get monthlyData => state.monthlyData;
+  List<ActivityData> get yearlyData => state.yearlyData;
+  String get totalTime => state.totalTime;
+  String get description => state.description;
+  String get selectedPeriod => state.selectedPeriod;
 }
+
+final activityControllerProvider =
+    NotifierProvider<ActivityController, ActivityModel>(ActivityController.new);

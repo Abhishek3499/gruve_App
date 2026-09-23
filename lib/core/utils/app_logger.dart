@@ -219,11 +219,10 @@ class AppLogger {
   // JSON encoding
   // ---------------------------------------------------------------------------
 
-  // Compact (single-line) JSON — a pretty-printed, multi-line encoder floods
-  // the console with 5-8 lines per log call, which buries real output during
-  // a busy debugging session. One line per log entry stays valid JSON while
-  // staying readable in a scrolling terminal.
-  static const JsonEncoder _encoder = JsonEncoder(_toEncodable);
+  // Pretty-printed (indented) JSON — a single compact line gets truncated by
+  // the terminal/logcat once the payload grows, making it unreadable.
+  // Indenting keeps every field visible across multiple lines instead.
+  static const JsonEncoder _encoder = JsonEncoder.withIndent('  ', _toEncodable);
 
   static dynamic _toEncodable(dynamic value) {
     return value.toString();

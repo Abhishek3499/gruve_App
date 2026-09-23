@@ -27,7 +27,6 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger(
     threshold: 320,
   );
-  int _lastPrefetchedReelCount = 0;
 
   @override
   void initState() {
@@ -35,7 +34,6 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
     widget.controller.addListener(_onControllerChanged);
     _scrollController.addListener(_onScroll);
     if (widget.controller.reels.isNotEmpty) {
-      _lastPrefetchedReelCount = widget.controller.reels.length;
       _warmupReelAssets(widget.controller.reels, fromIndex: 0);
     }
   }
@@ -51,12 +49,9 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
 
   void _onControllerChanged() {
     if (!mounted) return;
-    final count = widget.controller.reels.length;
-    if (count > _lastPrefetchedReelCount) {
-      final fromIndex = _lastPrefetchedReelCount;
-      _lastPrefetchedReelCount = count;
-      _warmupReelAssets(widget.controller.reels, fromIndex: fromIndex);
-    }
+    // Warmup for newly loaded reels is already triggered by
+    // ExploreReelsService.prefetchReels() inside loadInitial/loadMore —
+    // avoid re-triggering the same image/video warmup here.
     setState(() {});
   }
 

@@ -12,10 +12,10 @@ import 'package:flutter/foundation.dart';
 class ApiLogger {
   ApiLogger._();
 
-  // Compact (single-line) JSON, matching AppLogger's console format — a
-  // multi-line indented encoder produces 10+ lines per API call and buries
-  // everything else during a busy debugging session.
-  static const JsonEncoder _encoder = JsonEncoder();
+  // Pretty-printed (indented) JSON. A compact single line gets truncated by
+  // the terminal/logcat on large response bodies, making it unreadable —
+  // indenting keeps every field visible across multiple lines instead.
+  static const JsonEncoder _encoder = JsonEncoder.withIndent('  ');
 
   static const Set<String> _sensitiveKeys = {
     'password',

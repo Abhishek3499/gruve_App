@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/navigation/app_navigator.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
@@ -13,13 +13,10 @@ import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/features/home/data/services/subscribe_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Replaces the previous `SubscribeController`. Stays a singleton
-/// [ChangeNotifier] — not a plain Riverpod [Notifier] — because
-/// `VideoFeedController`, `AuthStateManager`, and `UserNotifier` all call
-/// `SubscribeNotifier()`/`addListener`/`removeListener` directly from plain
-/// Dart code with no `Ref` available. [subscribeNotifierProvider] (a legacy
-/// `ChangeNotifierProvider`) exposes this exact same singleton instance to
-/// widget-tree code via `ref.watch`/`ref.read`.
+/// Replaces the previous `SubscribeController`. This stays a singleton
+/// [ChangeNotifier] because `VideoFeedController`, `AuthStateManager`, and
+/// `UserNotifier` call it directly from plain Dart code. The Riverpod provider
+/// exposes the same singleton instance to widget-tree code.
 class SubscribeNotifier extends ChangeNotifier {
   static final SubscribeNotifier _instance = SubscribeNotifier._internal();
   factory SubscribeNotifier() => _instance;
@@ -330,6 +327,6 @@ class SubscribeNotifier extends ChangeNotifier {
   }
 }
 
-final subscribeNotifierProvider = ChangeNotifierProvider<SubscribeNotifier>(
+final subscribeNotifierProvider = Provider<SubscribeNotifier>(
   (ref) => SubscribeNotifier(),
 );

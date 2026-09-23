@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
@@ -11,10 +11,35 @@ import 'package:gruve_app/core/storage/hive_service.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 
-/// Riverpod provider exposing the singleton [AuthStateManager] to the widget tree.
-final authStateProvider = ChangeNotifierProvider<AuthStateManager>((ref) {
-  return AuthStateManager();
-});
+/// Riverpod bridge for the singleton [AuthStateManager].
+///
+/// The auth manager is also used from plain Dart services, so it stays a
+/// singleton [ChangeNotifier]. This provider forwards those listener ticks into
+/// Riverpod without using the legacy notifier API.
+class AuthStateNotifier extends Notifier<AuthStateManager> {
+  late final AuthStateManager _manager;
+
+  @override
+  AuthStateManager build() {
+    _manager = AuthStateManager();
+    _manager.addListener(_syncState);
+    ref.onDispose(() => _manager.removeListener(_syncState));
+    return _manager;
+  }
+
+  void _syncState() {
+    state = _manager;
+  }
+
+  @override
+  bool updateShouldNotify(AuthStateManager previous, AuthStateManager next) {
+    return true;
+  }
+}
+
+final authStateProvider = NotifierProvider<AuthStateNotifier, AuthStateManager>(
+  AuthStateNotifier.new,
+);
 
 /// Global authentication state manager
 /// Handles token changes, logout flow, and navigation

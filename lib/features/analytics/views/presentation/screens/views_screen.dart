@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/analytics/views/presentation/controller/views_controller.dart';
 import 'package:gruve_app/features/analytics/views/domain/entities/views_model.dart';
@@ -13,32 +14,31 @@ import 'package:gruve_app/features/analytics/views/presentation/widgets/views_fo
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class ViewsScreen extends StatefulWidget {
+class ViewsScreen extends ConsumerStatefulWidget {
   const ViewsScreen({super.key});
 
   @override
-  State<ViewsScreen> createState() => _ViewsScreenState();
+  ConsumerState<ViewsScreen> createState() => _ViewsScreenState();
 }
 
-class _ViewsScreenState extends State<ViewsScreen> {
-  late final ViewsController _controller;
-
+class _ViewsScreenState extends ConsumerState<ViewsScreen> {
   @override
   void initState() {
     super.initState();
     AppLogger.d("[ViewsScreen] Screen initialized");
-    _controller = ViewsController();
   }
 
   @override
   void dispose() {
     AppLogger.d("[ViewsScreen] Screen disposed");
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(viewsControllerProvider);
+    final controller = ref.read(viewsControllerProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.transparent,
       body: Container(
@@ -122,12 +122,7 @@ class _ViewsScreenState extends State<ViewsScreen> {
                       SizedBox(height: context.rh(16)),
 
                       /// CONTENT TABS
-                      ListenableBuilder(
-                        listenable: _controller,
-                        builder: (context, child) {
-                          return ViewsContentTabs(controller: _controller);
-                        },
-                      ),
+                      ViewsContentTabs(controller: controller),
 
                       SizedBox(height: context.rh(32)),
 
@@ -136,25 +131,18 @@ class _ViewsScreenState extends State<ViewsScreen> {
                         padding: EdgeInsets.symmetric(
                           horizontal: context.rw(16),
                         ),
-                        child: ListenableBuilder(
-                          listenable: _controller,
-                          builder: (context, child) {
-                            return Column(
-                              children: ViewsModel.data.contentTypes.map((
-                                contentType,
-                              ) {
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: context.rh(32),
-                                  ),
-                                  child: ViewsProgressBar(
-                                    label: contentType.label,
-                                    percentage: contentType.percentage,
-                                  ),
-                                );
-                              }).toList(),
+                        child: Column(
+                          children: ViewsModel.data.contentTypes.map((
+                            contentType,
+                          ) {
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: context.rh(32)),
+                              child: ViewsProgressBar(
+                                label: contentType.label,
+                                percentage: contentType.percentage,
+                              ),
                             );
-                          },
+                          }).toList(),
                         ),
                       ),
 

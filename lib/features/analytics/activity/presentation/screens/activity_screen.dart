@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/analytics/activity/presentation/controller/activity_controller.dart';
 import 'package:gruve_app/features/analytics/activity/presentation/widgets/activity_header.dart';
@@ -8,32 +9,31 @@ import 'package:gruve_app/features/analytics/activity/presentation/widgets/activ
 import 'package:gruve_app/features/analytics/activity/presentation/widgets/activity_footer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-class ActivityScreen extends StatefulWidget {
+class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
 
   @override
-  State<ActivityScreen> createState() => _ActivityScreenState();
+  ConsumerState<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-class _ActivityScreenState extends State<ActivityScreen> {
-  late final ActivityController _controller;
-
+class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   @override
   void initState() {
     super.initState();
     AppLogger.d("[ActivityScreen] Screen initialized");
-    _controller = ActivityController();
   }
 
   @override
   void dispose() {
     AppLogger.d("[ActivityScreen] Screen disposed");
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final activity = ref.watch(activityControllerProvider);
+    final controller = ref.read(activityControllerProvider.notifier);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -59,13 +59,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   child: Column(
                     children: [
                       SizedBox(height: context.rh(27)),
-                      ActivitySummarySection(totalTime: _controller.totalTime),
+                      ActivitySummarySection(totalTime: activity.totalTime),
                       SizedBox(height: context.rh(28)),
                       ActivityDescriptionSection(
-                        description: _controller.description,
+                        description: activity.description,
                       ),
                       SizedBox(height: context.rh(34)),
-                      ActivityInsightsCard(controller: _controller),
+                      ActivityInsightsCard(controller: controller),
                       SizedBox(height: context.rh(20)),
                       const ActivityFooter(),
                     ],

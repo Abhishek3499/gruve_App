@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/analytics/interactions/presentation/controller/interactions_controller.dart';
@@ -14,31 +15,30 @@ import 'package:gruve_app/features/analytics/interactions/presentation/widgets/i
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Interactions screen with modular architecture
-class InteractionsScreen extends StatefulWidget {
+class InteractionsScreen extends ConsumerStatefulWidget {
   const InteractionsScreen({super.key});
 
   @override
-  State<InteractionsScreen> createState() => _InteractionsScreenState();
+  ConsumerState<InteractionsScreen> createState() => _InteractionsScreenState();
 }
 
-class _InteractionsScreenState extends State<InteractionsScreen> {
-  late final InteractionsController _controller;
-
+class _InteractionsScreenState extends ConsumerState<InteractionsScreen> {
   @override
   void initState() {
     super.initState();
     AppLogger.d("[InteractionsScreen] Screen initialized");
-    _controller = InteractionsController();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(interactionsControllerProvider);
+    final controller = ref.read(interactionsControllerProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.transparent,
       body: Container(
@@ -124,14 +124,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                       SizedBox(height: context.rh(16)),
 
                       // CONTENT TABS
-                      ListenableBuilder(
-                        listenable: _controller,
-                        builder: (context, child) {
-                          return InteractionsContentTabs(
-                            controller: _controller,
-                          );
-                        },
-                      ),
+                      InteractionsContentTabs(controller: controller),
 
                       SizedBox(height: context.rh(32)),
 
@@ -140,25 +133,18 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
                         padding: EdgeInsets.symmetric(
                           horizontal: context.rw(16),
                         ),
-                        child: ListenableBuilder(
-                          listenable: _controller,
-                          builder: (context, child) {
-                            return Column(
-                              children: InteractionsModel.data.contentTypes.map(
-                                (contentType) {
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: context.rh(32),
-                                    ),
-                                    child: InteractionsProgressBar(
-                                      label: contentType.label,
-                                      percentage: contentType.percentage,
-                                    ),
-                                  );
-                                },
-                              ).toList(),
+                        child: Column(
+                          children: InteractionsModel.data.contentTypes.map((
+                            contentType,
+                          ) {
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: context.rh(32)),
+                              child: InteractionsProgressBar(
+                                label: contentType.label,
+                                percentage: contentType.percentage,
+                              ),
                             );
-                          },
+                          }).toList(),
                         ),
                       ),
 
