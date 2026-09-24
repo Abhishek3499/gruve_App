@@ -47,6 +47,7 @@ class UserProfile {
   final bool isPrivate;
   final bool isFollowing;
   final bool hasActiveStory;
+  final bool hasCloseFriendsStory;
   final List<dynamic> highlights;
   final List<PostItem> allPosts;
   final List<PostItem> likedPosts;
@@ -63,6 +64,7 @@ class UserProfile {
     required this.isPrivate,
     required this.isFollowing,
     this.hasActiveStory = false,
+    this.hasCloseFriendsStory = false,
     this.highlights = const [],
     this.allPosts = const [],
     this.likedPosts = const [],
@@ -118,6 +120,8 @@ class UserProfile {
         isPrivate: user['is_private'] as bool? ?? false,
         isFollowing: user['is_subscribed'] as bool? ?? false,
         hasActiveStory: json['has_active_story'] as bool? ?? false,
+        hasCloseFriendsStory:
+            json['has_close_friends_story'] as bool? ?? false,
         highlights: json['highlights'] as List<dynamic>? ?? [],
         allPosts: allResults,
         likedPosts: likedResults,

@@ -6,25 +6,24 @@ import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
 import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_grid.dart';
-import 'package:gruve_app/features/user_profile/presentation/notifiers/user_profile_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
-import 'package:gruve_app/features/user_profile/domain/entities/user_profile_model.dart';
 
+import 'package:share_plus/share_plus.dart';
+import 'package:gruve_app/shared/widgets/image_picker_bottom_sheet.dart';
+import 'package:gruve_app/features/profile/data/datasource/edit_profile_service.dart';
+import 'package:gruve_app/features/profile/data/dto/edit_profile_request.dart';
 import 'package:gruve_app/features/connections/presentation/screens/connections_screen.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/filter_tabs.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_header.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/stats_row.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/story_list.dart';
-import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  final String? userId;
-
-  const ProfileScreen({super.key, this.userId});
+  const ProfileScreen({super.key});
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -32,9 +31,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int selectedTab = 0;
-
-  static Color get _panelBackgroundColor =>
-      const Color(0xFF7D63D1).withValues(alpha: 0.12);
 
   final ScrollController _scrollController = ScrollController();
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger(
@@ -61,32 +57,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     ProfileCountRefreshBridge.onRefreshRequested = _onBridgeRefreshRequested;
-    _log(
-      '[ProfileScreen] Initializing profile screen with userId: ${widget.userId}',
-    );
+    _log('[ProfileScreen] Initializing profile screen');
 
-    // Own profile: fetch whenever session has no user yet (fixes stuck loader when
-    // init ran while provider falsely reported loading, and refetch after logout).
-    if (widget.userId == null) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _ensureOwnProfileLoaded(),
-      );
-    } else {
-      // Other user's profile - fetch using UserProfileNotifier after first frame
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref
-              .read(userProfileNotifierProvider.notifier)
-              .fetchProfile(widget.userId!);
-        }
-      });
-    }
+    // Fetch whenever session has no user yet (fixes stuck loader when init ran
+    // while provider falsely reported loading, and refetch after logout).
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _ensureOwnProfileLoaded(),
+    );
 
     _scrollController.addListener(_onProfileScroll);
   }
 
   void _ensureOwnProfileLoaded([ProfileState? state]) {
-    if (!mounted || widget.userId != null) return;
+    if (!mounted) return;
     final ProfileState s = state ?? ref.read(profileNotifierProvider);
     if (s.user != null || s.errorMessage != null || s.isLoading) return;
     _log('[ProfileScreen] Fetching profile (empty session, idle)');
@@ -116,11 +99,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
-    if (widget.userId == null) {
-      ref.read(profileNotifierProvider.notifier).cancelActiveRequests();
-    } else {
-      ref.read(userProfileNotifierProvider.notifier).cancelActiveRequests();
-    }
+    ref.read(profileNotifierProvider.notifier).cancelActiveRequests();
     super.dispose();
   }
 
@@ -147,129 +126,126 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Handle both own profile and other users
-    if (widget.userId == null) {
-      // Own profile - only rebuild shell for top-level profile state changes.
-      ref.listen<ProfileState>(profileNotifierProvider, (previous, next) {
-        _ensureOwnProfileLoaded(next);
-      });
-      final user = ref.watch(profileNotifierProvider.select((p) => p.user));
-      final errorMessage = ref.watch(
-        profileNotifierProvider.select((p) => p.errorMessage),
-      );
-      final hasLocalStory = ref.watch(
-        storyStateNotifierProvider.select((s) => s.hasUserStory),
-      );
-      final hasActiveStory =
-          (user?.hasActiveStory ?? false) ||
-          (user?.storyCount ?? 0) > 0 ||
-          hasLocalStory;
+    // Only rebuild shell for top-level profile state changes.
+    ref.listen<ProfileState>(profileNotifierProvider, (previous, next) {
+      _ensureOwnProfileLoaded(next);
+    });
+    final user = ref.watch(profileNotifierProvider.select((p) => p.user));
+    final errorMessage = ref.watch(
+      profileNotifierProvider.select((p) => p.errorMessage),
+    );
+    final hasLocalStory = ref.watch(
+      storyStateNotifierProvider.select((s) => s.hasUserStory),
+    );
+    final hasActiveStory =
+        (user?.hasActiveStory ?? false) ||
+        (user?.storyCount ?? 0) > 0 ||
+        hasLocalStory;
+    final hasCloseFriendsStory = user?.hasCloseFriendsStory ?? false;
 
-      return Scaffold(
-        extendBody: true,
-        backgroundColor: AppColors.deepPlum,
-        body: Builder(
-          builder: (context) {
-            if (errorMessage != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      errorMessage,
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: AppColors.deepPlum,
+      body: Builder(
+        builder: (context) {
+          if (errorMessage != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    errorMessage,
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: context.rh(16)),
+                  ElevatedButton(
+                    onPressed: () => ref
+                        .read(profileNotifierProvider.notifier)
+                        .fetchProfileData(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.vibrantMagenta,
                     ),
-                    SizedBox(height: context.rh(16)),
-                    ElevatedButton(
-                      onPressed: () => ref
-                          .read(profileNotifierProvider.notifier)
-                          .fetchProfileData(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.vibrantMagenta,
-                      ),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Show shimmer immediately when user is null (logout or initial load)
-            if (user == null) {
-              return _buildProfileShimmer();
-            }
-
-            return _buildMainContentForOwnProfile(
-              hasActiveStory: hasActiveStory,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
             );
-          },
-        ),
-      );
-    } else {
-      // Other user's profile - use UserProfileNotifier
-      final userProfileState = ref.watch(
-        userProfileNotifierProvider.select(
-          (s) => (
-            state: s.state,
-            profile: s.profile,
-            errorMessage: s.errorMessage,
-          ),
-        ),
-      );
-      final isLoading = userProfileState.state == UserProfileState.loading;
-      final hasError = userProfileState.state == UserProfileState.error;
-      final hasData =
-          userProfileState.state == UserProfileState.loaded &&
-          userProfileState.profile != null;
-      return Scaffold(
-        extendBody: true,
-        backgroundColor: AppColors.deepPlum,
-        body: Builder(
-          builder: (context) {
-            if (isLoading) {
-              return _buildProfileShimmer();
-            }
+          }
 
-            if (hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      userProfileState.errorMessage ?? 'Failed to load profile',
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: context.rh(16)),
-                    ElevatedButton(
-                      onPressed: () {
-                        ref
-                            .read(userProfileNotifierProvider.notifier)
-                            .fetchProfile(widget.userId!);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.vibrantMagenta,
-                      ),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
+          // Show shimmer immediately when user is null (logout or initial load)
+          if (user == null) {
+            return _buildProfileShimmer();
+          }
 
-            if (hasData) {
-              return _buildMainContentForOtherUser(userProfileState.profile!);
-            }
-
-            return const SizedBox.shrink();
-          },
-        ),
-      );
-    }
+          return _buildMainContentForOwnProfile(
+            hasActiveStory: hasActiveStory,
+            hasCloseFriendsStory: hasCloseFriendsStory,
+          );
+        },
+      ),
+    );
   }
 
-  Widget _buildMainContentForOwnProfile({required bool hasActiveStory}) {
+  Future<void> _handleCameraTap() async {
+    ImagePickerBottomSheet.show(
+      context,
+      onImageSelected: (xfile) async {
+        try {
+          final notifier = ref.read(profileNotifierProvider.notifier);
+          final user = notifier.controller.user;
+          final response = await EditProfileService().updateProfile(
+            request: EditProfileRequest(
+              fullname: user?.fullName ?? '',
+              username: user?.username ?? '',
+              bio: user?.bio,
+              profilePicture: xfile.path,
+            ),
+          );
+          notifier.applyUpdatedProfile(response);
+          final newImageUrl = response.data.profilePicture;
+          final newUsername = response.data.username;
+          ref
+              .read(currentUserNotifierProvider.notifier)
+              .updateProfileData(username: newUsername, imageUrl: newImageUrl);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile photo updated successfully!'),
+                backgroundColor: AppColors.vibrantMagenta,
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to update profile photo: $e'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  void _handleShareProfile({
+    required String username,
+    required String fullName,
+  }) {
+    final cleanUsername = username.replaceAll('@', '').trim();
+    final shareText =
+        'Check out $fullName (@$cleanUsername) on Gruve!\nhttps://gruve.app/user/$cleanUsername';
+    SharePlus.instance.share(
+      ShareParams(text: shareText, subject: '$fullName on Gruve'),
+    );
+  }
+
+  Widget _buildMainContentForOwnProfile({
+    required bool hasActiveStory,
+    required bool hasCloseFriendsStory,
+  }) {
     final notifier = ref.read(profileNotifierProvider.notifier);
     final controller = notifier.controller;
 
@@ -303,99 +279,71 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: Stack(
-                      clipBehavior: Clip.none,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: EdgeInsets.only(top: context.rh(130)),
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(100),
-                              topRight: Radius.circular(30),
-                            ),
-                            child: ColoredBox(
-                              color: _panelBackgroundColor,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(height: context.rh(110)),
-                                  StatsRow(
-                                    subscribersCount:
-                                        controller.stats.subscribersCount,
-                                    likesCount: controller.stats.likesCount,
-                                    videosCount: controller.stats.videosCount,
-                                    onSubscribersTap: () => _openConnections(
-                                      userId: user?.id ?? '',
-                                      initialTab: 0,
-                                    ),
-                                    onSubscribedTap: () => _openConnections(
-                                      userId: user?.id ?? '',
-                                      initialTab: 1,
-                                    ),
-                                  ),
-                                  SizedBox(height: context.rh(25)),
-                                  const StoryList(),
-                                  SizedBox(height: context.rh(20)),
-                                  FilterTabs(
-                                    selectedIndex: selectedTab,
-                                    onTabSelected: (index) {
-                                      setState(() {
-                                        selectedTab = index;
-                                      });
-                                      if (_scrollController.hasClients) {
-                                        _scrollController.jumpTo(0);
-                                      }
-                                      notifier.ensureTabLoaded(index);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const SizedBox(height: 10),
+                        ProfileHeader(
+                          fullName: (user?.fullName ?? '').trim(),
+                          username: () {
+                            final username = _displayUsername(user?.username);
+                            return username.isEmpty ? '@username' : username;
+                          }(),
+                          bio: user?.bio ?? '',
+                          profileImage: user?.profileImage ?? '',
+                          hasActiveStory: hasActiveStory,
+                          hasCloseFriendsStory: hasCloseFriendsStory,
+                          onAvatarCameraTap: _handleCameraTap,
+                          onShareProfileTap: () => _handleShareProfile(
+                            username: user?.username ?? '',
+                            fullName: user?.fullName ?? '',
+                          ),
+                          onProfileUpdated: (response) {
+                            notifier.applyUpdatedProfile(response);
+                            final newImageUrl = response.data.profilePicture;
+                            final newUsername = response.data.username;
+                            ref
+                                .read(currentUserNotifierProvider.notifier)
+                                .updateProfileData(
+                                  username: newUsername,
+                                  imageUrl: newImageUrl,
+                                );
+                          },
+                        ),
+                        SizedBox(height: context.rh(22)),
+                        StatsRow(
+                          subscribersCount: controller.stats.subscribersCount,
+                          likesCount: controller.stats.likesCount,
+                          videosCount: controller.stats.videosCount,
+                          onSubscribersTap: () => _openConnections(
+                            userId: user?.id ?? '',
+                            initialTab: 0,
+                          ),
+                          onSubscribedTap: () => _openConnections(
+                            userId: user?.id ?? '',
+                            initialTab: 1,
                           ),
                         ),
-                        Positioned(
-                          top: 30,
-                          left: 0,
-                          right: 0,
-                          child: ProfileHeader(
-                            fullName: (user?.fullName ?? '').trim(),
-                            username: () {
-                              final username = _displayUsername(user?.username);
-                              return username.isEmpty ? '@username' : username;
-                            }(),
-                            profileImage: user?.profileImage ?? '',
-                            hasActiveStory: hasActiveStory,
-                            onProfileUpdated: (response) {
-                              notifier.applyUpdatedProfile(response);
-                              final newImageUrl = response.data.profilePicture;
-                              final newUsername = response.data.username;
-                              ref
-                                  .read(currentUserNotifierProvider.notifier)
-                                  .updateProfileData(
-                                    username: newUsername,
-                                    imageUrl: newImageUrl,
-                                  );
-                            },
-                          ),
+                        SizedBox(height: context.rh(25)),
+                        const StoryList(),
+                        SizedBox(height: context.rh(20)),
+                        FilterTabs(
+                          selectedIndex: selectedTab,
+                          onTabSelected: (index) {
+                            setState(() {
+                              selectedTab = index;
+                            });
+                            if (_scrollController.hasClients) {
+                              _scrollController.jumpTo(0);
+                            }
+                            notifier.ensureTabLoaded(index);
+                          },
                         ),
                       ],
                     ),
                   ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: context.rw(10)),
-                    sliver: DecoratedSliver(
-                      decoration: BoxDecoration(color: _panelBackgroundColor),
-                      sliver: SliverMainAxisGroup(
-                        slivers: grid.buildSlivers(context),
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: ColoredBox(
-                      color: _panelBackgroundColor,
-                      child: SizedBox(height: context.rh(100)),
-                    ),
-                  ),
+                  ...grid.buildSlivers(context),
+                  SliverToBoxAdapter(child: SizedBox(height: context.rh(100))),
                 ],
               );
             },
@@ -405,238 +353,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildMainContentForOtherUser(UserProfile userProfile) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.deepPlum, Color(0xFF212235)],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: context.rh(130)),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(100),
-                        topRight: Radius.circular(30),
-                      ),
-                      child: ColoredBox(
-                        color: _panelBackgroundColor,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(height: context.rh(110)),
-                            StatsRow(
-                              subscribersCount: userProfile.followersCount,
-                              likesCount: userProfile.followingCount,
-                              videosCount: userProfile.postsCount,
-                              onSubscribersTap: () => _openConnections(
-                                userId: userProfile.userId,
-                                initialTab: 0,
-                              ),
-                              onSubscribedTap: () => _openConnections(
-                                userId: userProfile.userId,
-                                initialTab: 1,
-                              ),
-                            ),
-                            SizedBox(height: context.rh(25)),
-                            if (userProfile.bio.isNotEmpty) ...[
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: context.rw(20),
-                                ),
-                                child: Text(
-                                  userProfile.bio,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: context.rf(14),
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              SizedBox(height: context.rh(20)),
-                            ],
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: context.rw(20),
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Follow functionality coming soon',
-                                      ),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: userProfile.isFollowing
-                                      ? Colors.grey
-                                      : AppColors.vibrantMagenta,
-                                  minimumSize: const Size(double.infinity, 45),
-                                ),
-                                child: Text(
-                                  userProfile.isFollowing
-                                      ? 'Following'
-                                      : 'Follow',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: context.rf(16),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: context.rh(20)),
-                            FilterTabs(
-                              selectedIndex: selectedTab,
-                              onTabSelected: (index) {
-                                setState(() {
-                                  selectedTab = index;
-                                });
-                                if (_scrollController.hasClients) {
-                                  _scrollController.jumpTo(0);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 30,
-                    left: 0,
-                    right: 0,
-                    child: ProfileHeader(
-                      fullName: userProfile.fullName.trim(),
-                      username: _displayUsername(userProfile.username),
-                      profileImage: userProfile.profilePicture,
-                      hasActiveStory: false,
-                      onProfileUpdated: null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: context.rw(10)),
-              sliver: DecoratedSliver(
-                decoration: BoxDecoration(color: _panelBackgroundColor),
-                sliver: SliverMainAxisGroup(
-                  slivers: _buildOtherUserGridSlivers(userProfile),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: ColoredBox(
-                color: _panelBackgroundColor,
-                child: SizedBox(height: context.rh(100)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildProfileShimmer() {
     return const ProfileShimmer();
-  }
-
-  List<Widget> _buildOtherUserGridSlivers(UserProfile userProfile) {
-    final posts = selectedTab == 2
-        ? userProfile.likedPosts
-        : userProfile.allPosts;
-
-    if (posts.isEmpty) {
-      return [
-        SliverToBoxAdapter(
-          child: Container(
-            width: double.infinity,
-            margin: EdgeInsets.symmetric(
-              horizontal: context.rw(13),
-              vertical: context.rh(20),
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: context.rw(24),
-              vertical: context.rh(36),
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.video_library_outlined,
-                  color: Colors.white,
-                  size: context.rw(34),
-                ),
-                SizedBox(height: context.rh(12)),
-                Text(
-                  'No posts yet',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: context.rf(18),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ];
-    }
-
-    return [
-      SliverPadding(
-        padding: ProfileGrid.gridPadding,
-        sliver: SliverGrid(
-          gridDelegate: ProfileGrid.gridDelegate,
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final post = posts[index];
-            final media = (post.thumbnailUrl?.trim().isNotEmpty == true)
-                ? post.thumbnailUrl!.trim()
-                : post.mediaUrl.trim();
-
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: media.isEmpty
-                  ? Container(
-                      color: Colors.white.withValues(alpha: 0.10),
-                      child: const Icon(
-                        Icons.broken_image,
-                        color: Colors.white54,
-                      ),
-                    )
-                  : MediaUrlThumbnail(
-                      url: media,
-                      memCacheWidth: 300,
-                      memCacheHeight: 400,
-                    ),
-            );
-          }, childCount: posts.length),
-        ),
-      ),
-    ];
   }
 
   Future<void> _handleRefresh() async {

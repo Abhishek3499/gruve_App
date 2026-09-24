@@ -15,8 +15,6 @@ dependencies:
   video_compress: ^3.1.4
   video_player: ^2.10.1
 
-  file_picker: ^10.3.2
-
   sms_autofill: ^2.3.0
 
   camera: ^0.11.0+2
@@ -31,10 +29,6 @@ dependencies:
 
   flutter_dotenv: ^5.1.0
 
-  dropdown_button2: ^2.3.9
-
-  cupertino_icons: ^1.0.8
-
   country_picker: ^2.0.27
 
   image_picker: ^1.2.1
@@ -44,8 +38,6 @@ dependencies:
   image_picker_platform_interface: ^2.11.1
 
   permission_handler: ^12.0.1
-
-  fl_chart: ^0.66.0
 
   cached_network_image: ^3.3.1
 
@@ -83,10 +75,6 @@ dev_dependencies:
   flutter_native_splash: ^2.4.6
 
   flutter_launcher_icons: ^0.14.3
-
-  hive_generator: ^2.0.1
-
-  build_runner: ^2.4.6
 
 flutter_native_splash:
   color: "#000000"

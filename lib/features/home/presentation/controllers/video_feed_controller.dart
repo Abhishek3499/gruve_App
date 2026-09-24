@@ -1816,11 +1816,6 @@ class VideoFeedController {
     return ids;
   }
 
-  void _maybeRefreshFeedIfEmpty(String reason) {
-    if (_posts.isNotEmpty || _disposed) return;
-    unawaited(initVideos(refresh: true, replaceSnapshot: true));
-  }
-
   void _scheduleSubscriptionFeedRefresh({required bool replaceSnapshot}) {
     _pendingReplaceSnapshotRefresh =
         replaceSnapshot || _pendingReplaceSnapshotRefresh;
@@ -1893,28 +1888,21 @@ class VideoFeedController {
       _pendingSubscribedRefresh = true;
     }
     if (newSyncedSubscriptions.isNotEmpty) {
-      _pendingForYouRefresh = true;
+      // Subscribing must not pull the author's posts out of For You — only
+      // the Subscribed tab needs to pick up the new subscription.
       _pendingSubscribedRefresh = true;
     }
 
     if (_currentFeed == 'for_you') {
-      if (newSyncedSubscriptions.isNotEmpty ||
-          newSyncedUnsubscriptions.isNotEmpty) {
+      if (newSyncedUnsubscriptions.isNotEmpty) {
         _scheduleSubscriptionFeedRefresh(replaceSnapshot: true);
       }
     }
 
-    if (_currentFeed == 'subscribed') {
-      if (newlyUnsubscribed.isNotEmpty && _posts.isNotEmpty) {
-        _removePostsByUsers(newlyUnsubscribed);
-        _maybeRefreshFeedIfEmpty('subscribed unsubscribe');
-      }
-
-      if (newSyncedSubscriptions.isNotEmpty ||
-          newSyncedUnsubscriptions.isNotEmpty) {
-        _scheduleSubscriptionFeedRefresh(replaceSnapshot: true);
-      }
-    }
+    // Unsubscribing must not yank the post out from under someone actively
+    // watching the Subscribed tab — that's jarring, not the "instant" feel
+    // we want. The pending-refresh flags set above make sure the feed drops
+    // (or picks up) the author's posts next time it's loaded instead.
 
     if (!subscriptionDelta) return;
 

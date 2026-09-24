@@ -5,8 +5,10 @@ class ProfileModel {
   final String fullName;
   final String username;
   final String profileImage;
+  final String bio;
   final bool isFollowing;
   final bool hasActiveStory;
+  final bool hasCloseFriendsStory;
   final int storyCount;
   final int unreadNotificationCount;
 
@@ -15,11 +17,40 @@ class ProfileModel {
     required this.fullName,
     required this.username,
     required this.profileImage,
+    this.bio = '',
     this.isFollowing = false,
     this.hasActiveStory = false,
+    this.hasCloseFriendsStory = false,
     this.storyCount = 0,
     this.unreadNotificationCount = 0,
   });
+
+  ProfileModel copyWith({
+    String? id,
+    String? fullName,
+    String? username,
+    String? profileImage,
+    String? bio,
+    bool? isFollowing,
+    bool? hasActiveStory,
+    bool? hasCloseFriendsStory,
+    int? storyCount,
+    int? unreadNotificationCount,
+  }) {
+    return ProfileModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      username: username ?? this.username,
+      profileImage: profileImage ?? this.profileImage,
+      bio: bio ?? this.bio,
+      isFollowing: isFollowing ?? this.isFollowing,
+      hasActiveStory: hasActiveStory ?? this.hasActiveStory,
+      hasCloseFriendsStory: hasCloseFriendsStory ?? this.hasCloseFriendsStory,
+      storyCount: storyCount ?? this.storyCount,
+      unreadNotificationCount:
+          unreadNotificationCount ?? this.unreadNotificationCount,
+    );
+  }
 
   /// Overlays nested `data` / `user` / `profile` fields so top-level keys resolve.
   static Map<String, dynamic> flattenUserJson(Map<String, dynamic> json) {
@@ -116,6 +147,12 @@ class ProfileModel {
       'has_stories',
     ], fallback: false);
 
+    final hasCloseFriendsStory = SafeParsingHelpers.safeBool(flat, const [
+      'has_close_friends_story',
+      'has_close_friend_story',
+      'close_friends_story',
+    ], fallback: false);
+
     final storyCount = SafeParsingHelpers.safeInt(flat, const [
       'story_count',
       'stories_count',
@@ -130,13 +167,21 @@ class ProfileModel {
 
     final hasActiveStory = parsedHasActiveStory;
 
+    final bio = SafeParsingHelpers.safeString(flat, const [
+      'bio',
+      'about',
+      'description',
+    ], fallback: '');
+
     final model = ProfileModel(
       id: id,
       fullName: fullName,
       username: username,
       profileImage: profileImage,
+      bio: bio,
       isFollowing: isFollowing,
       hasActiveStory: hasActiveStory,
+      hasCloseFriendsStory: hasCloseFriendsStory,
       storyCount: storyCount,
       unreadNotificationCount: unreadNotificationCount,
     );

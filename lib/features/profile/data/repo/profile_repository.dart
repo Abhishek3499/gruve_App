@@ -15,6 +15,7 @@ class ProfileRepository {
     int? likedPage,
     int? likedLimit,
     CancelToken? cancelToken,
+    bool forceRefresh = false,
   }) {
     return _service.getUser(
       allPage: allPage,
@@ -24,6 +25,7 @@ class ProfileRepository {
       likedPage: likedPage,
       likedLimit: likedLimit,
       cancelToken: cancelToken,
+      forceRefresh: forceRefresh,
     );
   }
 }

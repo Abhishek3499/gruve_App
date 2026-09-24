@@ -499,10 +499,18 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
                   ),
                 ),
               ),
-              if (_hasVisibleSubscribeButton) ...[
-                const SizedBox(width: 15),
-                _buildSubscribeButton(),
-              ],
+              ListenableBuilder(
+                listenable: widget.subscribeController,
+                builder: (context, _) {
+                  if (!_hasVisibleSubscribeButton) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 15),
+                    child: _buildSubscribeButton(),
+                  );
+                },
+              ),
             ],
           ),
           const SizedBox(height: 12),

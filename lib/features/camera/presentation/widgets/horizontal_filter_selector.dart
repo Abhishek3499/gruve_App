@@ -34,6 +34,12 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   double _maxZoom = 1.0;
   double _minZoom = 1.0;
   double _lastDragY = 0.0;
+  DateTime? _recordingStartedAt;
+
+  // Some devices throw if stopVideoRecording() is called too soon after
+  // startVideoRecording() returns, since the native recorder hasn't fully
+  // spun up yet. Enforce a small floor before allowing a stop.
+  static const _minRecordingDuration = Duration(milliseconds: 600);
 
   @override
   void initState() {
@@ -192,6 +198,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       return;
     }
 
+    _recordingStartedAt = DateTime.now();
+
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -233,6 +241,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       }
       return;
     }
+
+    _recordingStartedAt = DateTime.now();
 
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -282,18 +292,29 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     CameraLogger.logUserAction('Video recording stopped from capture button');
     HapticFeedback.lightImpact();
 
+    // Guard against stopping so soon after starting that the native
+    // recorder hasn't fully initialized yet, which some devices reject.
+    final startedAt = _recordingStartedAt;
+    if (startedAt != null) {
+      final elapsed = DateTime.now().difference(startedAt);
+      if (elapsed < _minRecordingDuration) {
+        await Future<void>.delayed(_minRecordingDuration - elapsed);
+      }
+    }
+    _recordingStartedAt = null;
+
     _recordingTimer?.cancel();
     _recordingTimer = null;
 
-    // Reset zoom
-    final controller = _cameraService.controller;
-    if (controller != null && controller.value.isInitialized) {
-      await _cameraService.setZoomLevel(_minZoom);
-      _currentZoom = _minZoom;
-      _targetZoom = _minZoom;
-    }
-
     try {
+      // Reset zoom
+      final controller = _cameraService.controller;
+      if (controller != null && controller.value.isInitialized) {
+        await _cameraService.setZoomLevel(_minZoom);
+        _currentZoom = _minZoom;
+        _targetZoom = _minZoom;
+      }
+
       final video = await _cameraService.stopVideoRecording();
       if (video == null) {
         if (mounted) {

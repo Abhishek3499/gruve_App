@@ -27,27 +27,41 @@ class StatsRow extends StatelessWidget {
   }
 
   Widget buildStat(String number, String label, [VoidCallback? onTap]) {
-    final column = Column(
-      children: [
-        Text(
-          number,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            number,
+            style: const TextStyle(
+              color: AppColors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.white, fontSize: 14),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.white, fontSize: 14),
+          ),
+        ],
+      ),
     );
 
-    if (onTap == null) return column;
+    if (onTap == null) return content;
 
-    return GestureDetector(onTap: onTap, child: column);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: Colors.white12,
+        highlightColor: Colors.white10,
+        child: content,
+      ),
+    );
   }
 
   Widget buildDivider() {

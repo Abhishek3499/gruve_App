@@ -18,6 +18,7 @@ class UserProfileRepository extends ProfileRepository {
     int? likedPage,
     int? likedLimit,
     CancelToken? cancelToken,
+    bool forceRefresh = false,
   }) {
     return _service.getUserProfile(
       userId: userId,
@@ -28,6 +29,7 @@ class UserProfileRepository extends ProfileRepository {
       likedPage: likedPage,
       likedLimit: likedLimit,
       cancelToken: cancelToken,
+      forceRefresh: forceRefresh,
     );
   }
 }

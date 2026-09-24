@@ -9,6 +9,7 @@ class StoryViewerTopBar extends StatelessWidget {
   final int currentIndex;
   final VoidCallback onClose;
   final double progress;
+  final bool isCloseFriends;
 
   const StoryViewerTopBar({
     super.key,
@@ -19,6 +20,7 @@ class StoryViewerTopBar extends StatelessWidget {
     required this.currentIndex,
     required this.onClose,
     required this.progress,
+    this.isCloseFriends = false,
   });
 
   @override
@@ -37,45 +39,88 @@ class StoryViewerTopBar extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundImage:
-                      avatarUrl.trim().isNotEmpty &&
-                          avatarUrl.startsWith('http')
-                      ? AppCachedImageProvider(avatarUrl)
-                      : const AssetImage('assets/profile.png') as ImageProvider,
-                ),
+            SizedBox(
+              height: 32,
+              child: Stack(
+                alignment: Alignment.centerLeft,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 34),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage:
+                              avatarUrl.trim().isNotEmpty &&
+                                  avatarUrl.startsWith('http')
+                              ? AppCachedImageProvider(avatarUrl)
+                              : const AssetImage('assets/profile.png')
+                                    as ImageProvider,
+                        ),
 
-                const SizedBox(width: 8),
+                        const SizedBox(width: 8),
 
-                Text(
-                  username,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+
+                        if (isCloseFriends) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2ECC40),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Close Friends',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(width: 6),
+
+                        Text(
+                          time,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 6),
-
-                Text(
-                  time,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
+                  Positioned(
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: onClose,
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
                   ),
-                ),
-
-                const Spacer(),
-
-                GestureDetector(
-                  onTap: onClose,
-                  child: const Icon(Icons.close, color: Colors.white, size: 26),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

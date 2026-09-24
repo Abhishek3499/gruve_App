@@ -14,6 +14,7 @@ class StoryItem {
   final String username;
   final String? avatarUrl;
   final bool isHighlighted;
+  final String visibility;
 
   StoryItem({
     required this.id,
@@ -27,7 +28,11 @@ class StoryItem {
     required this.username,
     this.avatarUrl,
     this.isHighlighted = false,
+    this.visibility = 'public',
   });
+
+  /// Instagram-style close friends story — true when [visibility] is 'close_friends'.
+  bool get isCloseFriends => visibility == 'close_friends';
 
   factory StoryItem.fromJson(Map<String, dynamic> json) {
     return StoryItem(
@@ -47,6 +52,7 @@ class StoryItem {
       avatarUrl:
           json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
       isHighlighted: json['is_highlighted'] == true,
+      visibility: json['visibility']?.toString() ?? 'public',
     );
   }
 

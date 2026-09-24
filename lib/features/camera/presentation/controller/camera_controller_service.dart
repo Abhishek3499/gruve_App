@@ -358,11 +358,21 @@ class CameraControllerService {
   Future<XFile?> stopVideoRecording() async {
     if (!_isRecordingVideo) return null;
 
+    // The native side can stop recording on its own (e.g. storage/hardware
+    // error) without us knowing. If that happened, calling stopVideoRecording()
+    // again throws "No video is recording" - treat that as already-stopped
+    // instead of surfacing a scary error to the user.
+    if (_controller == null || !_controller!.value.isRecordingVideo) {
+      CameraLogger.log('Stop requested but recording was already stopped');
+      return null;
+    }
+
     try {
       final video = await _controller!.stopVideoRecording();
       CameraLogger.log('Video recording stopped: ${video.path}');
       return video;
     } catch (e) {
+      CameraLogger.log('Failed to stop video recording: $e');
       _errorStreamController.add(
         'Failed to stop video recording: ${e.toString()}',
       );

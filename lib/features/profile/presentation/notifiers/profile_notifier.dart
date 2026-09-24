@@ -205,7 +205,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
       if (shouldFetchProfile) {
         futures.add(
           controller
-              .fetchUser(reason: fetchUserReason)
+              .fetchUser(reason: fetchUserReason, forceRefresh: force)
               .timeout(const Duration(seconds: 8))
               .then((_) {
                 _lastProfileFetch = DateTime.now();
@@ -387,9 +387,14 @@ class ProfileNotifier extends Notifier<ProfileState> {
       profileImage: (updated.profilePicture ?? '').trim().isEmpty
           ? currentUser.profileImage
           : updated.profilePicture!,
+      bio: (updated.bio ?? '').trim().isEmpty
+          ? currentUser.bio
+          : updated.bio!,
       isFollowing: currentUser.isFollowing,
       hasActiveStory: currentUser.hasActiveStory,
+      hasCloseFriendsStory: currentUser.hasCloseFriendsStory,
       storyCount: currentUser.storyCount,
+      unreadNotificationCount: currentUser.unreadNotificationCount,
     );
     controller.user = updatedUser;
     state = state.copyWith(user: updatedUser);

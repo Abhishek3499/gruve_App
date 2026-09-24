@@ -31,6 +31,7 @@ class ProfileService {
     int? likedPage,
     int? likedLimit,
     CancelToken? cancelToken,
+    bool forceRefresh = false,
   }) async {
     final token = await TokenStorage.getAccessToken();
 
@@ -50,7 +51,12 @@ class ProfileService {
           ApiConstants.profileData,
           queryParameters: queryParams.isNotEmpty ? queryParams : null,
           cancelToken: cancelToken,
-          options: Options(headers: {"Authorization": "Bearer $token"}),
+          options: Options(
+            headers: {"Authorization": "Bearer $token"},
+            extra: forceRefresh
+                ? {'skipCache': true, 'bypassCache': true, 'noCache': true}
+                : null,
+          ),
         );
 
         if (response.data is Map) {
