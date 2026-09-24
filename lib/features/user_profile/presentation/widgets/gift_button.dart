@@ -14,13 +14,13 @@ class GiftButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: context.rw(44), // Thoda bada area touch ke liye (Accessibility)
-        height: context.rh(44),
+        width: context.rw(50), // Thoda bada area touch ke liye (Accessibility)
+        height: context.rh(50),
         alignment: Alignment.center,
         child: Image.asset(
           AppAssets.gifticon2,
-          width: context.rw(22),
-          height: context.rh(22),
+          width: context.rw(26),
+          height: context.rh(26),
           fit: BoxFit.contain,
         ),
       ),

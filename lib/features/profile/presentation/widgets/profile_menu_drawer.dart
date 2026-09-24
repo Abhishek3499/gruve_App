@@ -291,6 +291,7 @@ class ProfileMenuDrawer extends ConsumerWidget {
                                   ),
                                 );
                                 return GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
                                   onTap: isLoading
                                       ? null
                                       : () {
@@ -413,6 +414,7 @@ class ProfileMenuDrawer extends ConsumerWidget {
   Widget _menuItem(dynamic icon, String title, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(

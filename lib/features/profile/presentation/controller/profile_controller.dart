@@ -201,13 +201,22 @@ class ProfileController {
   Future<void> fetchUser({
     bool showLoading = true,
     String reason = 'initial_load',
+    bool forceRefresh = false,
   }) {
     AppLogger.debug(
       'ProfileController',
       'fetch_user',
-      data: {'showLoading': showLoading, 'reason': reason},
+      data: {
+        'showLoading': showLoading,
+        'reason': reason,
+        'forceRefresh': forceRefresh,
+      },
     );
-    return _refreshProfileData(showLoading: showLoading, reason: reason);
+    return _refreshProfileData(
+      showLoading: showLoading,
+      reason: reason,
+      forceRefresh: forceRefresh,
+    );
   }
 
   Future<void> refreshCounts({String reason = 'manual_refresh'}) {
@@ -225,6 +234,7 @@ class ProfileController {
   Future<void> _refreshProfileData({
     required bool showLoading,
     required String reason,
+    bool forceRefresh = false,
   }) async {
     AppLogger.debug(
       'ProfileController',
@@ -256,6 +266,7 @@ class ProfileController {
     try {
       final userData = await _repository.fetchProfileData(
         cancelToken: _getCancelToken(),
+        forceRefresh: forceRefresh,
       );
 
       if (_disposed) {

@@ -18,24 +18,38 @@ class TopBar extends StatelessWidget {
   }
 
   Widget _buildCloseButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        CameraLogger.logUserAction('Close button pressed');
-        Navigator.of(context).pop();
-      },
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.5),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
+    return StreamBuilder<bool>(
+      stream: _cameraService.videoRecordingStream,
+      initialData: _cameraService.isRecordingVideo,
+      builder: (context, recordingSnapshot) {
+        final isRecording = recordingSnapshot.data ?? false;
+
+        return GestureDetector(
+          onTap: isRecording
+              ? null
+              : () {
+                  CameraLogger.logUserAction('Close button pressed');
+                  Navigator.of(context).pop();
+                },
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 150),
+            opacity: isRecording ? 0.35 : 1,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
           ),
-        ),
-        child: const Icon(Icons.close, color: Colors.white, size: 20),
-      ),
+        );
+      },
     );
   }
 

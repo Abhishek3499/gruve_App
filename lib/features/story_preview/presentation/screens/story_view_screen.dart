@@ -112,6 +112,10 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       );
     }
 
+    final visibility = ref
+        .read(storyStateNotifierProvider)
+        .getVisibilityByMediaPath(mediaPath);
+
     return StoryItem(
       id: storyId ?? '',
       mediaUrl: mediaPath,
@@ -122,6 +126,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       userId: widget.userId ?? 'me',
       username: widget.username,
       avatarUrl: widget.avatarUrl,
+      visibility: visibility,
     );
   }
 
@@ -443,23 +448,31 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
         child: Stack(
           children: [
             Positioned.fill(child: _buildMedia()),
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, _) {
-                return StoryViewerTopBar(
-                  username: widget.displayName.isNotEmpty
-                      ? widget.displayName
-                      : 'User',
-                  time: _getCurrentStoryTime(),
-                  avatarUrl: widget.avatarUrl.isNotEmpty
-                      ? widget.avatarUrl
-                      : 'https://i.pravatar.cc/150?img=3',
-                  storyCount: widget.mediaPaths.length,
-                  currentIndex: currentIndex,
-                  progress: _animationController.value,
-                  onClose: () => Navigator.pop(context),
-                );
-              },
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, _) {
+                  return StoryViewerTopBar(
+                    username: widget.displayName.isNotEmpty
+                        ? widget.displayName
+                        : 'User',
+                    time: _getCurrentStoryTime(),
+                    avatarUrl: widget.avatarUrl.isNotEmpty
+                        ? widget.avatarUrl
+                        : 'https://i.pravatar.cc/150?img=3',
+                    storyCount: widget.mediaPaths.length,
+                    currentIndex: currentIndex,
+                    progress: _animationController.value,
+                    onClose: () => Navigator.pop(context),
+                    isCloseFriends:
+                        _storyItemForIndex(currentIndex)?.isCloseFriends ??
+                        false,
+                  );
+                },
+              ),
             ),
             // Only show bottom bar for own profile stories
             if (widget.isOwnProfile)

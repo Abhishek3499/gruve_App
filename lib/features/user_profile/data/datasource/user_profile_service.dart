@@ -30,6 +30,7 @@ class UserProfileService {
     int? likedPage,
     int? likedLimit,
     CancelToken? cancelToken,
+    bool forceRefresh = false,
   }) async {
     AppLogger.d(" User Profile API Called");
     final endpoint = ApiConstants.userProfile(userId);
@@ -59,7 +60,12 @@ class UserProfileService {
           endpoint,
           queryParameters: queryParams.isNotEmpty ? queryParams : null,
           cancelToken: cancelToken,
-          options: Options(headers: {"Authorization": "Bearer $token"}),
+          options: Options(
+            headers: {"Authorization": "Bearer $token"},
+            extra: forceRefresh
+                ? {'skipCache': true, 'bypassCache': true, 'noCache': true}
+                : null,
+          ),
         );
 
         AppLogger.d(" Status Code: ${response.statusCode}");

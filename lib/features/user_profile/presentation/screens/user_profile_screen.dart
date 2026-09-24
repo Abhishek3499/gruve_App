@@ -6,6 +6,8 @@ import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/features/connections/presentation/screens/connections_screen.dart';
+import 'package:gruve_app/features/message/utils/conversation_utils.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_filter_tabs.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_highlights_list.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_profile_grid.dart';
@@ -48,9 +50,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     threshold: 360,
   );
 
-  static Color get _panelBackgroundColor =>
-      const Color(0xFF7D63D1).withValues(alpha: 0.12);
-
   @override
   void initState() {
     super.initState();
@@ -77,6 +76,33 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     _profileController.requestLoadMoreThrottled(tabIndex);
   }
 
+  void _openMessage({
+    required String userId,
+    required String username,
+    String? profileImage,
+  }) {
+    if (userId.isEmpty) return;
+    ConversationUtils.navigateToChat(
+      context: context,
+      ref: ref,
+      receiverId: userId,
+      receiverName: username,
+      receiverProfileImage: profileImage,
+      source: 'user_profile_screen',
+    );
+  }
+
+  void _openConnections({required String userId, required int initialTab}) {
+    if (userId.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ConnectionsScreen(userId: userId, initialTabIndex: initialTab),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _profileController.contentListenable.removeListener(_syncSubscribeState);
@@ -94,7 +120,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     });
 
     try {
-      await _profileController.fetchUser();
+      await _profileController.fetchUser(
+        reason: 'pull_to_refresh',
+        forceRefresh: true,
+      );
       AppLogger.d(
         '✅ [UserProfileScreen] Pull-to-refresh completed successfully',
       );
@@ -188,29 +217,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.deepPlum, Color(0xFF9544A7)],
+                colors: [AppColors.deepPlum, Color(0xFF212235)],
               ),
             ),
-            child: SafeArea(
-              bottom: false,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Stack(
-                    children: [
-                      /// 🔹 MAIN UI (always show, skeletons handle loading internally)
-                      _buildMainContent(constraints),
-                    ],
-                  );
-                },
-              ),
-            ),
+            child: SafeArea(bottom: false, child: _buildMainContent()),
           );
         },
       ),
     );
   }
 
-  Widget _buildMainContent(BoxConstraints constraints) {
+  Widget _buildMainContent() {
     final loggedInUserId = _lastLoggedInUserId;
     final isDirectOwnProfile =
         loggedInUserId != null &&
@@ -228,21 +245,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       onRefresh: _handleRefresh,
       color: Colors.white,
       backgroundColor: AppColors.deepPlum,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          if (showProfileShimmer)
-            CustomScrollView(
+      child: showProfileShimmer
+          ? CustomScrollView(
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                SliverToBoxAdapter(
-                  child: _buildUserProfileShimmer(constraints),
-                ),
+                const SliverToBoxAdapter(child: UserProfileShimmer()),
               ],
             )
-          else
-            AnimatedBuilder(
+          : AnimatedBuilder(
               animation: _profileController.contentListenable,
               builder: (context, _) {
                 final profile = _profileController.user;
@@ -268,129 +279,91 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     SliverToBoxAdapter(
-                      child: Stack(
-                        clipBehavior: Clip.none,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: context.rh(130)),
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(110),
-                                topRight: Radius.circular(30),
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: _panelBackgroundColor,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    SizedBox(height: context.rh(120)),
-                                    ValueListenableBuilder(
-                                      valueListenable:
-                                          _profileController.statsNotifier,
-                                      builder: (context, stats, child) {
-                                        return UserStatsRow(stats: stats);
-                                      },
-                                    ),
-                                    SizedBox(height: context.rh(20)),
-                                    ValueListenableBuilder(
-                                      valueListenable:
-                                          _profileController.highlightList,
-                                      builder: (context, highlights, child) {
-                                        return UserHighlightsList(
-                                          highlights: highlights,
-                                          isOwnProfile: false,
-                                        );
-                                      },
-                                    ),
-                                    SizedBox(height: context.rh(20)),
-                                    UserFilterTabs(
-                                      selectedIndex: _selectedTab,
-                                      onTabSelected: (index) {
-                                        setState(() {
-                                          _selectedTab = index;
-                                        });
-                                        if (_scrollController.hasClients) {
-                                          _scrollController.jumpTo(0);
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          const SizedBox(height: 10),
+                          UserProfileHeader(
+                            displayName:
+                                (profile?.fullName.isNotEmpty ?? false)
+                                ? profile!.fullName
+                                : widget.userName,
+                            username: resolvedUsername,
+                            profileUserId: resolvedUserId,
+                            bio: profile?.bio ?? '',
+                            profileImageUrl:
+                                (profile?.profileImage.isNotEmpty ?? false)
+                                ? profile!.profileImage
+                                : widget.profileImageUrl,
+                            hasActiveStory:
+                                profile?.hasActiveStory ??
+                                widget.initialHasActiveStory,
+                            hasCloseFriendsStory:
+                                profile?.hasCloseFriendsStory ?? false,
+                            showSubscribeButton: showSubscribeButton,
+                            reserveSubscribeSpace: _isResolvingIdentity,
+                            subscribeController: _subscribeController,
+                            initialIsSubscribed: initialIsSubscribed,
+                            showMessageButton: !isDirectOwnProfile,
+                            onMessageTap: () => _openMessage(
+                              userId: resolvedUserId,
+                              username: resolvedUsername,
+                              profileImage:
+                                  (profile?.profileImage.isNotEmpty ?? false)
+                                  ? profile!.profileImage
+                                  : widget.profileImageUrl,
                             ),
                           ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(height: context.rh(20)),
-                              UserProfileHeader(
-                                displayName: widget.userName,
-                                username: resolvedUsername,
-                                profileUserId: resolvedUserId,
-                                profileImageUrl:
-                                    (profile?.profileImage.isNotEmpty ?? false)
-                                    ? profile!.profileImage
-                                    : widget.profileImageUrl,
-                                hasActiveStory:
-                                    profile?.hasActiveStory ??
-                                    widget.initialHasActiveStory,
-                                showSubscribeButton: showSubscribeButton,
-                                reserveSubscribeSpace: _isResolvingIdentity,
-                                subscribeController: _subscribeController,
-                                initialIsSubscribed: initialIsSubscribed,
-                              ),
-                            ],
+                          SizedBox(height: context.rh(22)),
+                          ValueListenableBuilder(
+                            valueListenable: _profileController.statsNotifier,
+                            builder: (context, stats, child) {
+                              return UserStatsRow(
+                                stats: stats,
+                                onSubscribersTap: () => _openConnections(
+                                  userId: resolvedUserId,
+                                  initialTab: 0,
+                                ),
+                                onSubscribedTap: () => _openConnections(
+                                  userId: resolvedUserId,
+                                  initialTab: 1,
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: context.rh(20)),
+                          ValueListenableBuilder(
+                            valueListenable: _profileController.highlightList,
+                            builder: (context, highlights, child) {
+                              return UserHighlightsList(
+                                highlights: highlights,
+                                isOwnProfile: false,
+                              );
+                            },
+                          ),
+                          SizedBox(height: context.rh(20)),
+                          UserFilterTabs(
+                            selectedIndex: _selectedTab,
+                            onTabSelected: (index) {
+                              setState(() {
+                                _selectedTab = index;
+                              });
+                              if (_scrollController.hasClients) {
+                                _scrollController.jumpTo(0);
+                              }
+                            },
                           ),
                         ],
                       ),
                     ),
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: context.rw(10)),
-                      sliver: DecoratedSliver(
-                        decoration: BoxDecoration(color: _panelBackgroundColor),
-                        sliver: SliverMainAxisGroup(
-                          slivers: grid.buildSlivers(context),
-                        ),
-                      ),
-                    ),
+                    ...grid.buildSlivers(context),
                     SliverToBoxAdapter(
-                      child: ColoredBox(
-                        color: _panelBackgroundColor,
-                        child: SizedBox(height: context.rh(100)),
-                      ),
+                      child: SizedBox(height: context.rh(100)),
                     ),
                   ],
                 );
               },
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserProfileShimmer(BoxConstraints constraints) {
-    return Stack(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(top: context.rh(130)),
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: _panelBackgroundColor,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(110),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            child: SizedBox(height: context.rh(720)),
-          ),
-        ),
-        const UserProfileShimmer(),
-      ],
     );
   }
 }

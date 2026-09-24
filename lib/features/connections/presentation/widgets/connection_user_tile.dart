@@ -238,6 +238,8 @@ class _ConnectionActionButtonState
         minimumSize: const Size(88, 32),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         backgroundColor: filled ? const Color(0xFFFE24E0) : Colors.transparent,
+        foregroundColor: Colors.white,
+        overlayColor: filled ? Colors.black26 : Colors.white24,
         side: BorderSide(
           color: filled
               ? const Color(0xFFFE24E0)

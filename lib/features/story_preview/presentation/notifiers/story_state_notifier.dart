@@ -10,8 +10,14 @@ class StoryData {
   final String mediaPath;
   final DateTime createdAt;
   final String? id; // Story UUID for API calls
+  final String visibility;
 
-  const StoryData({required this.mediaPath, required this.createdAt, this.id});
+  const StoryData({
+    required this.mediaPath,
+    required this.createdAt,
+    this.id,
+    this.visibility = 'public',
+  });
 }
 
 /// Immutable state for [StoryStateNotifier]
@@ -58,6 +64,15 @@ class StoryState {
       orElse: () => StoryData(mediaPath: mediaPath, createdAt: DateTime.now()),
     );
     return story.id;
+  }
+
+  /// Get story visibility ('public' / 'close_friends') by media path
+  String getVisibilityByMediaPath(String mediaPath) {
+    final story = userStories.firstWhere(
+      (s) => s.mediaPath == mediaPath,
+      orElse: () => StoryData(mediaPath: mediaPath, createdAt: DateTime.now()),
+    );
+    return story.visibility;
   }
 
   StoryState copyWith({
@@ -208,6 +223,7 @@ class StoryStateNotifier extends Notifier<StoryState> {
           mediaPath: storyItem.mediaUrl,
           createdAt: storyItem.createdAt,
           id: storyItem.id, // Store the UUID
+          visibility: storyItem.visibility,
         ),
       );
     }
@@ -374,6 +390,7 @@ class StoryStateNotifier extends Notifier<StoryState> {
             mediaPath: story['mediaPath'],
             createdAt: DateTime.parse(story['createdAt']),
             id: story['id']?.toString(),
+            visibility: story['visibility']?.toString() ?? 'public',
           );
         }).toList();
       }
@@ -406,6 +423,7 @@ class StoryStateNotifier extends Notifier<StoryState> {
                 'mediaPath': story.mediaPath,
                 'createdAt': story.createdAt.toIso8601String(),
                 'id': story.id,
+                'visibility': story.visibility,
               },
             )
             .toList(),
