@@ -3,15 +3,19 @@ import 'package:gruve_app/features/camera/utils/camera_logger.dart';
 
 /// Re-encodes a recorded video to play back at [speed]x.
 class VideoSpeedProcessor {
+  static const _timeout = Duration(seconds: 30);
+
   /// Returns the path of a video re-encoded to [speed]x.
-  /// Returns [inputPath] unchanged if [speed] is 1x or processing fails.
+  /// Returns [inputPath] unchanged if [speed] is 1x, or if processing
+  /// fails or doesn't finish within [_timeout].
   static Future<String> applySpeed(String inputPath, double speed) async {
     if (speed == 1.0) return inputPath;
 
     try {
-      final outputPath = await VideoEditorBuilder(
-        videoPath: inputPath,
-      ).speed(speed: speed).export();
+      final outputPath = await VideoEditorBuilder(videoPath: inputPath)
+          .speed(speed: speed)
+          .export()
+          .timeout(_timeout);
       return outputPath ?? inputPath;
     } catch (e) {
       CameraLogger.log('Failed to apply ${speed}x speed: $e');

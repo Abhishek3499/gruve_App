@@ -44,8 +44,8 @@ class SideToolbar extends StatelessWidget {
 
           const SizedBox(height: 28),
           _buildSpeedButton(),
-          const SizedBox(height: 28),
-          _buildEffectsButton(),
+          // const SizedBox(height: 28),
+          // _buildEffectsButton(),
           const SizedBox(height: 28),
           _buildemojiButton(),
         ],
@@ -146,20 +146,20 @@ class SideToolbar extends StatelessWidget {
   }
 
   /// EFFECT BUTTON
-  Widget _buildEffectsButton() {
-    return GestureDetector(
-      onTap: () {
-        CameraLogger.logUserAction('Effects button pressed');
-        _showComingSoon('Effects');
-      },
-      child: Image.asset(
-        AppAssets.tymer,
-        color: Colors.white,
-        height: 26,
-        width: 26,
-      ),
-    );
-  }
+  // Widget _buildEffectsButton() {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       CameraLogger.logUserAction('Effects button pressed');
+  //       _showComingSoon('Effects');
+  //     },
+  //     child: Image.asset(
+  //       AppAssets.tymer,
+  //       color: Colors.white,
+  //       height: 26,
+  //       width: 26,
+  //     ),
+  //   );
+  // }
 
   Widget _buildemojiButton() {
     return Builder(
