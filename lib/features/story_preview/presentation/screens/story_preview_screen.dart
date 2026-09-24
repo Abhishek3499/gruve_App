@@ -48,6 +48,7 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
   bool _isInitialized = false;
   bool _isMuted = false;
   bool _isYourStorySharing = false;
+  bool _isCloseFriendSharing = false;
   late final List<StickerData> _stickers;
   String? _selectedStickerId;
   double _videoSpeed = 1.0;
@@ -92,12 +93,26 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
     }
   }
 
-  Future<void> _shareToYourStory() async {
-    if (_isYourStorySharing) return;
+  Future<void> _shareToYourStory() => _shareStory(
+    visibility: 'public',
+    isSharing: () => _isYourStorySharing,
+    setSharing: (value) => setState(() => _isYourStorySharing = value),
+  );
 
-    setState(() {
-      _isYourStorySharing = true;
-    });
+  Future<void> _shareToCloseFriends() => _shareStory(
+    visibility: 'close_friends',
+    isSharing: () => _isCloseFriendSharing,
+    setSharing: (value) => setState(() => _isCloseFriendSharing = value),
+  );
+
+  Future<void> _shareStory({
+    required String visibility,
+    required bool Function() isSharing,
+    required void Function(bool) setSharing,
+  }) async {
+    if (isSharing()) return;
+
+    setSharing(true);
 
     try {
       final storyController = ref.read(storyControllerProvider.notifier);
@@ -108,6 +123,7 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
         caption: '',
         mediaPath: finalPath,
         isMuted: _isMuted,
+        visibility: visibility,
       );
 
       if (!mounted) return;
@@ -124,9 +140,7 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
         PostShareFlowBridge.notifyStorySharedNavigateToProfile();
         navigator.popUntil((route) => route.isFirst);
       } else {
-        setState(() {
-          _isYourStorySharing = false;
-        });
+        setSharing(false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(storyController.message),
@@ -136,9 +150,7 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isYourStorySharing = false;
-        });
+        setSharing(false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to share story: $e'),
@@ -660,7 +672,9 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
                           /// YOUR STORY
                           Expanded(
                             child: GestureDetector(
-                              onTap: _isYourStorySharing
+                              onTap:
+                                  (_isYourStorySharing ||
+                                      _isCloseFriendSharing)
                                   ? null
                                   : _shareToYourStory,
                               child: Container(
@@ -720,40 +734,58 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
                           SizedBox(width: context.rw(10)),
 
                           /// CLOSE FRIEND
-                          Container(
-                            height: context.rh(42),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: context.rw(12),
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              color: const Color(0xFF72008D),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: context.rw(25),
-                                  height: context.rh(25),
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
+                          GestureDetector(
+                            onTap:
+                                (_isYourStorySharing || _isCloseFriendSharing)
+                                ? null
+                                : _shareToCloseFriends,
+                            child: Container(
+                              height: context.rh(42),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: context.rw(12),
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                color: const Color(0xFF72008D),
+                              ),
+                              child: Row(
+                                children: [
+                                  _isCloseFriendSharing
+                                      ? SizedBox(
+                                          width: context.rw(20),
+                                          height: context.rh(20),
+                                          child:
+                                              const CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                        )
+                                      : Container(
+                                          width: context.rw(25),
+                                          height: context.rh(25),
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                          ),
+                                          child: Icon(
+                                            Icons.star,
+                                            color: const Color(0xFF4CAF50),
+                                            size: context.rw(20),
+                                          ),
+                                        ),
+                                  SizedBox(width: context.rw(6)),
+                                  Text(
+                                    _isCloseFriendSharing
+                                        ? "Sharing..."
+                                        : "Close Friend",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: context.rf(14),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    Icons.star,
-                                    color: const Color(0xFF4CAF50),
-                                    size: context.rw(20),
-                                  ),
-                                ),
-                                SizedBox(width: context.rw(6)),
-                                Text(
-                                  "Close Friend",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: context.rf(14),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
 

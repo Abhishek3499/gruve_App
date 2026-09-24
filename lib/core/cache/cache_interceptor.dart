@@ -44,8 +44,14 @@ class CacheInterceptor extends Interceptor {
       return;
     }
 
-    final cacheKey = _generateCacheKey(options);
     final config = CacheConfigs.getConfigForEndpoint(options.path);
+    if (config == null) {
+      // Not allow-listed for caching — always go straight to the network.
+      handler.next(options);
+      return;
+    }
+
+    final cacheKey = _generateCacheKey(options);
 
     final isFirstInFlight = _inFlightCacheChecks.add(cacheKey);
     if (isFirstInFlight) {
@@ -141,14 +147,15 @@ class CacheInterceptor extends Interceptor {
       return;
     }
 
-    // Only cache successful GET requests
-    if (response.requestOptions.method.toUpperCase() == 'GET' &&
+    // Only cache successful GET requests that are explicitly allow-listed.
+    final config = CacheConfigs.getConfigForEndpoint(
+      response.requestOptions.path,
+    );
+    if (config != null &&
+        response.requestOptions.method.toUpperCase() == 'GET' &&
         (response.statusCode ?? 0) >= 200 &&
         (response.statusCode ?? 0) < 300) {
       final cacheKey = _generateCacheKey(response.requestOptions);
-      final config = CacheConfigs.getConfigForEndpoint(
-        response.requestOptions.path,
-      );
 
       // Create cache data wrapper based on response type
       final cacheData = _createCacheData(response.data);
@@ -186,9 +193,9 @@ class CacheInterceptor extends Interceptor {
     }
 
     // Try to return stale data on network errors
-    if (_shouldReturnStaleOnError(err)) {
+    final config = CacheConfigs.getConfigForEndpoint(err.requestOptions.path);
+    if (config != null && _shouldReturnStaleOnError(err)) {
       final cacheKey = _generateCacheKey(err.requestOptions);
-      final config = CacheConfigs.getConfigForEndpoint(err.requestOptions.path);
 
       final cached = await _cacheManager.get<CacheData>(
         cacheKey,

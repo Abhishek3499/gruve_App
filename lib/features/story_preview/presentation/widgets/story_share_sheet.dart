@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/profile/data/datasource/edit_profile_service.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/story_preview/data/datasource/close_friend_service.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/close_friend_screen.dart';
@@ -72,6 +75,25 @@ class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _ensureOwnProfileLoaded();
     });
+    _loadExistingCloseFriendIds();
+  }
+
+  Future<void> _loadExistingCloseFriendIds() async {
+    final authId = AuthStateManager().currentUserId?.trim();
+    final userId = (authId != null && authId.isNotEmpty)
+        ? authId
+        : ProfileIdentityService.instance.cachedLoggedInUserId?.trim();
+    if (userId == null || userId.isEmpty) return;
+
+    try {
+      final ids = await CloseFriendService().fetchCloseFriendIds(
+        userId: userId,
+      );
+      if (!mounted || ids.isEmpty) return;
+      setState(() => _selectedCloseFriendIds = ids);
+    } catch (e) {
+      AppLogger.d('[StoryShareSheet] Failed to load close friends: $e');
+    }
   }
 
   void _ensureOwnProfileLoaded() {
@@ -195,6 +217,7 @@ class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
         caption: '',
         mediaPath: widget.mediaPath!,
         isMuted: widget.isMuted,
+        visibility: _closeFriendsSelected ? 'close_friends' : 'public',
       );
 
       AppLogger.d('[StoryShareSheet] Response: ${storyController.message}');

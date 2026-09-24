@@ -62,6 +62,29 @@ class CloseFriendService {
     );
   }
 
+  /// Walks the "subscribed" connections pages and collects the ids already
+  /// flagged `is_close_friend: true`, capped at [maxPages] as a safety bound
+  /// for very large connection lists.
+  Future<Set<String>> fetchCloseFriendIds({
+    required String userId,
+    int maxPages = 5,
+  }) async {
+    final ids = <String>{};
+    var page = 1;
+
+    while (page <= maxPages) {
+      final result = await fetchSubscribedConnections(
+        userId: userId,
+        page: page,
+      );
+      ids.addAll(result.users.where((u) => u.isCloseFriend).map((u) => u.id));
+      if (!result.hasNext) break;
+      page = result.page + 1;
+    }
+
+    return ids;
+  }
+
   /// Replaces the logged-in user's close-friends list with exactly
   /// [userIds] — the backend adds/removes members by diffing against the
   /// previous list, so the full desired set is sent on every call.

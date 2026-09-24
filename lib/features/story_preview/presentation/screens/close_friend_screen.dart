@@ -170,6 +170,7 @@ class _CloseFriendScreenState extends State<CloseFriendScreen> {
 
     try {
       await _service.updateCloseFriends(_selectedUserIds.toList());
+
       if (!mounted) return;
 
       final selectedUsers = _allUsers
