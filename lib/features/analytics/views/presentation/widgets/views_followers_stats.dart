@@ -44,7 +44,7 @@ class ViewsFollowersStats extends StatelessWidget {
               style: const TextStyle(
                 color: Color(0xFFFFFFFF),
                 fontSize: 12,
-                fontWeight: FontWeight(400),
+                fontWeight: FontWeight.w400,
               ),
             ),
 

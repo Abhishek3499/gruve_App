@@ -100,6 +100,7 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
     required String caption,
     required String mediaPath,
     bool isMuted = false,
+    String visibility = 'public',
   }) async {
     try {
       state = state.copyWith(isLoading: true, isSuccess: false, message: "");
@@ -108,6 +109,7 @@ class StoryControllerNotifier extends Notifier<StoryControllerState> {
         caption: caption,
         mediaPath: mediaPath,
         isMuted: isMuted,
+        visibility: visibility,
       );
 
       state = state.copyWith(

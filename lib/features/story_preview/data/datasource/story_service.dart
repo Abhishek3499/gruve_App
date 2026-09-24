@@ -24,6 +24,7 @@ class StoryService {
   Future<FormData> _buildFormData({
     required String caption,
     required File file,
+    required String visibility,
     String? mimeType,
     bool isMuted = false,
   }) async {
@@ -57,6 +58,7 @@ class StoryService {
     // Always create a fresh FormData — reusing a finalized instance causes errors
     return FormData.fromMap({
       'caption': caption,
+      'visibility': visibility,
       'file': await MultipartFile.fromFile(
         uploadFile.path,
         filename: fileName,
@@ -72,6 +74,7 @@ class StoryService {
     required String mediaPath,
     String? mediaMimeType,
     bool isMuted = false,
+    String visibility = 'public',
   }) async {
     try {
       final file = File(mediaPath);
@@ -86,6 +89,7 @@ class StoryService {
       final formData = await _buildFormData(
         caption: caption,
         file: file,
+        visibility: visibility,
         mimeType: mediaMimeType,
         isMuted: isMuted,
       );

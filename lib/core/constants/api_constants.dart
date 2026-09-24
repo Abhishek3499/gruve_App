@@ -39,6 +39,7 @@ class ApiConstants {
 
   // ---- Subscribe / Block / Report ----
   static const String subscribeToggle = 'profile/subscribe/toggle';
+  static const String closeFriends = 'profile/close-friends';
   static const String reportUser = 'profile/report/';
   static const String blockList = 'profile/block/list';
   static const String blockToggle = 'profile/block/toggle';

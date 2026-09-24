@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class DoneButton extends StatelessWidget {
   final VoidCallback onDone;
+  final bool isLoading;
 
-  const DoneButton({super.key, required this.onDone});
+  const DoneButton({super.key, required this.onDone, this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -19,16 +20,25 @@ class DoneButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
-          onTap: onDone,
-          child: const Center(
-            child: Text(
-              "Done",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          onTap: isLoading ? null : onDone,
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    "Done",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ),
       ),

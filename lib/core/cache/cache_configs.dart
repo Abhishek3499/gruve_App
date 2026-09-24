@@ -50,8 +50,18 @@ class CacheConfigs {
     maxMemoryEntries: 40,
   );
 
-  /// Get config based on endpoint path
-  static CacheConfig getConfigForEndpoint(String path) {
+  /// Returns the cache config for [path], or `null` if this endpoint isn't
+  /// explicitly allow-listed for caching.
+  ///
+  /// Caching here is opt-in, not opt-out: an endpoint that isn't matched
+  /// below always goes straight to the network. This used to fall back to a
+  /// generic 2min/10min default for *any* unmatched GET, which silently
+  /// cached endpoints nobody decided should be cached (e.g. the close
+  /// friends connections list), causing stale-data bugs after writes that
+  /// had no reason to know a read they'd never heard of was being cached.
+  /// Add a new bucket here only when you've deliberately decided that
+  /// endpoint's data is safe to serve stale for a while.
+  static CacheConfig? getConfigForEndpoint(String path) {
     if (path.contains('/feed') || path.contains('/posts')) {
       return feed;
     } else if (path.contains('/profile') || path.contains('/user/')) {
@@ -64,10 +74,6 @@ class CacheConfigs {
       return search;
     }
 
-    // Default config
-    return const CacheConfig(
-      memoryTTL: Duration(minutes: 2),
-      diskTTL: Duration(minutes: 10),
-    );
+    return null;
   }
 }

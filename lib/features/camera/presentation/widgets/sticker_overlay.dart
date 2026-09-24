@@ -213,31 +213,35 @@ class _StickerOverlayState extends State<StickerOverlay> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.diagonal3Values(
-                sticker.scale,
-                sticker.scale,
-                1.0,
-              )..rotateZ(sticker.rotation),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: widget.isSelected
-                      ? Border.all(color: AppColors.accentPurple, width: 1.5)
-                      : null,
-                  borderRadius: BorderRadius.circular(12),
+            Padding(
+              padding: const EdgeInsets.only(top: 16, right: 16),
+              child: Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.diagonal3Values(
+                  sticker.scale,
+                  sticker.scale,
+                  1.0,
+                )..rotateZ(sticker.rotation),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: widget.isSelected
+                        ? Border.all(color: AppColors.accentPurple, width: 1.5)
+                        : null,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: sticker.isMusic
+                      ? _buildMusicSticker(sticker)
+                      : _buildTextContent(sticker),
                 ),
-                child: sticker.isMusic
-                    ? _buildMusicSticker(sticker)
-                    : _buildTextContent(sticker),
               ),
             ),
 
             if (widget.isSelected)
               Positioned(
-                top: -12,
-                right: -12,
+                top: 0,
+                right: 0,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: widget.onDelete,
                   child: Container(
                     padding: const EdgeInsets.all(4),

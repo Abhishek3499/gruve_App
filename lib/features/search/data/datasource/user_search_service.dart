@@ -12,6 +12,7 @@ class SearchUser {
   final String username;
   final String avatar;
   final bool isOnline;
+  final bool isCloseFriend;
 
   const SearchUser({
     required this.id,
@@ -19,6 +20,7 @@ class SearchUser {
     required this.username,
     required this.avatar,
     this.isOnline = false,
+    this.isCloseFriend = false,
   });
 
   factory SearchUser.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class SearchUser {
       username: username.isNotEmpty ? username : name,
       avatar: avatar,
       isOnline: json['is_online'] == true || json['isOnline'] == true,
+      isCloseFriend: json['is_close_friend'] == true,
     );
   }
 

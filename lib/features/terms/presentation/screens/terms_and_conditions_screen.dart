@@ -36,7 +36,7 @@ class TermAndConditionScreen extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: context.rf(16),
-                        fontWeight: FontWeight(400),
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),

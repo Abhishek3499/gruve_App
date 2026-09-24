@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/drafts_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/post_preview_navigation.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/share_post_screen.dart';
 import 'package:gruve_app/features/video_editor/presentation/screens/video_editor_screen.dart';
@@ -21,7 +24,10 @@ import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
-class PostPreviewScreen extends StatefulWidget {
+/// What the user chose when backing out of the post preview without posting.
+enum _PostExitAction { saveDraft, discard, cancel }
+
+class PostPreviewScreen extends ConsumerStatefulWidget {
   final String mediaPath;
   final String? mediaMimeType;
   final List<StickerData> initialStickers;
@@ -34,10 +40,10 @@ class PostPreviewScreen extends StatefulWidget {
   });
 
   @override
-  State<PostPreviewScreen> createState() => _PostPreviewScreenState();
+  ConsumerState<PostPreviewScreen> createState() => _PostPreviewScreenState();
 }
 
-class _PostPreviewScreenState extends State<PostPreviewScreen> {
+class _PostPreviewScreenState extends ConsumerState<PostPreviewScreen> {
   VideoPlayerController? _videoController;
   bool _isVideo = false;
   bool _isInitialized = false;
@@ -48,6 +54,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
   bool _isPickerOrEditorOpen = false;
   bool _mediaLoadFailed = false;
+  bool _isSavingDraft = false;
   FilterModel _activeFilter = FilterModel.availableFilters.first;
 
   @override
@@ -161,8 +168,39 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
     super.dispose();
   }
 
-  Future<bool> _showDiscardDialog(BuildContext context) async {
-    final result = await showDialog<bool>(
+  Widget _buildExitDialogOption(
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required FontWeight weight,
+    required _PostExitAction action,
+  }) {
+    return InkWell(
+      onTap: () => Navigator.pop(context, action),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: context.rh(16)),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: context.rf(16),
+            fontWeight: weight,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<_PostExitAction> _showDiscardDialog(BuildContext context) async {
+    final divider = Divider(
+      color: Colors.white.withValues(alpha: 0.1),
+      height: 1,
+      thickness: 1,
+    );
+
+    final result = await showDialog<_PostExitAction>(
       context: context,
       barrierColor: Colors.black54,
       builder: (context) {
@@ -178,7 +216,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                 child: Text(
-                  'Discard last clip?',
+                  'Leave without posting?',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: context.rf(20),
@@ -191,7 +229,7 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
                 child: Text(
-                  'If you continue, the last clip will be removed from your video.',
+                  'Save this as a draft to finish later, or discard it.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: context.rf(14),
@@ -200,47 +238,29 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                 ),
               ),
               SizedBox(height: context.rh(24)),
-              Divider(
-                color: Colors.white.withValues(alpha: 0.1),
-                height: 1,
-                thickness: 1,
+              divider,
+              _buildExitDialogOption(
+                context,
+                label: 'Save Draft',
+                color: Colors.white,
+                weight: FontWeight.w600,
+                action: _PostExitAction.saveDraft,
               ),
-              InkWell(
-                onTap: () => Navigator.pop(context, true),
-                child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(vertical: context.rh(16)),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Discard',
-                    style: TextStyle(
-                      color: const Color(0xFFE53935),
-                      fontSize: context.rf(16),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+              divider,
+              _buildExitDialogOption(
+                context,
+                label: 'Discard',
+                color: const Color(0xFFE53935),
+                weight: FontWeight.bold,
+                action: _PostExitAction.discard,
               ),
-              Divider(
-                color: Colors.white.withValues(alpha: 0.1),
-                height: 1,
-                thickness: 1,
-              ),
-              InkWell(
-                onTap: () => Navigator.pop(context, false),
-                child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(vertical: context.rh(16)),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: context.rf(16),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+              divider,
+              _buildExitDialogOption(
+                context,
+                label: 'Cancel',
+                color: Colors.white,
+                weight: FontWeight.w500,
+                action: _PostExitAction.cancel,
               ),
               SizedBox(height: context.rh(8)),
             ],
@@ -248,7 +268,57 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
         );
       },
     );
-    return result ?? false;
+    return result ?? _PostExitAction.cancel;
+  }
+
+  Future<void> _handleExitAction(_PostExitAction action) async {
+    if (!context.mounted) return;
+    switch (action) {
+      case _PostExitAction.discard:
+        Navigator.of(context).pop(const PostPreviewBackToCamera());
+      case _PostExitAction.saveDraft:
+        await _saveDraftAndExit();
+      case _PostExitAction.cancel:
+        break;
+    }
+  }
+
+  Future<void> _saveDraftAndExit() async {
+    if (_isSavingDraft) return;
+    setState(() => _isSavingDraft = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.accentPurple),
+      ),
+    );
+
+    try {
+      final finalPath = await _captureFlattenedImage();
+      await ref
+          .read(draftsNotifierProvider.notifier)
+          .saveDraft(mediaPath: finalPath, mediaMimeType: widget.mediaMimeType);
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // dismiss loading dialog
+
+      final navigator = Navigator.of(context);
+      navigator.popUntil((route) => route.isFirst);
+      PostShareFlowBridge.onRequestShowProfileTab?.call();
+    } catch (e) {
+      AppLogger.d('[PostPreviewScreen] Save draft failed: $e');
+      if (!mounted) return;
+      Navigator.of(context).pop(); // dismiss loading dialog
+      setState(() => _isSavingDraft = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save draft: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -257,10 +327,8 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        final shouldDiscard = await _showDiscardDialog(context);
-        if (shouldDiscard && context.mounted) {
-          Navigator.of(context).pop(const PostPreviewBackToCamera());
-        }
+        final action = await _showDiscardDialog(context);
+        await _handleExitAction(action);
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -375,14 +443,8 @@ class _PostPreviewScreenState extends State<PostPreviewScreen> {
                       child: BackButton(
                         color: Colors.white,
                         onPressed: () async {
-                          final shouldDiscard = await _showDiscardDialog(
-                            context,
-                          );
-                          if (shouldDiscard && context.mounted) {
-                            Navigator.of(
-                              context,
-                            ).pop(const PostPreviewBackToCamera());
-                          }
+                          final action = await _showDiscardDialog(context);
+                          await _handleExitAction(action);
                         },
                       ),
                     ),
