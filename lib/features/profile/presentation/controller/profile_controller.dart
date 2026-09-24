@@ -693,7 +693,9 @@ class ProfileController {
       // Build query parameters based on tab
       final queryParams = _buildQueryParams(tabIndex, updatedState);
 
-      // Call API with pagination
+      // Call API with pagination. Pages beyond the first bypass the GET
+      // cache so a subsequent page can never be served a stale/duplicate
+      // response for the same query-param cache key.
       final response = await _repository.fetchProfileData(
         allPage: queryParams['allPage'],
         allLimit: queryParams['allLimit'],
@@ -702,6 +704,7 @@ class ProfileController {
         likedPage: queryParams['likedPage'],
         likedLimit: queryParams['likedLimit'],
         cancelToken: _getCancelToken(),
+        forceRefresh: updatedState.page > 1,
       );
 
       if (_disposed) {
@@ -724,15 +727,18 @@ class ProfileController {
           ? _uniquePosts(posts)
           : _uniquePosts(posts, existingIds: existing.map((p) => p.id).toSet());
       final newPosts = isRefresh ? uniquePosts : [...existing, ...uniquePosts];
-      final canLoadMore = hasNext && posts.isNotEmpty && uniquePosts.isNotEmpty;
 
+      // Trust the server's has_next as-is. A page that happens to contain
+      // zero *new* unique posts (stale cache, backend offset drift, etc.)
+      // must not be treated as "no more pages" — that would permanently
+      // stop pagination even though the server still has more to give.
       final nextPage = isRefresh
-          ? (canLoadMore ? 2 : 1)
+          ? (hasNext ? 2 : 1)
           : updatedState.page + 1;
 
       final finalState = updatedState.copyWith(
         posts: newPosts,
-        hasNext: canLoadMore,
+        hasNext: hasNext,
         isLoading: false,
         page: nextPage,
       );

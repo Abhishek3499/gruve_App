@@ -116,6 +116,7 @@ class ExploreReelsService {
     int page = 1,
     int limit = 10,
     String sort = 'trending',
+    bool forceRefresh = false,
   }) async {
     final token = await TokenStorage.getAccessToken();
     final safeLimit = limit.clamp(1, 50);
@@ -124,7 +125,12 @@ class ExploreReelsService {
     final response = await _dio.get(
       ApiConstants.exploreReels,
       queryParameters: {'page': page, 'limit': safeLimit, 'sort': safeSort},
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
+      options: Options(
+        headers: {'Authorization': 'Bearer $token'},
+        extra: forceRefresh
+            ? {'skipCache': true, 'bypassCache': true, 'noCache': true}
+            : null,
+      ),
     );
 
     final data = _unwrapData(response.data);

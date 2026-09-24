@@ -69,7 +69,11 @@ class ExploreReelsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final page = await _service.fetchReels(page: 1, sort: _sort);
+      final page = await _service.fetchReels(
+        page: 1,
+        sort: _sort,
+        forceRefresh: refresh,
+      );
       if (generation != _loadGeneration) return;
 
       _reels
@@ -117,7 +121,11 @@ class ExploreReelsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final page = await _service.fetchReels(page: _page, sort: _sort);
+      final page = await _service.fetchReels(
+        page: _page,
+        sort: _sort,
+        forceRefresh: true,
+      );
       if (generation != _loadGeneration) return;
 
       final existingIds = _reels.map((reel) => reel.id).toSet();
