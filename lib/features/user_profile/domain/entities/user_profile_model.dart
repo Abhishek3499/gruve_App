@@ -109,8 +109,12 @@ class UserProfile {
         ]),
         bio: user['bio']?.toString() ?? '',
         followersCount: stats['subscribers_count'] as int? ?? 0,
-        followingCount: stats['likes_count'] as int? ?? 0,
-        postsCount: stats['videos_count'] as int? ?? 0,
+        followingCount:
+            stats['subscribed_count'] as int? ??
+            stats['likes_count'] as int? ??
+            0,
+        postsCount:
+            stats['posts_count'] as int? ?? stats['videos_count'] as int? ?? 0,
         isPrivate: user['is_private'] as bool? ?? false,
         isFollowing: user['is_subscribed'] as bool? ?? false,
         hasActiveStory: json['has_active_story'] as bool? ?? false,

@@ -18,15 +18,18 @@ import 'package:gruve_app/core/utils/log_sanitizer.dart';
 ///   "data": {}
 /// }
 ///
-/// Debug/info logs are disabled in release builds.
-/// Warning/error logs remain enabled.
+/// Debug/info logs are off by default (and always off in release builds) so
+/// internal model/controller/cache chatter doesn't drown out the API
+/// request/response JSON printed by [ApiLogger]. Call
+/// `AppLogger.setEnabled(true)` in a debug session to turn verbose logging
+/// back on. Warning/error logs remain enabled.
 ///
 /// Sensitive values such as tokens, passwords, OTPs and authorization
 /// headers are automatically redacted (see [LogSanitizer]).
 class AppLogger {
   AppLogger._();
 
-  static bool _enabled = kDebugMode;
+  static bool _enabled = false;
 
   static final Logger _logger = Logger(
     printer: AppLogPrinter(),

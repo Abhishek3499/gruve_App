@@ -11,6 +11,7 @@ import 'package:gruve_app/features/story_preview/presentation/notifiers/story_st
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/features/user_profile/domain/entities/user_profile_model.dart';
 
+import 'package:gruve_app/features/connections/presentation/screens/connections_screen.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/filter_tabs.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_header.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/stats_row.dart';
@@ -43,6 +44,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _log(String message) {
     AppLogger.d(message);
+  }
+
+  void _openConnections({required String userId, required int initialTab}) {
+    if (userId.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ConnectionsScreen(userId: userId, initialTabIndex: initialTab),
+      ),
+    );
   }
 
   @override
@@ -312,6 +324,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         controller.stats.subscribersCount,
                                     likesCount: controller.stats.likesCount,
                                     videosCount: controller.stats.videosCount,
+                                    onSubscribersTap: () => _openConnections(
+                                      userId: user?.id ?? '',
+                                      initialTab: 0,
+                                    ),
+                                    onSubscribedTap: () => _openConnections(
+                                      userId: user?.id ?? '',
+                                      initialTab: 1,
+                                    ),
                                   ),
                                   SizedBox(height: context.rh(25)),
                                   const StoryList(),
@@ -423,6 +443,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               subscribersCount: userProfile.followersCount,
                               likesCount: userProfile.followingCount,
                               videosCount: userProfile.postsCount,
+                              onSubscribersTap: () => _openConnections(
+                                userId: userProfile.userId,
+                                initialTab: 0,
+                              ),
+                              onSubscribedTap: () => _openConnections(
+                                userId: userProfile.userId,
+                                initialTab: 1,
+                              ),
                             ),
                             SizedBox(height: context.rh(25)),
                             if (userProfile.bio.isNotEmpty) ...[

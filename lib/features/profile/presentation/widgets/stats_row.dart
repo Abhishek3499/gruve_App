@@ -5,12 +5,16 @@ class StatsRow extends StatelessWidget {
   final int subscribersCount;
   final int likesCount;
   final int videosCount;
+  final VoidCallback? onSubscribersTap;
+  final VoidCallback? onSubscribedTap;
 
   const StatsRow({
     super.key,
     this.subscribersCount = 0,
     this.likesCount = 0,
     this.videosCount = 0,
+    this.onSubscribersTap,
+    this.onSubscribedTap,
   });
 
   String _formatCount(int count) {
@@ -22,8 +26,8 @@ class StatsRow extends StatelessWidget {
     return count.toString();
   }
 
-  Widget buildStat(String number, String label) {
-    return Column(
+  Widget buildStat(String number, String label, [VoidCallback? onTap]) {
+    final column = Column(
       children: [
         Text(
           number,
@@ -40,6 +44,10 @@ class StatsRow extends StatelessWidget {
         ),
       ],
     );
+
+    if (onTap == null) return column;
+
+    return GestureDetector(onTap: onTap, child: column);
   }
 
   Widget buildDivider() {
@@ -65,11 +73,15 @@ class StatsRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          buildStat(_formatCount(subscribersCount), "Subscribers"),
+          buildStat(
+            _formatCount(subscribersCount),
+            "Subscribers",
+            onSubscribersTap,
+          ),
           buildDivider(),
-          buildStat(_formatCount(likesCount), "Likes"),
+          buildStat(_formatCount(likesCount), "Subscribed", onSubscribedTap),
           buildDivider(),
-          buildStat(_formatCount(videosCount), "Videos"),
+          buildStat(_formatCount(videosCount), "Posts"),
         ],
       ),
     );

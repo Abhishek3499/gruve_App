@@ -35,6 +35,7 @@ class ApiConstants {
   static const String userSearch = 'user/users/search/';
   static const String users = 'user/users/';
   static String userProfile(String userId) => 'user/profile/$userId/';
+  static String userConnections(String userId) => 'user/$userId/connections/';
 
   // ---- Subscribe / Block / Report ----
   static const String subscribeToggle = 'profile/subscribe/toggle';

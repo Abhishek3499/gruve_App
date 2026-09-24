@@ -31,8 +31,21 @@ class ApiLogger {
     'apikey',
   };
 
+  // RequestDeduplicationInterceptor issues an inner dio.fetch() to run the
+  // real network call, then resolves the outer request with that response —
+  // Dio replays onResponse for every interceptor before it, so the same
+  // response/error would otherwise be logged twice.
+  static const String _loggedExtraKey = '_apiLoggerAlreadyLogged';
+
+  static bool _alreadyLogged(RequestOptions options) {
+    if (options.extra[_loggedExtraKey] == true) return true;
+    options.extra[_loggedExtraKey] = true;
+    return false;
+  }
+
   static void logResponse(Response<dynamic> response) {
     if (!kDebugMode) return;
+    if (_alreadyLogged(response.requestOptions)) return;
 
     _print(<String, dynamic>{
       'type': 'API',
@@ -43,6 +56,7 @@ class ApiLogger {
 
   static void logError(DioException error) {
     if (!kDebugMode) return;
+    if (_alreadyLogged(error.requestOptions)) return;
 
     final response = error.response;
 

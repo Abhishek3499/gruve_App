@@ -54,6 +54,7 @@ class ProfileStatsModel {
       'user.stats.follower',
     ], 'subscribers');
     final likesCount = _findCount(json, const [
+      'subscribed_count',
       'likes_count',
       'like_count',
       'likes',
