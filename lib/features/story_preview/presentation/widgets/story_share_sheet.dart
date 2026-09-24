@@ -6,7 +6,9 @@ import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifi
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/screens/close_friend_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/also_share_sheet.dart';
+import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 class StoryShareColors {
@@ -55,6 +57,7 @@ class StoryShareSheet extends ConsumerStatefulWidget {
 class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
   bool _yourStorySelected = true;
   bool _closeFriendsSelected = false;
+  Set<String> _selectedCloseFriendIds = {};
   bool _isLoading = false;
   bool _isProfileLoading = false;
   _StoryShareProfile? _profile;
@@ -130,6 +133,29 @@ class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
     } finally {
       _profileRequest = null;
     }
+  }
+
+  Future<void> _openCloseFriendsPicker() async {
+    // Choosing this destination selects it immediately, mutually exclusive
+    // with "Your Story" — independent of whether any friends get picked.
+    setState(() {
+      _closeFriendsSelected = true;
+      _yourStorySelected = false;
+    });
+
+    final result = await Navigator.push<List<SearchUser>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            CloseFriendScreen(initialSelectedUserIds: _selectedCloseFriendIds),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    setState(() {
+      _selectedCloseFriendIds = result.map((user) => user.id).toSet();
+    });
   }
 
   Future<void> _handleShareAction() async {
@@ -239,8 +265,13 @@ class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
                   ? '@${_profile!.username.trim()}'
                   : null,
               trailing: _buildCheckCircle(_yourStorySelected),
-              onTap: () =>
-                  setState(() => _yourStorySelected = !_yourStorySelected),
+              onTap: () => setState(() {
+                _yourStorySelected = !_yourStorySelected;
+                if (_yourStorySelected) {
+                  _closeFriendsSelected = false;
+                  _selectedCloseFriendIds = {};
+                }
+              }),
             ),
             const SizedBox(height: 12),
             _ShareOptionTile(
@@ -249,10 +280,11 @@ class _StoryShareSheetState extends ConsumerState<StoryShareSheet> {
                 StoryShareColors.closeFriendsGreen,
               ),
               title: 'Close Story',
+              subtitle: _selectedCloseFriendIds.isNotEmpty
+                  ? '${_selectedCloseFriendIds.length} friend${_selectedCloseFriendIds.length == 1 ? '' : 's'}'
+                  : null,
               trailing: _buildCheckCircle(_closeFriendsSelected),
-              onTap: () => setState(
-                () => _closeFriendsSelected = !_closeFriendsSelected,
-              ),
+              onTap: _openCloseFriendsPicker,
             ),
             const SizedBox(height: 12),
             _ShareOptionTile(

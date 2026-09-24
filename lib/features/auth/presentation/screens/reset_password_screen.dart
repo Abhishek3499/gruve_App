@@ -175,7 +175,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
                             fontSize: context.rf(16),
 
-                            fontWeight: FontWeight(400),
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
 
@@ -246,7 +246,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         SizedBox(height: context.rh(40)),
 
                         Align(
-                          alignment: AlignmentGeometry.center,
+                          alignment: Alignment.center,
 
                           child: GetStartedButton(
                             controller: _resetButtonController,
