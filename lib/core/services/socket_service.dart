@@ -99,6 +99,31 @@ class SocketService {
     return sent;
   }
 
+
+  // react to a message with an emoji
+
+  bool sendMessageReaction({
+  required String conversationId,
+  required String messageId,
+  required String emoji,
+}) {
+  if (!isConnected) {
+    SocketLogger.error(
+      'Cannot send message reaction - disconnected',
+    );
+    return false;
+  }
+
+  final reactionData = <String, dynamic>{
+    'type': 'message.react',
+    'conversation_id': conversationId,
+    'message_id': messageId,
+    'emoji': emoji,
+  };
+
+  return _reconnectManager.send(reactionData);
+}
+
   /// Sends a raw event map (e.g. typing indicator, read receipt)
   bool sendEvent(Map<String, dynamic> eventData) {
     if (!isConnected) return false;

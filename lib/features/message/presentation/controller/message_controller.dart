@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 
-import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/parsing/safe_parsing_helpers.dart';
 import 'package:gruve_app/features/message/domain/entities/message_media_model.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
@@ -348,6 +347,64 @@ class MessageController extends ChangeNotifier {
     _messages[index] = _messages[index].copyWith(text: newText, isEdited: true);
     _notify();
     AppLogger.d('[MessageController] Message edited: $messageId');
+  }
+
+  void handleMessageReaction(Map<String, dynamic> payload) {
+    final messageId = SafeParsingHelpers.safeString(payload, const [
+      'message_id',
+      'messageId',
+    ], fallback: '');
+
+    if (messageId.isEmpty) {
+      AppLogger.d('[MessageController] Reaction event missing message ID');
+      return;
+    }
+
+    final rawReactions = payload['reactions'];
+
+    if (rawReactions is! List) {
+      AppLogger.d(
+        '[MessageController] Reaction event has no valid reactions list',
+      );
+      return;
+    }
+
+    final index = _messages.indexWhere((m) => m.id == messageId);
+    if (index == -1) {
+      AppLogger.d('[MessageController] Reaction message not found: $messageId');
+      return;
+    }
+
+    final action = payload['action']?.toString().toLowerCase();
+    final reactorUserId = SafeParsingHelpers.safeString(payload, const [
+      'user_id',
+      'userId',
+    ], fallback: '');
+
+    final List<MessageReaction> reactions;
+
+    if (action == 'removed' && reactorUserId.isNotEmpty) {
+      // Backend bug: server returns the reaction still in the list on removal.
+      // Manually remove this user's reaction from current local state.
+      reactions = _messages[index]
+          .reactions
+          .where((r) => r.userId != reactorUserId)
+          .toList();
+    } else {
+      // For 'added' / 'updated' the server list is correct.
+      reactions = rawReactions
+          .whereType<Map>()
+          .map((r) => MessageReaction.fromJson(Map<String, dynamic>.from(r)))
+          .where((r) => r.emoji.isNotEmpty)
+          .toList();
+    }
+
+    _messages[index] = _messages[index].copyWith(reactions: reactions);
+    _notify();
+
+    AppLogger.d(
+      '[MessageController] Reactions updated for message: $messageId action=$action (${reactions.length} reactions)',
+    );
   }
 
   /// Edit a message with optimistic UI update.

@@ -21,7 +21,9 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   static AudioPlayer? _activePlayer;
 
   late final AudioPlayer _audioPlayer;
+  Source? _audioSource;
   bool _isPlaying = false;
+  bool _hasCompleted = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 
@@ -84,6 +86,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
         setState(() {
           _position = Duration.zero;
           _isPlaying = false;
+          _hasCompleted = true;
         });
       }
     });
@@ -99,6 +102,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
       final source = widget.audioUrl.startsWith('http')
           ? UrlSource(widget.audioUrl)
           : DeviceFileSource(widget.audioUrl);
+      _audioSource = source;
       await _audioPlayer.setSource(source);
 
       // Force get duration immediately after setting the source as stream fallback
@@ -120,6 +124,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
       if (mounted) {
         setState(() {
           _isPlaying = false;
+          _hasCompleted = false;
           _position = Duration.zero;
           _duration = Duration.zero;
           _isDragging = false;
@@ -153,7 +158,14 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
           }
         }
         _activePlayer = _audioPlayer;
-        await _audioPlayer.resume();
+        if (_hasCompleted) {
+          final source = _audioSource;
+          if (source == null) return;
+          _hasCompleted = false;
+          await _audioPlayer.play(source);
+        } else {
+          await _audioPlayer.resume();
+        }
       }
     } catch (e) {
       AppLogger.d('💥 [VoiceMessagePlayer] Playback error: $e');

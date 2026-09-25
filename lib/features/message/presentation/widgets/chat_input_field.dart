@@ -12,6 +12,7 @@ class ChatInputField extends StatefulWidget {
   final Function(String) onSendMessage;
   final Function(String) onSendImage;
   final Function(String) onSendVoice;
+  final VoidCallback? onEmojiPressed;
   final bool isLoading;
   final TextEditingController? controller;
   final String? hintText;
@@ -22,6 +23,7 @@ class ChatInputField extends StatefulWidget {
     required this.onSendImage,
     required this.onSendVoice,
     required this.isLoading,
+    required this.onEmojiPressed,
     this.controller,
     this.hintText,
   });
@@ -492,6 +494,21 @@ class _ChatInputFieldState extends State<ChatInputField> {
             ),
           ),
         ),
+        const SizedBox(width: 8),
+
+        // Emoji Icon
+        Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: GestureDetector(
+            onTap: widget.onEmojiPressed,
+            child: const Icon(
+              Icons.emoji_emotions_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+
         const SizedBox(width: 8),
 
         // Voice Icon

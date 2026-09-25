@@ -25,6 +25,38 @@ enum MessageStatus {
   }
 }
 
+
+class MessageReaction {
+  final String userId;
+  final String emoji;
+
+  const MessageReaction({
+    required this.userId,
+    required this.emoji,
+  });
+
+  factory MessageReaction.fromJson(Map<String, dynamic> json) {
+    return MessageReaction(
+      userId: json['user_id']?.toString() ?? '',
+      emoji: json['emoji']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'emoji': emoji,
+    };
+  }
+}
+
+
+
+
+
+
+
+
 class MessageModel {
   final String id;
   final String text;
@@ -44,6 +76,7 @@ class MessageModel {
   final String? sharedPostPreviewUrl;
   final Post? sharedPost;
   final bool isEdited;
+  final List<MessageReaction> reactions;
 
   const MessageModel({
     required this.id,
@@ -64,6 +97,7 @@ class MessageModel {
     this.sharedPostPreviewUrl,
     this.sharedPost,
     this.isEdited = false,
+    this.reactions = const [],
   });
 
   factory MessageModel.fromJson(
@@ -144,6 +178,16 @@ class MessageModel {
     final mediaUrl = _resolveMediaUrl(safeJson);
     final resolvedMediaKind = _resolveMediaKind(safeJson);
     final replyPreview = _parseReplyPreview(safeJson);
+    final reactions = (safeJson['reactions'] is List)
+    ? (safeJson['reactions'] as List)
+        .whereType<Map>()
+        .map(
+          (reaction) => MessageReaction.fromJson(
+            Map<String, dynamic>.from(reaction),
+          ),
+        )
+        .toList()
+    : <MessageReaction>[];
 
     return MessageModel(
       id: _resolveMessageId(safeJson),
@@ -173,6 +217,7 @@ class MessageModel {
         'is_edited',
         'isEdited',
       ], fallback: false),
+      reactions: reactions,
     );
   }
 
@@ -247,6 +292,7 @@ class MessageModel {
     String? sharedPostPreviewUrl,
     Post? sharedPost,
     bool? isEdited,
+    List<MessageReaction>? reactions,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -269,6 +315,7 @@ class MessageModel {
       sharedPostPreviewUrl: sharedPostPreviewUrl ?? this.sharedPostPreviewUrl,
       sharedPost: sharedPost ?? this.sharedPost,
       isEdited: isEdited ?? this.isEdited,
+       reactions: reactions ?? this.reactions,
     );
   }
 

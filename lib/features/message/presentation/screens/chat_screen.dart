@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/message/presentation/widgets/message_emoji_reaction.dart';
 import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 
 import 'package:gruve_app/core/services/socket_service.dart';
@@ -17,6 +18,7 @@ import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 import 'package:gruve_app/features/message/domain/entities/reply_message_model.dart';
 import 'package:gruve_app/features/message/data/datasource/message_service.dart';
 import 'package:gruve_app/features/message/presentation/widgets/chat_header.dart';
+import 'package:gruve_app/features/message/presentation/widgets/chat_header_menu.dart';
 import 'package:gruve_app/features/message/presentation/widgets/chat_input_field.dart';
 import 'package:gruve_app/features/message/presentation/widgets/message_bubble.dart';
 import 'package:gruve_app/features/message/presentation/widgets/message_popup_menu.dart';
@@ -60,6 +62,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final MessageController _messageController;
   late final ValueNotifier<bool> _isInitialLoadingNotifier;
   final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _messageKeys = <String, GlobalKey>{};
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
   final TextEditingController _inputController = TextEditingController();
   final SocketService _socketService = SocketService();
@@ -78,6 +81,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _showPopup = false;
   MessageModel? _popupMessage;
   double _popupMenuTop = 0;
+
+  bool _showHeaderMenu = false;
 
   bool _isDeleteMode = false;
   final Set<String> _selectedMessageIds = {};
@@ -167,6 +172,99 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return userData?.profileImage?.toString();
+  }
+
+  // emoji picker modal bottom sheet
+
+  void _openEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return MessageEmojiReaction(
+          onEmojiSelected: (emoji) {
+            final currentText = _inputController.text;
+
+            _inputController.text = currentText + emoji;
+
+            _inputController.selection = TextSelection.fromPosition(
+              TextPosition(offset: _inputController.text.length),
+            );
+
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  void _openReactionEmojiPicker() {
+    final message = _popupMessage;
+
+    if (message == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return MessageEmojiReaction(
+          onEmojiSelected: (emoji) {
+            Navigator.pop(context);
+            _dismissPopup();
+
+            // Optimistic update
+            final optimistic = [
+              ...message.reactions.where((r) => r.userId != (_currentUserId ?? '')),
+              MessageReaction(userId: _currentUserId ?? '', emoji: emoji),
+            ];
+            _messageController.replaceMessage(
+              message.copyWith(reactions: optimistic),
+            );
+
+            _socketService.sendMessageReaction(
+              conversationId: _conversationId,
+              messageId: message.id,
+              emoji: emoji,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _handleReactionSelected(String emoji) {
+    final message = _popupMessage;
+    if (message == null) return;
+
+    // Optimistic update: replace current user's reaction
+    final optimistic = [
+      ...message.reactions.where((r) => r.userId != (_currentUserId ?? '')),
+      MessageReaction(userId: _currentUserId ?? '', emoji: emoji),
+    ];
+    _messageController.replaceMessage(message.copyWith(reactions: optimistic));
+    _dismissPopup();
+
+    _socketService.sendMessageReaction(
+      conversationId: _conversationId,
+      messageId: message.id,
+      emoji: emoji,
+    );
+  }
+
+  void _handleReactionRemoved(MessageModel message, String emoji) {
+    // Optimistic update: remove this user's reaction
+    final optimistic = message.reactions
+        .where((r) => !(r.userId == (_currentUserId ?? '') && r.emoji == emoji))
+        .toList();
+    _messageController.replaceMessage(message.copyWith(reactions: optimistic));
+
+    _socketService.sendMessageReaction(
+      conversationId: _conversationId,
+      messageId: message.id,
+      emoji: emoji,
+    );
   }
 
   @override
@@ -359,6 +457,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  void _scrollToMessage(String messageId) {
+    if (messageId.isEmpty) return;
+
+    void ensureTargetVisible() {
+      if (!mounted) return;
+      final targetContext = _messageKeys[messageId]?.currentContext;
+      if (targetContext == null) return;
+
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+        alignment: 0.5,
+      );
+    }
+
+    if (_messageKeys[messageId]?.currentContext != null) {
+      ensureTargetVisible();
+      return;
+    }
+
+    final targetIndex = _messageController.messagesNewestFirst.indexWhere(
+      (message) => message.id == messageId,
+    );
+    if (targetIndex < 0 || !_scrollController.hasClients) return;
+
+    final estimatedOffset = (targetIndex * 110.0)
+        .clamp(0.0, _scrollController.position.maxScrollExtent)
+        .toDouble();
+    _scrollController
+        .animateTo(
+          estimatedOffset,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        )
+        .whenComplete(() {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ensureTargetVisible();
+          });
+        });
+  }
+
   bool _isChatSocketEvent(String? type, String? event) {
     if (type == null || type.isEmpty) return false;
     final normalized = type.toLowerCase();
@@ -418,6 +558,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final type = data['type']?.toString().toLowerCase();
 
     if (!_isChatSocketEvent(type, event)) return;
+
+    if (event == 'message.reaction') {
+      _handleMessageReactionEvent(data);
+      return;
+    }
 
     if (_isDeliveryEvent(type, event)) {
       final messageData = _extractMessagePayload(data);
@@ -500,6 +645,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
     _messageController.markAsReadDebounced();
     _scrollToBottom();
+  }
+
+  void _handleMessageReactionEvent(Map<String, dynamic> data) {
+    final incomingConversationId = _extractConversationId(data);
+
+    if (incomingConversationId.isNotEmpty &&
+        incomingConversationId != _conversationId) {
+      return;
+    }
+
+    final rawData = data['data'];
+
+    if (rawData is! Map) {
+      AppLogger.d(
+        '[ChatScreen] Invalid message.reaction payload: missing data',
+      );
+      return;
+    }
+
+    _messageController.handleMessageReaction(
+      Map<String, dynamic>.from(rawData),
+    );
   }
 
   void _initializeSocketListener() {
@@ -613,6 +780,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _showPopup = false;
       _popupMessage = null;
     });
+  }
+
+  void _openHeaderMenu() {
+    if (!mounted) return;
+    setState(() => _showHeaderMenu = true);
+  }
+
+  void _closeHeaderMenu() {
+    if (!mounted) return;
+    setState(() => _showHeaderMenu = false);
   }
 
   void _enterDeleteMode() {
@@ -1327,9 +1504,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_isDeleteMode,
+      canPop: !_isDeleteMode && !_showHeaderMenu,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _isDeleteMode) {
+        if (didPop) return;
+        if (_showHeaderMenu) {
+          _closeHeaderMenu();
+        } else if (_isDeleteMode) {
           _exitDeleteMode();
         }
       },
@@ -1359,12 +1539,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       explicitUserId: _userId,
                       explicitProfileImage: _userAvatar,
                       onBack: () async {
-                        if (_isDeleteMode) {
+                        if (_showHeaderMenu) {
+                          _closeHeaderMenu();
+                        } else if (_isDeleteMode) {
                           _exitDeleteMode();
                         } else {
                           Navigator.pop(context);
                         }
                       },
+                      onMenuTap: _openHeaderMenu,
                     ),
                     Expanded(
                       child: ListenableBuilder(
@@ -1411,6 +1594,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     onSendImage: _sendImage,
                                     onSendVoice: _sendVoice,
                                     isLoading: _isUploadingMedia,
+                                    onEmojiPressed: _openEmojiPicker,
                                   ),
                               ],
                             );
@@ -1444,10 +1628,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       selectedAction: null,
                       onActionSelected: (action) =>
                           _handleMessageAction(action, _popupMessage!),
+                      onReactionSelected: _handleReactionSelected,
                       onDeleteMode: _enterDeleteMode,
                       onDismiss: _dismissPopup,
                       isOwnMessage: _popupMessage!.isSent,
                       canEdit: _popupMessage!.isEditable,
+                      onMoreReactions: _openReactionEmojiPicker,
+                    ),
+                  ),
+                if (_showHeaderMenu)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _closeHeaderMenu,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                if (_showHeaderMenu)
+                  Positioned(
+                    top: 60,
+                    right: 16,
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final isBlocked = ref
+                              .read(blockNotifierProvider.notifier)
+                              .isBlocked(_userId);
+                          return ChatHeaderMenu(
+                            onClose: _closeHeaderMenu,
+                            chatNavigator: Navigator.of(context),
+                            userId: _userId,
+                            userName: _userName,
+                            isBlocked: isBlocked,
+                          );
+                        },
+                      ),
                     ),
                   ),
               ],
@@ -1508,12 +1724,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildMessageRow(MessageModel message, int index) {
     final isSelected = _selectedMessageIds.contains(message.id);
-    final stableKey = message.id.startsWith('local-')
-        ? 'local_${message.timestamp.microsecondsSinceEpoch}_${message.text.hashCode}'
-        : message.id;
 
     Widget bubble = MessageBubble(
       message: message,
+      onReactionTap: (emoji) => _handleReactionRemoved(message, emoji),
+      onReplyTap: () {
+        final replyPreview = message.effectiveReplyPreview;
+        if (replyPreview != null) {
+          _scrollToMessage(replyPreview.messageId);
+        }
+      },
       onActionSelected: (action) => _handleMessageAction(action, message),
       onLongPress: (globalPos, size) =>
           _showMessagePopup(message, globalPos, size),
@@ -1529,10 +1749,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return RepaintBoundary(
-      key: ValueKey(stableKey),
+      key: _messageKeys.putIfAbsent(message.id, GlobalKey.new),
       child: Column(
         children: [
-          if (index > 0) const SizedBox(height: 10),
+          if (index > 0) const SizedBox(height: 18),
           bubble,
           if (message.isPinned)
             PinnedMessageBanner(pinnedMessage: message, username: _userName),

@@ -15,6 +15,8 @@ class MessagePopupMenu extends StatefulWidget {
   final VoidCallback? onDismiss;
   final bool isOwnMessage;
   final bool canEdit;
+  final Function(String)? onReactionSelected;
+  final VoidCallback? onMoreReactions;
 
   const MessagePopupMenu({
     super.key,
@@ -28,6 +30,8 @@ class MessagePopupMenu extends StatefulWidget {
     this.onDismiss,
     this.isOwnMessage = false,
     this.canEdit = true,
+    this.onReactionSelected,
+    this.onMoreReactions,
   });
 
   @override
@@ -75,62 +79,72 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
       opacity: _fadeAnim,
       child: SlideTransition(
         position: _slideAnim,
-        child: IntrinsicWidth(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.chatBackground,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.65),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildReactionBar(),
+            const SizedBox(height: 8),
+            IntrinsicWidth(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 2,
                 ),
-              ],
+                decoration: BoxDecoration(
+                  color: AppColors.chatBackground,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildMenuItem(
+                      icon: AppAssets.reply,
+                      label: 'Reply',
+                      color: Colors.white,
+                      isSelected: widget.selectedAction == MessageAction.reply,
+                      onTap: () =>
+                          widget.onActionSelected?.call(MessageAction.reply),
+                    ),
+                    if (widget.isOwnMessage && widget.canEdit)
+                      _buildMenuItem(
+                        icon: AppAssets.editpro,
+                        label: 'Edit',
+                        color: Colors.white,
+                        isSelected: widget.selectedAction == MessageAction.edit,
+                        onTap: () =>
+                            widget.onActionSelected?.call(MessageAction.edit),
+                      ),
+                    _buildMenuItem(
+                      icon: AppAssets.pin,
+                      label: 'Pin',
+                      color: Colors.white,
+                      isSelected: widget.selectedAction == MessageAction.pin,
+                      onTap: () =>
+                          widget.onActionSelected?.call(MessageAction.pin),
+                    ),
+                    if (widget.isOwnMessage)
+                      _buildMenuItem(
+                        icon: AppAssets.deleted,
+                        label: 'Delete',
+                        color: const Color(0xFFF51829),
+                        isSelected:
+                            widget.selectedAction == MessageAction.delete,
+                        onTap: () =>
+                            widget.onActionSelected?.call(MessageAction.delete),
+                      ),
+                  ],
+                ),
+              ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMenuItem(
-                  icon: AppAssets.reply,
-                  label: 'Reply',
-                  color: Colors.white,
-                  isSelected: widget.selectedAction == MessageAction.reply,
-                  onTap: () =>
-                      widget.onActionSelected?.call(MessageAction.reply),
-                ),
-                // Only show edit for own plain-text messages
-                if (widget.isOwnMessage && widget.canEdit)
-                  _buildMenuItem(
-                    icon: AppAssets.editpro,
-                    label: 'Edit',
-                    color: Colors.white,
-                    isSelected: widget.selectedAction == MessageAction.edit,
-                    onTap: () =>
-                        widget.onActionSelected?.call(MessageAction.edit),
-                  ),
-                _buildMenuItem(
-                  icon: AppAssets.pin,
-                  label: 'Pin',
-                  color: Colors.white,
-                  isSelected: widget.selectedAction == MessageAction.pin,
-                  onTap: () => widget.onActionSelected?.call(MessageAction.pin),
-                ),
-                // Only show delete for own messages
-                if (widget.isOwnMessage)
-                  _buildMenuItem(
-                    icon: AppAssets.deleted,
-                    label: 'Delete',
-                    color: const Color(0xFFF51829),
-                    isSelected: widget.selectedAction == MessageAction.delete,
-                    onTap: () =>
-                        widget.onActionSelected?.call(MessageAction.delete),
-                  ),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
     );
@@ -222,6 +236,54 @@ class _MessagePopupMenuState extends State<MessagePopupMenu>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReactionBar() {
+    const reactions = ['❤️', '😂', '👍', '😮', '😢', '🔥'];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.chatBackground,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.65),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...reactions.map(
+            (emoji) => GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onReactionSelected?.call(emoji),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onMoreReactions,
+            child: const SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: Icon(Icons.add, color: Colors.white, size: 24),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

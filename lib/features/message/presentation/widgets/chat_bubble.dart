@@ -15,6 +15,8 @@ import 'package:gruve_app/features/message/presentation/screens/fullscreen_media
 class MessageBubble extends StatelessWidget {
   final MessageModel message;
   final Function(MessageAction)? onActionSelected;
+  final void Function(String emoji)? onReactionTap;
+  final VoidCallback? onReplyTap;
 
   // ── New: long press callback with position + size ──
   final void Function(Offset globalPosition, Size size)? onLongPress;
@@ -23,6 +25,8 @@ class MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     this.onActionSelected,
+    this.onReactionTap,
+    this.onReplyTap,
     this.onLongPress,
   });
 
@@ -99,27 +103,29 @@ class MessageBubble extends StatelessWidget {
           name: message.senderName,
         ),
         const SizedBox(width: 8),
-        CustomPaint(
-          painter: ChatBubblePainter(
-            isSent: false,
-            bubbleColor: const Color(0xFF6A008A),
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 10, 15, 10),
-            constraints: BoxConstraints(
-              maxWidth: message.isSharedPost
-                  ? MediaQuery.of(context).size.width * 0.72
-                  : MediaQuery.of(context).size.width * 0.68,
+        _buildBubbleWithReaction(
+          CustomPaint(
+            painter: ChatBubblePainter(
+              isSent: false,
+              bubbleColor: const Color(0xFF6A008A),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (message.hasReply) _buildReplyQuote(),
-                if (message.hasImage) _buildImageContent(context),
-                _buildMessageContent(context),
-                const SizedBox(height: 4),
-                _buildStatusRow(isReceived: true),
-              ],
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 10, 15, 10),
+              constraints: BoxConstraints(
+                maxWidth: message.isSharedPost
+                    ? MediaQuery.of(context).size.width * 0.72
+                    : MediaQuery.of(context).size.width * 0.68,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (message.hasReply) _buildReplyQuote(),
+                  if (message.hasImage) _buildImageContent(context),
+                  _buildMessageContent(context),
+                  const SizedBox(height: 4),
+                  _buildStatusRow(isReceived: true),
+                ],
+              ),
             ),
           ),
         ),
@@ -149,27 +155,29 @@ class MessageBubble extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        CustomPaint(
-          painter: ChatBubblePainter(
-            isSent: true,
-            bubbleColor: const Color(0xFF4A148C),
-          ),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(15, 10, 20, 10),
-            constraints: BoxConstraints(
-              maxWidth: message.isSharedPost
-                  ? MediaQuery.of(context).size.width * 0.72
-                  : MediaQuery.of(context).size.width * 0.68,
+        _buildBubbleWithReaction(
+          CustomPaint(
+            painter: ChatBubblePainter(
+              isSent: true,
+              bubbleColor: const Color(0xFF4A148C),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (message.hasReply) _buildReplyQuote(),
-                if (message.hasImage) _buildImageContent(context),
-                _buildMessageContent(context),
-                const SizedBox(height: 4),
-                _buildStatusRow(isReceived: false),
-              ],
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(15, 10, 20, 10),
+              constraints: BoxConstraints(
+                maxWidth: message.isSharedPost
+                    ? MediaQuery.of(context).size.width * 0.72
+                    : MediaQuery.of(context).size.width * 0.68,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (message.hasReply) _buildReplyQuote(),
+                  if (message.hasImage) _buildImageContent(context),
+                  _buildMessageContent(context),
+                  const SizedBox(height: 4),
+                  _buildStatusRow(isReceived: false),
+                ],
+              ),
             ),
           ),
         ),
@@ -181,33 +189,37 @@ class MessageBubble extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final mediaWidth = screenWidth * 0.72;
 
-    return CustomPaint(
-      painter: ChatBubblePainter(
-        isSent: isSent,
-        bubbleColor: isSent ? const Color(0xFF4A148C) : const Color(0xFF6A008A),
-      ),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: mediaWidth + 12),
-        padding: EdgeInsets.fromLTRB(
-          isSent ? 15 : 20,
-          10,
-          isSent ? 20 : 15,
-          10,
+    return _buildBubbleWithReaction(
+      CustomPaint(
+        painter: ChatBubblePainter(
+          isSent: isSent,
+          bubbleColor: isSent
+              ? const Color(0xFF4A148C)
+              : const Color(0xFF6A008A),
         ),
-        child: Column(
-          crossAxisAlignment: isSent
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (message.hasReply) _buildReplyQuote(),
-            VoiceMessagePlayer(
-              audioUrl: message.imagePath ?? '',
-              isSent: isSent,
-            ),
-            const SizedBox(height: 4),
-            _buildStatusRow(isReceived: !isSent),
-          ],
+        child: Container(
+          constraints: BoxConstraints(maxWidth: mediaWidth + 12),
+          padding: EdgeInsets.fromLTRB(
+            isSent ? 15 : 20,
+            10,
+            isSent ? 20 : 15,
+            10,
+          ),
+          child: Column(
+            crossAxisAlignment: isSent
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (message.hasReply) _buildReplyQuote(),
+              VoiceMessagePlayer(
+                audioUrl: message.imagePath ?? '',
+                isSent: isSent,
+              ),
+              const SizedBox(height: 4),
+              _buildStatusRow(isReceived: !isSent),
+            ],
+          ),
         ),
       ),
     );
@@ -225,57 +237,61 @@ class MessageBubble extends StatelessWidget {
     final mediaHeight = mediaWidth * 0.75;
     final hasCaption = _hasVisibleCaption();
 
-    return CustomPaint(
-      painter: ChatBubblePainter(
-        isSent: isSent,
-        bubbleColor: isSent ? const Color(0xFF4A148C) : const Color(0xFF6A008A),
-      ),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: mediaWidth + 12),
-        padding: EdgeInsets.fromLTRB(isSent ? 4 : 8, 4, isSent ? 8 : 4, 4),
-        child: Column(
-          crossAxisAlignment: isSent
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (message.hasReply) _buildReplyQuote(),
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                GestureDetector(
-                  onTap: () => _openFullscreenMedia(context),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
-                      width: mediaWidth,
-                      height: mediaHeight,
-                      child: _buildMediaWidget(mediaWidth, mediaHeight),
+    return _buildBubbleWithReaction(
+      CustomPaint(
+        painter: ChatBubblePainter(
+          isSent: isSent,
+          bubbleColor: isSent
+              ? const Color(0xFF4A148C)
+              : const Color(0xFF6A008A),
+        ),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: mediaWidth + 12),
+          padding: EdgeInsets.fromLTRB(isSent ? 4 : 8, 4, isSent ? 8 : 4, 4),
+          child: Column(
+            crossAxisAlignment: isSent
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (message.hasReply) _buildReplyQuote(),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: () => _openFullscreenMedia(context),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: mediaWidth,
+                        height: mediaHeight,
+                        child: _buildMediaWidget(mediaWidth, mediaHeight),
+                      ),
                     ),
                   ),
-                ),
-                if (!hasCaption)
-                  Positioned(
-                    right: 6,
-                    bottom: 6,
-                    child: _buildMediaTimestampOverlay(isReceived: !isSent),
+                  if (!hasCaption)
+                    Positioned(
+                      right: 6,
+                      bottom: 6,
+                      child: _buildMediaTimestampOverlay(isReceived: !isSent),
+                    ),
+                ],
+              ),
+              if (hasCaption) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+                  child: Text(
+                    message.text,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
-              ],
-            ),
-            if (hasCaption) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
-                child: Text(
-                  message.text,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8, bottom: 2, left: 8),
-                child: _buildStatusRow(isReceived: !isSent),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, bottom: 2, left: 8),
+                  child: _buildStatusRow(isReceived: !isSent),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -289,6 +305,45 @@ class MessageBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: _buildStatusRow(isReceived: isReceived),
+    );
+  }
+
+  Widget _buildBubbleWithReaction(Widget bubble) {
+    if (message.reactions.isEmpty) return bubble;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        bubble,
+        _buildReactions(),
+      ],
+    );
+  }
+
+  Widget _buildReactions() {
+    if (message.reactions.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Wrap(
+        spacing: 3,
+        children: message.reactions.map((r) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onReactionTap == null ? null : () => onReactionTap!(r.emoji),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(r.emoji, style: const TextStyle(fontSize: 12)),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -399,46 +454,50 @@ class MessageBubble extends StatelessWidget {
     final preview = message.effectiveReplyPreview;
     if (preview == null) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            color: message.isSent
-                ? const Color(0xFFCE93D8)
-                : const Color(0xFFE1BEE7),
-            width: 3,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onReplyTap,
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            left: BorderSide(
+              color: message.isSent
+                  ? const Color(0xFFCE93D8)
+                  : const Color(0xFFE1BEE7),
+              width: 3,
+            ),
           ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            preview.senderName,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              preview.senderName,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            preview.displayText,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 13,
+            const SizedBox(height: 2),
+            Text(
+              preview.displayText,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

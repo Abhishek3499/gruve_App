@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/features/message/domain/entities/conversation_model.dart';
-import 'package:gruve_app/features/message/presentation/widgets/chat_header_menu.dart';
-import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/features/message/utils/user_display_helper.dart';
 
-class ChatHeader extends ConsumerWidget {
+class ChatHeader extends StatelessWidget {
   final dynamic userOrConversation;
   final String? explicitUserName;
   final String? explicitUserId;
   final String? explicitProfileImage;
   final VoidCallback onBack;
+  final VoidCallback onMenuTap;
 
   const ChatHeader({
     super.key,
@@ -21,6 +19,7 @@ class ChatHeader extends ConsumerWidget {
     this.explicitUserId,
     this.explicitProfileImage,
     required this.onBack,
+    required this.onMenuTap,
   });
 
   bool get _isConversationModel => userOrConversation is ConversationModel;
@@ -59,44 +58,6 @@ class ChatHeader extends ConsumerWidget {
     return UserDisplayHelper.getProfileImageForUser(userOrConversation);
   }
 
-  void showChatHeaderMenu(BuildContext context, WidgetRef ref) {
-    OverlayEntry? overlayEntry;
-    // Capture live block state from the widget-tree context BEFORE entering overlay
-    final bool currentIsBlocked = ref
-        .read(blockNotifierProvider.notifier)
-        .isBlocked(_userId);
-
-    overlayEntry = OverlayEntry(
-      builder: (overlayContext) => GestureDetector(
-        onTap: () => overlayEntry?.remove(),
-        child: Material(
-          color: Colors.transparent,
-          child: Stack(
-            children: [
-              Positioned.fill(child: Container(color: Colors.transparent)),
-              Positioned(
-                top: 60,
-                right: 16,
-                child: GestureDetector(
-                  onTap: () {},
-                  child: ChatHeaderMenu(
-                    onClose: () => overlayEntry?.remove(),
-                    chatNavigator: Navigator.of(context),
-                    userId: _userId,
-                    userName: _userName,
-                    isBlocked: currentIsBlocked,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(overlayEntry);
-  }
-
   void _navigateToUserProfile(BuildContext context) {
     Navigator.push(
       context,
@@ -126,7 +87,7 @@ class ChatHeader extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -159,7 +120,7 @@ class ChatHeader extends ConsumerWidget {
             ),
           ),
           IconButton(
-            onPressed: () => showChatHeaderMenu(context, ref),
+            onPressed: onMenuTap,
             icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
           ),
         ],
