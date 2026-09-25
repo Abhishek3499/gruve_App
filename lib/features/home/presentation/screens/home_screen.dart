@@ -408,8 +408,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return;
       }
 
-      _ensureHomeFeedTab();
-
+      // Deliberately NOT calling _ensureHomeFeedTab() here: the camera opens
+      // as a screen pushed on top of whichever tab is currently selected, so
+      // the bottom nav indicator must stay put (e.g. on Message) instead of
+      // jumping to Home. If the user actually shares/posts from the camera
+      // flow, PostShareFlowBridge.notifyShareStartProcessing already switches
+      // to the Home tab at that point (see post_share_flow_bridge.dart:37).
       _cameraFlowInProgress = true;
 
       // 🚀 OPTIMIZATION: Pre-warm camera again right before opening
