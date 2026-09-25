@@ -29,6 +29,8 @@ import 'package:gruve_app/features/message/presentation/widgets/shimmer/chat_shi
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/services/media_upload_service.dart';
+import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   // New explicit parameters for direct user data passing
@@ -66,6 +68,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
   final TextEditingController _inputController = TextEditingController();
   final SocketService _socketService = SocketService();
+  final MediaUploadService _mediaUploadService = MediaUploadService();
 
   StreamSubscription? _socketSubscription;
 
@@ -215,6 +218,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _otherUserTyping = isStart);
 
     if (isStart) {
+      _scrollToBottom();
       // Fallback: auto-clear after 5s if typing.stop is missed
       _otherTypingTimer = Timer(const Duration(seconds: 5), () {
         if (mounted) setState(() => _otherUserTyping = false);
@@ -339,6 +343,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
     _messageController.addListener(_syncInitialLoadingNotifier);
     _scrollController.addListener(_onMessageScroll);
+    _mediaUploadService.addListener(_onUploadChanged);
     _initializeSocketListener();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -367,6 +372,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _messageController.fetchInitialMessages();
       _messageController.markAsReadDebounced();
     });
+  }
+
+  void _onUploadChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onMessageScroll() {
@@ -1179,10 +1188,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     if (!mounted) return;
     setState(() => _isUploadingMedia = true);
-
-    if (_activeReply != null) {
-      setState(() => _activeReply = null);
-    }
+    if (_activeReply != null) setState(() => _activeReply = null);
 
     final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
     final newMessage = MessageModel(
@@ -1205,36 +1211,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     _messageController.appendLocalMessage(newMessage);
     _scrollToBottom();
+    if (mounted) setState(() => _isUploadingMedia = false);
 
-    try {
-      final uploaded = await _messageController.uploadMessageMedia(audioPath);
-      await _deliverMessage(
-        localId: localId,
-        content: '',
-        replyToMessageId: replyToMessageId,
-        media: uploaded,
-      );
-    } catch (e) {
-      _messageController.markMessageAsFailed(localId);
-      if (mounted) {
-        setState(() => _isUploadingMedia = false);
-
-        String errorMsg = e.toString();
-        if (errorMsg.contains('413')) {
-          errorMsg = 'File too large (> 10 MB)';
-        } else if (errorMsg.contains('400')) {
-          errorMsg = 'Unsupported audio format';
-        } else if (errorMsg.contains('403')) {
-          errorMsg = 'Not a conversation participant';
-        } else {
-          errorMsg = 'Failed to upload voice message: $e';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-        );
-      }
-    }
+    await _mediaUploadService.enqueue(
+      localId: localId,
+      conversationId: _conversationId,
+      filePath: audioPath,
+      mediaKind: 'audio',
+      replyToMessageId: replyToMessageId,
+      onSuccess: (sent) {
+        if (mounted) _messageController.replaceMessage(sent);
+      },
+      onFailure: (id) {
+        if (mounted) _messageController.markMessageAsFailed(id);
+      },
+    );
   }
 
   Future<void> _sendMedia(String mediaPath) async {
@@ -1247,13 +1238,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     if (!mounted) return;
     setState(() => _isUploadingMedia = true);
-
-    if (_activeReply != null) {
-      setState(() => _activeReply = null);
-    }
-    if (caption.isNotEmpty) {
-      _inputController.clear();
-    }
+    if (_activeReply != null) setState(() => _activeReply = null);
+    if (caption.isNotEmpty) _inputController.clear();
 
     final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
     final newMessage = MessageModel(
@@ -1276,27 +1262,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     _messageController.appendLocalMessage(newMessage);
     _scrollToBottom();
+    if (mounted) setState(() => _isUploadingMedia = false);
 
-    try {
-      final uploaded = await _messageController.uploadMessageMedia(mediaPath);
-      await _deliverMessage(
-        localId: localId,
-        content: caption.isEmpty ? null : caption,
-        replyToMessageId: replyToMessageId,
-        media: uploaded,
-      );
-    } catch (e) {
-      _messageController.markMessageAsFailed(localId);
-      if (mounted) {
-        setState(() => _isUploadingMedia = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload media: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    await _mediaUploadService.enqueue(
+      localId: localId,
+      conversationId: _conversationId,
+      filePath: mediaPath,
+      mediaKind: isVideo ? 'video' : 'image',
+      caption: caption.isEmpty ? null : caption,
+      replyToMessageId: replyToMessageId,
+      onSuccess: (sent) {
+        if (mounted) _messageController.replaceMessage(sent);
+      },
+      onFailure: (id) {
+        if (mounted) _messageController.markMessageAsFailed(id);
+      },
+    );
   }
 
   void _handleMessageAction(MessageAction action, MessageModel message) {
@@ -1552,6 +1533,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _messageController.removeListener(_onMessageControllerTick);
     _messageController.removeListener(_syncInitialLoadingNotifier);
     _scrollController.removeListener(_onMessageScroll);
+    _mediaUploadService.removeListener(_onUploadChanged);
     _messageController.dispose();
     _isInitialLoadingNotifier.dispose();
     _scrollController.dispose();
@@ -1597,7 +1579,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       explicitUserName: _userName,
                       explicitUserId: _userId,
                       explicitProfileImage: _userAvatar,
-                      isTyping: _otherUserTyping,
+                      isTyping: false,
                       onBack: () async {
                         if (_showHeaderMenu) {
                           _closeHeaderMenu();
@@ -1609,11 +1591,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       },
                       onMenuTap: _openHeaderMenu,
                     ),
+                    // Background upload progress banner
+                    ..._mediaUploadService
+                        .uploadsFor(_conversationId)
+                        .where(
+                          (u) =>
+                              u.status == UploadStatus.uploading ||
+                              u.status == UploadStatus.sending,
+                        )
+                        .map(
+                          (u) => _UploadProgressBanner(
+                            mediaKind: u.mediaKind,
+                            status: u.status,
+                          ),
+                        ),
                     Expanded(
                       child: ListenableBuilder(
                         listenable: _messageController,
                         builder: (context, _) => _buildMessageBody(
                           _messageController.messagesNewestFirst,
+                          isTyping: _otherUserTyping,
                         ),
                       ),
                     ),
@@ -1735,7 +1732,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBody(List<MessageModel> sortedMessages) {
+  Widget _buildMessageBody(List<MessageModel> sortedMessages, {bool isTyping = false}) {
     if (_messageController.isInitialLoading && sortedMessages.isEmpty) {
       return const ChatBubbleShimmer(itemCount: 8);
     }
@@ -1744,9 +1741,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return _buildErrorState();
     }
 
-    if (sortedMessages.isEmpty) {
+    if (sortedMessages.isEmpty && !isTyping) {
       return _buildEmptyState();
     }
+
+    // +1 for typing bubble when active
+    final typingSlot = isTyping ? 1 : 0;
 
     return ListView.builder(
       controller: _scrollController,
@@ -1756,11 +1756,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       cacheExtent: 1000,
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: true,
-      itemCount:
-          sortedMessages.length + (_messageController.isLoadingMore ? 1 : 0),
+      itemCount: sortedMessages.length +
+          (_messageController.isLoadingMore ? 1 : 0) +
+          typingSlot,
       itemBuilder: (context, index) {
+        // index 0 (bottom of reversed list) = typing bubble
+        if (isTyping && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 4, top: 4),
+            child: _TypingBubble(
+              avatarUrl: _userAvatar,
+              name: _userName,
+            ),
+          );
+        }
+
+        final adjustedIndex = index - typingSlot;
+
         if (_messageController.isLoadingMore &&
-            index == sortedMessages.length) {
+            adjustedIndex == sortedMessages.length) {
           return const Padding(
             padding: EdgeInsets.only(top: 12, bottom: 12),
             child: Center(
@@ -1776,9 +1790,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           );
         }
 
-        final messageIndex = index;
-        final message = sortedMessages[messageIndex];
-        return _buildMessageRow(message, messageIndex);
+        final message = sortedMessages[adjustedIndex];
+        return _buildMessageRow(message, adjustedIndex);
       },
     );
   }
@@ -1940,6 +1953,145 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Thin banner shown below the header while a media upload runs in background.
+class _UploadProgressBanner extends StatelessWidget {
+  final String mediaKind;
+  final UploadStatus status;
+
+  const _UploadProgressBanner({
+    required this.mediaKind,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = status == UploadStatus.sending
+        ? 'Sending ${mediaKind}…'
+        : 'Uploading ${mediaKind}…';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      color: Colors.white.withValues(alpha: 0.08),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Three-dot animated typing bubble shown in the message list.
+class _TypingBubble extends StatefulWidget {
+  final String? avatarUrl;
+  final String name;
+
+  const _TypingBubble({required this.avatarUrl, required this.name});
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        OptimizedAvatar(
+          imageUrl: widget.avatarUrl,
+          name: widget.name,
+          radius: 14,
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomRight: Radius.circular(18),
+              bottomLeft: Radius.circular(4),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '${widget.name} is typing',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(width: 6),
+              ...List.generate(3, (i) {
+                return AnimatedBuilder(
+                  animation: _controller,
+                  builder: (_, __) {
+                    final offset = ((_controller.value * 3) - i) % 3.0;
+                    final scale = offset < 1.0
+                        ? 0.6 + 0.4 * offset
+                        : offset < 2.0
+                            ? 1.0 - 0.4 * (offset - 1.0)
+                            : 0.6;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      width: 5 * scale,
+                      height: 5 * scale,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
