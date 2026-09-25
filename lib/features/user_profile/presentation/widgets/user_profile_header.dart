@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/gifts/presentation/widgets/gift_panel.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/story_avatar_indicator.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_seen_notifier.dart';
 import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/gift_button.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/message_button.dart';
@@ -10,13 +12,14 @@ import 'package:gruve_app/features/user_profile/presentation/widgets/subscribe_b
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
-class UserProfileHeader extends StatelessWidget {
+class UserProfileHeader extends ConsumerWidget {
   final String displayName;
   final String username;
   final String profileUserId;
   final String? profileImageUrl;
   final String bio;
   final bool hasActiveStory;
+  final bool hasUnseenStory;
   final bool hasCloseFriendsStory;
   final List<String> storyMediaPaths;
   final List<DateTime> storyTimestamps;
@@ -35,6 +38,7 @@ class UserProfileHeader extends StatelessWidget {
     this.profileImageUrl,
     this.bio = '',
     this.hasActiveStory = false,
+    this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
     this.storyMediaPaths = const <String>[],
     this.storyTimestamps = const <DateTime>[],
@@ -46,11 +50,20 @@ class UserProfileHeader extends StatelessWidget {
     this.onMessageTap,
   });
 
-  void _openStoryView(BuildContext context) {
+  void _openStoryView(BuildContext context, WidgetRef ref) {
+    AppLogger.d(
+      '[UserProfileHeader] avatar tapped profileUserId=$profileUserId '
+      'hasActiveStory=$hasActiveStory hasUnseenStory=$hasUnseenStory '
+      'hasCloseFriendsStory=$hasCloseFriendsStory',
+    );
+
+    // Instagram-style: skip the network round-trip entirely when we already
+    // know from the profile flags there's no story to show.
+    if (!hasActiveStory) return;
+
     AppLogger.d(
       '[UserProfileHeader] Opening other user story - isOwnProfile: false',
     );
-    AppLogger.d('[UserProfileHeader] profileUserId: $profileUserId');
     StoryUtils.navigateToStoryView(
       context,
       userId: profileUserId,
@@ -58,11 +71,19 @@ class UserProfileHeader extends StatelessWidget {
       username: username,
       avatar: profileImageUrl ?? '',
       isOwnProfile: false,
+      onStoriesViewed: () {
+        ref.read(storySeenNotifierProvider.notifier).markUserSeen(profileUserId);
+      },
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSeenOverride = ref.watch(
+      storySeenNotifierProvider.select((state) => state.isSeen(profileUserId)),
+    );
+    final effectiveUnseen = hasUnseenStory && !isSeenOverride;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,9 +111,10 @@ class UserProfileHeader extends StatelessWidget {
               StoryAvatarIndicator(
                 profileImage: profileImageUrl ?? '',
                 hasActiveStory: hasActiveStory,
+                hasUnseenStory: effectiveUnseen,
                 hasCloseFriendsStory: hasCloseFriendsStory,
                 showCameraIcon: false,
-                onTap: () => _openStoryView(context),
+                onTap: () => _openStoryView(context, ref),
               ),
               SizedBox(width: context.rw(18)),
               Expanded(

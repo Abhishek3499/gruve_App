@@ -58,7 +58,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     _profileController.contentListenable.addListener(_syncSubscribeState);
     _scrollController.addListener(_onProfileScroll);
     _resolveIdentity();
-    _profileController.fetchUser();
+    // forceRefresh: this endpoint is cached (CacheConfigs.profile, up to
+    // 30min disk TTL) and embeds has_active_story/has_unseen_story/
+    // has_close_friends_story — a stale cache hit here would show the wrong
+    // story ring the moment this profile is opened, not just until the next
+    // pull-to-refresh.
+    _profileController.fetchUser(forceRefresh: true);
   }
 
   void _onProfileScroll() {
@@ -298,6 +303,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             hasActiveStory:
                                 profile?.hasActiveStory ??
                                 widget.initialHasActiveStory,
+                            hasUnseenStory: profile?.hasUnseenStory ?? false,
                             hasCloseFriendsStory:
                                 profile?.hasCloseFriendsStory ?? false,
                             showSubscribeButton: showSubscribeButton,

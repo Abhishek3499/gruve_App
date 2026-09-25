@@ -29,13 +29,6 @@ class CacheConfigs {
     maxMemoryEntries: 20,
   );
 
-  static const CacheConfig stories = CacheConfig(
-    memoryTTL: Duration(minutes: 1),
-    diskTTL: Duration(minutes: 5),
-    enableStaleWhileRevalidate: true,
-    maxMemoryEntries: 30,
-  );
-
   static const CacheConfig conversations = CacheConfig(
     memoryTTL: Duration(minutes: 3),
     diskTTL: Duration(minutes: 15),
@@ -66,8 +59,6 @@ class CacheConfigs {
       return feed;
     } else if (path.contains('/profile') || path.contains('/user/')) {
       return profile;
-    } else if (path.contains('/stories')) {
-      return stories;
     } else if (path.contains('/conversations') || path.contains('/messages')) {
       return conversations;
     } else if (path.contains('/search')) {

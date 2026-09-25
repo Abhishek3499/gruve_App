@@ -131,10 +131,39 @@ class StoryService {
       final res = await _dio.get(
         endpoint,
         queryParameters: {'page': page, 'limit': limit},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          // Story view/active state changes constantly and must always
+          // reflect the backend at tap time. 'stories/user/{id}/' contains
+          // '/user/', so CacheConfigs.getConfigForEndpoint matches it to the
+          // 'profile' bucket (5min memory / 30min disk TTL) before it ever
+          // reaches the '/stories' check — skipCache is what actually keeps
+          // this endpoint live, not the (now removed) dedicated stories bucket.
+          extra: const {'skipCache': true},
+        ),
       );
 
       return StoriesResponse.fromJson(res.data);
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      AppLogger.d('[StoryService] UNKNOWN ERROR: $e');
+      rethrow;
+    }
+  }
+
+  /// Records a view for [storyId]. Idempotent — safe to call again for the
+  /// same story (the backend returns `already_viewed: true` on retries).
+  Future<StoryViewResponse> recordView(String storyId) async {
+    try {
+      final token = await TokenStorage.getAccessToken();
+
+      final res = await _dio.post(
+        ApiConstants.storyView(storyId),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      return StoryViewResponse.fromJson(res.data);
     } on DioException {
       rethrow;
     } catch (e) {

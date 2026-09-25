@@ -2,19 +2,24 @@ import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
 import 'package:gruve_app/features/music/presentation/screens/music_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
+import 'package:gruve_app/features/home/presentation/widgets/story_ring_avatar.dart';
 import 'package:gruve_app/features/home/presentation/widgets/subscribe_button.dart';
 
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_seen_notifier.dart';
+import 'package:gruve_app/features/story_preview/utils/story_utils.dart';
 import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 
-class VideoUserInfo extends StatefulWidget {
+class VideoUserInfo extends ConsumerStatefulWidget {
   final String username;
   final String caption;
   final String musicTitle;
@@ -23,6 +28,8 @@ class VideoUserInfo extends StatefulWidget {
   final String? profilePicture;
   final bool initialIsSubscribed;
   final bool hasActiveStory;
+  final bool hasUnseenStory;
+  final bool hasCloseFriendsStory;
   final SubscribeNotifier subscribeController;
   final VoidCallback onOwnProfileTap;
   final List<TaggedUser> taggedUsers;
@@ -37,16 +44,18 @@ class VideoUserInfo extends StatefulWidget {
     this.profilePicture,
     required this.initialIsSubscribed,
     required this.hasActiveStory,
+    this.hasUnseenStory = false,
+    this.hasCloseFriendsStory = false,
     required this.subscribeController,
     required this.onOwnProfileTap,
     this.taggedUsers = const [],
   });
 
   @override
-  State<VideoUserInfo> createState() => _VideoUserInfoState();
+  ConsumerState<VideoUserInfo> createState() => _VideoUserInfoState();
 }
 
-class _VideoUserInfoState extends State<VideoUserInfo> {
+class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
   String? _lastLoggedInUserId;
@@ -136,6 +145,43 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
           initialHasActiveStory: widget.hasActiveStory,
         ),
       ),
+    );
+  }
+
+  Future<void> _openAvatar(BuildContext context) async {
+    // Mirrors exactly what the ring renders — isSeenOverride is the same
+    // optimistic local flag the Consumer below uses, so tap-ability never
+    // disagrees with what's on screen.
+    final isSeenOverride = ref.read(
+      storySeenNotifierProvider.select((state) => state.isSeen(widget.userId)),
+    );
+    final hasUnseenStory = widget.hasUnseenStory && !isSeenOverride;
+
+    AppLogger.d(
+      '[VideoUserInfo] avatar tapped userId=${widget.userId} '
+      'hasActiveStory=${widget.hasActiveStory} '
+      'hasUnseenStory=$hasUnseenStory '
+      'hasCloseFriendsStory=${widget.hasCloseFriendsStory}',
+    );
+
+    // Feed-specific: once unseen is false, the ring is gone, so a tap here
+    // just opens the profile — no story screen for something already seen.
+    if (!hasUnseenStory) {
+      await _openProfile(context);
+      return;
+    }
+
+    await StoryUtils.navigateToStoryView(
+      context,
+      userId: widget.userId,
+      displayName: widget.username,
+      username: widget.username,
+      avatar: widget.profilePicture ?? '',
+      onStoriesViewed: () {
+        if (mounted) {
+          ref.read(storySeenNotifierProvider.notifier).markUserSeen(widget.userId);
+        }
+      },
     );
   }
 
@@ -455,26 +501,28 @@ class _VideoUserInfoState extends State<VideoUserInfo> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              GestureDetector(
-                onTap: () => _openProfile(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: OptimizedAvatar(
-                    imageUrl: widget.profilePicture,
-                    radius: 17.5,
-                    name: widget.username,
-                    fallback: Image.asset(AppAssets.user, fit: BoxFit.cover),
-                  ),
-                ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final isSeenOverride = ref.watch(
+                    storySeenNotifierProvider.select(
+                      (state) => state.isSeen(widget.userId),
+                    ),
+                  );
+                  final effectiveUnseen =
+                      widget.hasUnseenStory && !isSeenOverride;
+
+                  return StoryRingAvatar(
+                    hasUnseenStory: effectiveUnseen,
+                    hasCloseFriendsStory: widget.hasCloseFriendsStory,
+                    onTap: () => _openAvatar(context),
+                    avatar: OptimizedAvatar(
+                      imageUrl: widget.profilePicture,
+                      radius: 17.5,
+                      name: widget.username,
+                      fallback: Image.asset(AppAssets.user, fit: BoxFit.cover),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               Flexible(

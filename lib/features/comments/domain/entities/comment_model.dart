@@ -45,22 +45,37 @@ String? _pickString(Map<String, dynamic> json, List<String> keys) {
 
 class Comment {
   final String id;
+  final String postId;
   final String body;
   final DateTime createdAt;
   final DateTime updatedAt;
   final CommentUser user;
+  final String? parentCommentId;
+  final int replyCount;
+  final List<Comment> replies;
+  final int likeCount;
+  final bool isLiked;
 
   Comment({
     required this.id,
+    this.postId = '',
     required this.body,
     required this.createdAt,
     required this.updatedAt,
     required this.user,
+    this.parentCommentId,
+    this.replyCount = 0,
+    this.replies = const [],
+    this.likeCount = 0,
+    this.isLiked = false,
   });
+
+  bool get isReply => parentCommentId != null;
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
       id: (json['id'] ?? '').toString(),
+      postId: json['post_id']?.toString() ?? '',
       body: json['body'] ?? '',
       createdAt: DateTime.parse(
         json['created_at'] ?? DateTime.now().toIso8601String(),
@@ -69,6 +84,40 @@ class Comment {
         json['updated_at'] ?? DateTime.now().toIso8601String(),
       ),
       user: CommentUser.fromJson(json['user'] ?? {}),
+      parentCommentId: json['parent_comment_id']?.toString(),
+      replyCount: json['reply_count'] is int
+          ? json['reply_count'] as int
+          : int.tryParse(json['reply_count']?.toString() ?? '') ?? 0,
+      replies:
+          (json['replies'] as List?)
+              ?.map((e) => Comment.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
+      likeCount: json['like_count'] is int
+          ? json['like_count'] as int
+          : int.tryParse(json['like_count']?.toString() ?? '') ?? 0,
+      isLiked: json['is_liked'] == true,
+    );
+  }
+
+  Comment copyWith({
+    int? replyCount,
+    List<Comment>? replies,
+    int? likeCount,
+    bool? isLiked,
+  }) {
+    return Comment(
+      id: id,
+      postId: postId,
+      body: body,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      user: user,
+      parentCommentId: parentCommentId,
+      replyCount: replyCount ?? this.replyCount,
+      replies: replies ?? this.replies,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
     );
   }
 
@@ -90,6 +139,18 @@ class Comment {
       return 'Just now';
     }
   }
+}
+
+class CommentLikeResult {
+  final String commentId;
+  final bool isLiked;
+  final int likeCount;
+
+  const CommentLikeResult({
+    required this.commentId,
+    required this.isLiked,
+    required this.likeCount,
+  });
 }
 
 class CommentResponse {

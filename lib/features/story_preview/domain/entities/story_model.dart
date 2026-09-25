@@ -90,6 +90,24 @@ class StoriesResponse {
   }
 }
 
+/// Response model for POST /stories/{story_id}/view/
+class StoryViewResponse {
+  final String storyId;
+  final bool alreadyViewed;
+
+  StoryViewResponse({required this.storyId, required this.alreadyViewed});
+
+  factory StoryViewResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] is Map
+        ? Map<String, dynamic>.from(json['data'] as Map)
+        : json;
+    return StoryViewResponse(
+      storyId: data['story_id']?.toString() ?? '',
+      alreadyViewed: data['already_viewed'] == true,
+    );
+  }
+}
+
 /// Data section of stories response
 class StoriesData {
   final int count;

@@ -143,6 +143,14 @@ class SocketReconnectManager with WidgetsBindingObserver {
         connectTimeout: _connectionTimeout,
       );
 
+      // IOWebSocketChannel.connect() returns synchronously, before the
+      // handshake actually completes. Awaiting `ready` here confirms the
+      // connection really succeeded before this method reports "connected" —
+      // otherwise the failure surfaces both as an unhandled `ready` error
+      // (raw stack trace) and, moments later, as a separate stream error,
+      // right after a premature "connected"/"reconnect success" log.
+      await _channel!.ready;
+
       _socketSubscription = _channel!.stream.listen(
         _onMessageReceived,
         onError: _onSocketError,

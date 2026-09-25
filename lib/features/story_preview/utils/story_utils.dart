@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_view_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
+import 'package:gruve_app/features/story_preview/data/datasource/story_service.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Utility class for story-related operations
 class StoryUtils {
+  static final StoryService _storyService = StoryService();
+
   /// Navigate to story view screen if user has a story
   /// [isOwnProfile] - true when viewing own stories, false when viewing other user's stories
+  /// [onStoriesViewed] - called once the viewer is closed, after every story
+  /// shown had its view recorded — callers use this to optimistically clear
+  /// a local "unseen" flag (e.g. the feed ring) without waiting for a refresh.
   static Future<void> navigateToStoryView(
     BuildContext context, {
     String? userId,
@@ -18,6 +25,7 @@ class StoryUtils {
     required String username,
     required String avatar,
     bool isOwnProfile = false,
+    VoidCallback? onStoriesViewed,
   }) async {
     AppLogger.d("\n🧭 ===== NAVIGATE TO STORY VIEW CALLED =====");
     AppLogger.d("🧭 userId: ${userId ?? 'me'} | displayName: $displayName");
@@ -37,30 +45,41 @@ class StoryUtils {
       );
       final storyController = container.read(storyControllerProvider.notifier);
 
-      // Check cache first for instant response
-      await storyStateNotifier.loadStoriesFromStorage(userId);
+      // Always fetch straight from the API — stories are never cached on
+      // disk or reused from a previously viewed user, so what's shown here
+      // is exactly what the backend has right now. Pages are combined so a
+      // user with more than one page of active stories still plays fully.
+      final allStories = <StoryItem>[];
+      await storyController.fetchStories(userId: userId);
+      allStories.addAll(storyController.stories);
+      while (context.mounted &&
+          storyController.isSuccess &&
+          storyController.hasNext) {
+        await storyController.fetchStories(
+          userId: userId,
+          page: storyController.currentPage + 1,
+        );
+        allStories.addAll(storyController.stories);
+      }
 
       if (!context.mounted) return;
 
-      final storyState = container.read(storyStateNotifierProvider);
-      final cachedStoryIds = storyState.currentUserStoryIds;
-      final cachedStoriesHaveIds = cachedStoryIds.any(
-        (id) => id?.trim().isNotEmpty ?? false,
-      );
-      final canUseCachedStories =
-          storyState.hasUserStory &&
-          !storyState.isLoadingFromStorage &&
-          (!isOwnProfile || cachedStoriesHaveIds);
-
-      // If cached own stories are missing API ids, fetch first so highlights work.
-      if (canUseCachedStories) {
+      if (allStories.isNotEmpty) {
         Navigator.pop(context); // Close loading dialog
 
-        final mediaPaths = storyState.currentUserStoryMediaPaths;
-        final timestamps = storyState.storyTimestamps;
-        final storyIds = storyState.currentUserStoryIds;
+        final mediaPaths = allStories.map((story) => story.mediaUrl).toList();
+        final timestamps = allStories.map((story) => story.createdAt).toList();
 
-        _navigateToStoryScreen(
+        await storyStateNotifier.setStoriesFromStoryItems(
+          allStories,
+          username: username,
+          avatarUrl: avatar,
+          userId: userId,
+        );
+
+        if (!context.mounted) return;
+
+        await _navigateToStoryScreen(
           context,
           userId: userId,
           mediaPaths: mediaPaths,
@@ -68,60 +87,26 @@ class StoryUtils {
           username: username,
           avatar: avatar,
           timestamps: timestamps,
-          storyIds: storyIds,
+          storyItems: allStories,
           isOwnProfile: isOwnProfile,
         );
 
-        // Refresh stories in background
-        _refreshStoriesInBackground(
-          storyController,
-          storyStateNotifier,
-          userId,
-          username,
-          avatar,
-        );
+        onStoriesViewed?.call();
       } else {
-        // No cache, fetch from API
-        await storyController.fetchStories(userId: userId);
-
-        if (!context.mounted) return;
-
-        if (storyController.isSuccess && storyController.stories.isNotEmpty) {
+        if (context.mounted) {
           Navigator.pop(context); // Close loading dialog
-
-          final mediaPaths = storyController.stories
-              .map((story) => story.mediaUrl)
-              .toList();
-          final timestamps = storyController.stories
-              .map((story) => story.createdAt)
-              .toList();
-
-          await storyStateNotifier.setStoriesFromStoryItems(
-            storyController.stories,
-            username: username,
-            avatarUrl: avatar,
-            userId: userId,
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isOwnProfile
+                    ? "You haven't posted a story yet"
+                    : "$displayName hasn't posted a story yet",
+              ),
+              backgroundColor: const Color.fromARGB(255, 189, 189, 200),
+            ),
           );
-
-          if (!context.mounted) return;
-
-          _navigateToStoryScreen(
-            context,
-            userId: userId,
-            mediaPaths: mediaPaths,
-            displayName: displayName,
-            username: username,
-            avatar: avatar,
-            timestamps: timestamps,
-            storyItems: storyController.stories,
-            isOwnProfile: isOwnProfile,
-          );
-        } else {
-          if (context.mounted) {
-            Navigator.pop(context); // Close loading dialog
-          }
-          AppLogger.d("⚠️ No stories found");
         }
+        AppLogger.d("⚠️ No stories found");
       }
     } catch (e) {
       if (context.mounted) {
@@ -133,7 +118,7 @@ class StoryUtils {
     AppLogger.d("🏁 ===== NAVIGATE TO STORY VIEW END =====\n");
   }
 
-  static void _navigateToStoryScreen(
+  static Future<void> _navigateToStoryScreen(
     BuildContext context, {
     String? userId,
     required List<String> mediaPaths,
@@ -150,7 +135,7 @@ class StoryUtils {
       "🧭 [StoryUtils] userId: ${userId ?? 'me'} | isOwnProfile: $isOwnProfile",
     );
 
-    Navigator.push(
+    return Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => StoryViewScreen(
@@ -163,31 +148,26 @@ class StoryUtils {
           storyIds: storyIds,
           storyItems: storyItems,
           isOwnProfile: isOwnProfile,
+          onStoryViewed: _recordStoryView,
         ),
       ),
     );
   }
 
-  static Future<void> _refreshStoriesInBackground(
-    StoryControllerNotifier storyController,
-    StoryStateNotifier storyStateNotifier,
-    String? userId,
-    String username,
-    String avatar,
-  ) async {
+  /// Fires the "story viewed" API call. Best-effort: idempotent on the
+  /// backend (safe to retry) and never blocks or interrupts playback.
+  static Future<void> _recordStoryView(StoryItem story) async {
+    if (story.id.isEmpty) return;
     try {
-      await storyController.fetchStories(userId: userId);
-
-      if (storyController.isSuccess && storyController.stories.isNotEmpty) {
-        await storyStateNotifier.setStoriesFromStoryItems(
-          storyController.stories,
-          username: username,
-          avatarUrl: avatar,
-          userId: userId,
-        );
+      await _storyService.recordView(story.id);
+      // The feed/profile GET responses embedding this author's story flags
+      // are cached on disk — without this, a hot restart shortly after
+      // watching would still serve the pre-view (unseen) cached response.
+      if (story.userId.isNotEmpty) {
+        await CacheInvalidationService().onStoryViewed(story.userId);
       }
     } catch (e) {
-      AppLogger.d("⚠️ Background refresh failed: $e");
+      AppLogger.d("⚠️ [StoryUtils] Failed to record view for ${story.id}: $e");
     }
   }
 

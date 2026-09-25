@@ -5,7 +5,6 @@ import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
-import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/profile_post_detail_screen.dart';
 import 'package:gruve_app/features/search/presentation/controller/explore_reels_controller.dart';
@@ -135,24 +134,6 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
               }, childCount: controller.reels.length),
             ),
           ),
-          if (controller.isLoadingMore)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  ProfileGridStyle.gridPadding.left,
-                  8,
-                  ProfileGridStyle.gridPadding.right,
-                  8,
-                ),
-                child: const AppShimmer(
-                  child: ShimmerBox(
-                    height: 120,
-                    width: double.infinity,
-                    borderRadius: ProfileGridStyle.tileRadius,
-                  ),
-                ),
-              ),
-            ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),

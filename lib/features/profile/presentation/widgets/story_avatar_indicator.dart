@@ -4,7 +4,11 @@ import 'package:gruve_app/core/utils/app_logger.dart';
 
 /// Reusable Instagram / Gruve style story avatar.
 ///
-/// - Shows a neon gradient ring by default or an active story ring when [hasActiveStory] is true
+/// Unlike the feed's ring (no ring at all once seen), the profile avatar
+/// keeps a low-opacity faded ring once already viewed, so it's still clear
+/// this user has/had an active story. Priority (first match wins):
+/// close-friends (green, faded once seen) > unseen colorful gradient >
+/// seen (all-viewed) faded ring > no story at all, no ring.
 /// - Supports camera badge overlay when [showCameraIcon] is true
 /// - Supports tap on avatar and camera badge independently
 /// - Works with network images, local assets, and fallbacks
@@ -16,8 +20,8 @@ class StoryAvatarIndicator extends StatelessWidget {
   final bool showCameraIcon;
   final bool enableNavigation;
   final bool hasActiveStory;
+  final bool hasUnseenStory;
   final bool hasCloseFriendsStory;
-  final bool isViewed;
   final double ringWidth;
   final double ringGap;
   final Color innerBackgroundColor;
@@ -31,8 +35,8 @@ class StoryAvatarIndicator extends StatelessWidget {
     this.showCameraIcon = false,
     this.enableNavigation = true,
     this.hasActiveStory = false,
+    this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
-    this.isViewed = false,
     this.ringWidth = 2.8,
     this.ringGap = 2.4,
     this.innerBackgroundColor = const Color(0xFF130722),
@@ -131,47 +135,52 @@ class StoryAvatarIndicator extends StatelessWidget {
       ),
     );
 
-    // Neon or Story ring gradient
-    final Gradient ringGradient;
-    if (hasCloseFriendsStory) {
-      // Instagram-style close friends ring — solid green, independent of hasActiveStory.
-      ringGradient = isViewed
-          ? const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFF9E9E9E), Color(0xFF757575), Color(0xFFBDBDBD)],
-            )
-          : const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFF6DD400), Color(0xFF2ECC40), Color(0xFF00C853)],
-            );
-    } else if (hasActiveStory) {
-      ringGradient = isViewed
-          ? const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFF9E9E9E), Color(0xFF757575), Color(0xFFBDBDBD)],
-            )
-          : const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [
-                Color(0xFFFEDA75),
-                Color(0xFFFA7E1E),
-                Color(0xFFD62976),
-                Color(0xFF962FBF),
-              ],
-            );
-    } else {
-      ringGradient = const SweepGradient(
+    final Gradient? ringGradient;
+    if (hasCloseFriendsStory && !hasUnseenStory) {
+      // Seen — same green identity, faded via opacity.
+      ringGradient = LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
         colors: [
-          Color(0xFF00E5FF), // cyan
-          Color(0xFFD500F9), // purple
-          Color(0xFFFF4081), // pink
-          Color(0xFF00E5FF), // back to cyan
+          const Color(0xFF2ECC40).withValues(alpha: 0.45),
+          const Color(0xFF2ECC40).withValues(alpha: 0.18),
+          const Color(0xFF2ECC40).withValues(alpha: 0.45),
         ],
       );
+    } else if (hasCloseFriendsStory) {
+      ringGradient = const LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: [Color(0xFF6DD400), Color(0xFF2ECC40), Color(0xFF00C853)],
+      );
+    } else if (hasUnseenStory) {
+      ringGradient = const LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: [
+          Color(0xFFFEDA75),
+          Color(0xFFFA7E1E),
+          Color(0xFFD62976),
+          Color(0xFF962FBF),
+        ],
+      );
+    } else if (hasActiveStory) {
+      // Seen — same ring, faded via opacity rather than a solid gray.
+      ringGradient = LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: [
+          Colors.white.withValues(alpha: 0.45),
+          Colors.white.withValues(alpha: 0.18),
+          Colors.white.withValues(alpha: 0.45),
+        ],
+      );
+    } else {
+      ringGradient = null;
+    }
+
+    if (ringGradient == null) {
+      return avatarCore;
     }
 
     return Container(

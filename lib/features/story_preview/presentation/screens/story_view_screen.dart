@@ -24,6 +24,10 @@ class StoryViewScreen extends ConsumerStatefulWidget {
   final List<StoryItem>? storyItems;
   final bool isOwnProfile;
 
+  /// Called once per story the first time it's displayed — used to record
+  /// a "story viewed" event (e.g. POST /stories/{id}/view/).
+  final ValueChanged<StoryItem>? onStoryViewed;
+
   const StoryViewScreen({
     super.key,
     this.userId,
@@ -35,6 +39,7 @@ class StoryViewScreen extends ConsumerStatefulWidget {
     this.storyIds,
     this.storyItems,
     this.isOwnProfile = false,
+    this.onStoryViewed,
   });
 
   @override
@@ -51,6 +56,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
   bool _isDisposed = false;
   AnimationStatusListener? _animationListener;
   bool _isImageLoading = false;
+  final Set<String> _viewedStoryIds = {};
 
   final StoryPlaybackController _playbackController = StoryPlaybackController();
 
@@ -170,6 +176,10 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       'id=${storyItem.id.isEmpty ? 'MISSING' : storyItem.id}, reason=$reason',
     );
     AppLogger.d('[StoryState] current story media: ${storyItem.mediaUrl}');
+
+    if (storyItem.id.isNotEmpty && _viewedStoryIds.add(storyItem.id)) {
+      widget.onStoryViewed?.call(storyItem);
+    }
   }
 
   void _onPlaybackStateChanged() {

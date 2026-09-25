@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:gruve_app/core/constants/app_assets.dart';
-import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
@@ -38,19 +37,7 @@ class ProfileGrid extends StatelessWidget {
     if (!controller.isLoadingTab(selectedTab)) return null;
     final n = _postsForTab().length;
     if (n == 0) return null;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18, top: 4),
-      child: Center(
-        child: SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppColors.loaderDark,
-          ),
-        ),
-      ),
-    );
+    return const ProfileGridShimmer(itemCount: 3);
   }
 
   List<Widget> _withPagingFooterSlivers(List<Widget> slivers) {

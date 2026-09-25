@@ -8,6 +8,7 @@ class ProfileModel {
   final String bio;
   final bool isFollowing;
   final bool hasActiveStory;
+  final bool hasUnseenStory;
   final bool hasCloseFriendsStory;
   final int storyCount;
   final int unreadNotificationCount;
@@ -20,6 +21,7 @@ class ProfileModel {
     this.bio = '',
     this.isFollowing = false,
     this.hasActiveStory = false,
+    this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
     this.storyCount = 0,
     this.unreadNotificationCount = 0,
@@ -33,6 +35,7 @@ class ProfileModel {
     String? bio,
     bool? isFollowing,
     bool? hasActiveStory,
+    bool? hasUnseenStory,
     bool? hasCloseFriendsStory,
     int? storyCount,
     int? unreadNotificationCount,
@@ -45,6 +48,7 @@ class ProfileModel {
       bio: bio ?? this.bio,
       isFollowing: isFollowing ?? this.isFollowing,
       hasActiveStory: hasActiveStory ?? this.hasActiveStory,
+      hasUnseenStory: hasUnseenStory ?? this.hasUnseenStory,
       hasCloseFriendsStory: hasCloseFriendsStory ?? this.hasCloseFriendsStory,
       storyCount: storyCount ?? this.storyCount,
       unreadNotificationCount:
@@ -147,6 +151,12 @@ class ProfileModel {
       'has_stories',
     ], fallback: false);
 
+    final hasUnseenStory = SafeParsingHelpers.safeBool(flat, const [
+      'has_unseen_story',
+      'has_unseen_stories',
+      'unseen_story',
+    ], fallback: false);
+
     final hasCloseFriendsStory = SafeParsingHelpers.safeBool(flat, const [
       'has_close_friends_story',
       'has_close_friend_story',
@@ -181,6 +191,7 @@ class ProfileModel {
       bio: bio,
       isFollowing: isFollowing,
       hasActiveStory: hasActiveStory,
+      hasUnseenStory: hasUnseenStory,
       hasCloseFriendsStory: hasCloseFriendsStory,
       storyCount: storyCount,
       unreadNotificationCount: unreadNotificationCount,

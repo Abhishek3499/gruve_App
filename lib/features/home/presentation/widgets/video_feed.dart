@@ -22,12 +22,14 @@ class VideoFeed extends ConsumerStatefulWidget {
   final ValueNotifier<int> selectedIndex;
   final Function(int) onTabChanged;
   final Function(VideoFeedController)? onControllerReady;
+  final VoidCallback? onInitialFeedReady;
 
   const VideoFeed({
     super.key,
     required this.selectedIndex,
     required this.onTabChanged,
     this.onControllerReady,
+    this.onInitialFeedReady,
   });
 
   @override
@@ -94,16 +96,25 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
       });
     };
 
-    _controller.initVideos();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onControllerReady?.call(_controller);
-      if (mounted) {
+    // Fires the main feed request immediately; secondary module fetches
+    // (saved posts, profile/highlights via onInitialFeedReady) are only
+    // triggered once this settles, so get-post always wins the network race
+    // on cold start instead of competing with them.
+    unawaited(
+      _controller.initVideos().then((_) {
+        if (!mounted) return;
         final savePostNotifier = ref.read(savePostNotifierProvider.notifier);
         if (savePostNotifier.savedPosts.isEmpty ||
             savePostNotifier.isSavedPostsStale) {
           savePostNotifier.fetchSavedPosts();
         }
+        widget.onInitialFeedReady?.call();
+      }),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onControllerReady?.call(_controller);
+      if (mounted) {
         final route = ModalRoute.of(context);
         if (route is PageRoute) {
           routeObserver.subscribe(this, route);
