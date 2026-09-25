@@ -171,4 +171,31 @@ class StoryService {
       rethrow;
     }
   }
+
+  /// Fetches the list of users who viewed [storyId] (own stories only).
+  Future<StoryViewsResponse> fetchStoryViews(
+    String storyId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final token = await TokenStorage.getAccessToken();
+
+      final res = await _dio.get(
+        ApiConstants.storyViews(storyId),
+        queryParameters: {'page': page, 'limit': limit},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          extra: const {'skipCache': true},
+        ),
+      );
+
+      return StoryViewsResponse.fromJson(res.data);
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      AppLogger.d('[StoryService] UNKNOWN ERROR: $e');
+      rethrow;
+    }
+  }
 }

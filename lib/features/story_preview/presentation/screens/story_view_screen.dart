@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/config/environment_config.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
@@ -10,6 +11,7 @@ import 'package:gruve_app/features/story_preview/domain/entities/story_model.dar
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_view_bottom.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_viewer_topbar.dart';
+import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_viewers_sheet.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -326,6 +328,22 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
     }
   }
 
+  static const double _swipeUpVelocityThreshold = 250;
+
+  /// Instagram-style swipe-up-to-open on your own story: a fast enough
+  /// upward drag anywhere on the screen opens the viewers sheet.
+  void _handleVerticalSwipe(DragEndDetails details) {
+    if (!widget.isOwnProfile) return;
+
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity > -_swipeUpVelocityThreshold) return;
+
+    final storyId = _storyItemForIndex(currentIndex)?.id;
+    if (storyId == null || storyId.isEmpty) return;
+
+    showStoryViewersSheet(context, storyId);
+  }
+
   String _getCurrentStoryTime() {
     if (widget.timestamps != null && currentIndex < widget.timestamps!.length) {
       final diff = DateTime.now().difference(widget.timestamps![currentIndex]);
@@ -441,66 +459,79 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTapUp: _handleTap,
-        onLongPressStart: (details) {
-          AppLogger.d('[Playback] Long press detected');
-          _pauseStory();
-        },
-        onLongPressEnd: (details) {
-          AppLogger.d('[Playback] Long press released');
-          _resumeStory();
-        },
-        onHorizontalDragEnd: _handleSwipe,
-        behavior: HitTestBehavior.opaque,
-        child: Stack(
-          children: [
-            Positioned.fill(child: _buildMedia()),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, _) {
-                  return StoryViewerTopBar(
-                    username: widget.displayName.isNotEmpty
-                        ? widget.displayName
-                        : 'User',
-                    time: _getCurrentStoryTime(),
-                    avatarUrl: widget.avatarUrl.isNotEmpty
-                        ? widget.avatarUrl
-                        : 'https://i.pravatar.cc/150?img=3',
-                    storyCount: widget.mediaPaths.length,
-                    currentIndex: currentIndex,
-                    progress: _animationController.value,
-                    onClose: () => Navigator.pop(context),
-                    isCloseFriends:
-                        _storyItemForIndex(currentIndex)?.isCloseFriends ??
-                        false,
-                  );
-                },
-              ),
-            ),
-            // Only show bottom bar for own profile stories
-            if (widget.isOwnProfile)
+    // Stories are full-bleed black; without this the system navigation bar
+    // (gesture pill / 3-button strip) falls back to the OS default (white on
+    // most Android devices) and shows through beneath our black bottom bar.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.black,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarDividerColor: Colors.black,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: GestureDetector(
+          onTapUp: _handleTap,
+          onLongPressStart: (details) {
+            AppLogger.d('[Playback] Long press detected');
+            _pauseStory();
+          },
+          onLongPressEnd: (details) {
+            AppLogger.d('[Playback] Long press released');
+            _resumeStory();
+          },
+          onHorizontalDragEnd: _handleSwipe,
+          onVerticalDragEnd: _handleVerticalSwipe,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Positioned.fill(child: _buildMedia()),
               Positioned(
-                bottom: 0,
+                top: 0,
                 left: 0,
                 right: 0,
-                child: SafeArea(
-                  top: false,
-                  child: GestureDetector(
-                    onTap:
-                        () {}, // Absorb taps to prevent skipping stories or popping screen
-                    behavior: HitTestBehavior.opaque,
-                    child: StoryViewBottom(isOwnProfile: widget.isOwnProfile),
-                  ),
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, _) {
+                    return StoryViewerTopBar(
+                      username: widget.displayName.isNotEmpty
+                          ? widget.displayName
+                          : 'User',
+                      time: _getCurrentStoryTime(),
+                      avatarUrl: widget.avatarUrl.isNotEmpty
+                          ? widget.avatarUrl
+                          : 'https://i.pravatar.cc/150?img=3',
+                      storyCount: widget.mediaPaths.length,
+                      currentIndex: currentIndex,
+                      progress: _animationController.value,
+                      onClose: () => Navigator.pop(context),
+                      isCloseFriends:
+                          _storyItemForIndex(currentIndex)?.isCloseFriends ??
+                          false,
+                    );
+                  },
                 ),
               ),
-          ],
+              // Only show bottom bar for own profile stories
+              if (widget.isOwnProfile)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    top: false,
+                    child: GestureDetector(
+                      onTap:
+                          () {}, // Absorb taps to prevent skipping stories or popping screen
+                      behavior: HitTestBehavior.opaque,
+                      child: StoryViewBottom(isOwnProfile: widget.isOwnProfile),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

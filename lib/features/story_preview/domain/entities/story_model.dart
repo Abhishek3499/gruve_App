@@ -108,6 +108,91 @@ class StoryViewResponse {
   }
 }
 
+/// A single viewer entry from GET /stories/{story_id}/views/
+class StoryViewer {
+  final String id;
+  final String username;
+  final String? profilePicture;
+  final DateTime viewedAt;
+
+  StoryViewer({
+    required this.id,
+    required this.username,
+    this.profilePicture,
+    required this.viewedAt,
+  });
+
+  factory StoryViewer.fromJson(Map<String, dynamic> json) {
+    return StoryViewer(
+      id: json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      profilePicture: json['profile_picture']?.toString(),
+      viewedAt:
+          DateTime.tryParse(json['viewed_at']?.toString() ?? '') ??
+          DateTime.now(),
+    );
+  }
+}
+
+/// Response model for GET /stories/{story_id}/views/
+class StoryViewsResponse {
+  final int code;
+  final bool success;
+  final String message;
+  final StoryViewsData data;
+
+  StoryViewsResponse({
+    required this.code,
+    required this.success,
+    required this.message,
+    required this.data,
+  });
+
+  factory StoryViewsResponse.fromJson(Map<String, dynamic> json) {
+    return StoryViewsResponse(
+      code: json['code'] ?? 200,
+      success: json['success'] ?? false,
+      message: json['message']?.toString() ?? '',
+      data: StoryViewsData.fromJson(json['data'] ?? {}),
+    );
+  }
+}
+
+/// Data section of the story views response
+class StoryViewsData {
+  final String storyId;
+  final int viewsCount;
+  final int page;
+  final int limit;
+  final bool hasNext;
+  final List<StoryViewer> viewers;
+
+  StoryViewsData({
+    required this.storyId,
+    required this.viewsCount,
+    required this.page,
+    required this.limit,
+    required this.hasNext,
+    required this.viewers,
+  });
+
+  factory StoryViewsData.fromJson(Map<String, dynamic> json) {
+    final viewersList = json['viewers'] as List?;
+
+    final viewers =
+        viewersList?.map((item) => StoryViewer.fromJson(item)).toList() ?? [];
+
+    return StoryViewsData(
+      storyId: json['story_id']?.toString() ?? '',
+      viewsCount: json['views_count'] ?? 0,
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 20,
+      hasNext: json['has_next'] ?? false,
+      viewers: viewers,
+    );
+  }
+}
+
 /// Data section of stories response
 class StoriesData {
   final int count;

@@ -7,9 +7,11 @@ import 'package:gruve_app/features/highlights/domain/entities/highlight_model.da
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_state_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_views_notifier.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/more_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/highlight_sheet.dart';
+import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_viewers_sheet.dart';
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/story_settings_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -34,7 +36,7 @@ class _StoryViewBottomState extends ConsumerState<StoryViewBottom> {
   void initState() {
     super.initState();
 
-    // Only fetch highlights for own profile
+    // Only fetch highlights/views for own profile
     if (widget.isOwnProfile) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -42,6 +44,7 @@ class _StoryViewBottomState extends ConsumerState<StoryViewBottom> {
         if (highlightState.highlights.isEmpty && !highlightState.isLoading) {
           ref.read(highlightControllerProvider.notifier).fetchMyHighlights();
         }
+        _fetchViewsForCurrentStory();
       });
     }
 
@@ -61,6 +64,18 @@ class _StoryViewBottomState extends ConsumerState<StoryViewBottom> {
         _matchedHighlight = null;
       });
     }
+  }
+
+  void _onCurrentStoryChanged() {
+    _onStoryChanged();
+    _fetchViewsForCurrentStory();
+  }
+
+  void _fetchViewsForCurrentStory() {
+    if (!widget.isOwnProfile) return;
+    final storyId = ref.read(storyStateNotifierProvider).currentStory?.id;
+    if (storyId == null || storyId.isEmpty) return;
+    ref.read(storyViewsNotifierProvider.notifier).fetchViews(storyId);
   }
 
   Widget _buildHighlightIcon({
@@ -265,7 +280,7 @@ class _StoryViewBottomState extends ConsumerState<StoryViewBottom> {
       storyStateNotifierProvider.select((s) => s.currentStory),
       (previous, next) {
         if (previous?.id != next?.id || previous?.mediaUrl != next?.mediaUrl) {
-          _onStoryChanged();
+          _onCurrentStoryChanged();
         }
       },
     );
@@ -287,54 +302,115 @@ class _StoryViewBottomState extends ConsumerState<StoryViewBottom> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Highlight button - only visible for own profile
-          _buildHighlightButton(),
-          // Only add spacing if highlight button is shown
-          if (widget.isOwnProfile) const SizedBox(width: 30),
-          GestureDetector(
-            onTap: () {
-              final playbackController = StoryPlaybackController();
-              playbackController.pauseStory(reason: 'More Options Open');
+          // Viewers button (eye icon + count) - only visible for own profile
+          if (widget.isOwnProfile) _buildViewersButton() else const SizedBox(),
+          Row(
+            children: [
+              // Highlight button - only visible for own profile
+              _buildHighlightButton(),
+              // Only add spacing if highlight button is shown
+              if (widget.isOwnProfile) const SizedBox(width: 30),
+              GestureDetector(
+                onTap: () {
+                  final playbackController = StoryPlaybackController();
+                  playbackController.pauseStory(reason: 'More Options Open');
 
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                barrierColor: Colors.black54,
-                builder: (_) => const MoreScreen(),
-              ).then((result) async {
-                if (!context.mounted) return;
-                if (result == 'settings') {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const StorySettingsScreen(),
-                    ),
-                  );
-                  playbackController.resumeStory(
-                    reason: 'Settings Screen Closed',
-                  );
-                } else if (result == 'highlight') {
-                  if (!context.mounted) return;
-                  showInstagramHighlightSheet(context);
-                } else {
-                  playbackController.resumeStory(reason: 'More Options Closed');
-                }
-              });
-            },
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.more_horiz, color: Colors.white),
-                SizedBox(height: 4),
-                Text('More', style: TextStyle(color: Colors.white)),
-              ],
-            ),
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    barrierColor: Colors.black54,
+                    builder: (_) => const MoreScreen(),
+                  ).then((result) async {
+                    if (!context.mounted) return;
+                    if (result == 'settings') {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const StorySettingsScreen(),
+                        ),
+                      );
+                      playbackController.resumeStory(
+                        reason: 'Settings Screen Closed',
+                      );
+                    } else if (result == 'highlight') {
+                      if (!context.mounted) return;
+                      showInstagramHighlightSheet(context);
+                    } else {
+                      playbackController.resumeStory(
+                        reason: 'More Options Closed',
+                      );
+                    }
+                  });
+                },
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.more_horiz, color: Colors.white),
+                    SizedBox(height: 4),
+                    Text('More', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  /// Eye icon + views count - only visible for own profile. Tapping opens
+  /// the Instagram-style "seen by" sheet for the current story.
+  Widget _buildViewersButton() {
+    return Builder(
+      builder: (context) {
+        final currentStoryId = ref.watch(
+          storyStateNotifierProvider.select((s) => s.currentStory?.id),
+        );
+        final viewsCount = ref.watch(
+          storyViewsNotifierProvider.select((s) => s.viewsCount),
+        );
+
+        return GestureDetector(
+          onTap: () {
+            if (currentStoryId == null || currentStoryId.isEmpty) return;
+            showStoryViewersSheet(context, currentStoryId);
+          },
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.keyboard_arrow_up,
+                color: Colors.white70,
+                size: 18,
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.remove_red_eye_outlined,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$viewsCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
