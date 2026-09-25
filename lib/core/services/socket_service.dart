@@ -103,26 +103,32 @@ class SocketService {
   // react to a message with an emoji
 
   bool sendMessageReaction({
-  required String conversationId,
-  required String messageId,
-  required String emoji,
-}) {
-  if (!isConnected) {
-    SocketLogger.error(
-      'Cannot send message reaction - disconnected',
-    );
-    return false;
+    required String conversationId,
+    required String messageId,
+    required String emoji,
+  }) {
+    if (!isConnected) {
+      SocketLogger.error('Cannot send message reaction - disconnected');
+      return false;
+    }
+    return _reconnectManager.send({
+      'type': 'message.react',
+      'conversation_id': conversationId,
+      'message_id': messageId,
+      'emoji': emoji,
+    });
   }
 
-  final reactionData = <String, dynamic>{
-    'type': 'message.react',
-    'conversation_id': conversationId,
-    'message_id': messageId,
-    'emoji': emoji,
-  };
-
-  return _reconnectManager.send(reactionData);
-}
+  bool sendTyping({
+    required String conversationId,
+    required bool isTyping,
+  }) {
+    if (!isConnected) return false;
+    return _reconnectManager.send({
+      'type': isTyping ? 'typing.start' : 'typing.stop',
+      'conversation_id': conversationId,
+    });
+  }
 
   /// Sends a raw event map (e.g. typing indicator, read receipt)
   bool sendEvent(Map<String, dynamic> eventData) {

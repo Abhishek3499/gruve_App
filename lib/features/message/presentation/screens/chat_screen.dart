@@ -87,6 +87,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isDeleteMode = false;
   final Set<String> _selectedMessageIds = {};
 
+  // Typing indicator
+  bool _otherUserTyping = false;
+  Timer? _otherTypingTimer;   // auto-clear peer typing indicator
+  Timer? _selfTypingThrottle; // throttle outgoing typing.start
+  bool _isSelfTyping = false;
+
   bool get _isConversationModel =>
       widget.userOrConversation is ConversationModel;
 
@@ -175,6 +181,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   // emoji picker modal bottom sheet
+
+  void _onTypingChanged(String value) {
+    if (value.trim().isEmpty) {
+      // Field cleared — just reset flag, server handles stop automatically
+      _selfTypingThrottle?.cancel();
+      _isSelfTyping = false;
+      return;
+    }
+    // Throttle: send typing.start at most once every 1.5s
+    if (_isSelfTyping) return;
+    _isSelfTyping = true;
+    _socketService.sendTyping(conversationId: _conversationId, isTyping: true);
+    AppLogger.d('[ChatScreen] typing.start sent for $_conversationId');
+    _selfTypingThrottle = Timer(const Duration(milliseconds: 1500), () {
+      _isSelfTyping = false;
+    });
+  }
+
+  void _handleTypingEvent(Map<String, dynamic> data, String? event) {
+    final incomingConversationId = _extractConversationId(data);
+    if (incomingConversationId.isNotEmpty &&
+        incomingConversationId != _conversationId) return;
+
+    final senderId = data['user_id']?.toString() ?? '';
+    if (senderId == _currentUserId) return;
+
+    // Server sends type="typing", event="typing.start" or event="typing.stop"
+    final isStart = event == 'typing.start';
+
+    if (!mounted) return;
+    _otherTypingTimer?.cancel();
+    setState(() => _otherUserTyping = isStart);
+
+    if (isStart) {
+      // Fallback: auto-clear after 5s if typing.stop is missed
+      _otherTypingTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted) setState(() => _otherUserTyping = false);
+      });
+    }
+  }
 
   void _openEmojiPicker() {
     showModalBottomSheet(
@@ -557,6 +603,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final event = data['event']?.toString();
     final type = data['type']?.toString().toLowerCase();
 
+    // Server sends type="typing" with event="typing.start" or "typing.stop"
+    if (type == 'typing') {
+      _handleTypingEvent(data, event);
+      return;
+    }
+
     if (!_isChatSocketEvent(type, event)) return;
 
     if (event == 'message.reaction') {
@@ -867,6 +919,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (_activeReply != null) {
       setState(() => _activeReply = null);
     }
+
+    // Reset typing throttle on send (server auto-stops the peer's indicator)
+    _selfTypingThrottle?.cancel();
+    _isSelfTyping = false;
 
     _messageController.appendLocalMessage(newMessage);
     _scrollToBottom();
@@ -1490,6 +1546,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     _socketSubscription?.cancel();
+    _selfTypingThrottle?.cancel();
+    _otherTypingTimer?.cancel();
+    _isSelfTyping = false;
     _messageController.removeListener(_onMessageControllerTick);
     _messageController.removeListener(_syncInitialLoadingNotifier);
     _scrollController.removeListener(_onMessageScroll);
@@ -1538,6 +1597,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       explicitUserName: _userName,
                       explicitUserId: _userId,
                       explicitProfileImage: _userAvatar,
+                      isTyping: _otherUserTyping,
                       onBack: () async {
                         if (_showHeaderMenu) {
                           _closeHeaderMenu();
@@ -1595,6 +1655,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     onSendVoice: _sendVoice,
                                     isLoading: _isUploadingMedia,
                                     onEmojiPressed: _openEmojiPicker,
+                                    onChanged: _onTypingChanged,
                                   ),
                               ],
                             );

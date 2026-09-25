@@ -13,6 +13,7 @@ class ChatInputField extends StatefulWidget {
   final Function(String) onSendImage;
   final Function(String) onSendVoice;
   final VoidCallback? onEmojiPressed;
+  final ValueChanged<String>? onChanged;
   final bool isLoading;
   final TextEditingController? controller;
   final String? hintText;
@@ -24,6 +25,7 @@ class ChatInputField extends StatefulWidget {
     required this.onSendVoice,
     required this.isLoading,
     required this.onEmojiPressed,
+    this.onChanged,
     this.controller,
     this.hintText,
   });
@@ -482,6 +484,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
             keyboardType: TextInputType.multiline,
             minLines: 1,
             maxLines: 5,
+            onChanged: widget.onChanged,
             decoration: InputDecoration(
               hintText: widget.hintText ?? 'Text Message',
               hintStyle: const TextStyle(

@@ -11,6 +11,7 @@ class ChatHeader extends StatelessWidget {
   final String? explicitProfileImage;
   final VoidCallback onBack;
   final VoidCallback onMenuTap;
+  final bool isTyping;
 
   const ChatHeader({
     super.key,
@@ -20,6 +21,7 @@ class ChatHeader extends StatelessWidget {
     this.explicitProfileImage,
     required this.onBack,
     required this.onMenuTap,
+    this.isTyping = false,
   });
 
   bool get _isConversationModel => userOrConversation is ConversationModel;
@@ -107,15 +109,30 @@ class ChatHeader extends StatelessWidget {
           Expanded(
             child: GestureDetector(
               onTap: () => _navigateToUserProfile(context),
-              child: Text(
-                _userName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _userName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (isTyping)
+                    const Text(
+                      'typing...',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
