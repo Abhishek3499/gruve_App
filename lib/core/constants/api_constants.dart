@@ -78,6 +78,7 @@ class ApiConstants {
   static const String myStories = 'stories/me/';
   static String userStories(String userId) => 'stories/user/$userId/';
   static String storyView(String storyId) => 'stories/$storyId/view/';
+  static String storyViews(String storyId) => 'stories/$storyId/views/';
 
   // ---- Posts ----
   static const String createPost = 'posts/create-post/';
