@@ -326,7 +326,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         SizedBox(height: context.rh(25)),
                         const StoryList(),
-                        SizedBox(height: context.rh(20)),
+                        SizedBox(height: context.rh(08)),
                         FilterTabs(
                           selectedIndex: selectedTab,
                           onTabSelected: (index) {
@@ -339,6 +339,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             notifier.ensureTabLoaded(index);
                           },
                         ),
+                        SizedBox(height: context.rh(10)),
                       ],
                     ),
                   ),

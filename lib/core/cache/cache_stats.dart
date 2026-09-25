@@ -23,6 +23,7 @@ class CacheStats {
     required this.backgroundRefreshes,
     required this.totalMemorySizeBytes,
     required this.expiredEntries,
+
     required this.averageAge,
     required this.inFlightRequests,
   });

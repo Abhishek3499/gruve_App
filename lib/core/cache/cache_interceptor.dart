@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/cache/cache_data.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
@@ -282,10 +283,13 @@ class CacheInterceptor extends Interceptor {
       buffer.write('?${sortedParams.toString()}');
     }
 
-    // Add user-specific prefix if available
+    // Namespace by account so a cache entry from one logged-in user is never
+    // served to another. Falls back to a generic suffix only when no user id
+    // is known yet (e.g. a request fired before AuthStateManager finishes
+    // initializing) rather than silently sharing one bucket across accounts.
     if (options.headers.containsKey('Authorization')) {
-      // Extract user identifier from token or use generic prefix
-      buffer.write('_user');
+      final userId = AuthStateManager().currentUserId;
+      buffer.write('_user:${(userId == null || userId.isEmpty) ? 'unknown' : userId}');
     }
 
     return buffer.toString();

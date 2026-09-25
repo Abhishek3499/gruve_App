@@ -67,6 +67,16 @@ class CacheInvalidationService {
     );
   }
 
+  /// Invalidate cache when user watches a story — the feed's cached
+  /// has_active_story/has_unseen_story/has_close_friends_story flags for
+  /// this author are now stale and must be re-fetched, not served from disk.
+  Future<void> onStoryViewed(String userId) async {
+    AppLogger.debug('CacheInvalidation', 'story_viewed', data: {'userId': userId});
+    await _helper.invalidateOnAction(
+      CacheAction(type: CacheActionType.storyView, resourceId: userId),
+    );
+  }
+
   /// Invalidate cache when user updates highlights
   Future<void> onHighlightUpdated(String highlightId) async {
     AppLogger.debug('CacheInvalidation', 'highlight_updated', data: {'highlightId': highlightId});
@@ -125,6 +135,9 @@ class CacheInvalidationHelper {
         break;
       case CacheActionType.storyCreate:
         await _invalidateOnStoryCreate(resourceId);
+        break;
+      case CacheActionType.storyView:
+        await _invalidateOnStoryView(resourceId);
         break;
       case CacheActionType.highlightUpdate:
         await _invalidateOnHighlightUpdate(resourceId);
@@ -222,6 +235,21 @@ class CacheInvalidationHelper {
     );
   }
 
+  Future<void> _invalidateOnStoryView(String? userId) async {
+    // The feed and profile responses embed this author's
+    // has_active_story/has_unseen_story/has_close_friends_story flags —
+    // those are now stale the moment a view is recorded.
+    await _cacheManager.invalidatePattern('feed');
+    await _cacheManager.invalidatePattern('posts');
+    await _cacheManager.invalidatePattern('profile');
+
+    AppLogger.debug(
+      'CacheInvalidation',
+      'invalidated',
+      data: {'reason': 'story_view', 'userId': userId},
+    );
+  }
+
   Future<void> _invalidateOnHighlightUpdate(String? highlightId) async {
     // Invalidate highlight caches
     await _cacheManager.invalidatePattern('highlights');
@@ -252,6 +280,7 @@ enum CacheActionType {
   message,
   profileUpdate,
   storyCreate,
+  storyView,
   highlightUpdate,
   draft,
 }

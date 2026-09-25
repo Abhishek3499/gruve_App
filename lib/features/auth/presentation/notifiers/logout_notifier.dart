@@ -27,6 +27,8 @@ import 'package:gruve_app/features/story_preview/presentation/notifiers/post_lik
 import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart'
     show savePostNotifierProvider;
 import 'package:gruve_app/features/story_preview/presentation/notifiers/story_controller_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/story_seen_notifier.dart'
+    show storySeenNotifierProvider;
 import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart'
     show blockNotifierProvider;
 
@@ -99,6 +101,7 @@ class LogoutNotifier extends Notifier<LogoutUiState> {
         ref.read(notificationNotifierProvider.notifier).reset();
         ref.read(messageNotifierProvider.notifier).reset();
         ref.read(postLikeNotifierProvider.notifier).reset();
+        ref.read(storySeenNotifierProvider.notifier).reset();
         ref.read(savePostNotifierProvider.notifier).reset();
         ref.read(draftsNotifierProvider.notifier).reset();
         ref.read(highlightFlowNotifierProvider.notifier).reset();

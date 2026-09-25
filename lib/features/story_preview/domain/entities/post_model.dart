@@ -35,6 +35,8 @@ class Post {
   bool isSubscribed;
   String profilePicture;
   bool hasActiveStory;
+  bool hasUnseenStory;
+  bool hasCloseFriendsStory;
 
   final List<TaggedUser> taggedUsers;
 
@@ -53,6 +55,8 @@ class Post {
     required this.profilePicture,
     this.mediaType = 'image',
     this.hasActiveStory = false,
+    this.hasUnseenStory = false,
+    this.hasCloseFriendsStory = false,
     this.taggedUsers = const [],
   });
 
@@ -332,6 +336,18 @@ class Post {
           json['has_active_story'] ??
           json['hasActiveStory'] ??
           false,
+      hasUnseenStory:
+          json['user']?['has_unseen_story'] ??
+          json['creator']?['has_unseen_story'] ??
+          json['has_unseen_story'] ??
+          json['hasUnseenStory'] ??
+          false,
+      hasCloseFriendsStory:
+          json['user']?['has_close_friends_story'] ??
+          json['creator']?['has_close_friends_story'] ??
+          json['has_close_friends_story'] ??
+          json['hasCloseFriendsStory'] ??
+          false,
       taggedUsers: taggedList,
     );
   }
@@ -599,7 +615,16 @@ class Post {
       mediaType: isVideo || (other?.isVideo ?? false)
           ? 'video'
           : (other?.mediaType ?? mediaType),
-      hasActiveStory: hasActiveStory || (other?.hasActiveStory ?? false),
+      // Story presence/seen state is live, mutable backend state — it can
+      // flip back to false (viewed, expired). Unlike the OR-merged fields
+      // above (safe to only ever gain a value from a partial payload), an
+      // OR here would make these flags one-way: once true, `other`
+      // reporting the fresher, correct `false` could never win. [other] is
+      // always the more-authoritative, freshly-fetched side at every call
+      // site, so it overrides outright when present.
+      hasActiveStory: other?.hasActiveStory ?? hasActiveStory,
+      hasUnseenStory: other?.hasUnseenStory ?? hasUnseenStory,
+      hasCloseFriendsStory: other?.hasCloseFriendsStory ?? hasCloseFriendsStory,
       taggedUsers: taggedUsers.isNotEmpty
           ? taggedUsers
           : (other?.taggedUsers ?? const []),
@@ -622,6 +647,8 @@ class Post {
       'is_subscribed': isSubscribed,
       'profile_picture': profilePicture,
       'has_active_story': hasActiveStory,
+      'has_unseen_story': hasUnseenStory,
+      'has_close_friends_story': hasCloseFriendsStory,
       'tagged_users': taggedUsers.map((e) => e.toJson()).toList(),
     };
   }
@@ -641,6 +668,8 @@ class Post {
     String? profilePicture,
     String? mediaType,
     bool? hasActiveStory,
+    bool? hasUnseenStory,
+    bool? hasCloseFriendsStory,
     List<TaggedUser>? taggedUsers,
   }) {
     return Post(
@@ -658,6 +687,8 @@ class Post {
       profilePicture: profilePicture ?? this.profilePicture,
       mediaType: mediaType ?? this.mediaType,
       hasActiveStory: hasActiveStory ?? this.hasActiveStory,
+      hasUnseenStory: hasUnseenStory ?? this.hasUnseenStory,
+      hasCloseFriendsStory: hasCloseFriendsStory ?? this.hasCloseFriendsStory,
       taggedUsers: taggedUsers ?? this.taggedUsers,
     );
   }

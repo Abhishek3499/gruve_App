@@ -46,6 +46,7 @@ class ApiConstants {
 
   // ---- Comments ----
   static const String comments = 'posts/comments/';
+  static const String commentLikeToggle = 'posts/comments/like/toggle/';
 
   // ---- Highlights ----
   static const String myHighlights = 'highlights/mine/';
@@ -76,6 +77,7 @@ class ApiConstants {
   static const String stories = 'stories/';
   static const String myStories = 'stories/me/';
   static String userStories(String userId) => 'stories/user/$userId/';
+  static String storyView(String storyId) => 'stories/$storyId/view/';
 
   // ---- Posts ----
   static const String createPost = 'posts/create-post/';

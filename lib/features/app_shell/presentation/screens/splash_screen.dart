@@ -2,10 +2,8 @@ import 'dart:developer' as developer;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
-import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/features/home/presentation/screens/home_screen.dart';
 import 'package:gruve_app/features/app_shell/presentation/screens/intro_screen.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
@@ -96,21 +94,9 @@ class _SplashScreenState extends State<SplashScreen> {
         name: 'SplashScreen',
       );
 
-      // Single eager profile load (posts, highlights, avatar) — avoids duplicate profile_data.
-      try {
-        final container = ProviderScope.containerOf(context, listen: false);
-        final profileState = container.read(profileNotifierProvider);
-        if (profileState.user == null) {
-          unawaited(
-            container
-                .read(profileNotifierProvider.notifier)
-                .fetchProfileData(fetchUserReason: 'splash_eager_load'),
-          );
-        }
-      } catch (e) {
-        AppLogger.d('🚨 [Splash] Eager profile data pre-fetch failed: $e');
-      }
-
+      // Profile/highlights are fetched by HomeScreen only once the main feed
+      // (get-post) has finished loading, so the feed always wins the network
+      // race on cold start. Nothing to prefetch here.
       _navigateTo(const HomeScreen());
       return;
     }

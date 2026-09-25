@@ -65,6 +65,9 @@ class ProfileHeader extends StatelessWidget {
               StoryAvatarIndicator(
                 profileImage: profileImage,
                 hasActiveStory: hasActiveStory,
+                // Seen/unseen doesn't apply to your own story — always show
+                // the vivid ring (never the faded "seen" style) while active.
+                hasUnseenStory: hasActiveStory,
                 hasCloseFriendsStory: hasCloseFriendsStory,
                 showCameraIcon: true,
                 onCameraTap: onAvatarCameraTap,

@@ -155,6 +155,13 @@ class AuthStateManager extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Clear the HTTP response cache first so that if a later cleanup step
+      // throws, we've already dropped the previous account's cached
+      // feed/profile/conversations/search data instead of leaving it on
+      // disk for whoever logs in next.
+      await CacheManager().clear();
+      AppLogger.d('✅ [AuthState] All caches cleared');
+
       // Clear all stored data
       await TokenStorage.clearTokens();
       await TokenStorage.clearResetToken();
@@ -169,11 +176,6 @@ class AuthStateManager extends ChangeNotifier {
       // Disable socket reconnects and cleanly disconnect
       SocketService().setAuthState(false);
       SocketService().disconnect();
-
-      // Clear all caches
-      final cacheManager = CacheManager();
-      await cacheManager.clear();
-      AppLogger.d('✅ [AuthState] All caches cleared');
 
       // Dispose all cached video controllers
       await VideoFrameCache.disposeAll();

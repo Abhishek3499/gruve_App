@@ -83,13 +83,21 @@ class CommentService {
     }
   }
 
-  Future<Comment?> addComment(String postId, String body) async {
+  Future<Comment?> addComment(
+    String postId,
+    String body, {
+    String? parentCommentId,
+  }) async {
     final token = await TokenStorage.getAccessToken();
     if (token == null || token.isEmpty) {
       throw Exception('User is not authenticated (token is null or empty)');
     }
     final opts = Options();
-    final payload = {'post_id': postId, 'body': body};
+    final payload = {
+      'post_id': postId,
+      'body': body,
+      'parent_comment_id': ?parentCommentId,
+    };
 
     Comment? comment;
     try {
@@ -184,6 +192,53 @@ class CommentService {
     }
 
     if (map.containsKey('id')) return map;
+    return null;
+  }
+
+  Future<CommentLikeResult?> toggleCommentLike(String commentId) async {
+    final id = int.tryParse(commentId);
+    if (id == null || id <= 0) return null;
+
+    final token = await TokenStorage.getAccessToken();
+    try {
+      final res = await _dio.post(
+        ApiConstants.commentLikeToggle,
+        data: {'comment_id': id},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          sendTimeout: const Duration(seconds: 8),
+          receiveTimeout: const Duration(seconds: 8),
+          extra: {'skipCache': true, 'bypassCache': true},
+        ),
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final data = _extractLikeJson(res.data);
+        if (data != null) {
+          return CommentLikeResult(
+            commentId: data['comment_id']?.toString() ?? commentId,
+            isLiked: data['is_liked'] == true,
+            likeCount: data['like_count'] is int
+                ? data['like_count'] as int
+                : int.tryParse(data['like_count']?.toString() ?? '') ?? 0,
+          );
+        }
+      }
+      return null;
+    } catch (e) {
+      AppLogger.d('[CommentService] toggleCommentLike failed: $e');
+      return null;
+    }
+  }
+
+  Map<String, dynamic>? _extractLikeJson(dynamic data) {
+    if (data is! Map) return null;
+    final map = Map<String, dynamic>.from(data);
+
+    final nestedData = map['data'];
+    if (nestedData is Map) return Map<String, dynamic>.from(nestedData);
+
+    if (map.containsKey('comment_id')) return map;
     return null;
   }
 

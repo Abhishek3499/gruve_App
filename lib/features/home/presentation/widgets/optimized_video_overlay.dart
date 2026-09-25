@@ -121,6 +121,8 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
             initialIsSubscribed:
                 widget.selectedTab == 'Subscribed' || post.isSubscribed,
             hasActiveStory: post.hasActiveStory,
+            hasUnseenStory: post.hasUnseenStory,
+            hasCloseFriendsStory: post.hasCloseFriendsStory,
             subscribeController: _subscribeController,
             onOwnProfileTap: widget.onOwnProfileTap,
             taggedUsers: post.taggedUsers,

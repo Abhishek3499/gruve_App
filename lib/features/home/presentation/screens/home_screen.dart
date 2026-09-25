@@ -20,6 +20,7 @@ import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart
 import 'package:gruve_app/features/camera/presentation/controller/camera_handler.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
+import 'package:gruve_app/features/profile/domain/entities/profile_model.dart';
 import 'package:gruve_app/features/message/presentation/notifiers/user_notifier.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
@@ -58,28 +59,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// True once the share processing [showGeneralDialog] route is on the stack.
   bool _shareProcessingOverlayVisible = false;
 
+  ProviderSubscription<ProfileModel?>? _profileUserSubscription;
+
   @override
   void initState() {
     super.initState();
     AppLogger.d("🏠 Home Screen initState called");
 
-    // Splash already eager-loads profile — only sync nav avatar or backfill if missing.
+    // Keep the nav-bar avatar (currentUserNotifierProvider) in sync with
+    // whatever profileNotifierProvider resolves to — whether that's an
+    // already-cached user (synced immediately below) or the deferred fetch
+    // kicked off later by _handleInitialFeedReady once the main feed has
+    // loaded. Without this, the deferred fetch would never reach the nav bar.
+    _profileUserSubscription = ref.listenManual(
+      profileNotifierProvider.select((s) => s.user),
+      (previous, next) {
+        if (next == null) return;
+        ref
+            .read(currentUserNotifierProvider.notifier)
+            .updateProfileData(username: next.username, imageUrl: next.profileImage);
+      },
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final profileState = ref.read(profileNotifierProvider);
-      final currentUser = ref.read(currentUserNotifierProvider.notifier);
-      final cachedUser = profileState.user;
+      final cachedUser = ref.read(profileNotifierProvider).user;
       if (cachedUser != null) {
-        currentUser.updateProfileData(
-          username: cachedUser.username,
-          imageUrl: cachedUser.profileImage,
-        );
-      } else if (!profileState.isLoading) {
         ref
-            .read(profileNotifierProvider.notifier)
-            .fetchProfileData(fetchUserReason: 'app_start_eager_load');
-      } else {
-        currentUser.fetchCurrentUserProfile();
+            .read(currentUserNotifierProvider.notifier)
+            .updateProfileData(
+              username: cachedUser.username,
+              imageUrl: cachedUser.profileImage,
+            );
       }
 
       CameraControllerService.prewarmCamera();
@@ -199,6 +210,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               "🏠 Home Screen: Video controller ready and set to bridge",
             );
           },
+          onInitialFeedReady: _handleInitialFeedReady,
         );
       case 1:
         return const SearchScreen();
@@ -208,6 +220,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return const ProfileScreen();
       default:
         return const SizedBox.shrink();
+    }
+  }
+
+  /// Fired by [VideoFeed] once its initial get-post load has finished — the
+  /// main feed always gets priority on the network, so profile/highlights
+  /// (and anything else module-level) are only kicked off after that.
+  bool _initialFeedReadyHandled = false;
+  void _handleInitialFeedReady() {
+    if (_initialFeedReadyHandled || !mounted) return;
+    _initialFeedReadyHandled = true;
+
+    final profileState = ref.read(profileNotifierProvider);
+    final currentUser = ref.read(currentUserNotifierProvider.notifier);
+    if (profileState.user == null) {
+      if (!profileState.isLoading) {
+        ref
+            .read(profileNotifierProvider.notifier)
+            .fetchProfileData(fetchUserReason: 'app_start_eager_load');
+      } else {
+        currentUser.fetchCurrentUserProfile();
+      }
     }
   }
 
@@ -575,6 +608,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     VideoPlaybackGuard.pauseHomeFeed = null;
     _isDisposed = true;
     _currentVideoService?.dispose();
+    _profileUserSubscription?.close();
 
     // 🚀 CLEANUP: Dispose ValueNotifiers
     _currentIndex.dispose();
