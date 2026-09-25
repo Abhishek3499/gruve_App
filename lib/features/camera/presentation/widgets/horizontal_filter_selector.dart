@@ -36,6 +36,13 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   double _lastDragY = 0.0;
   DateTime? _recordingStartedAt;
 
+  // Drag-to-zoom sends a native setZoomLevel() call per frame. Awaiting each
+  // one inline let overlapping drag frames queue up concurrent platform-channel
+  // calls, flooding it while the encoder was also busy recording and causing
+  // visible lag. Serialize calls and only ever send the latest pending target.
+  bool _zoomUpdateInFlight = false;
+  double? _pendingZoomTarget;
+
   // Some devices throw if stopVideoRecording() is called too soon after
   // startVideoRecording() returns, since the native recorder hasn't fully
   // spun up yet. Enforce a small floor before allowing a stop.
@@ -278,11 +285,25 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       _maxZoom,
     );
 
-    if ((_targetZoom - _cameraService.displayZoom).abs() > 0.01) {
-      _currentZoom = _targetZoom;
-      await _cameraService.setZoomLevel(_targetZoom);
-      if (!mounted) return;
-      setState(() {});
+    if ((_targetZoom - _currentZoom).abs() < 0.01) return;
+
+    // Update the on-screen zoom label immediately so the drag feels responsive,
+    // independent of how long the native call below takes to complete.
+    _currentZoom = _targetZoom;
+    if (mounted) setState(() {});
+
+    _pendingZoomTarget = _targetZoom;
+    if (_zoomUpdateInFlight) return;
+
+    _zoomUpdateInFlight = true;
+    try {
+      while (_pendingZoomTarget != null) {
+        final zoom = _pendingZoomTarget!;
+        _pendingZoomTarget = null;
+        await _cameraService.setZoomLevel(zoom);
+      }
+    } finally {
+      _zoomUpdateInFlight = false;
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/profile_post_detail_screen.dart';
+import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 
 import 'package:gruve_app/features/notification/presentation/widgets/header.dart';
 import 'package:gruve_app/features/notification/presentation/widgets/follow_tile.dart';
@@ -95,7 +96,17 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
 
       try {
         final postService = PostService();
-        final post = await postService.fetchPostById(n.postId!);
+        // The generic get-post endpoint doesn't reliably return arbitrary
+        // posts by id, so an author id is required to fall back to
+        // searching that author's profile grid (see fetchPostById).
+        final isTagNotification = n.type == 'post_tag' || n.type == 'tag';
+        final authorUserId = isTagNotification
+            ? n.actor?.id
+            : await TokenStorage.getCurrentUserId();
+        final post = await postService.fetchPostById(
+          n.postId!,
+          authorUserId: authorUserId,
+        );
 
         if (mounted) {
           Navigator.pop(context); // pop loading dialog
