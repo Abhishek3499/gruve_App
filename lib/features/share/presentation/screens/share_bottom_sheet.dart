@@ -98,7 +98,9 @@ class _ShareBottomSheetState extends ConsumerState<ShareBottomSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.paddingOf(context).bottom,
       ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.55,
