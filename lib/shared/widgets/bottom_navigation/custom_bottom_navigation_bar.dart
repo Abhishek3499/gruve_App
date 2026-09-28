@@ -25,16 +25,23 @@ class CustomBottomNavigationBar extends ConsumerStatefulWidget {
 
 class _CustomBottomNavigationBarState
     extends ConsumerState<CustomBottomNavigationBar> {
+  // Minimum breathing room above the screen edge even if a device briefly
+  // reports a zero bottom inset (e.g. mid rotation, or a manufacturer quirk).
+  static const double _minBottomGap = 8;
+
   @override
   Widget build(BuildContext context) {
-    final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
     return SizedBox(
-      height: 100 + bottomPadding,
+      height: 100 + bottomInset,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
         children: [
-          // NAVBAR with CustomPaint
+          // NAVBAR with CustomPaint — the background is allowed to bleed
+          // into the system gesture/nav bar area for an edge-to-edge look,
+          // while the interactive content below is kept clear of it via
+          // SafeArea.
           Positioned(
             bottom: -2,
             left: 0,
@@ -42,36 +49,39 @@ class _CustomBottomNavigationBarState
             child: CustomPaint(
               painter: NavBarPainter(),
               child: SizedBox(
-                height: 80 + bottomPadding,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: 28,
-                    bottom: bottomPadding,
-                  ), // icons neeche push karo, bottom padding handles gesture bar
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      NavItem(
-                        imagePath: AppAssets.homelogo,
-                        index: 0,
-                        selectedIndex: widget.selectedIndex,
-                        onTap: () => widget.onItemSelected(0),
-                      ),
-                      NavItem(
-                        imagePath: AppAssets.search,
-                        index: 1,
-                        selectedIndex: widget.selectedIndex,
-                        onTap: () => widget.onItemSelected(1),
-                      ),
-                      const SizedBox(width: 55),
-                      NavItem(
-                        imagePath: AppAssets.notification,
-                        index: 3,
-                        selectedIndex: widget.selectedIndex,
-                        onTap: () => widget.onItemSelected(3),
-                      ),
-                      _buildProfileNavItem(context),
-                    ],
+                height: 80 + bottomInset,
+                child: SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  minimum: const EdgeInsets.only(bottom: _minBottomGap),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 28),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        NavItem(
+                          imagePath: AppAssets.homelogo,
+                          index: 0,
+                          selectedIndex: widget.selectedIndex,
+                          onTap: () => widget.onItemSelected(0),
+                        ),
+                        NavItem(
+                          imagePath: AppAssets.search,
+                          index: 1,
+                          selectedIndex: widget.selectedIndex,
+                          onTap: () => widget.onItemSelected(1),
+                        ),
+                        const SizedBox(width: 55),
+                        NavItem(
+                          imagePath: AppAssets.notification,
+                          index: 3,
+                          selectedIndex: widget.selectedIndex,
+                          onTap: () => widget.onItemSelected(3),
+                        ),
+                        _buildProfileNavItem(context),
+                      ],
+                    ),
                   ),
                 ),
               ),

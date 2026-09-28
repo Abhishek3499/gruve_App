@@ -99,24 +99,39 @@ class CommentTile extends StatelessWidget {
                   ),
                 ),
                 if (!isReply && comment.replyCount > 0) ...[
-                  const SizedBox(height: 10),
-                  InkWell(
-                    onTap: onToggleReplies,
-                    child: Row(
-                      children: [
-                        Container(width: 20, height: 1, color: Colors.white38),
-                        const SizedBox(width: 8),
-                        Text(
-                          isExpanded
-                              ? 'Hide replies'
-                              : 'View replies (${comment.replyCount})',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  const SizedBox(height: 6),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: onToggleReplies,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 6,
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 1,
+                              color: Colors.white38,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isExpanded
+                                  ? 'Hide replies'
+                                  : 'View replies (${comment.replyCount})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   if (isExpanded) ...[

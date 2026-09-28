@@ -193,7 +193,8 @@ class _CommentSheetState extends State<CommentSheet> {
     if (result != null) {
       _updateComment(
         comment.id,
-        (c) => c.copyWith(isLiked: result!.isLiked, likeCount: result.likeCount),
+        (c) =>
+            c.copyWith(isLiked: result!.isLiked, likeCount: result.likeCount),
       );
     } else {
       _updateComment(
@@ -431,7 +432,10 @@ class _CommentSheetState extends State<CommentSheet> {
             margin: EdgeInsets.only(
               left: 16,
               right: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              bottom:
+                  MediaQuery.of(context).viewInsets.bottom +
+                  MediaQuery.paddingOf(context).bottom +
+                  16,
               top: 8,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

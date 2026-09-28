@@ -324,61 +324,292 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  // Handle bar
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(2),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Top action buttons
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final isSaved = widget.postId != null
-                                ? ref.watch(
-                                    savePostNotifierProvider.select(
-                                      (state) => state.isSaved(widget.postId!),
-                                    ),
-                                  )
-                                : false;
+                    // Top action buttons
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final isSaved = widget.postId != null
+                                  ? ref.watch(
+                                      savePostNotifierProvider.select(
+                                        (state) =>
+                                            state.isSaved(widget.postId!),
+                                      ),
+                                    )
+                                  : false;
 
-                            return OptionButton(
-                              icon: isSaved ? AppAssets.savs : AppAssets.saves,
-                              label: isSaved ? 'Unsave' : 'Save',
-                              onTap: () {
-                                if (widget.postId == null) {
-                                  _showActionSnackBar(
-                                    'Post ID not available',
-                                    context,
+                              return OptionButton(
+                                icon: isSaved
+                                    ? AppAssets.savs
+                                    : AppAssets.saves,
+                                label: isSaved ? 'Unsave' : 'Save',
+                                onTap: () {
+                                  if (widget.postId == null) {
+                                    _showActionSnackBar(
+                                      'Post ID not available',
+                                      context,
+                                    );
+                                    return;
+                                  }
+
+                                  HapticFeedback.lightImpact();
+
+                                  final saveNotifier = ref.read(
+                                    savePostNotifierProvider.notifier,
                                   );
-                                  return;
-                                }
+                                  final scaffoldMessenger =
+                                      ScaffoldMessenger.of(context);
 
-                                HapticFeedback.lightImpact();
+                                  saveNotifier
+                                      .toggleSavePost(widget.postId!)
+                                      .catchError((e) {
+                                        scaffoldMessenger
+                                            .removeCurrentSnackBar();
+                                        scaffoldMessenger.showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.error_outline,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 12),
+                                                const Expanded(
+                                                  child: Text(
+                                                    'Failed to save post',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            margin: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 16,
+                                            ),
+                                            duration: const Duration(
+                                              milliseconds: 1500,
+                                            ),
+                                            elevation: 8,
+                                          ),
+                                        );
+                                      });
+                                },
+                              );
+                            },
+                          ),
+                          OptionButton(
+                            icon: AppAssets.coll,
+                            label: 'Collab',
+                            onTap: () => _handleAction('Collab'),
+                          ),
+                          OptionButton(
+                            icon: AppAssets.remixx,
+                            label: 'Remix',
+                            onTap: () => _handleAction('Remix'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-                                final saveNotifier = ref.read(
-                                  savePostNotifierProvider.notifier,
-                                );
-                                final scaffoldMessenger = ScaffoldMessenger.of(
-                                  context,
-                                );
+                    // Menu list
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            if (!isSelf)
+                              OptionItem(
+                                title: 'Not interested',
+                                icon: AppAssets.eye,
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) =>
+                                        const SimpleNotInterestedSheet(),
+                                  );
+                                },
+                              ),
+                            if (!isSelf) const SizedBox(height: 12),
+                            OptionItem(
+                              title: 'Download',
+                              icon: AppAssets.downloads,
+                              onTap: () => _handleDownload(ref),
+                            ),
+                            if (!isSelf) const SizedBox(height: 12),
+                            if (!isSelf)
+                              OptionItem(
+                                title: 'Block',
+                                icon: AppAssets.blocks,
+                                onTap: () async {
+                                  // Save references BEFORE any async operation
+                                  final blockNotifier = ref.read(
+                                    blockNotifierProvider.notifier,
+                                  );
+                                  final scaffoldMessenger =
+                                      ScaffoldMessenger.of(context);
+                                  final navigator = Navigator.of(context);
 
-                                saveNotifier
-                                    .toggleSavePost(widget.postId!)
-                                    .catchError((e) {
-                                      scaffoldMessenger.removeCurrentSnackBar();
+                                  navigator.pop();
+
+                                  final result =
+                                      await showModalBottomSheet<bool>(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (context) => SimpleBlockSheet(
+                                          userName: widget.userName,
+                                          profileImage: widget.profileImage,
+                                        ),
+                                      );
+
+                                  AppLogger.d(
+                                    ' SimpleBlockSheet returned: $result',
+                                  );
+
+                                  // If user confirmed block action
+                                  if (result == true) {
+                                    AppLogger.d(' User confirmed block');
+
+                                    // 🚀 INSTANT SNACKBAR - Show immediately
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Colors.white),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                'Blocking ${widget.userName ?? "user"}...',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        backgroundColor: AppColors.softPurple,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 16,
+                                        ),
+                                        duration: const Duration(
+                                          milliseconds: 500,
+                                        ),
+                                        elevation: 8,
+                                      ),
+                                    );
+
+                                    // API call in background
+                                    try {
+                                      await blockNotifier.toggleBlockUser(
+                                        widget.userId,
+                                      );
+                                      AppLogger.d('🔴 API call completed');
+
+                                      if (!mounted) return;
+
+                                      final isBlocked = blockNotifier.isBlocked(
+                                        widget.userId,
+                                      );
+                                      AppLogger.d(
+                                        '🔴 Block status: $isBlocked',
+                                      );
+
+                                      // Success snackbar
+                                      scaffoldMessenger.showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.check_circle,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  '${widget.userName ?? "User"} blocked successfully',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          backgroundColor: AppColors.softPurple,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
+                                          duration: const Duration(
+                                            milliseconds: 1500,
+                                          ),
+                                          elevation: 8,
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      AppLogger.d('🔴 Error: $e');
                                       scaffoldMessenger.showSnackBar(
                                         SnackBar(
                                           content: Row(
@@ -391,7 +622,7 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                                               const SizedBox(width: 12),
                                               const Expanded(
                                                 child: Text(
-                                                  'Failed to save post',
+                                                  'Failed to block user',
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 14,
@@ -418,259 +649,38 @@ class _VideoOptionsSheetState extends ConsumerState<VideoOptionsSheet>
                                           elevation: 8,
                                         ),
                                       );
-                                    });
-                              },
-                            );
-                          },
-                        ),
-                        OptionButton(
-                          icon: AppAssets.coll,
-                          label: 'Collab',
-                          onTap: () => _handleAction('Collab'),
-                        ),
-                        OptionButton(
-                          icon: AppAssets.remixx,
-                          label: 'Remix',
-                          onTap: () => _handleAction('Remix'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Menu list
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          if (!isSelf)
-                            OptionItem(
-                              title: 'Not interested',
-                              icon: AppAssets.eye,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) =>
-                                      const SimpleNotInterestedSheet(),
-                                );
-                              },
-                            ),
-                          if (!isSelf) const SizedBox(height: 12),
-                          OptionItem(
-                            title: 'Download',
-                            icon: AppAssets.downloads,
-                            onTap: () => _handleDownload(ref),
-                          ),
-                          if (!isSelf) const SizedBox(height: 12),
-                          if (!isSelf)
-                            OptionItem(
-                              title: 'Block',
-                              icon: AppAssets.blocks,
-                              onTap: () async {
-                                // Save references BEFORE any async operation
-                                final blockNotifier = ref.read(
-                                  blockNotifierProvider.notifier,
-                                );
-                                final scaffoldMessenger = ScaffoldMessenger.of(
-                                  context,
-                                );
-                                final navigator = Navigator.of(context);
-
-                                navigator.pop();
-
-                                final result = await showModalBottomSheet<bool>(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (context) => SimpleBlockSheet(
-                                    userName: widget.userName,
-                                    profileImage: widget.profileImage,
-                                  ),
-                                );
-
-                                AppLogger.d(
-                                  ' SimpleBlockSheet returned: $result',
-                                );
-
-                                // If user confirmed block action
-                                if (result == true) {
-                                  AppLogger.d(' User confirmed block');
-
-                                  // 🚀 INSTANT SNACKBAR - Show immediately
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Row(
-                                        children: [
-                                          const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                    Colors.white,
-                                                  ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              'Blocking ${widget.userName ?? "user"}...',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      backgroundColor: AppColors.softPurple,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      duration: const Duration(
-                                        milliseconds: 500,
-                                      ),
-                                      elevation: 8,
-                                    ),
-                                  );
-
-                                  // API call in background
-                                  try {
-                                    await blockNotifier.toggleBlockUser(
-                                      widget.userId,
-                                    );
-                                    AppLogger.d('🔴 API call completed');
-
-                                    if (!mounted) return;
-
-                                    final isBlocked = blockNotifier.isBlocked(
-                                      widget.userId,
-                                    );
-                                    AppLogger.d('🔴 Block status: $isBlocked');
-
-                                    // Success snackbar
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.check_circle,
-                                              color: Colors.white,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                '${widget.userName ?? "User"} blocked successfully',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        backgroundColor: AppColors.softPurple,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 16,
-                                        ),
-                                        duration: const Duration(
-                                          milliseconds: 1500,
-                                        ),
-                                        elevation: 8,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    AppLogger.d('🔴 Error: $e');
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.error_outline,
-                                              color: Colors.white,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            const Expanded(
-                                              child: Text(
-                                                'Failed to block user',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 16,
-                                        ),
-                                        duration: const Duration(
-                                          milliseconds: 1500,
-                                        ),
-                                        elevation: 8,
-                                      ),
-                                    );
+                                    }
+                                  } else {
+                                    AppLogger.d('🔴 User cancelled');
                                   }
-                                } else {
-                                  AppLogger.d('🔴 User cancelled');
-                                }
-                              },
-                            ),
-                          if (!isSelf) const SizedBox(height: 12),
-                          if (!isSelf)
-                            OptionItem(
-                              title: 'Report',
-                              icon: AppAssets.reports,
-                              iconColor: Colors.red,
-                              textColor: Colors.red,
-                              hasArrow: true,
-                              onTap: () {
-                                final userId = widget.userId;
-                                final navigator = Navigator.of(context);
-                                navigator.pop();
-                                ReportUserFlow.showAndSubmit(
-                                  context: navigator.context,
-                                  userId: userId,
-                                  target: ReportSheetTarget.post,
-                                );
-                              },
-                            ),
-                        ],
+                                },
+                              ),
+                            if (!isSelf) const SizedBox(height: 12),
+                            if (!isSelf)
+                              OptionItem(
+                                title: 'Report',
+                                icon: AppAssets.reports,
+                                iconColor: Colors.red,
+                                textColor: Colors.red,
+                                hasArrow: true,
+                                onTap: () {
+                                  final userId = widget.userId;
+                                  final navigator = Navigator.of(context);
+                                  navigator.pop();
+                                  ReportUserFlow.showAndSubmit(
+                                    context: navigator.context,
+                                    userId: userId,
+                                    target: ReportSheetTarget.post,
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
           ),

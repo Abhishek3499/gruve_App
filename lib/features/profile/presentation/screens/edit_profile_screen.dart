@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
-import 'package:gruve_app/features/profile/presentation/controller/edit_profile_controller.dart';
+import 'package:gruve_app/features/profile/presentation/notifiers/edit_profile_notifier.dart';
 import 'package:gruve_app/features/account/domain/entities/profile_model.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/personal_info_card.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_image_picker.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
-class EditProfileScreen extends StatefulWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   final ProfileModel? initialProfile;
 
   const EditProfileScreen({super.key, this.initialProfile});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  late EditProfileController _controller;
-
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
@@ -39,10 +38,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = EditProfileController();
     _initializeControllers();
-    _fetchProfileData();
     _setupFocusListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchProfileData());
   }
 
   void _setupFocusListeners() {
@@ -100,31 +98,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _fetchProfileData() async {
-    await _controller.fetchProfile();
+    await ref.read(editProfileNotifierProvider.notifier).fetchProfile();
 
     if (!mounted) return;
 
-    if (_controller.profileResponse != null) {
+    if (ref.read(editProfileNotifierProvider).profileResponse != null) {
       _populateFormFields();
-    } else {
-      setState(() {});
     }
   }
 
   void _populateFormFields() {
-    if (_controller.profileResponse == null) {
-      return;
-    }
+    final state = ref.read(editProfileNotifierProvider);
+    if (state.profileResponse == null) return;
 
-    _nameController.text = _controller.fullName;
-    _usernameController.text = _controller.username;
-    _emailController.text = _controller.email;
-    _phoneController.text = _controller.phone;
-    _genderController.text = _controller.gender;
-    _bioController.text = _controller.bio;
-    _profileImagePath = _controller.currentProfilePicture;
-
-    setState(() {});
+    _nameController.text = state.fullName;
+    _usernameController.text = state.username;
+    _emailController.text = state.email;
+    _phoneController.text = state.phone;
+    _genderController.text = state.gender;
+    _bioController.text = state.bio;
+    setState(() => _profileImagePath = state.currentProfilePicture);
   }
 
   @override
@@ -164,13 +157,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     FocusScope.of(context).unfocus();
+    final notifier = ref.read(editProfileNotifierProvider.notifier);
+    final currentState = ref.read(editProfileNotifierProvider);
+
     final fullname = _nameController.text.trim();
     final username = _usernameController.text.trim();
     final bio = _bioController.text.trim().isEmpty
         ? null
         : _bioController.text.trim();
 
-    final validationError = _controller.validateForm(
+    final validationError = notifier.validateForm(
       fullName: fullname,
       username: username,
       bio: bio,
@@ -181,10 +177,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    final currentFullName = _controller.fullName.trim();
-    final currentUsername = _controller.username.trim();
-    final currentBio = _controller.bio.trim();
-    final currentProfilePicture = _controller.currentProfilePicture.trim();
+    final currentFullName = currentState.fullName.trim();
+    final currentUsername = currentState.username.trim();
+    final currentBio = currentState.bio.trim();
+    final currentProfilePicture = currentState.currentProfilePicture.trim();
     final hasChanges =
         fullname != currentFullName ||
         username != currentUsername ||
@@ -200,36 +196,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ? _profileImagePath
         : null;
 
-    if (!mounted) return;
-
-    setState(() {});
-
-    await _controller.updateProfile(
+    await notifier.updateProfile(
       fullname: fullname,
       username: username,
       bio: bio,
-      profile_picture: profilePicture,
+      profilePicture: profilePicture,
     );
 
     if (!mounted) return;
 
-    if (_controller.errorMessage == null &&
-        _controller.profileResponse != null) {
+    final updatedState = ref.read(editProfileNotifierProvider);
+    if (updatedState.errorMessage == null &&
+        updatedState.profileResponse != null) {
       _populateFormFields();
       _showSnackBar('Profile updated successfully', Colors.green);
-      Navigator.of(context).pop(_controller.profileResponse);
+      Navigator.of(context).pop(updatedState.profileResponse);
       return;
     }
 
-    if (_controller.errorMessage != null) {
-      if (mounted) _showSnackBar(_controller.errorMessage!, Colors.red);
+    if (updatedState.errorMessage != null) {
+      _showSnackBar(updatedState.errorMessage!, Colors.red);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(editProfileNotifierProvider);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1B182D),
+      backgroundColor: const Color(0xFF7A2C8F),
       body: Column(
         children: [
           Container(
@@ -262,8 +257,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     left: 0,
                     right: 0,
                     child: Text(
-                      _controller.profileResponse != null
-                          ? 'Hey, ${_controller.fullName}'
+                      state.profileResponse != null
+                          ? 'Hey, ${state.fullName}'
                           : 'Hey, User',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -278,89 +273,77 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isKeyboardOpen =
-                    MediaQuery.of(context).viewInsets.bottom > 0;
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Scrollable dark card — avatar below stays fixed, outside
+                // this scroll view, so it never gets clipped while scrolling.
+                Positioned.fill(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isKeyboardOpen =
+                          MediaQuery.of(context).viewInsets.bottom > 0;
 
-                if (_wasKeyboardOpen != isKeyboardOpen) {
-                  _wasKeyboardOpen = isKeyboardOpen;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (isKeyboardOpen) {
-                      _scrollToFocusedField();
-                    } else {
-                      _scrollToOffset(0);
-                    }
-                  });
-                }
+                      if (_wasKeyboardOpen != isKeyboardOpen) {
+                        _wasKeyboardOpen = isKeyboardOpen;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (isKeyboardOpen) {
+                            _scrollToFocusedField();
+                          } else {
+                            _scrollToOffset(0);
+                          }
+                        });
+                      }
 
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: isKeyboardOpen
-                      ? const NeverScrollableScrollPhysics()
-                      : const BouncingScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // A top purple block extending far above to cover overscroll stretch
-                        Positioned(
-                          top: -500,
-                          left: 0,
-                          right: 0,
-                          height: 620, // 500px buffer + 120px normal height
-                          child: Container(color: const Color(0xFF7A2C8F)),
-                        ),
-                        // The bottom body background
-                        Positioned.fill(
-                          top: 120,
-                          child: Container(color: const Color(0xFF1B182D)),
-                        ),
-                        // The dark form container
-                        Container(
-                          margin: EdgeInsets.only(top: context.rh(60)),
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1B182D),
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.elliptical(60, 50),
-                              topRight: Radius.elliptical(60, 50),
+                      return SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: isKeyboardOpen
+                            ? const NeverScrollableScrollPhysics()
+                            : const BouncingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Container(
+                            margin: EdgeInsets.only(top: context.rh(4)),
+                            width: double.infinity,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF1B182D),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.elliptical(60, 50),
+                                topRight: Radius.elliptical(60, 50),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                top: context.rh(80),
+                                left: context.rw(20),
+                                right: context.rw(20),
+                                bottom: isKeyboardOpen ? 10 : 20,
+                              ),
+                              child: _buildContent(state),
                             ),
                           ),
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              top: 80,
-                              left: 20,
-                              right: 20,
-                              bottom: isKeyboardOpen ? 10 : 60,
-                            ),
-                            child: _buildContent(),
-                          ),
                         ),
-                        // The avatar positioned at the top of the container
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: _controller.isLoading
-                                ? const AppShimmer(
-                                    child: ShimmerCircle(radius: 61),
-                                  )
-                                : ProfileImagePicker(
-                                    currentImagePath: _profileImagePath,
-                                    onImageChanged: _onImageChanged,
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+                // Avatar — fixed above the card boundary, unaffected by scroll.
+                Positioned(
+                  top: -70,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: state.isLoading
+                        ? const AppShimmer(child: ShimmerCircle(radius: 61))
+                        : ProfileImagePicker(
+                            currentImagePath: _profileImagePath,
+                            onImageChanged: _onImageChanged,
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -368,13 +351,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildContent() {
-    if (_controller.isLoading) {
+  Widget _buildContent(EditProfileState state) {
+    if (state.isLoading) {
       return const _EditProfileFormShimmer();
     }
 
-    if (_controller.errorMessage != null &&
-        _controller.profileResponse == null) {
+    if (state.errorMessage != null && state.profileResponse == null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -382,7 +364,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Icon(Icons.error_outline, size: context.rw(64), color: Colors.red),
             SizedBox(height: context.rh(16)),
             Text(
-              'Error: ${_controller.errorMessage}',
+              'Error: ${state.errorMessage}',
               style: TextStyle(color: Colors.white, fontSize: context.rf(16)),
               textAlign: TextAlign.center,
             ),
@@ -411,9 +393,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       usernameFocusNode: _usernameFocusNode,
       bioFocusNode: _bioFocusNode,
       onSave: _saveProfile,
-      showEmail: _controller.showEmail,
-      showPhone: _controller.showPhone,
-      isUpdating: _controller.isUpdating,
+      showEditIcon: true,
+      showEmail: state.showEmail,
+      showPhone: state.showPhone,
+      isUpdating: state.isUpdating,
     );
   }
 }

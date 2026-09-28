@@ -10,6 +10,9 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/post_like_notifier.dart';
+import 'package:gruve_app/features/comments/presentation/widgets/comment_sheet.dart';
+import 'package:gruve_app/features/share/presentation/screens/share_bottom_sheet.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/widgets/post_action_sheet.dart';
@@ -51,7 +54,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   late List<Post> _posts;
   final Map<int, VideoPlayerController?> _videoControllers = {};
   final Set<String> _acquiredUrls = <String>{};
-  final Map<String, bool> _isLiked = {};
   bool _isResolvingMedia = false;
 
   @override
@@ -214,11 +216,28 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     }());
   }
 
-  void _toggleLike(String postId) {
-    setState(() {
-      _isLiked[postId] = !(_isLiked[postId] ?? false);
-    });
-    AppLogger.d('Toggled like for post: $postId');
+  void _showCommentSheet(Post post) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentSheet(
+        postId: post.id,
+        onCommentAdded: () {
+          if (!mounted) return;
+          setState(() => post.commentsCount++);
+        },
+      ),
+    );
+  }
+
+  void _showShareSheet(Post post) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ShareBottomSheet(postId: post.id),
+    );
   }
 
   void _showOptionsSheet(BuildContext context) async {
@@ -442,7 +461,6 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     final mediaUrl = _mediaUrlFor(post);
     final isVideo = post.isVideo && mediaUrl.isNotEmpty;
     final videoController = _videoControllers[index];
-    final liked = _isLiked[post.id] ?? post.isLiked;
     final displayName = post.resolveUsername(
       fallback: widget.fallbackDisplayName,
     );
@@ -450,6 +468,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       fallback: widget.fallbackProfilePicture,
     );
     final showResolving = index == _currentIndex && _isResolvingMedia;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Stack(
       children: [
@@ -497,7 +516,7 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               context.rw(16),
               context.rh(60),
               context.rw(16),
-              context.rh(16),
+              context.rh(16) + bottomInset,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,23 +576,41 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        _buildActionButton(
-                          icon: liked ? Icons.favorite : Icons.favorite_border,
-                          count: post.likesCount,
-                          color: liked ? Colors.red : Colors.white,
-                          onTap: () => _toggleLike(post.id),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final liked = ref.watch(
+                              postLikeNotifierProvider.select(
+                                (state) => state.isLiked(post),
+                              ),
+                            );
+                            final likesCount = ref.watch(
+                              postLikeNotifierProvider.select(
+                                (state) => state.likesCount(post),
+                              ),
+                            );
+                            return _buildActionButton(
+                              icon: liked
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              count: likesCount,
+                              color: liked ? Colors.red : Colors.white,
+                              onTap: () => ref
+                                  .read(postLikeNotifierProvider.notifier)
+                                  .toggleLike(post),
+                            );
+                          },
                         ),
                         SizedBox(width: context.rw(24)),
                         _buildActionButton(
                           icon: Icons.comment_outlined,
                           count: post.commentsCount,
-                          onTap: () {},
+                          onTap: () => _showCommentSheet(post),
                         ),
                         SizedBox(width: context.rw(24)),
                         _buildActionButton(
                           icon: Icons.share_outlined,
                           count: 0,
-                          onTap: () {},
+                          onTap: () => _showShareSheet(post),
                         ),
                       ],
                     ),
