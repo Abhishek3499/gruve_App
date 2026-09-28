@@ -16,6 +16,7 @@ class StoryAvatarIndicator extends StatelessWidget {
   final String profileImage;
   final double radius;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onCameraTap;
   final bool showCameraIcon;
   final bool enableNavigation;
@@ -31,6 +32,7 @@ class StoryAvatarIndicator extends StatelessWidget {
     required this.profileImage,
     this.radius = 48,
     this.onTap,
+    this.onLongPress,
     this.onCameraTap,
     this.showCameraIcon = false,
     this.enableNavigation = true,
@@ -47,14 +49,17 @@ class StoryAvatarIndicator extends StatelessWidget {
     final avatar = _buildAvatarContent();
     final canOpenStory = enableNavigation && onTap != null;
 
-    final avatarInteractive = canOpenStory
+    final avatarInteractive = (canOpenStory || onLongPress != null)
         ? GestureDetector(
-            onTap: () {
-              AppLogger.d(
-                '👆 [StoryAvatarIndicator] tapped hasActiveStory=$hasActiveStory',
-              );
-              onTap!();
-            },
+            onTap: canOpenStory
+                ? () {
+                    AppLogger.d(
+                      '👆 [StoryAvatarIndicator] tapped hasActiveStory=$hasActiveStory',
+                    );
+                    onTap!();
+                  }
+                : null,
+            onLongPress: onLongPress,
             child: avatar,
           )
         : avatar;
@@ -101,11 +106,7 @@ class StoryAvatarIndicator extends StatelessWidget {
                   ],
                 ),
                 child: const Center(
-                  child: Icon(
-                    Icons.camera_alt_outlined,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  child: Icon(Icons.add, color: Colors.white, size: 18),
                 ),
               ),
             ),

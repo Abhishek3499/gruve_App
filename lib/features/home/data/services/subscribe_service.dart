@@ -22,26 +22,24 @@ class SubscribeService {
     }
   }
 
-  Future<bool> toggleSubscription(String userId) async {
-    final isSubscribed = await _apiService.toggleSubscription(userId);
-    setSubscriptionStatus(userId, isSubscribed);
-    return isSubscribed;
+  Future<({bool isFollowing, String followStatus})> toggleSubscription(String userId) async {
+    final result = await _apiService.toggleSubscription(userId);
+    setSubscriptionStatus(userId, result.isFollowing);
+    return result;
   }
 
   Future<bool> subscribeToUser(String userId) async {
     final profile = await _userProfileService.getUserProfileModel(userId);
-    if (profile.isFollowing) {
-      return true;
-    }
-    return toggleSubscription(userId);
+    if (profile.isFollowing) return true;
+    final result = await toggleSubscription(userId);
+    return result.isFollowing;
   }
 
   Future<bool> unsubscribeFromUser(String userId) async {
     final profile = await _userProfileService.getUserProfileModel(userId);
-    if (!profile.isFollowing) {
-      return false;
-    }
-    return toggleSubscription(userId);
+    if (!profile.isFollowing) return false;
+    final result = await toggleSubscription(userId);
+    return result.isFollowing;
   }
 
   Set<String> getSubscribedUsers() {

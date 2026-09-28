@@ -16,7 +16,7 @@ class SubscribeApiService {
     AppLogger.debug(_tag, 'client_initialized');
   }
 
-  Future<bool> toggleSubscription(String userId) async {
+  Future<({bool isFollowing, String followStatus})> toggleSubscription(String userId) async {
     try {
       final token = await TokenStorage.getAccessToken();
 
@@ -30,12 +30,13 @@ class SubscribeApiService {
       );
 
       final isFollowing = _extractSubscriptionState(response.data);
+      final followStatus = _extractFollowStatus(response.data);
       AppLogger.debug(
         _tag,
         'subscription_parsed',
-        data: {'endpoint': _toggleEndpoint, 'isFollowing': isFollowing},
+        data: {'endpoint': _toggleEndpoint, 'isFollowing': isFollowing, 'followStatus': followStatus},
       );
-      return isFollowing;
+      return (isFollowing: isFollowing, followStatus: followStatus);
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       final responseData = e.response?.data;
@@ -61,6 +62,18 @@ class SubscribeApiService {
 
       rethrow;
     }
+  }
+
+  String _extractFollowStatus(dynamic payload) {
+    return _findFollowStatus(payload) ?? 'none';
+  }
+
+  String? _findFollowStatus(dynamic payload) {
+    if (payload is! Map) return null;
+    final map = Map<String, dynamic>.from(payload);
+    final direct = map['follow_status'];
+    if (direct is String && direct.isNotEmpty) return direct;
+    return _findFollowStatus(map['data']);
   }
 
   bool _extractSubscriptionState(dynamic payload) {

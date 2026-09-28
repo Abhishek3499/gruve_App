@@ -27,6 +27,8 @@ class UserProfileHeader extends ConsumerWidget {
   final bool reserveSubscribeSpace;
   final SubscribeNotifier subscribeController;
   final bool initialIsSubscribed;
+  final String followStatus;
+  final bool isPrivate;
   final bool showMessageButton;
   final VoidCallback? onMessageTap;
 
@@ -45,6 +47,8 @@ class UserProfileHeader extends ConsumerWidget {
     required this.showSubscribeButton,
     required this.subscribeController,
     this.initialIsSubscribed = false,
+    this.followStatus = 'none',
+    this.isPrivate = false,
     this.reserveSubscribeSpace = false,
     this.showMessageButton = false,
     this.onMessageTap,
@@ -174,6 +178,8 @@ class UserProfileHeader extends ConsumerWidget {
                     username: username,
                     subscribeController: subscribeController,
                     initialIsSubscribed: initialIsSubscribed,
+                    followStatus: followStatus,
+                    isPrivate: isPrivate,
                   ),
                 ),
                 SizedBox(width: context.rw(10)),

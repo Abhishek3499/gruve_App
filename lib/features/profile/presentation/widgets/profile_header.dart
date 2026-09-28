@@ -16,6 +16,7 @@ class ProfileHeader extends StatelessWidget {
   final String profileImage;
   final ValueChanged<EditProfileResponse>? onProfileUpdated;
   final VoidCallback? onAvatarCameraTap;
+  final VoidCallback? onAvatarLongPress;
   final VoidCallback? onShareProfileTap;
   final bool hasActiveStory;
   final bool hasCloseFriendsStory;
@@ -28,6 +29,7 @@ class ProfileHeader extends StatelessWidget {
     required this.profileImage,
     this.onProfileUpdated,
     this.onAvatarCameraTap,
+    this.onAvatarLongPress,
     this.onShareProfileTap,
     this.hasActiveStory = false,
     this.hasCloseFriendsStory = false,
@@ -71,6 +73,7 @@ class ProfileHeader extends StatelessWidget {
                 hasCloseFriendsStory: hasCloseFriendsStory,
                 showCameraIcon: true,
                 onCameraTap: onAvatarCameraTap,
+                onLongPress: onAvatarLongPress,
                 onTap: () async {
                   if (hasActiveStory) {
                     AppLogger.d(

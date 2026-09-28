@@ -7,14 +7,8 @@ class PrivacyConstants {
     PrivacyOptionModel(
       title: 'Private Account',
       description:
-          'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
+          'When your account is private, only people you approve can follow you and see your posts, videos, and activity. Your existing followers won\'t be affected.',
       isEnabled: true,
-    ),
-    PrivacyOptionModel(
-      title: 'Allow public videos to appear in search engine results',
-      description:
-          'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-      isEnabled: false,
     ),
   ];
 

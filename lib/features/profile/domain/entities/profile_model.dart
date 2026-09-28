@@ -7,6 +7,8 @@ class ProfileModel {
   final String profileImage;
   final String bio;
   final bool isFollowing;
+  final bool isPrivate;
+  final String followStatus;
   final bool hasActiveStory;
   final bool hasUnseenStory;
   final bool hasCloseFriendsStory;
@@ -20,6 +22,8 @@ class ProfileModel {
     required this.profileImage,
     this.bio = '',
     this.isFollowing = false,
+    this.isPrivate = false,
+    this.followStatus = 'none',
     this.hasActiveStory = false,
     this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
@@ -34,6 +38,8 @@ class ProfileModel {
     String? profileImage,
     String? bio,
     bool? isFollowing,
+    bool? isPrivate,
+    String? followStatus,
     bool? hasActiveStory,
     bool? hasUnseenStory,
     bool? hasCloseFriendsStory,
@@ -47,6 +53,8 @@ class ProfileModel {
       profileImage: profileImage ?? this.profileImage,
       bio: bio ?? this.bio,
       isFollowing: isFollowing ?? this.isFollowing,
+      isPrivate: isPrivate ?? this.isPrivate,
+      followStatus: followStatus ?? this.followStatus,
       hasActiveStory: hasActiveStory ?? this.hasActiveStory,
       hasUnseenStory: hasUnseenStory ?? this.hasUnseenStory,
       hasCloseFriendsStory: hasCloseFriendsStory ?? this.hasCloseFriendsStory,
@@ -144,6 +152,12 @@ class ProfileModel {
       'subscribed',
     ], fallback: false);
 
+    final isPrivate = flat['account_type'] == 'private' ||
+        SafeParsingHelpers.safeBool(flat, const ['is_private'], fallback: false);
+
+    final followStatus = flat['follow_status']?.toString() ??
+        (isFollowing ? 'following' : 'none');
+
     final parsedHasActiveStory = SafeParsingHelpers.safeBool(flat, const [
       'has_active_story',
       'has_story',
@@ -190,6 +204,8 @@ class ProfileModel {
       profileImage: profileImage,
       bio: bio,
       isFollowing: isFollowing,
+      isPrivate: isPrivate,
+      followStatus: followStatus,
       hasActiveStory: hasActiveStory,
       hasUnseenStory: hasUnseenStory,
       hasCloseFriendsStory: hasCloseFriendsStory,

@@ -11,10 +11,12 @@ import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 
 import 'package:share_plus/share_plus.dart';
 import 'package:gruve_app/shared/widgets/image_picker_bottom_sheet.dart';
+import 'package:gruve_app/features/camera/presentation/controller/camera_handler.dart';
 import 'package:gruve_app/features/profile/data/datasource/edit_profile_service.dart';
 import 'package:gruve_app/features/profile/data/dto/edit_profile_request.dart';
 import 'package:gruve_app/features/connections/presentation/screens/connections_screen.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/filter_tabs.dart';
+import 'package:gruve_app/features/profile/presentation/widgets/profile_avatar_preview.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_header.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/stats_row.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/story_list.dart';
@@ -188,6 +190,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _handleCameraTap() async {
+    await CameraHandler.openCamera(context);
+  }
+
+  Future<void> _handleAvatarLongPress(String profileImage) {
+    return showProfileAvatarPreview(
+      context,
+      profileImage: profileImage,
+      onEditPicture: _handleEditProfilePicture,
+    );
+  }
+
+  void _handleEditProfilePicture() {
     ImagePickerBottomSheet.show(
       context,
       onImageSelected: (xfile) async {
@@ -294,6 +308,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           hasActiveStory: hasActiveStory,
                           hasCloseFriendsStory: hasCloseFriendsStory,
                           onAvatarCameraTap: _handleCameraTap,
+                          onAvatarLongPress: () =>
+                              _handleAvatarLongPress(user?.profileImage ?? ''),
                           onShareProfileTap: () => _handleShareProfile(
                             username: user?.username ?? '',
                             fullName: user?.fullName ?? '',

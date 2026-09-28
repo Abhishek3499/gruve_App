@@ -43,6 +43,9 @@ class ApiConstants {
   static const String reportUser = 'profile/report/';
   static const String blockList = 'profile/block/list';
   static const String blockToggle = 'profile/block/toggle';
+  static const String accountType = 'profile/account-type/';
+  static const String followRequests = 'profile/follow-requests/';
+  static const String followRequestsRespond = 'profile/follow-requests/respond/';
 
   // ---- Comments ----
   static const String comments = 'posts/comments/';

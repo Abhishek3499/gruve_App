@@ -46,6 +46,7 @@ class UserProfile {
   final int postsCount;
   final bool isPrivate;
   final bool isFollowing;
+  final String followStatus; // "none", "requested", "following"
   final bool hasActiveStory;
   final bool hasCloseFriendsStory;
   final List<dynamic> highlights;
@@ -63,6 +64,7 @@ class UserProfile {
     required this.postsCount,
     required this.isPrivate,
     required this.isFollowing,
+    this.followStatus = 'none',
     this.hasActiveStory = false,
     this.hasCloseFriendsStory = false,
     this.highlights = const [],
@@ -117,8 +119,9 @@ class UserProfile {
             0,
         postsCount:
             stats['posts_count'] as int? ?? stats['videos_count'] as int? ?? 0,
-        isPrivate: user['is_private'] as bool? ?? false,
-        isFollowing: user['is_subscribed'] as bool? ?? false,
+        isPrivate: user['account_type'] == 'private' || (user['is_private'] as bool? ?? false),
+        isFollowing: (user['follow_status'] ?? '') == 'following' || (user['is_subscribed'] as bool? ?? false),
+        followStatus: user['follow_status']?.toString() ?? (user['is_subscribed'] == true ? 'following' : 'none'),
         hasActiveStory: json['has_active_story'] as bool? ?? false,
         hasCloseFriendsStory:
             json['has_close_friends_story'] as bool? ?? false,

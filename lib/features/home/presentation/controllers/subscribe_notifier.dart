@@ -7,23 +7,16 @@ import 'package:gruve_app/features/profile/presentation/controller/profile_count
 import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/core/cache/cache_manager.dart';
 
-import 'package:gruve_app/features/user_profile/data/datasource/user_profile_service.dart';
-
 import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/features/home/data/services/subscribe_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
-/// Replaces the previous `SubscribeController`. This stays a singleton
-/// [ChangeNotifier] because `VideoFeedController`, `AuthStateManager`, and
-/// `UserNotifier` call it directly from plain Dart code. The Riverpod provider
-/// exposes the same singleton instance to widget-tree code.
 class SubscribeNotifier extends ChangeNotifier {
   static final SubscribeNotifier _instance = SubscribeNotifier._internal();
   factory SubscribeNotifier() => _instance;
   SubscribeNotifier._internal();
 
   final SubscribeService _subscribeService = SubscribeService();
-  final UserProfileService _userProfileService = UserProfileService();
   final Map<String, SubscribeModel> _users = {};
   final Map<String, bool> _serverStates = {};
   final Set<String> _syncingUsers = <String>{};
@@ -37,10 +30,12 @@ class SubscribeNotifier extends ChangeNotifier {
 
   bool isUserSubscribed(String userId) {
     final localUser = _users[userId];
-    if (localUser != null) {
-      return localUser.isSubscribed;
-    }
+    if (localUser != null) return localUser.isSubscribed;
     return _subscribeService.isUserSubscribed(userId);
+  }
+
+  String getFollowStatus(String userId) {
+    return _users[userId]?.followStatus ?? 'none';
   }
 
   bool isSubscriptionSynced(String userId) {
@@ -57,8 +52,6 @@ class SubscribeNotifier extends ChangeNotifier {
   void addOrUpdateUser(SubscribeModel user) {
     final existing = _users[user.userId];
     final localStatus = existing?.isSubscribed;
-    // Trust API flags. Never upgrade an explicit local unsub; never use stale
-    // in-memory service state to mark someone subscribed.
     final resolvedStatus = localStatus == false
         ? false
         : user.isSubscribed
@@ -70,6 +63,7 @@ class SubscribeNotifier extends ChangeNotifier {
           ? user.username
           : (existing?.username ?? user.userId),
       isSubscribed: resolvedStatus,
+      followStatus: user.followStatus,
       subscribedAt: resolvedStatus
           ? (existing?.subscribedAt ?? user.subscribedAt ?? DateTime.now())
           : null,
@@ -81,11 +75,6 @@ class SubscribeNotifier extends ChangeNotifier {
       _serverStates[user.userId] = false;
     }
     _subscribeService.setSubscriptionStatus(user.userId, resolvedStatus);
-    // Only notify on a genuine flip of a previously-known user's status.
-    // First-time discovery (existing == null) happens constantly during
-    // normal scrolling/profile views as feed/profile data seeds this map —
-    // that is not a subscription change and must not trigger listeners
-    // (e.g. VideoFeedController's feed-refresh-on-subscription-change).
     if (existing != null && existing.isSubscribed != resolvedStatus) {
       notifyListeners();
     }
@@ -95,6 +84,7 @@ class SubscribeNotifier extends ChangeNotifier {
     String userId,
     bool isSubscribed, {
     String? username,
+    String followStatus = 'none',
     bool notify = true,
   }) {
     final existing = _users[userId];
@@ -106,15 +96,14 @@ class SubscribeNotifier extends ChangeNotifier {
       userId: userId,
       username: resolvedUsername,
       isSubscribed: isSubscribed,
+      followStatus: followStatus,
       subscribedAt: isSubscribed
           ? (existing?.subscribedAt ?? DateTime.now())
           : null,
     );
     _subscribeService.setSubscriptionStatus(userId, isSubscribed);
 
-    if (notify) {
-      notifyListeners();
-    }
+    if (notify) notifyListeners();
   }
 
   Future<void> _syncWithServer(String userId) async {
@@ -125,106 +114,70 @@ class SubscribeNotifier extends ChangeNotifier {
 
     _syncingUsers.add(userId);
     var syncFailed = false;
-    var iterations = 0;
-    const maxIterations = 3;
 
     try {
-      while (iterations < maxIterations) {
-        iterations++;
+      // Directly call the toggle API — no pre-fetch profile loop.
+      // The toggle endpoint is the source of truth for follow_status.
+      try {
+        final result = await _subscribeService.toggleSubscription(userId);
+        _serverStates[userId] = result.isFollowing;
 
-        final desiredState = isUserSubscribed(userId);
-
-        // Fetch fresh ground-truth server state (bypass stale profile cache).
-        unawaited(CacheManager().invalidatePattern(userId));
-        final profileModel = await _userProfileService.getUserProfileModel(
+        // Always apply server result — covers requested/following/none
+        _applyLocalState(
           userId,
+          result.isFollowing,
+          followStatus: result.followStatus,
         );
-        final serverState = profileModel.isFollowing;
 
-        // Update serverStates cache with the fresh value
-        _serverStates[userId] = serverState;
+        await ProfileCountRefreshBridge.notifyCountsChanged(
+          reason: result.isFollowing ? 'user_subscribed' : 'user_unsubscribed',
+        );
+        unawaited(CacheInvalidationService().onUserFollowed(userId));
+        unawaited(CacheManager().invalidatePattern(userId));
+      } catch (e) {
+        _log('❌ sync failed for userId=$userId error=$e');
+        syncFailed = true;
 
-        if (desiredState == serverState) {
-          break;
-        }
+        // Revert to last known server state
+        final latestServerState =
+            _serverStates[userId] ??
+            _subscribeService.isUserSubscribed(userId);
+        _applyLocalState(userId, latestServerState);
 
-        try {
-          final updatedServerState = await _subscribeService.toggleSubscription(
-            userId,
-          );
-          _serverStates[userId] = updatedServerState;
-
-          if (isUserSubscribed(userId) == updatedServerState) {
-            _applyLocalState(userId, updatedServerState);
-          }
-
-          await ProfileCountRefreshBridge.notifyCountsChanged(
-            reason: updatedServerState
-                ? 'user_subscribed'
-                : 'user_unsubscribed',
-          );
-          unawaited(CacheInvalidationService().onUserFollowed(userId));
-        } catch (e) {
-          _log('❌ sync failed for userId=$userId error=$e');
-          syncFailed = true;
-
-          // Revert local state back to the correct server state
-          final latestServerState =
-              _serverStates[userId] ??
-              _subscribeService.isUserSubscribed(userId);
-          _applyLocalState(userId, latestServerState);
-
-          // Show floating SnackBar for error feedback using global ScaffoldMessenger state
-          scaffoldMessengerKey.currentState?.showSnackBar(
-            const SnackBar(
-              content: Text('Something went wrong'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          break;
-        }
-      }
-
-      if (iterations >= maxIterations) {
-        final desiredState = isUserSubscribed(userId);
-        final finalServerState =
-            _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
-        if (desiredState != finalServerState) {
-          _log(
-            '⚠️ [SubscribeNotifier] Warning: reached max iterations ($maxIterations) for userId=$userId without aligning states (desired=$desiredState, server=$finalServerState)',
-          );
-        }
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Something went wrong'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } finally {
       _syncingUsers.remove(userId);
-
       final needsResync = _pendingResyncUsers.remove(userId);
-      final desiredState = isUserSubscribed(userId);
-      final serverState =
-          _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
-
-      if (needsResync || (!syncFailed && desiredState != serverState)) {
+      if (needsResync && !syncFailed) {
         unawaited(_syncWithServer(userId));
       }
     }
   }
 
   Future<bool> toggleSubscription(String userId) async {
-    final optimisticStatus = !isUserSubscribed(userId);
-    _applyLocalState(userId, optimisticStatus);
+    final currentStatus = isUserSubscribed(userId);
+    // Optimistic: flip the bool, keep followStatus as-is until server confirms
+    final optimisticStatus = !currentStatus;
+    _applyLocalState(userId, optimisticStatus, followStatus: getFollowStatus(userId));
     unawaited(_syncWithServer(userId));
     return optimisticStatus;
   }
 
   Future<bool> subscribeToUser(String userId) async {
-    _applyLocalState(userId, true);
+    _applyLocalState(userId, true, followStatus: 'following');
     unawaited(_syncWithServer(userId));
     return true;
   }
 
   Future<bool> unsubscribeFromUser(String userId) async {
-    _applyLocalState(userId, false);
+    _applyLocalState(userId, false, followStatus: 'none');
     unawaited(_syncWithServer(userId));
     return false;
   }
@@ -237,7 +190,6 @@ class SubscribeNotifier extends ChangeNotifier {
     return _subscribeService.getSubscriptionCount();
   }
 
-  /// Align in-memory subscription state with the subscribed-users API response.
   void syncSubscribedUsersFromApi(
     Iterable<({String userId, String username})> apiUsers,
   ) {
@@ -251,6 +203,7 @@ class SubscribeNotifier extends ChangeNotifier {
         user.userId,
         true,
         username: user.username,
+        followStatus: 'following',
         notify: false,
       );
       _serverStates[user.userId] = true;
@@ -265,7 +218,6 @@ class SubscribeNotifier extends ChangeNotifier {
     _log('🔄 syncSubscribedUsersFromApi count=${apiIds.length}');
   }
 
-  /// Clears all subscription memory (call on logout / new login).
   void reset() {
     _users.clear();
     _serverStates.clear();
@@ -275,8 +227,6 @@ class SubscribeNotifier extends ChangeNotifier {
     _log('🧹 reset complete');
   }
 
-  /// Trusts the subscribed-feed API and marks authors as subscribed locally.
-  /// Without this, missing `is_subscribed` flags make the feed strip every post.
   void seedSubscribedFeedAuthors(
     Iterable<({String userId, String username})> authors, {
     bool notify = false,
@@ -290,13 +240,12 @@ class SubscribeNotifier extends ChangeNotifier {
         author.userId,
         true,
         username: author.username,
+        followStatus: 'following',
         notify: false,
       );
       seeded++;
     }
-    if (notify && seeded > 0) {
-      notifyListeners();
-    }
+    if (notify && seeded > 0) notifyListeners();
   }
 
   void initializeUsers(List<Map<String, dynamic>> videoData) {
@@ -311,6 +260,7 @@ class SubscribeNotifier extends ChangeNotifier {
             userId: userId,
             username: username,
             isSubscribed: initialIsSubscribed,
+            followStatus: initialIsSubscribed ? 'following' : 'none',
           ),
         );
       } else {

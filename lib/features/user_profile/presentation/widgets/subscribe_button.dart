@@ -9,6 +9,8 @@ class SubscribeButton extends StatefulWidget {
   final String username;
   final SubscribeNotifier subscribeController;
   final bool initialIsSubscribed;
+  final String followStatus;
+  final bool isPrivate;
 
   const SubscribeButton({
     super.key,
@@ -16,6 +18,8 @@ class SubscribeButton extends StatefulWidget {
     required this.username,
     required this.subscribeController,
     this.initialIsSubscribed = false,
+    this.followStatus = 'none',
+    this.isPrivate = false,
   });
 
   @override
@@ -62,14 +66,17 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     }
 
     final resolvedState = existing?.isSubscribed ?? isSubscribed;
+    final resolvedFollowStatus = existing?.followStatus ??
+        (widget.followStatus.isNotEmpty ? widget.followStatus : (resolvedState ? 'following' : 'none'));
     _log(
-      '🧠 resolved seed state userId=${widget.userId} resolved=$resolvedState',
+      '🧠 resolved seed state userId=${widget.userId} resolved=$resolvedState followStatus=$resolvedFollowStatus',
     );
     widget.subscribeController.addOrUpdateUser(
       SubscribeModel(
         userId: widget.userId,
         username: widget.username,
         isSubscribed: resolvedState,
+        followStatus: resolvedFollowStatus,
         subscribedAt: resolvedState ? DateTime.now() : null,
       ),
     );
@@ -103,7 +110,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     _log(
       '🔄 toggle userId=${widget.userId} current=$currentStatus optimistic=$optimisticStatus',
     );
-    _showSubscriptionSnackBar(optimisticStatus);
+    // _showSubscriptionSnackBar(optimisticStatus); // removed snackbar on subscribe
 
     setState(() {
       _isProcessing = true;
@@ -167,19 +174,41 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               colors: [Color(0xFFFE24E0), Color(0xFF72008D)],
             ),
             borderRadius: BorderRadius.circular(22),
-            // boxShadow: [
-            //   BoxShadow(
-            //     color: const Color(0xFFFE24E0).withValues(alpha: 0.4),
-            //     offset: const Offset(0, 4),
-            //     blurRadius: 10,
-            //   ),
-            // ],
           ),
           child: Center(
             child: Text(
               'Subscribe',
               style: TextStyle(
                 color: Colors.white,
+                fontSize: context.rf(14),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestedWidget(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => _performToggle(context, false),
+        child: Container(
+          width: context.rw(150),
+          height: context.rh(44),
+          decoration: BoxDecoration(
+            color: const Color(0xFF33123B).withValues(alpha: 0.6),
+            border: Border.all(color: const Color(0xFFFE24E0), width: 1.5),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Center(
+            child: Text(
+              'Requested',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: context.rf(14),
                 fontWeight: FontWeight.w600,
               ),
@@ -227,8 +256,11 @@ class _SubscribeButtonState extends State<SubscribeButton> {
         final isSubscribed = widget.subscribeController.isUserSubscribed(
           widget.userId,
         );
+        final liveFollowStatus = widget.subscribeController.getFollowStatus(
+          widget.userId,
+        );
         _log(
-          '🎨 rebuild userId=${widget.userId} username=${widget.username} isSubscribed=$isSubscribed',
+          '🎨 rebuild userId=${widget.userId} username=${widget.username} isSubscribed=$isSubscribed followStatus=$liveFollowStatus',
         );
 
         return AnimatedOpacity(
@@ -240,17 +272,16 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               return FadeTransition(
                 opacity: animation,
                 child: ScaleTransition(
-                  scale: Tween<double>(
-                    begin: 0.95,
-                    end: 1.0,
-                  ).animate(animation),
+                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
                   child: child,
                 ),
               );
             },
-            child: isSubscribed
+            child: liveFollowStatus == 'following'
                 ? _buildSubscribedWidget(context)
-                : _buildSubscribeWidget(context),
+                : liveFollowStatus == 'requested'
+                    ? _buildRequestedWidget(context)
+                    : _buildSubscribeWidget(context),
           ),
         );
       },

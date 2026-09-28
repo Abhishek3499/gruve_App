@@ -168,6 +168,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         userId: resolvedUserId,
         username: resolvedUsername,
         isSubscribed: profile.isFollowing,
+        followStatus: profile.followStatus,
         subscribedAt: profile.isFollowing ? DateTime.now() : null,
       ),
     );
@@ -259,7 +260,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ],
             )
           : AnimatedBuilder(
-              animation: _profileController.contentListenable,
+              animation: Listenable.merge([
+                _profileController.contentListenable,
+                _subscribeController,
+              ]),
               builder: (context, _) {
                 final profile = _profileController.user;
                 final resolvedUserId = (profile?.id.isNotEmpty ?? false)
@@ -274,9 +278,19 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                         ?.isSubscribed ??
                     profile?.isFollowing ??
                     false;
+                final followStatus =
+                    _subscribeController.getFollowStatus(resolvedUserId);
+                final isPrivate = profile?.isPrivate ?? false;
+                final liveIsFollowing = followStatus == 'following';
+                final canSeeContent =
+                    !isPrivate ||
+                    liveIsFollowing ||
+                    isDirectOwnProfile;
                 final grid = UserProfileGrid(
                   controller: _profileController,
                   selectedTab: _selectedTab,
+                  isPrivate: isPrivate,
+                  canSeeContent: canSeeContent,
                 );
 
                 return CustomScrollView(
@@ -310,6 +324,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             reserveSubscribeSpace: _isResolvingIdentity,
                             subscribeController: _subscribeController,
                             initialIsSubscribed: initialIsSubscribed,
+                            followStatus: followStatus,
+                            isPrivate: isPrivate,
                             showMessageButton: !isDirectOwnProfile,
                             onMessageTap: () => _openMessage(
                               userId: resolvedUserId,
@@ -363,6 +379,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       ),
                     ),
                     ...grid.buildSlivers(context),
+                    if (!canSeeContent)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _PrivateAccountCard(),
+                      ),
                     SliverToBoxAdapter(
                       child: SizedBox(height: context.rh(100)),
                     ),
@@ -370,6 +391,63 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 );
               },
             ),
+    );
+  }
+}
+
+class _PrivateAccountCard extends StatelessWidget {
+  const _PrivateAccountCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'This account is private',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Follow this account to see their\nposts and gruves.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

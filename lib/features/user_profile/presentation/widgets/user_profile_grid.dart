@@ -14,11 +14,15 @@ class UserProfileGrid extends StatelessWidget {
 
   final UserProfileController controller;
   final int selectedTab;
+  final bool isPrivate;
+  final bool canSeeContent;
 
   const UserProfileGrid({
     super.key,
     required this.controller,
     required this.selectedTab,
+    this.isPrivate = false,
+    this.canSeeContent = true,
   });
 
   List<Post> _postsForTab() {
@@ -136,6 +140,9 @@ class UserProfileGrid extends StatelessWidget {
 
   /// Sliver-based grid for use inside [CustomScrollView].
   List<Widget> buildSlivers(BuildContext context) {
+    // Private account and viewer can't see content → return nothing (screen shows private card)
+    if (isPrivate && !canSeeContent) return [];
+
     final posts = _postsForTab();
     final tabIsLoading = controller.isLoadingTab(selectedTab == 0 ? 0 : 2);
     final totalPostsCount = controller.statsNotifier.value.videosCount;

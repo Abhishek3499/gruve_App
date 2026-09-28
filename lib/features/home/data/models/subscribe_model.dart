@@ -2,12 +2,14 @@ class SubscribeModel {
   final String userId;
   final String username;
   final bool isSubscribed;
+  final String followStatus; // "none", "requested", "following"
   final DateTime? subscribedAt;
 
   const SubscribeModel({
     required this.userId,
     required this.username,
     required this.isSubscribed,
+    this.followStatus = 'none',
     this.subscribedAt,
   });
 
@@ -15,12 +17,14 @@ class SubscribeModel {
     String? userId,
     String? username,
     bool? isSubscribed,
+    String? followStatus,
     DateTime? subscribedAt,
   }) {
     return SubscribeModel(
       userId: userId ?? this.userId,
       username: username ?? this.username,
       isSubscribed: isSubscribed ?? this.isSubscribed,
+      followStatus: followStatus ?? this.followStatus,
       subscribedAt: subscribedAt ?? this.subscribedAt,
     );
   }
