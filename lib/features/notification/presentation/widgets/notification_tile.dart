@@ -85,7 +85,9 @@ class NotificationTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "$username $message",
+                    message.isNotEmpty
+                        ? message
+                        : "$username interacted with your post.",
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

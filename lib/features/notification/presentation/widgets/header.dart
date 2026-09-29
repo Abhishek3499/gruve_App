@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
+import 'package:gruve_app/features/follow_requests/presentation/screens/follow_requests_screen.dart';
 
 class Header extends ConsumerWidget {
   const Header({super.key});
@@ -154,8 +155,68 @@ class Header extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          _SubscribersRequestsTile(),
           const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+}
+
+class _SubscribersRequestsTile extends StatelessWidget {
+  const _SubscribersRequestsTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const FollowRequestsScreen()),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2B2B2B),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person_add_alt_1_outlined,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Subscribers requests",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Approve or ignore requests",
+                    style: TextStyle(color: Colors.white60, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

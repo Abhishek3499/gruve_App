@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/privacy/constants/privacy_constants.dart';
 import 'package:gruve_app/features/privacy/data/account_type_service.dart';
 import 'package:gruve_app/features/privacy/presentation/widgets/account_privacy_header.dart';
-import 'package:gruve_app/features/privacy/presentation/widgets/privacy_card.dart';
 import 'package:gruve_app/features/privacy/presentation/widgets/privacy_toggle_tile.dart';
 import 'package:gruve_app/features/privacy/presentation/widgets/account_privacy_footer.dart';
+import 'package:gruve_app/features/privacy/presentation/widgets/private_account_confirm_sheet.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
 class AccountPrivacyScreen extends StatefulWidget {
@@ -27,6 +26,16 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
   void initState() {
     super.initState();
     _isPrivate = widget.initialAccountType == 'private';
+  }
+
+  Future<void> _handleToggle(bool value) async {
+    if (value) {
+      // Switching to private requires explicit confirmation first —
+      // toggle state stays untouched and no API call happens until then.
+      final confirmed = await PrivateAccountConfirmSheet.show(context);
+      if (!confirmed) return;
+    }
+    await _onToggle(value);
   }
 
   Future<void> _onToggle(bool value) async {
@@ -78,17 +87,17 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
             child: Column(
               children: [
                 const AccountPrivacyHeader(),
-                SizedBox(height: context.rh(12)),
-                PrivacyCard(
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: IgnorePointer(
                     ignoring: _loading,
                     child: Opacity(
                       opacity: _loading ? 0.6 : 1.0,
                       child: PrivacyToggleTile(
                         title: option.title,
-                        description: option.description,
                         value: _isPrivate,
-                        onChanged: _onToggle,
+                        onChanged: _handleToggle,
                       ),
                     ),
                   ),

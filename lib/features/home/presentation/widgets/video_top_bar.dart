@@ -4,6 +4,7 @@ import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/notification/presentation/screens/notification_screen.dart';
 import 'package:gruve_app/features/notification/presentation/notifiers/notification_notifier.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/media/video_playback_guard.dart';
 
 class VideoTopBar extends StatelessWidget {
   final String selectedTab;
@@ -68,6 +69,7 @@ class VideoTopBar extends StatelessWidget {
 
                         return GestureDetector(
                           onTap: () {
+                            VideoPlaybackGuard.pauseHomeFeed?.call();
                             Navigator.push(
                               context,
                               MaterialPageRoute(

@@ -5,29 +5,49 @@ class AccountPrivacyHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return SizedBox(
+      height: 72,
       child: Stack(
         alignment: Alignment.center,
         children: [
           // Back Button
           Align(
             alignment: Alignment.centerLeft,
-            child: BackButton(
-              color: Colors.white,
-              onPressed: () => Navigator.pop(context),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Material(
+                color: Colors.white.withValues(alpha: 0.12),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
 
           // Title
-          const Text(
-            "Account&Privacy",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'syncopate',
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 64),
+            child: Text(
+              "Account & Privacy",
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],

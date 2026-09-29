@@ -10,6 +10,7 @@ class PersonalInfoCard extends StatelessWidget {
   final TextEditingController genderController;
   final TextEditingController bioController;
   final VoidCallback onSave;
+  final VoidCallback? onEditTap;
   final bool showEditIcon;
   final bool showUpdateButton;
   final bool isReadOnly;
@@ -30,6 +31,7 @@ class PersonalInfoCard extends StatelessWidget {
     required this.genderController,
     required this.bioController,
     required this.onSave,
+    this.onEditTap,
     this.showEditIcon = false,
     this.showUpdateButton = true,
     this.isReadOnly = false,
@@ -125,10 +127,12 @@ class PersonalInfoCard extends StatelessWidget {
         ),
         // Show edit icon only if showEditIcon is true
         if (showEditIcon)
-          Container(
-            padding: const EdgeInsets.all(6),
-
-            child: Image.asset(AppAssets.editpro, width: 22, height: 22),
+          GestureDetector(
+            onTap: onEditTap,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              child: Image.asset(AppAssets.editpro, width: 22, height: 22),
+            ),
           ),
       ],
     );

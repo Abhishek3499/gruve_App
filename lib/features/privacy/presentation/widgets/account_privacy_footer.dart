@@ -17,7 +17,7 @@ class AccountPrivacyFooter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(AppAssets.footerLogo, width: 16, height: 16),
-            const SizedBox(width: 3),
+            const SizedBox(width: 6),
             const Text(
               'Made in India',
               style: TextStyle(
@@ -25,12 +25,13 @@ class AccountPrivacyFooter extends StatelessWidget {
                 fontSize: 11,
                 fontFamily: 'Syncopate',
                 fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
             ),
           ],
         ),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
 
         // Powered by
         const Text.rich(

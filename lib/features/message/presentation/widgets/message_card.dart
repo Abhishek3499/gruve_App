@@ -18,17 +18,17 @@ class MessageCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        padding: const EdgeInsets.all(10),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           color: const Color(0xA672008D),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _buildAvatar(),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Row(
                 children: [
@@ -44,11 +44,11 @@ class MessageCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Row(
                           children: [
                             if (conversation.lastMessage.messageKind ==
@@ -65,11 +65,11 @@ class MessageCard extends StatelessWidget {
                                 SharedPostMessageParser.conversationPreview(
                                   conversation.lastMessageContent,
                                 ),
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 14,
+                                  fontSize: 13,
                                 ),
                               ),
                             ),
@@ -79,7 +79,7 @@ class MessageCard extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 8, right: 12),
+                    padding: const EdgeInsets.only(left: 8, right: 10),
                     child: Container(
                       constraints: const BoxConstraints(maxWidth: 100),
                       child: Column(
@@ -92,16 +92,16 @@ class MessageCard extends StatelessWidget {
                             softWrap: false,
                             style: const TextStyle(
                               color: Colors.white70,
-                              fontSize: 12,
+                              fontSize: 11,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           SizedBox(
-                            height: 22,
+                            height: 20,
                             child: conversation.hasUnreadMessages
                                 ? Container(
-                                    width: 22,
-                                    height: 22,
+                                    width: 20,
+                                    height: 20,
                                     alignment: Alignment.center,
                                     decoration: const BoxDecoration(
                                       color: Color(0xFFFF4D4F),
@@ -150,7 +150,7 @@ class MessageCard extends StatelessWidget {
                 conversation,
               ),
 
-              radius: 30,
+              radius: 26,
             ),
 
             if (isOnline)
@@ -158,8 +158,8 @@ class MessageCard extends StatelessWidget {
                 bottom: 2,
                 right: 2,
                 child: Container(
-                  height: 14,
-                  width: 14,
+                  height: 12,
+                  width: 12,
                   decoration: BoxDecoration(
                     color: Colors.green,
                     shape: BoxShape.circle,

@@ -9,6 +9,10 @@ class ProfileModel {
   final bool isFollowing;
   final bool isPrivate;
   final String followStatus;
+
+  /// Drives the subscribe button's label/behavior: `follow`, `follow_back`,
+  /// `requested`, `following`, `message`, `accept_reject`, or null.
+  final String? action;
   final bool hasActiveStory;
   final bool hasUnseenStory;
   final bool hasCloseFriendsStory;
@@ -24,6 +28,7 @@ class ProfileModel {
     this.isFollowing = false,
     this.isPrivate = false,
     this.followStatus = 'none',
+    this.action,
     this.hasActiveStory = false,
     this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
@@ -40,6 +45,7 @@ class ProfileModel {
     bool? isFollowing,
     bool? isPrivate,
     String? followStatus,
+    String? action,
     bool? hasActiveStory,
     bool? hasUnseenStory,
     bool? hasCloseFriendsStory,
@@ -55,6 +61,7 @@ class ProfileModel {
       isFollowing: isFollowing ?? this.isFollowing,
       isPrivate: isPrivate ?? this.isPrivate,
       followStatus: followStatus ?? this.followStatus,
+      action: action ?? this.action,
       hasActiveStory: hasActiveStory ?? this.hasActiveStory,
       hasUnseenStory: hasUnseenStory ?? this.hasUnseenStory,
       hasCloseFriendsStory: hasCloseFriendsStory ?? this.hasCloseFriendsStory,
@@ -158,6 +165,8 @@ class ProfileModel {
     final followStatus = flat['follow_status']?.toString() ??
         (isFollowing ? 'following' : 'none');
 
+    final action = flat['action']?.toString();
+
     final parsedHasActiveStory = SafeParsingHelpers.safeBool(flat, const [
       'has_active_story',
       'has_story',
@@ -206,6 +215,7 @@ class ProfileModel {
       isFollowing: isFollowing,
       isPrivate: isPrivate,
       followStatus: followStatus,
+      action: action,
       hasActiveStory: hasActiveStory,
       hasUnseenStory: hasUnseenStory,
       hasCloseFriendsStory: hasCloseFriendsStory,

@@ -11,7 +11,6 @@ import 'package:gruve_app/features/terms/presentation/screens/terms_and_conditio
 import 'package:gruve_app/features/wallet/presentation/screens/wallet_screen.dart';
 import 'package:gruve_app/features/language/presentation/screens/language_screen.dart';
 import 'package:gruve_app/features/privacy/presentation/screens/account_privacy_screen.dart';
-import 'package:gruve_app/features/follow_requests/presentation/screens/follow_requests_screen.dart';
 import 'package:gruve_app/features/subscription/presentation/screens/subscription_screen.dart';
 
 import 'package:gruve_app/features/account/presentation/screens/account_screen.dart';
@@ -182,21 +181,6 @@ class ProfileMenuDrawer extends ConsumerWidget {
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         const AccountPrivacyScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            _menuItem(
-                              Icons.person_add_outlined,
-                              "Requests",
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const FollowRequestsScreen(),
                                   ),
                                 );
                               },

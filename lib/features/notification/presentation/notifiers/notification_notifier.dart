@@ -7,6 +7,8 @@ import 'package:gruve_app/features/notification/data/datasource/notification_ser
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/services/socket_service.dart';
 import 'package:gruve_app/core/auth/current_user_notifier.dart';
+import 'package:gruve_app/features/follow_requests/data/follow_request_service.dart';
+import 'package:gruve_app/features/home/data/services/subscribe_api_service.dart';
 
 /// Immutable state for [NotificationNotifier]: the notification list, its
 /// pagination/loading flags, the unread count and the current "All"/"Unread" filter.
@@ -109,6 +111,8 @@ class NotificationState {
 /// initial unread count directly from [CurrentUserNotifier].
 class NotificationNotifier extends Notifier<NotificationState> {
   final NotificationService _service = NotificationService();
+  final FollowRequestService _followRequestService = FollowRequestService();
+  final SubscribeApiService _subscribeApiService = SubscribeApiService();
   final SocketService _socketService = SocketService();
   StreamSubscription? _socketSubscription;
   CancelToken? _cancelToken;
@@ -316,6 +320,49 @@ class NotificationNotifier extends Notifier<NotificationState> {
       );
     } else {
       await fetchUnreadCount();
+    }
+  }
+
+  /// Accept or reject a pending follow request. The backend recomputes the
+  /// row's `message`/`action` (e.g. `follow_back` after an accept), so the
+  /// list is refetched rather than patched optimistically.
+  Future<void> respondToFollowRequest({
+    required String actorUserId,
+    required String action,
+  }) async {
+    try {
+      await _followRequestService.respondToRequest(actorUserId, action);
+      await fetchInitialNotifications(showLoading: false);
+    } catch (e) {
+      AppLogger.d('[NotificationNotifier] respondToFollowRequest failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Follow back the actor of a notification. On success the row's button
+  /// flips straight to `message` (mutual follow) or `requested` (their
+  /// account is private).
+  Future<void> respondFollowBack({
+    required int notificationId,
+    required String actorUserId,
+  }) async {
+    try {
+      final result = await _subscribeApiService.toggleSubscription(
+        actorUserId,
+      );
+      final index = state.notifications.indexWhere(
+        (n) => n.id == notificationId,
+      );
+      if (index == -1) return;
+
+      final updatedList = [...state.notifications];
+      updatedList[index] = updatedList[index].copyWith(
+        action: result.followStatus == 'following' ? 'message' : 'requested',
+      );
+      state = state.copyWith(notifications: updatedList);
+    } catch (e) {
+      AppLogger.d('[NotificationNotifier] respondFollowBack failed: $e');
+      rethrow;
     }
   }
 

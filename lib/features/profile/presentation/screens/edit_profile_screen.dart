@@ -33,6 +33,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final FocusNode _bioFocusNode = FocusNode();
 
   bool _wasKeyboardOpen = false;
+  bool _isEditing = false;
   String _profileImagePath = AppAssets.profile;
 
   @override
@@ -393,7 +394,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       usernameFocusNode: _usernameFocusNode,
       bioFocusNode: _bioFocusNode,
       onSave: _saveProfile,
+      onEditTap: () => setState(() => _isEditing = true),
       showEditIcon: true,
+      isReadOnly: !_isEditing,
       showEmail: state.showEmail,
       showPhone: state.showPhone,
       isUpdating: state.isUpdating,

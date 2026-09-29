@@ -136,34 +136,49 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     }
   }
 
+  static const _followTypes = {
+    'follow',
+    'user_follow',
+    'follow_request',
+    'follow_accepted',
+  };
+
   Widget _buildNotificationTile(AppNotification n) {
     final actorUsername = n.actor?.username ?? 'Someone';
     final profilePic = n.actor?.profilePicture ?? '';
     final timeDisplay = NotificationNotifier.formatTime(n.createdAt);
 
-    if (n.type == 'follow' || n.type == 'user_follow') {
+    if (_followTypes.contains(n.type)) {
+      final actorId = n.actor?.id ?? '';
       return FollowTile(
         username: actorUsername,
+        message: n.message,
         time: timeDisplay,
         profileImage: profilePic,
-        userId: n.actor?.id ?? '',
+        userId: actorId,
         isRead: n.isRead,
         onTap: () => _handleNotificationTap(n),
+        action: n.action,
+        onAccept: actorId.isEmpty
+            ? null
+            : () => ref
+                  .read(notificationNotifierProvider.notifier)
+                  .respondToFollowRequest(actorUserId: actorId, action: 'accept'),
+        onReject: actorId.isEmpty
+            ? null
+            : () => ref
+                  .read(notificationNotifierProvider.notifier)
+                  .respondToFollowRequest(actorUserId: actorId, action: 'reject'),
+        onFollowBack: actorId.isEmpty
+            ? null
+            : () => ref
+                  .read(notificationNotifierProvider.notifier)
+                  .respondFollowBack(notificationId: n.id, actorUserId: actorId),
       );
     } else {
-      String msg = 'interacted with your post.';
-      if (n.type == 'post_like' || n.type == 'like') {
-        msg = 'liked your video.';
-      } else if (n.type == 'comment' || n.type == 'post_comment') {
-        msg = 'commented on your video.';
-      } else if (n.type == 'comment_mention') {
-        msg = 'mentioned you in a comment.';
-      } else if (n.type == 'post_tag' || n.type == 'tag') {
-        msg = 'tagged you in a post.';
-      }
       return NotificationTile(
         username: actorUsername,
-        message: msg,
+        message: n.message,
         time: timeDisplay,
         profileImage: profilePic,
         postImage: n.postImage,

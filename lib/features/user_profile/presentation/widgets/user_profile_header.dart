@@ -28,9 +28,11 @@ class UserProfileHeader extends ConsumerWidget {
   final SubscribeNotifier subscribeController;
   final bool initialIsSubscribed;
   final String followStatus;
+  final String? action;
   final bool isPrivate;
   final bool showMessageButton;
   final VoidCallback? onMessageTap;
+  final VoidCallback? onFollowRequestHandled;
 
   const UserProfileHeader({
     super.key,
@@ -48,10 +50,12 @@ class UserProfileHeader extends ConsumerWidget {
     required this.subscribeController,
     this.initialIsSubscribed = false,
     this.followStatus = 'none',
+    this.action,
     this.isPrivate = false,
     this.reserveSubscribeSpace = false,
     this.showMessageButton = false,
     this.onMessageTap,
+    this.onFollowRequestHandled,
   });
 
   void _openStoryView(BuildContext context, WidgetRef ref) {
@@ -179,7 +183,9 @@ class UserProfileHeader extends ConsumerWidget {
                     subscribeController: subscribeController,
                     initialIsSubscribed: initialIsSubscribed,
                     followStatus: followStatus,
+                    action: action,
                     isPrivate: isPrivate,
+                    onFollowRequestHandled: onFollowRequestHandled,
                   ),
                 ),
                 SizedBox(width: context.rw(10)),

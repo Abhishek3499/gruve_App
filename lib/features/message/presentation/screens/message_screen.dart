@@ -27,11 +27,24 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   bool _isLoadingMoreConversations = false;
   bool _startedUserPrefetch = false;
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger();
+  final ScrollController _scrollController = ScrollController();
+
+  // The order conversations are actually rendered in. A live incoming
+  // message re-sorts MessageState.conversations immediately (most recent
+  // first), which is correct for the underlying data, but if we render
+  // that order directly, a conversation update while the user is scrolled
+  // away from the top yanks the whole list around under their finger. So
+  // we freeze the render order and only let content (preview text, unread
+  // badge, timestamp) update in place, resyncing the order itself only
+  // when it's safe to do so: on refresh, or when the user is already at
+  // the top and a live reorder is expected/visible anyway.
+  List<String>? _displayOrder;
 
   @override
   void initState() {
     super.initState();
     AppLogger.d('📱 [MessageScreen] Screen initialized');
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppLogger.d('[MessageScreen] Starting conversation fetch');
       unawaited(_fetchInitialData());
@@ -42,7 +55,47 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   void dispose() {
     ref.read(messageNotifierProvider.notifier).cancelActiveRequests();
     ref.read(userNotifierProvider.notifier).cancelActiveRequests();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.offset > 4.0) return;
+
+    final latestOrder = ref
+        .read(messageNotifierProvider)
+        .conversations
+        .map((c) => c.id)
+        .toList(growable: false);
+    if (_displayOrder != null && listEquals(_displayOrder, latestOrder)) {
+      return;
+    }
+    setState(() => _displayOrder = latestOrder);
+  }
+
+  /// Maps the frozen [_displayOrder] onto the live conversation data:
+  /// existing cards keep their position, deleted ones drop out, and
+  /// anything not seen yet (a new conversation, or a page of older ones
+  /// loaded via pagination) is appended at the end.
+  List<ConversationModel> _orderedConversations(MessageState state) {
+    final all = state.conversations;
+    final byId = {for (final c in all) c.id: c};
+
+    final order = (_displayOrder ?? const <String>[])
+        .where(byId.containsKey)
+        .toList(growable: true);
+
+    final known = order.toSet();
+    for (final c in all) {
+      if (known.add(c.id)) {
+        order.add(c.id);
+      }
+    }
+
+    _displayOrder = order;
+    return order.map((id) => byId[id]!).toList(growable: false);
   }
 
   Future<void> _fetchInitialData() async {
@@ -76,6 +129,11 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
 
     await messageNotifier.refreshConversations();
     unawaited(userNotifier.refreshUsers());
+
+    // An explicit refresh means the user wants the freshest order.
+    if (mounted) {
+      setState(() => _displayOrder = null);
+    }
 
     AppLogger.d('✅ [MessageScreen] Refresh completed');
   }
@@ -224,6 +282,8 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
     }
 
     // Show conversation list
+    final orderedConversations = _orderedConversations(messageState);
+
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollInfo) {
         if (_paginationTrigger.shouldLoadMoreFromMetrics(
@@ -248,18 +308,23 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
         return false;
       },
       child: ListView.builder(
+        controller: _scrollController,
+        // Clamping (no overscroll bounce) instead of Bouncing: the bounce's
+        // spring-back-to-0 animation could get cut short by other rebuilds
+        // on this screen, leaving the list resting at a tiny negative
+        // offset that clips the top of the first card until manually
+        // dragged back into place. Clamping has no spring to interrupt.
         physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+          parent: ClampingScrollPhysics(),
         ),
         padding: const EdgeInsets.all(16),
         cacheExtent: 1000,
         addAutomaticKeepAlives: true,
         addRepaintBoundaries: true,
         itemCount:
-            messageState.conversations.length +
-            (messageState.isLoadingMore ? 1 : 0),
+            orderedConversations.length + (messageState.isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index >= messageState.conversations.length) {
+          if (index >= orderedConversations.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 18),
               child: Center(
@@ -275,7 +340,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
             );
           }
 
-          final conversation = messageState.conversations[index];
+          final conversation = orderedConversations[index];
           return RepaintBoundary(
             child: Dismissible(
               key: ValueKey(conversation.id),

@@ -325,6 +325,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             subscribeController: _subscribeController,
                             initialIsSubscribed: initialIsSubscribed,
                             followStatus: followStatus,
+                            action: profile?.action,
                             isPrivate: isPrivate,
                             showMessageButton: !isDirectOwnProfile,
                             onMessageTap: () => _openMessage(
@@ -335,6 +336,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                   ? profile!.profileImage
                                   : widget.profileImageUrl,
                             ),
+                            onFollowRequestHandled: () =>
+                                _profileController.fetchUser(
+                                  reason: 'follow_request_responded',
+                                  forceRefresh: true,
+                                ),
                           ),
                           SizedBox(height: context.rh(22)),
                           ValueListenableBuilder(

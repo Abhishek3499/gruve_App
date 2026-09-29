@@ -67,6 +67,11 @@ class AppNotification {
   final String createdAt;
   final NotificationActor? actor;
   final String? postImage;
+  final String message;
+
+  /// Drives which button (if any) the notification row shows:
+  /// `accept_reject`, `follow_back`, `requested`, `message`, or null for none.
+  final String? action;
 
   AppNotification({
     required this.id,
@@ -78,6 +83,8 @@ class AppNotification {
     required this.createdAt,
     this.actor,
     this.postImage,
+    this.message = '',
+    this.action,
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
@@ -100,6 +107,8 @@ class AppNotification {
           json['post']?['thumbnail_url']?.toString() ??
           json['post']?['post_image']?.toString() ??
           json['post']?['thumbnail']?.toString(),
+      message: json['message']?.toString() ?? '',
+      action: json['action']?.toString(),
     );
   }
 
@@ -113,6 +122,8 @@ class AppNotification {
     String? createdAt,
     NotificationActor? actor,
     String? postImage,
+    String? message,
+    String? action,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -124,6 +135,8 @@ class AppNotification {
       createdAt: createdAt ?? this.createdAt,
       actor: actor ?? this.actor,
       postImage: postImage ?? this.postImage,
+      message: message ?? this.message,
+      action: action ?? this.action,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/home/presentation/controllers/subscribe_notifier.dart';
 import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
+import 'package:gruve_app/features/follow_requests/data/follow_request_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
@@ -10,7 +11,15 @@ class SubscribeButton extends StatefulWidget {
   final SubscribeNotifier subscribeController;
   final bool initialIsSubscribed;
   final String followStatus;
+
+  /// Drives the button when set: `follow_back` (label only) or
+  /// `accept_reject` (shows Accept/Reject instead of the toggle).
+  final String? action;
   final bool isPrivate;
+
+  /// Called after a successful Accept/Reject so the profile can refetch and
+  /// pick up the backend's next `action` for this row.
+  final VoidCallback? onFollowRequestHandled;
 
   const SubscribeButton({
     super.key,
@@ -19,7 +28,9 @@ class SubscribeButton extends StatefulWidget {
     required this.subscribeController,
     this.initialIsSubscribed = false,
     this.followStatus = 'none',
+    this.action,
     this.isPrivate = false,
+    this.onFollowRequestHandled,
   });
 
   @override
@@ -28,9 +39,30 @@ class SubscribeButton extends StatefulWidget {
 
 class _SubscribeButtonState extends State<SubscribeButton> {
   bool _isProcessing = false;
+  final FollowRequestService _followRequestService = FollowRequestService();
 
   void _log(String message) {
     AppLogger.d('🪪 [ProfileSubscribeButton] $message');
+  }
+
+  Future<void> _respondToRequest(String action) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      await _followRequestService.respondToRequest(widget.userId, action);
+      widget.onFollowRequestHandled?.call();
+    } catch (e) {
+      _log('❌ respondToRequest error userId=${widget.userId} error=$e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   @override
@@ -158,7 +190,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     }
   }
 
-  Widget _buildSubscribeWidget(BuildContext context) {
+  Widget _buildSubscribeWidget(BuildContext context, {String label = 'Subscribe'}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -177,7 +209,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
           ),
           child: Center(
             child: Text(
-              'Subscribe',
+              label,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: context.rf(14),
@@ -187,6 +219,70 @@ class _SubscribeButtonState extends State<SubscribeButton> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAcceptRejectWidget(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Expanded(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () => _respondToRequest('accept'),
+              child: Container(
+                height: context.rh(44),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFE24E0), Color(0xFF72008D)],
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Center(
+                  child: Text(
+                    'Accept',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: context.rf(14),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: context.rw(8)),
+        Expanded(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () => _respondToRequest('reject'),
+              child: Container(
+                height: context.rh(44),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF33123B).withValues(alpha: 0.6),
+                  border: Border.all(color: Colors.white38, width: 1.5),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Center(
+                  child: Text(
+                    'Reject',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: context.rf(14),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -250,6 +346,14 @@ class _SubscribeButtonState extends State<SubscribeButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.action == 'accept_reject') {
+      return AnimatedOpacity(
+        opacity: _isProcessing ? 0.6 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: _buildAcceptRejectWidget(context),
+      );
+    }
+
     return ListenableBuilder(
       listenable: widget.subscribeController,
       builder: (context, child) {
@@ -281,7 +385,12 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                 ? _buildSubscribedWidget(context)
                 : liveFollowStatus == 'requested'
                     ? _buildRequestedWidget(context)
-                    : _buildSubscribeWidget(context),
+                    : _buildSubscribeWidget(
+                        context,
+                        label: widget.action == 'follow_back'
+                            ? 'Subscribe back'
+                            : 'Subscribe',
+                      ),
           ),
         );
       },
