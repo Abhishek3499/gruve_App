@@ -93,4 +93,5 @@ class ApiConstants {
   static const String getPost = 'posts/get-post/';
   static String postDraft(String draftId) => 'posts/drafts/$draftId/';
   static String post(String postId) => 'posts/$postId/';
+  static String postView(String postId) => 'posts/$postId/view/';
 }

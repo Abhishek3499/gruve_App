@@ -370,13 +370,60 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!mounted) return;
       AppLogger.d('[ChatScreen] Fetch messages requested for $_conversationId');
       _hasCompletedInitialScroll = false;
-      _messageController.fetchInitialMessages();
+      _messageController.fetchInitialMessages().then((_) {
+        if (mounted) _reconcilePendingUploads();
+      });
       _messageController.markAsReadDebounced();
     });
   }
 
+  /// Re-applies any in-flight or just-completed background uploads for this
+  /// conversation (from the app-lifetime [MediaUploadService] singleton) onto
+  /// the freshly created [_messageController]. Without this, a media message
+  /// sent right before leaving the chat can vanish when the chat is reopened:
+  /// the old optimistic bubble only lived in the previous (now disposed)
+  /// controller, and a still-uploading message hasn't reached the server yet
+  /// for the new REST fetch to pick up.
+  void _reconcilePendingUploads() {
+    final uploads = _mediaUploadService.uploadsFor(_conversationId);
+    for (final upload in uploads) {
+      if (upload.status == UploadStatus.done) {
+        final result = upload.result;
+        if (result != null) {
+          _messageController.upsertMessage(result, localId: upload.localId);
+        }
+        continue;
+      }
+
+      if (upload.status != UploadStatus.uploading &&
+          upload.status != UploadStatus.sending) {
+        continue;
+      }
+
+      final alreadyShown = _messageController.messages.any(
+        (m) => m.id == upload.localId,
+      );
+      if (alreadyShown) continue;
+
+      _messageController.appendLocalMessage(
+        MessageModel(
+          id: upload.localId,
+          text: upload.caption ?? '',
+          timestamp: upload.createdAt,
+          isSent: true,
+          senderId: _currentUserId ?? 'me',
+          imagePath: upload.filePath,
+          mediaKind: upload.mediaKind,
+          status: MessageStatus.sent,
+        ),
+      );
+    }
+  }
+
   void _onUploadChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    _reconcilePendingUploads();
+    setState(() {});
   }
 
   void _onMessageScroll() {
@@ -1221,7 +1268,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       mediaKind: 'audio',
       replyToMessageId: replyToMessageId,
       onSuccess: (sent) {
-        if (mounted) _messageController.replaceMessage(sent);
+        if (mounted) _messageController.upsertMessage(sent, localId: localId);
       },
       onFailure: (id) {
         if (mounted) _messageController.markMessageAsFailed(id);
@@ -1273,7 +1320,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       caption: caption.isEmpty ? null : caption,
       replyToMessageId: replyToMessageId,
       onSuccess: (sent) {
-        if (mounted) _messageController.replaceMessage(sent);
+        if (mounted) _messageController.upsertMessage(sent, localId: localId);
       },
       onFailure: (id) {
         if (mounted) _messageController.markMessageAsFailed(id);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_draft_model.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 
 class DraftTile extends StatelessWidget {
   final PostDraft draft;
@@ -67,12 +68,10 @@ class DraftTile extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: (draft.mediaUrl != null && draft.mediaUrl!.isNotEmpty)
-                  ? Image.network(
-                      draft.mediaUrl!,
+                  ? MediaUrlThumbnail(
+                      url: draft.mediaUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(AppAssets.draft, fit: BoxFit.cover);
-                      },
+                      fallback: Image.asset(AppAssets.draft, fit: BoxFit.cover),
                     )
                   : Image.asset(AppAssets.draft, fit: BoxFit.cover),
             ),

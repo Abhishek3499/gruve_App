@@ -16,8 +16,11 @@ class PendingUpload {
   final String mediaKind;
   final String? caption;
   final String? replyToMessageId;
+  final DateTime createdAt;
   UploadStatus status;
   double progress; // 0.0 – 1.0
+  /// The server-confirmed message, populated once [status] is [UploadStatus.done].
+  MessageModel? result;
 
   PendingUpload({
     required this.localId,
@@ -28,7 +31,8 @@ class PendingUpload {
     this.replyToMessageId,
     this.status = UploadStatus.uploading,
     this.progress = 0.0,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 }
 
 /// Singleton service that keeps media uploads alive even after the chat screen
@@ -103,6 +107,7 @@ class MediaUploadService extends ChangeNotifier {
 
       upload.status = UploadStatus.done;
       upload.progress = 1.0;
+      upload.result = sent;
       notifyListeners();
 
       if (sent != null) onSuccess?.call(sent);

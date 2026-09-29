@@ -6,7 +6,6 @@ import 'package:gruve_app/features/profile/presentation/screens/post_detail/prof
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
-import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
 class UserProfileGrid extends StatelessWidget {
   static const gridDelegate = ProfileGridStyle.gridDelegate;
@@ -44,6 +43,7 @@ class UserProfileGrid extends StatelessWidget {
       likesCount: post.likesCount,
       commentsCount: post.commentsCount,
       sharesCount: post.sharesCount,
+      viewsCount: post.viewsCount,
       isLiked: post.isLiked,
       username: userProfile.username.isNotEmpty
           ? userProfile.username
@@ -111,20 +111,44 @@ class UserProfileGrid extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     PostGridThumbnail(post: enrichedPost),
-                    if (enrichedPost.isVideo)
+                    if (enrichedPost.viewsCount > 0)
                       Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Container(
-                          padding: EdgeInsets.all(context.rw(3)),
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(4),
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.72),
+                                Colors.transparent,
+                              ],
+                            ),
                           ),
-                          child: Icon(
-                            Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: context.rw(14),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 16, 8, 6),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  ProfileGridStyle.formatCount(
+                                    enrichedPost.viewsCount,
+                                  ),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

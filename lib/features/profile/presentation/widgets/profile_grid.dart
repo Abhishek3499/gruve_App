@@ -236,24 +236,7 @@ class ProfileGrid extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             PostGridThumbnail(post: post),
-            if (post.isVideo)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-              ),
-            if (selectedTab == 1 && post.likesCount > 10)
+            if (post.viewsCount > 0)
               Positioned(
                 left: 0,
                 right: 0,
@@ -274,15 +257,13 @@ class ProfileGrid extends StatelessWidget {
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.local_fire_department,
+                          Icons.play_arrow_rounded,
                           color: Colors.white,
                           size: 12,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          post.likesCount > 999
-                              ? '${(post.likesCount / 1000).toStringAsFixed(1)}K'
-                              : '${post.likesCount}',
+                          ProfileGridStyle.formatCount(post.viewsCount),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,

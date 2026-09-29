@@ -811,6 +811,36 @@ class PostService {
     }
   }
 
+  Future<bool> recordPostView(String postId) async {
+    final token = await TokenStorage.getAccessToken();
+
+    try {
+      await _dio.post(
+        ApiConstants.postView(postId),
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      return true;
+    } catch (e) {
+      if (e is DioException) {
+        final status = e.response?.statusCode;
+        if (status == 401 || status == 403 || status == 404) {
+          return false;
+        }
+        if (status != null && status >= 500) {
+          return false;
+        }
+      }
+      AppLogger.error(
+        'PostService',
+        'record_post_view_failed',
+        data: {'postId': postId},
+        error: e,
+      );
+      return false;
+    }
+  }
+
   Future<bool> sharePost({
     required String postId,
     required List<String> recipientUserIds,
