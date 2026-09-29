@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/story_preview/presentation/notifiers/save_post_notifier.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/post_view_notifier.dart';
+import 'package:gruve_app/core/services/profile_identity_service.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gruve_app/main.dart';
@@ -638,6 +641,8 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
                 posterUrl: post.feedPosterUrl,
                 isVideo: effectiveVideo,
                 isValidNetworkUrl: isValidNetworkUrl,
+                postId: post.id,
+                authorUserId: post.userId,
               ),
             ),
             ValueListenableBuilder<int>(
@@ -864,6 +869,8 @@ class FeedMediaContent extends StatelessWidget {
   final String posterUrl;
   final bool isVideo;
   final bool isValidNetworkUrl;
+  final String postId;
+  final String authorUserId;
 
   const FeedMediaContent({
     super.key,
@@ -873,6 +880,8 @@ class FeedMediaContent extends StatelessWidget {
     this.posterUrl = '',
     required this.isVideo,
     required this.isValidNetworkUrl,
+    this.postId = '',
+    this.authorUserId = '',
   });
 
   Widget _brokenMediaIcon() {
@@ -892,6 +901,8 @@ class FeedMediaContent extends StatelessWidget {
       controller: controller,
       url: url,
       posterUrl: posterUrl,
+      postId: postId,
+      authorUserId: authorUserId,
     );
   }
 
@@ -901,17 +912,65 @@ class FeedMediaContent extends StatelessWidget {
       return _brokenMediaIcon();
     }
 
-    return FeedPosterImage(url: url);
+    return PostViewTracker(
+      postId: postId,
+      authorUserId: authorUserId,
+      child: FeedPosterImage(url: url),
+    );
+  }
+}
+
+/// Fires the post-view API once a post crosses 50% visibility in the
+/// viewport — no dwell delay. Skips posts already recorded this session
+/// and posts authored by the logged-in user.
+class PostViewTracker extends ConsumerWidget {
+  final String postId;
+  final String authorUserId;
+  final Widget child;
+
+  const PostViewTracker({
+    super.key,
+    required this.postId,
+    required this.authorUserId,
+    required this.child,
+  });
+
+  void _onVisibilityChanged(WidgetRef ref, VisibilityInfo info) {
+    if (info.visibleFraction < 0.5) return;
+    if (postId.isEmpty) return;
+    if (ref.read(postViewNotifierProvider.notifier).isViewed(postId)) return;
+
+    final myUserId = ProfileIdentityService.instance.cachedLoggedInUserId;
+    if (myUserId != null &&
+        authorUserId.isNotEmpty &&
+        myUserId == authorUserId) {
+      return;
+    }
+
+    ref.read(postViewNotifierProvider.notifier).recordView(postId);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (postId.isEmpty) return child;
+
+    return VisibilityDetector(
+      key: ValueKey('post-view-$postId'),
+      onVisibilityChanged: (info) => _onVisibilityChanged(ref, info),
+      child: child,
+    );
   }
 }
 
 /// Keeps a stable [VideoPlayer] instance so the texture is not torn down
 /// every time a neighboring slot finishes loading.
-class FeedVideoPlayer extends StatefulWidget {
+class FeedVideoPlayer extends ConsumerStatefulWidget {
   final int index;
   final VideoFeedController controller;
   final String url;
   final String posterUrl;
+  final String postId;
+  final String authorUserId;
 
   const FeedVideoPlayer({
     super.key,
@@ -919,13 +978,15 @@ class FeedVideoPlayer extends StatefulWidget {
     required this.controller,
     required this.url,
     this.posterUrl = '',
+    this.postId = '',
+    this.authorUserId = '',
   });
 
   @override
-  State<FeedVideoPlayer> createState() => _FeedVideoPlayerState();
+  ConsumerState<FeedVideoPlayer> createState() => _FeedVideoPlayerState();
 }
 
-class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
+class _FeedVideoPlayerState extends ConsumerState<FeedVideoPlayer> {
   VideoPlayerController? _boundController;
   bool _initialized = false;
 
@@ -953,6 +1014,12 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   static const Duration _bufferingSpinnerShowDelay = Duration(
     milliseconds: 400,
   );
+
+  /// Fires the view API once this post has played continuously for this
+  /// long. Restarts from zero on pause/leaving current — an approximation
+  /// of "3 seconds of playback", not accumulated watch time.
+  static const Duration _viewThreshold = Duration(seconds: 3);
+  Timer? _viewTimer;
 
   bool get _isCurrentItem =>
       widget.controller.currentIndex.value == widget.index;
@@ -1008,6 +1075,38 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     }
   }
 
+  void _cancelViewTimer() {
+    _viewTimer?.cancel();
+    _viewTimer = null;
+  }
+
+  void _syncViewTracking(VideoPlayerValue value) {
+    if (widget.postId.isEmpty) return;
+
+    if (!_isCurrentItem || !value.isInitialized || !value.isPlaying) {
+      _cancelViewTimer();
+      return;
+    }
+
+    if (_viewTimer != null) return;
+    if (ref.read(postViewNotifierProvider.notifier).isViewed(widget.postId)) {
+      return;
+    }
+
+    final myUserId = ProfileIdentityService.instance.cachedLoggedInUserId;
+    if (myUserId != null &&
+        widget.authorUserId.isNotEmpty &&
+        myUserId == widget.authorUserId) {
+      return;
+    }
+
+    _viewTimer = Timer(_viewThreshold, () {
+      _viewTimer = null;
+      if (!mounted) return;
+      ref.read(postViewNotifierProvider.notifier).recordView(widget.postId);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1031,6 +1130,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     widget.controller.videoControllersRevision.removeListener(_syncController);
     widget.controller.currentIndex.removeListener(_onCurrentIndexChanged);
     _cancelBufferingShowTimer();
+    _cancelViewTimer();
     _detachController();
     super.dispose();
   }
@@ -1042,6 +1142,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       // unconditional behavior for every real "become current" transition.
       _needsCurrentIndexRebuildKick = true;
       _cancelBufferingShowTimer();
+      _cancelViewTimer();
       if (_showPlaybackBufferSpinner) {
         setState(() => _showPlaybackBufferSpinner = false);
       }
@@ -1056,6 +1157,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     }
 
     _syncPlaybackBufferSpinner(ctrl.value);
+    _syncViewTracking(ctrl.value);
 
     // Recover from a stale black texture after swiping onto a preloaded slot.
     // Only needed when the controller was already sitting there from an
@@ -1070,6 +1172,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
   void _detachController() {
     _cancelBufferingShowTimer();
+    _cancelViewTimer();
     _showPlaybackBufferSpinner = false;
     _boundController?.removeListener(_onControllerUpdate);
     _boundController = null;
@@ -1119,6 +1222,9 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     _boundController?.addListener(_onControllerUpdate);
     if (next != null) {
       _syncPlaybackBufferSpinner(next.value);
+      _syncViewTracking(next.value);
+    } else {
+      _cancelViewTimer();
     }
     setState(() {});
   }
@@ -1130,6 +1236,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     final nowInitialized = ctrl.value.isInitialized;
     final nowHasFrame = _hasVisibleFrame(ctrl.value);
     _syncPlaybackBufferSpinner(ctrl.value);
+    _syncViewTracking(ctrl.value);
     final gainedFirstFrame = nowHasFrame && !_hasEverRenderedFrame;
     if (gainedFirstFrame) {
       _hasEverRenderedFrame = true;

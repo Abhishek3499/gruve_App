@@ -158,9 +158,7 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
   }
 
   Future<void> _loadThumbnail() async {
-    final path = await LocalMediaUtils.generateVideoThumbnail(
-      widget.mediaPath,
-    );
+    final path = await LocalMediaUtils.generateVideoThumbnail(widget.mediaPath);
     if (path != null && mounted) {
       setState(() => _thumbnailPath = path);
     }
@@ -559,69 +557,69 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
                         height: 1,
                         indent: 20,
                       ),
-                      MenuRow(
-                        icon: Icons.visibility_outlined,
-                        title: 'Audience',
-                        subtitle: isCloseFriends ? 'Close Friends' : 'Everyone',
-                        onTap: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AudienceScreen(
-                                initialIsEveryone: isEveryone,
-                                initialIsCloseFriends: isCloseFriends,
-                              ),
-                            ),
-                          );
-                          if (!mounted) return;
-                          if (result != null && result is Map<String, bool>) {
-                            setState(() {
-                              isEveryone = result['isEveryone'] ?? true;
-                              isCloseFriends =
-                                  result['isCloseFriends'] ?? false;
-                            });
-                          }
-                        },
-                      ),
+                      // MenuRow(
+                      //   icon: Icons.visibility_outlined,
+                      //   title: 'Audience',
+                      //   subtitle: isCloseFriends ? 'Close Friends' : 'Everyone',
+                      //   onTap: () async {
+                      //     final result = await Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => AudienceScreen(
+                      //           initialIsEveryone: isEveryone,
+                      //           initialIsCloseFriends: isCloseFriends,
+                      //         ),
+                      //       ),
+                      //     );
+                      //     if (!mounted) return;
+                      //     if (result != null && result is Map<String, bool>) {
+                      //       setState(() {
+                      //         isEveryone = result['isEveryone'] ?? true;
+                      //         isCloseFriends =
+                      //             result['isCloseFriends'] ?? false;
+                      //       });
+                      //     }
+                      //   },
+                      // ),
                       const Divider(color: Colors.white10, height: 1),
 
-                      MenuRow(
-                        icon: Icons.more_horiz,
-                        title: 'More options',
-                        subtitle:
-                            (scheduleReel ||
-                                uploadHighQuality ||
-                                hideLikeCount ||
-                                hideShareCount)
-                            ? 'Customized preferences'
-                            : null,
-                        onTap: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MoreOptionScreen(
-                                scheduleReel: scheduleReel,
-                                uploadHighQuality: uploadHighQuality,
-                                hideLikeCount: hideLikeCount,
-                                hideShareCount: hideShareCount,
-                              ),
-                            ),
-                          );
-                          if (!mounted) return;
-                          if (result != null &&
-                              result is Map<String, dynamic>) {
-                            setState(() {
-                              scheduleReel = result['schedule_reel'] ?? false;
-                              uploadHighQuality =
-                                  result['upload_high_quality'] ?? false;
-                              hideLikeCount =
-                                  result['hide_like_count'] ?? false;
-                              hideShareCount =
-                                  result['hide_share_count'] ?? false;
-                            });
-                          }
-                        },
-                      ),
+                      // MenuRow(
+                      //   icon: Icons.more_horiz,
+                      //   title: 'More options',
+                      //   subtitle:
+                      //       (scheduleReel ||
+                      //           uploadHighQuality ||
+                      //           hideLikeCount ||
+                      //           hideShareCount)
+                      //       ? 'Customized preferences'
+                      //       : null,
+                      //   onTap: () async {
+                      //     final result = await Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => MoreOptionScreen(
+                      //           scheduleReel: scheduleReel,
+                      //           uploadHighQuality: uploadHighQuality,
+                      //           hideLikeCount: hideLikeCount,
+                      //           hideShareCount: hideShareCount,
+                      //         ),
+                      //       ),
+                      //     );
+                      //     if (!mounted) return;
+                      //     if (result != null &&
+                      //         result is Map<String, dynamic>) {
+                      //       setState(() {
+                      //         scheduleReel = result['schedule_reel'] ?? false;
+                      //         uploadHighQuality =
+                      //             result['upload_high_quality'] ?? false;
+                      //         hideLikeCount =
+                      //             result['hide_like_count'] ?? false;
+                      //         hideShareCount =
+                      //             result['hide_share_count'] ?? false;
+                      //       });
+                      //     }
+                      //   },
+                      // ),
                     ],
                   ),
                 ),
@@ -764,9 +762,7 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
           children: [
             if (_thumbnailPath != null)
               Image.file(File(_thumbnailPath!), fit: BoxFit.cover),
-            const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
           ],
         ),
       );

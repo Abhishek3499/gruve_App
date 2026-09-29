@@ -303,20 +303,9 @@ class _ExploreReelTile extends StatelessWidget {
     required this.onTap,
   });
 
-  String _formatCount(int count) {
-    if (count >= 1000000) {
-      final double val = count / 1000000;
-      return '${val.toStringAsFixed(val.truncateToDouble() == val ? 0 : 1)}M';
-    } else if (count >= 1000) {
-      final double val = count / 1000;
-      return '${val.toStringAsFixed(val.truncateToDouble() == val ? 0 : 1)}K';
-    }
-    return '$count';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final int displayCount = reel.likes;
+    final int displayCount = reel.views;
 
     return GestureDetector(
       onTap: onTap,
@@ -328,22 +317,6 @@ class _ExploreReelTile extends StatelessWidget {
               key: ValueKey('explore-reel-${reel.id}'),
               reel: reel,
               post: post,
-            ),
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
             ),
             if (displayCount > 0)
               Positioned(
@@ -366,13 +339,13 @@ class _ExploreReelTile extends StatelessWidget {
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.local_fire_department,
+                          Icons.play_arrow_rounded,
                           color: Colors.white,
                           size: 12,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _formatCount(displayCount),
+                          ProfileGridStyle.formatCount(displayCount),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,

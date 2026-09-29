@@ -29,6 +29,7 @@ class Post {
   final int likesCount;
   int commentsCount;
   int sharesCount;
+  final int viewsCount;
   final bool isLiked;
 
   String username;
@@ -49,6 +50,7 @@ class Post {
     required this.likesCount,
     required this.commentsCount,
     this.sharesCount = 0,
+    this.viewsCount = 0,
     required this.isLiked,
     required this.username,
     required this.isSubscribed,
@@ -259,6 +261,13 @@ class Post {
         'sharesCount',
         'shares',
         'total_shares',
+      ]),
+      viewsCount: _readIntCount(json, const [
+        'views_count',
+        'view_count',
+        'viewsCount',
+        'views',
+        'total_views',
       ]),
       isLiked: json['is_liked'] ?? json['liked'] ?? json['isLiked'] ?? false,
       username:
@@ -605,6 +614,7 @@ class Post {
       likesCount: pickCount(likesCount, other?.likesCount),
       commentsCount: pickCount(commentsCount, other?.commentsCount),
       sharesCount: pickCount(sharesCount, other?.sharesCount),
+      viewsCount: pickCount(viewsCount, other?.viewsCount),
       isLiked: isLiked || (other?.isLiked ?? false),
       username: pick(username, other?.username ?? displayName),
       isSubscribed: isSubscribed || (other?.isSubscribed ?? false),
@@ -642,6 +652,7 @@ class Post {
       'likes_count': likesCount,
       'comments_count': commentsCount,
       'shares_count': sharesCount,
+      'views_count': viewsCount,
       'is_liked': isLiked,
       'username': username,
       'is_subscribed': isSubscribed,
@@ -662,6 +673,7 @@ class Post {
     int? likesCount,
     int? commentsCount,
     int? sharesCount,
+    int? viewsCount,
     bool? isLiked,
     String? username,
     bool? isSubscribed,
@@ -681,6 +693,7 @@ class Post {
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,
       sharesCount: sharesCount ?? this.sharesCount,
+      viewsCount: viewsCount ?? this.viewsCount,
       isLiked: isLiked ?? this.isLiked,
       username: username ?? this.username,
       isSubscribed: isSubscribed ?? this.isSubscribed,

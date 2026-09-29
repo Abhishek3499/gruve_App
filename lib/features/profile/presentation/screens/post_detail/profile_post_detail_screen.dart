@@ -16,6 +16,8 @@ import 'package:gruve_app/features/share/presentation/screens/share_bottom_sheet
 import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/widgets/post_action_sheet.dart';
+import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
+import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 
@@ -105,6 +107,36 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     } finally {
       if (mounted && showLoader) setState(() => _isResolvingMedia = false);
     }
+  }
+
+  void _openProfile(Post post) {
+    if (post.userId.isEmpty) return;
+
+    final loggedInUserId = AuthStateManager().currentUserId;
+    final isOwnProfile =
+        widget.isOwnProfile ||
+        (loggedInUserId != null &&
+            loggedInUserId.isNotEmpty &&
+            loggedInUserId.trim() == post.userId.trim());
+    if (isOwnProfile) return;
+
+    final displayName = post.resolveUsername(
+      fallback: widget.fallbackDisplayName,
+    );
+    final avatarUrl = post.resolveProfilePicture(
+      fallback: widget.fallbackProfilePicture,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserProfileScreen(
+          profileUserId: post.userId,
+          userName: displayName,
+          profileImageUrl: avatarUrl.isNotEmpty ? avatarUrl : null,
+        ),
+      ),
+    );
   }
 
   Future<Post?> _fetchPostById(Post post) async {
@@ -524,35 +556,41 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: const Color(0xFF6A008A),
-                      backgroundImage: avatarUrl.isNotEmpty
-                          ? CachedNetworkImageProvider(avatarUrl)
-                          : null,
-                      child: avatarUrl.isEmpty
-                          ? Text(
-                              displayName.isNotEmpty
-                                  ? displayName[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )
-                          : null,
+                    GestureDetector(
+                      onTap: () => _openProfile(post),
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: const Color(0xFF6A008A),
+                        backgroundImage: avatarUrl.isNotEmpty
+                            ? CachedNetworkImageProvider(avatarUrl)
+                            : null,
+                        child: avatarUrl.isEmpty
+                            ? Text(
+                                displayName.isNotEmpty
+                                    ? displayName[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                     SizedBox(width: context.rw(12)),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            displayName,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: context.rf(14),
-                              fontWeight: FontWeight.w600,
+                          GestureDetector(
+                            onTap: () => _openProfile(post),
+                            child: Text(
+                              displayName,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: context.rf(14),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           if (post.caption.isNotEmpty)

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/features/message/presentation/notifiers/message_notifier.dart';
 import 'package:gruve_app/features/search/data/datasource/user_search_service.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
@@ -126,6 +129,16 @@ class PostShareNotifier extends Notifier<PostShareState> {
           ),
         );
         clearSelection();
+
+        // Shared posts land in the recipient's chat as a new/updated
+        // conversation. Without this, the chat list only picked it up
+        // after a manual pull-to-refresh since nothing else invalidates it.
+        unawaited(
+          ref
+              .read(messageNotifierProvider.notifier)
+              .fetchConversations(refresh: true, reason: 'post_shared'),
+        );
+
         return true;
       } else {
         throw Exception('Share request failed');

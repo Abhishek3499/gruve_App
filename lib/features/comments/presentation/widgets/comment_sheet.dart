@@ -454,8 +454,10 @@ class _CommentSheetState extends State<CommentSheet> {
                     controller: _commentController,
                     focusNode: _commentFocusNode,
                     style: const TextStyle(color: Colors.white, fontSize: 14),
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _submitComment(),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    minLines: 1,
+                    maxLines: 5,
                     decoration: const InputDecoration(
                       hintText: 'Add a comment...',
                       hintStyle: TextStyle(color: Colors.white70, fontSize: 14),

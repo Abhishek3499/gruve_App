@@ -283,6 +283,15 @@ class MessageController extends ChangeNotifier {
     AppLogger.d('[MessageController] Message replaced: ${message.id}');
   }
 
+  /// Upserts a server-confirmed [message], replacing the optimistic bubble at
+  /// [localId] if one is present, or merging/inserting by server id otherwise.
+  void upsertMessage(MessageModel message, {String? localId}) {
+    if (_upsertMessage(message, replaceLocalId: localId)) {
+      _notify();
+      AppLogger.d('[MessageController] Message upserted: ${message.id}');
+    }
+  }
+
   void markMessageAsFailed(String messageId) {
     final index = _messages.indexWhere((m) => m.id == messageId);
     if (index != -1) {
