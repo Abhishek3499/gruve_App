@@ -360,7 +360,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   ...grid.buildSlivers(context),
-                  SliverToBoxAdapter(child: SizedBox(height: context.rh(100))),
+                  SliverToBoxAdapter(child: SizedBox(height: context.rh(65))),
                 ],
               );
             },

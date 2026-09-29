@@ -25,9 +25,9 @@ class NavBarPainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     double center = size.width / 2;
-    double bumpHeight = 10;
-    double bumpWidth = 35;
-    double radius = 18; // ✅ only for smooth corners
+    double bumpHeight = 6;
+    double bumpWidth = 25;
+    double radius = 14; // ✅ smooth corners
 
     final path = Path();
 
@@ -38,19 +38,19 @@ class NavBarPainter extends CustomPainter {
     // 🔹 TOP LINE BEFORE BUMP
     path.lineTo(center - bumpWidth, bumpHeight);
 
-    // 🔹 CENTER BUMP (UNCHANGED)
+    // 🔹 CENTER BUMP
     path.cubicTo(
-      center - bumpWidth + 10,
+      center - bumpWidth + 6,
       bumpHeight,
-      center - 20,
+      center - 12,
       0,
       center,
       0,
     );
     path.cubicTo(
-      center + 20,
+      center + 12,
       0,
-      center + bumpWidth - 10,
+      center + bumpWidth - 6,
       bumpHeight,
       center + bumpWidth,
       bumpHeight,

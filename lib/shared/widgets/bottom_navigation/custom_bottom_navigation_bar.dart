@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/auth/current_user_notifier.dart';
@@ -27,76 +28,86 @@ class _CustomBottomNavigationBarState
     extends ConsumerState<CustomBottomNavigationBar> {
   // Minimum breathing room above the screen edge even if a device briefly
   // reports a zero bottom inset (e.g. mid rotation, or a manufacturer quirk).
-  static const double _minBottomGap = 8;
+  static const double _minBottomGap = 2;
 
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
-    return SizedBox(
-      height: 100 + bottomInset,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
-        children: [
-          // NAVBAR with CustomPaint — the background is allowed to bleed
-          // into the system gesture/nav bar area for an edge-to-edge look,
-          // while the interactive content below is kept clear of it via
-          // SafeArea.
-          Positioned(
-            bottom: -2,
-            left: 0,
-            right: 0,
-            child: CustomPaint(
-              painter: NavBarPainter(),
-              child: SizedBox(
-                height: 80 + bottomInset,
-                child: SafeArea(
-                  top: false,
-                  left: false,
-                  right: false,
-                  minimum: const EdgeInsets.only(bottom: _minBottomGap),
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 28),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        NavItem(
-                          imagePath: AppAssets.homelogo,
-                          index: 0,
-                          selectedIndex: widget.selectedIndex,
-                          onTap: () => widget.onItemSelected(0),
-                        ),
-                        NavItem(
-                          imagePath: AppAssets.search,
-                          index: 1,
-                          selectedIndex: widget.selectedIndex,
-                          onTap: () => widget.onItemSelected(1),
-                        ),
-                        const SizedBox(width: 55),
-                        NavItem(
-                          imagePath: AppAssets.notification,
-                          index: 3,
-                          selectedIndex: widget.selectedIndex,
-                          onTap: () => widget.onItemSelected(3),
-                        ),
-                        _buildProfileNavItem(context),
-                      ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarContrastEnforced: false,
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: SizedBox(
+        height: 60 + bottomInset,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
+          children: [
+            // NAVBAR with CustomPaint — the background is allowed to bleed
+            // into the system gesture/nav bar area for an edge-to-edge look,
+            // while the interactive content below is kept clear of it via
+            // SafeArea.
+            Positioned(
+              bottom: -2,
+              left: 0,
+              right: 0,
+              child: CustomPaint(
+                painter: NavBarPainter(),
+                child: SizedBox(
+                  height: 54 + bottomInset,
+                  child: SafeArea(
+                    top: false,
+                    left: false,
+                    right: false,
+                    minimum: const EdgeInsets.only(bottom: _minBottomGap),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          NavItem(
+                            imagePath: AppAssets.homelogo,
+                            index: 0,
+                            selectedIndex: widget.selectedIndex,
+                            onTap: () => widget.onItemSelected(0),
+                          ),
+                          NavItem(
+                            imagePath: AppAssets.search,
+                            index: 1,
+                            selectedIndex: widget.selectedIndex,
+                            onTap: () => widget.onItemSelected(1),
+                          ),
+                          const SizedBox(width: 38),
+                          NavItem(
+                            imagePath: AppAssets.notification,
+                            index: 3,
+                            selectedIndex: widget.selectedIndex,
+                            onTap: () => widget.onItemSelected(3),
+                          ),
+                          _buildProfileNavItem(context),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // CENTER BUTTON
-          Positioned(
-            top: 32,
-            child: CenterNavButton(
-              isSelected: widget.selectedIndex == 2,
-              onTap: () => widget.onItemSelected(2),
+            // CENTER BUTTON
+            Positioned(
+              top: 13,
+              child: CenterNavButton(
+                isSelected: widget.selectedIndex == 2,
+                onTap: () => widget.onItemSelected(2),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -123,15 +134,15 @@ class _CustomBottomNavigationBarState
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              transform: Matrix4.translationValues(0, isActive ? -8 : 0, 0),
+              transform: Matrix4.translationValues(0, isActive ? -3.5 : 0, 0),
               child: Container(
-                width: isActive ? 32 : 30,
-                height: isActive ? 32 : 30,
-                padding: isActive ? const EdgeInsets.all(2) : EdgeInsets.zero,
+                width: isActive ? 24 : 22,
+                height: isActive ? 24 : 22,
+                padding: isActive ? const EdgeInsets.all(1.0) : EdgeInsets.zero,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: isActive
-                      ? Border.all(color: Colors.white, width: 1.5)
+                      ? Border.all(color: Colors.white, width: 1.2)
                       : Border.all(
                           color: Colors.white.withValues(alpha: 0.3),
                           width: 1.0,
@@ -160,7 +171,7 @@ class _CustomBottomNavigationBarState
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               transform:
-                  Matrix4.translationValues(0.0, isActive ? -10.0 : -5.0, 0.0)
+                  Matrix4.translationValues(0.0, isActive ? -5.0 : -2.5, 0.0)
                     ..multiply(
                       Matrix4.diagonal3Values(
                         isActive ? 1.2 : 1.0,
@@ -172,8 +183,8 @@ class _CustomBottomNavigationBarState
                 duration: const Duration(milliseconds: 200),
                 opacity: isActive ? 1 : 0,
                 child: Container(
-                  width: 6,
-                  height: 6,
+                  width: 4,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -181,7 +192,7 @@ class _CustomBottomNavigationBarState
                         ? [
                             BoxShadow(
                               color: Colors.white.withValues(alpha: 0.5),
-                              blurRadius: 4,
+                              blurRadius: 3,
                               spreadRadius: 1,
                             ),
                           ]

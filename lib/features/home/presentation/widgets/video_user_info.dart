@@ -493,7 +493,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 10, bottom: 7),
+      padding: const EdgeInsets.only(left: 10, right: 10, bottom: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -561,7 +561,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           if (widget.caption.isNotEmpty) ...[
             LayoutBuilder(
               builder: (context, constraints) {
@@ -691,9 +691,9 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
               },
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           SizedBox(
-            height: 38,
+            height: 24,
             child: Stack(
               clipBehavior: Clip.none,
               children: [

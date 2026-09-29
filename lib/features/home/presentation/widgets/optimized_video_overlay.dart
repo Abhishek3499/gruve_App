@@ -84,6 +84,7 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
       return const SizedBox.shrink();
     }
     final post = widget.controller.posts[index];
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Stack(
       children: [
@@ -91,7 +92,7 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
           left: 0,
           right: 0,
           bottom: 0,
-          height: 280,
+          height: 280 + bottomInset,
           child: IgnorePointer(
             child: Container(
               decoration: BoxDecoration(
@@ -111,7 +112,7 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
         Positioned(
           left: 0,
           right: 80,
-          bottom: 72,
+          bottom: 24 + bottomInset,
           child: VideoUserInfo(
             username: post.username,
             caption: post.caption,
@@ -130,7 +131,7 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
         ),
         Positioned(
           right: 16,
-          bottom: 150,
+          bottom: 50 + bottomInset,
           child: Consumer(
             key: ValueKey(post.id),
             builder: (context, ref, _) {
