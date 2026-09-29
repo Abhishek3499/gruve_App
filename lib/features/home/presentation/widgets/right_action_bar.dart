@@ -28,8 +28,8 @@ class RightActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 55,
-      height: 300,
+      width: 42,
+      height: 230,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0x80990099),
@@ -38,7 +38,7 @@ class RightActionBar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 60),
+            _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 40),
 
             /// ❤️ LIKE
             _ActionIcon(
@@ -48,27 +48,34 @@ class RightActionBar extends StatelessWidget {
                   : AppAssets.like2, // 🤍 default
               count: _formatCount(likeCount),
               onTap: onLike,
+              size: 20,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             _ActionIcon(
               iconPath: AppAssets.commenticon,
               count: _formatCount(commentCount),
               onTap: onComment,
+              size: 20,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             _ActionIcon(
               iconPath: AppAssets.share,
               count: _formatCount(shareCount),
               onTap: onShare,
+              size: 20,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            _ActionIcon(iconPath: AppAssets.doticon, onTap: onOptions),
+            _ActionIcon(
+              iconPath: AppAssets.doticon,
+              onTap: onOptions,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -95,7 +102,7 @@ class _ActionIcon extends StatefulWidget {
     required this.iconPath,
     this.count,
     this.onTap,
-    this.size = 29,
+    this.size = 20,
   });
 
   @override
@@ -151,7 +158,7 @@ class _ActionIconState extends State<_ActionIcon>
             ),
 
             if (widget.count != null) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 1),
               Text(
                 widget.count!,
                 style: const TextStyle(
