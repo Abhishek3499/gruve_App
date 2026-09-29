@@ -15,8 +15,8 @@ class CenterNavButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 60,
-        height: 60,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const RadialGradient(
@@ -26,7 +26,7 @@ class CenterNavButton extends StatelessWidget {
             BoxShadow(color: Color(0x99FF00FF), blurRadius: 1, spreadRadius: 1),
           ],
         ),
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
+        child: const Icon(Icons.add, color: Colors.white, size: 22),
       ),
     );
   }

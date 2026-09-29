@@ -134,7 +134,7 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
               }, childCount: controller.reels.length),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          const SliverToBoxAdapter(child: SizedBox(height: 65)),
         ],
       ),
     );

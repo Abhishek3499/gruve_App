@@ -57,7 +57,7 @@ class ProfileShimmer extends StatelessWidget {
                             padding: EdgeInsets.symmetric(horizontal: 10),
                             child: ProfileGridShimmer(itemCount: 9),
                           ),
-                          const SizedBox(height: 100),
+                          const SizedBox(height: 65),
                         ],
                       ),
                     ),
@@ -218,7 +218,7 @@ class ExploreGridShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppShimmer(
       child: GridView.builder(
-        padding: ProfileGridStyle.gridPadding.copyWith(bottom: 100),
+        padding: ProfileGridStyle.gridPadding.copyWith(bottom: 65),
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: ProfileGridStyle.gridDelegate,
         itemCount: itemCount,

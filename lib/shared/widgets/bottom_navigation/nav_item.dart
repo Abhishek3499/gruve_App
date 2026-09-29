@@ -35,26 +35,26 @@ class NavItem extends StatelessWidget {
               curve: Curves.easeInOut,
               transform: Matrix4.translationValues(
                 0,
-                isActive ? -8 : 0,
+                isActive ? -3.5 : 0,
                 0,
-              ), // Increased from -4 to -8
+              ),
               child: icon != null
                   ? Icon(
                       icon,
-                      size: isActive ? 28 : 26, // Larger when active
+                      size: isActive ? 23 : 21,
                       color: isActive
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.7),
                     )
                   : Image.asset(
-                      imagePath!, // 🔥 yahin se image aayegi
-                      width: isActive ? 32 : 30, // Larger when active
-                      height: isActive ? 32 : 30, // Larger when active
+                      imagePath!,
+                      width: isActive ? 24 : 22,
+                      height: isActive ? 24 : 22,
                       color: isActive
                           ? Colors.white
                           : const Color(
                               0xABFFFFFF,
-                            ), // PNG ko white banane ke liye
+                            ),
                     ),
             ),
 
@@ -64,7 +64,7 @@ class NavItem extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               transform:
-                  Matrix4.translationValues(0.0, isActive ? -10.0 : -5.0, 0.0)
+                  Matrix4.translationValues(0.0, isActive ? -5.0 : -2.5, 0.0)
                     ..multiply(
                       Matrix4.diagonal3Values(
                         isActive ? 1.2 : 1.0,
@@ -76,8 +76,8 @@ class NavItem extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 opacity: isActive ? 1 : 0,
                 child: Container(
-                  width: 6,
-                  height: 6,
+                  width: 4,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -85,7 +85,7 @@ class NavItem extends StatelessWidget {
                         ? [
                             BoxShadow(
                               color: Colors.white.withValues(alpha: 0.5),
-                              blurRadius: 4,
+                              blurRadius: 3,
                               spreadRadius: 1,
                             ),
                           ]

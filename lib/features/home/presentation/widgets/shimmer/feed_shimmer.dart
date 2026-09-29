@@ -23,6 +23,8 @@ class FeedShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return AppShimmer(
       child: SizedBox(
         width: size.width,
@@ -55,7 +57,7 @@ class FeedShimmer extends StatelessWidget {
             Positioned(
               left: 16,
               right: 90,
-              bottom: 110,
+              bottom: 24 + bottomInset,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -68,17 +70,17 @@ class FeedShimmer extends StatelessWidget {
                       ShimmerBox(width: 110, height: 13, borderRadius: 6),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 6),
                   // Caption line 1
                   ShimmerBox(
                     width: double.infinity,
                     height: 12,
                     borderRadius: 5,
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: 4),
                   // Caption line 2 (shorter — realistic text shape)
                   ShimmerBox(width: 200, height: 12, borderRadius: 5),
-                  SizedBox(height: 10),
+                  SizedBox(height: 6),
                   // Music row
                   Row(
                     children: [
@@ -94,7 +96,7 @@ class FeedShimmer extends StatelessWidget {
             // ── Bottom-right: action bar ──────────────────────────────────
             Positioned(
               right: 16,
-              bottom: 140,
+              bottom: 50 + bottomInset,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: const [

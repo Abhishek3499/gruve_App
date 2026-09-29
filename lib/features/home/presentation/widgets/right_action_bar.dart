@@ -28,8 +28,8 @@ class RightActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 55,
-      height: 300,
+      width: 42,
+      height: 230,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0x80990099),
@@ -38,7 +38,7 @@ class RightActionBar extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 60),
+            _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 40),
 
             /// ❤️ LIKE
             _ActionIcon(

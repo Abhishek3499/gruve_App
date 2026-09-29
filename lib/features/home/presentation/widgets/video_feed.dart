@@ -330,10 +330,11 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
   Widget _buildPagingLoader() {
     if (!_controller.isLoadingMore) return const SizedBox.shrink();
 
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
     return Positioned(
       left: 0,
       right: 0,
-      bottom: 96,
+      bottom: 65 + bottomInset,
       child: IgnorePointer(
         child: Center(
           child: Container(
