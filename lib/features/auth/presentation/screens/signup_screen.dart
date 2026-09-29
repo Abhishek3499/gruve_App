@@ -232,16 +232,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ref.read(signupNotifierProvider).selectedGender != null;
   }
 
-  String _firstSignupError() {
-    final signupState = ref.read(signupNotifierProvider);
-    return signupState.nameError ??
-        signupState.identifierError ??
-        signupState.passwordError ??
-        signupState.confirmPasswordError ??
-        signupState.genderError ??
-        'Please complete all required fields';
-  }
-
   void _setContactMode(bool useEmail) {
     if (ref.read(signupNotifierProvider).useEmail == useEmail) return;
 
@@ -656,13 +646,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           final isValid = _validateBeforeSubmit();
 
                           if (!isValid) {
-                            if (!mounted) return false;
-
-                            messenger
-                              ..hideCurrentSnackBar()
-                              ..showSnackBar(
-                                SnackBar(content: Text(_firstSignupError())),
-                              );
                             return false;
                           }
 
