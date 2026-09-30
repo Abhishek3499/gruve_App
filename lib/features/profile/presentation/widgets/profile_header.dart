@@ -44,11 +44,11 @@ class ProfileHeader extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: Padding(
-            padding: const EdgeInsets.only(right: 12, top: 0, bottom: 0),
+            padding: const EdgeInsets.only(right: 12, top: 2, bottom: 0),
             child: IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              icon: const Icon(Icons.menu, color: Colors.white, size: 18),
+              icon: const Icon(Icons.menu, color: Colors.white, size: 19),
               onPressed: () {
                 AppLogger.d("[ProfileHeader] Menu button tapped");
                 ProfileMenuDrawer.show(context, profileImage: profileImage);
@@ -56,6 +56,7 @@ class ProfileHeader extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 3),
 
         /// Avatar + User Info Row
         Padding(
@@ -66,7 +67,7 @@ class ProfileHeader extends StatelessWidget {
               /// Avatar with Neon Glow and Camera Badge
               StoryAvatarIndicator(
                 profileImage: profileImage,
-                radius: 23,
+                radius: 26,
                 hasActiveStory: hasActiveStory,
                 // Seen/unseen doesn't apply to your own story — always show
                 // the vivid ring (never the faded "seen" style) while active.
@@ -93,7 +94,7 @@ class ProfileHeader extends StatelessWidget {
                   }
                 },
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
 
               /// User Info: Name, Username, Bio (NO blue tick)
               Expanded(
@@ -105,29 +106,29 @@ class ProfileHeader extends StatelessWidget {
                       fullName.isNotEmpty ? fullName : "No Name",
                       style: const TextStyle(
                         color: AppColors.white,
-                        fontSize: 14,
+                        fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    const SizedBox(height: 1.5),
                     Text(
                       username.isNotEmpty ? username : "@username",
                       style: const TextStyle(
                         color: Color(0xFFBA68C8),
-                        fontSize: 11.5,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (bio.trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         bio.trim(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 10.5,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.normal,
-                          height: 1.18,
+                          height: 1.2,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -139,7 +140,7 @@ class ProfileHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
 
         /// Action Buttons: Edit Profile & Share Profile
         Padding(
@@ -157,7 +158,7 @@ class ProfileHeader extends StatelessWidget {
                   onProfileUpdated: onProfileUpdated,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: ShareProfileButton(
                   onTap: () {

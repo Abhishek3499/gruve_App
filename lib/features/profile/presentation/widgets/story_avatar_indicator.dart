@@ -30,7 +30,7 @@ class StoryAvatarIndicator extends StatelessWidget {
   const StoryAvatarIndicator({
     super.key,
     required this.profileImage,
-    this.radius = 28,
+    this.radius = 26,
     this.onTap,
     this.onLongPress,
     this.onCameraTap,
@@ -39,8 +39,8 @@ class StoryAvatarIndicator extends StatelessWidget {
     this.hasActiveStory = false,
     this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
-    this.ringWidth = 2.0,
-    this.ringGap = 1.6,
+    this.ringWidth = 1.8,
+    this.ringGap = 1.4,
     this.innerBackgroundColor = const Color(0xFF130722),
   });
 
@@ -68,12 +68,12 @@ class StoryAvatarIndicator extends StatelessWidget {
       return avatarInteractive;
     }
 
-    final badgeSize = radius <= 26
-        ? 17.0
-        : (radius <= 32 ? 20.0 : (radius <= 40 ? 25.0 : 32.0));
-    final badgeIconSize = radius <= 26
-        ? 10.5
-        : (radius <= 32 ? 12.0 : (radius <= 40 ? 15.0 : 18.0));
+    final badgeSize = radius <= 27
+        ? 18.5
+        : (radius <= 32 ? 21.0 : (radius <= 40 ? 26.0 : 32.0));
+    final badgeIconSize = radius <= 27
+        ? 11.5
+        : (radius <= 32 ? 13.0 : (radius <= 40 ? 16.0 : 18.0));
 
     // Avatar with camera badge at bottom-right
     return SizedBox(

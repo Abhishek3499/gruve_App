@@ -28,7 +28,7 @@ class StatsRow extends StatelessWidget {
 
   Widget buildStat(String number, String label, [VoidCallback? onTap]) {
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -36,16 +36,16 @@ class StatsRow extends StatelessWidget {
             number,
             style: const TextStyle(
               color: AppColors.white,
-              fontSize: 13.5,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 1.5),
+          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 9.5,
+              fontSize: 10.5,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -57,10 +57,10 @@ class StatsRow extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(9),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(9),
         splashColor: Colors.white12,
         highlightColor: Colors.white10,
         child: content,
@@ -70,8 +70,8 @@ class StatsRow extends StatelessWidget {
 
   Widget buildDivider() {
     return Container(
-      height: 18,
-      width: 1.0,
+      height: 22,
+      width: 1.1,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -87,7 +87,7 @@ class StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 26),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
