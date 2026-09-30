@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
+import 'package:gruve_app/features/home/presentation/controllers/share_upload_error_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_count_refresh_bridge.dart';
@@ -68,15 +68,8 @@ class PostShareFlowBridge {
     String? mediaPath,
     String? mediaMimeType,
     String? locationName,
-    bool audienceEveryone = true,
-    bool audienceCloseFriends = false,
-    bool scheduleReel = false,
-    bool uploadHighQuality = false,
-    bool hideLikeCount = false,
-    bool hideShareCount = false,
     List<String>? taggedUserIds,
     String? draftId,
-    bool isMuted = false,
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runShareUploadChain(
@@ -84,15 +77,8 @@ class PostShareFlowBridge {
         mediaPath: mediaPath,
         mediaMimeType: mediaMimeType,
         locationName: locationName,
-        audienceEveryone: audienceEveryone,
-        audienceCloseFriends: audienceCloseFriends,
-        scheduleReel: scheduleReel,
-        uploadHighQuality: uploadHighQuality,
-        hideLikeCount: hideLikeCount,
-        hideShareCount: hideShareCount,
         taggedUserIds: taggedUserIds,
         draftId: draftId,
-        isMuted: isMuted,
       );
     });
   }
@@ -113,15 +99,8 @@ class PostShareFlowBridge {
     String? mediaPath,
     String? mediaMimeType,
     String? locationName,
-    bool audienceEveryone = true,
-    bool audienceCloseFriends = false,
-    bool scheduleReel = false,
-    bool uploadHighQuality = false,
-    bool hideLikeCount = false,
-    bool hideShareCount = false,
     List<String>? taggedUserIds,
     String? draftId,
-    bool isMuted = false,
   }) async {
     try {
       final isVideo = mediaPath != null && mediaPath.isNotEmpty
@@ -141,16 +120,8 @@ class PostShareFlowBridge {
       final response = await PostService().createPost(
         caption: caption,
         mediaPath: mediaPath,
-        mediaMimeType: mediaMimeType,
         locationName: locationName,
-        audienceEveryone: audienceEveryone,
-        audienceCloseFriends: audienceCloseFriends,
-        scheduleReel: scheduleReel,
-        uploadHighQuality: uploadHighQuality,
-        hideLikeCount: hideLikeCount,
-        hideShareCount: hideShareCount,
         taggedUserIds: taggedUserIds,
-        isMuted: isMuted,
       );
 
       AppLogger.d("✅ [Bridge] ${isVideo ? 'Video' : 'Photo'} upload completed");
@@ -168,23 +139,7 @@ class PostShareFlowBridge {
     } catch (e) {
       AppLogger.d("❌ [Bridge] POST ERROR: $e");
 
-      String? errorMessage;
-      if (e is DioException) {
-        final resData = e.response?.data;
-        if (resData != null && resData is Map) {
-          errorMessage =
-              resData['message']?.toString() ?? resData['error']?.toString();
-        } else if (resData != null && resData is String) {
-          errorMessage = resData;
-        } else if (e.response?.statusMessage != null) {
-          errorMessage =
-              "Server error: ${e.response?.statusCode} ${e.response?.statusMessage}";
-        } else {
-          errorMessage = e.message;
-        }
-      } else {
-        errorMessage = e.toString();
-      }
+      final errorMessage = parseShareUploadError(e);
       onShareUploadError?.call(errorMessage);
     }
   }

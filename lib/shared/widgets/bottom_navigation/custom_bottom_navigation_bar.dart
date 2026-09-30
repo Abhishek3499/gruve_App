@@ -49,7 +49,7 @@ class _CustomBottomNavigationBarState
         statusBarIconBrightness: Brightness.light,
       ),
       child: SizedBox(
-        height: 60 + bottomInset,
+        height: 66 + bottomInset,
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
@@ -65,7 +65,7 @@ class _CustomBottomNavigationBarState
               child: CustomPaint(
                 painter: NavBarPainter(),
                 child: SizedBox(
-                  height: 54 + bottomInset,
+                  height: 60 + bottomInset,
                   child: SafeArea(
                     top: false,
                     left: false,
@@ -88,7 +88,7 @@ class _CustomBottomNavigationBarState
                             selectedIndex: widget.selectedIndex,
                             onTap: () => widget.onItemSelected(1),
                           ),
-                          const SizedBox(width: 38),
+                          const SizedBox(width: 44),
                           NavItem(
                             imagePath: AppAssets.navMessage,
                             index: 3,
@@ -104,9 +104,9 @@ class _CustomBottomNavigationBarState
               ),
             ),
 
-            // CENTER BUTTON
+            // CENTER BUTTON (51 dp)
             Positioned(
-              top: 13,
+              top: 6,
               child: CenterNavButton(
                 isSelected: widget.selectedIndex == 2,
                 onTap: () => widget.onItemSelected(2),

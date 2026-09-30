@@ -40,7 +40,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   ProfileIdentityResolution? _identityResolution;
   bool _isResolvingIdentity = true;
   String? _lastLoggedInUserId;
-  int _selectedTab = 0;
+  final ValueNotifier<int> _selectedTabNotifier = ValueNotifier<int>(0);
   late final UserProfileController _profileController;
   late final SubscribeNotifier _subscribeController;
   bool _didSeedSubscribeState = false;
@@ -69,7 +69,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   void _onProfileScroll() {
     if (!_scrollController.hasClients) return;
 
-    final tabIndex = _selectedTab == 0 ? 0 : 2;
+    final tabIndex = _selectedTabNotifier.value == 0 ? 0 : 2;
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
       isLoading: _profileController.isLoadingTab(tabIndex),
@@ -113,6 +113,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     _profileController.contentListenable.removeListener(_syncSubscribeState);
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
+    _selectedTabNotifier.dispose();
     _profileController.dispose();
     super.dispose();
   }
@@ -214,6 +215,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
+      backgroundColor: const Color(0xFF42174C),
       body: AnimatedBuilder(
         animation: _profileController.contentListenable,
         builder: (context, _) {
@@ -223,7 +225,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.deepPlum, Color(0xFF212235)],
+                colors: [Color(0xFF42174C), Color(0xFF9544A7)],
               ),
             ),
             child: SafeArea(bottom: false, child: _buildMainContent()),
@@ -231,6 +233,28 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         },
       ),
     );
+  }
+
+  double _dragDistance = 0.0;
+
+  void _selectTab(int index) {
+    if (index == _selectedTabNotifier.value || index < 0 || index > 2) return;
+    _selectedTabNotifier.value = index;
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  void _handleSwipeLeft() {
+    if (_selectedTabNotifier.value < 2) {
+      _selectTab(_selectedTabNotifier.value + 1);
+    }
+  }
+
+  void _handleSwipeRight() {
+    if (_selectedTabNotifier.value > 0) {
+      _selectTab(_selectedTabNotifier.value - 1);
+    }
   }
 
   Widget _buildMainContent() {
@@ -259,141 +283,165 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 const SliverToBoxAdapter(child: UserProfileShimmer()),
               ],
             )
-          : AnimatedBuilder(
-              animation: Listenable.merge([
-                _profileController.contentListenable,
-                _subscribeController,
-              ]),
-              builder: (context, _) {
-                final profile = _profileController.user;
-                final resolvedUserId = (profile?.id.isNotEmpty ?? false)
-                    ? profile!.id
-                    : widget.profileUserId;
-                final resolvedUsername = (profile?.username.isNotEmpty ?? false)
-                    ? profile!.username
-                    : _normalizedUsername;
-                final initialIsSubscribed =
-                    _subscribeController
-                        .getUserSubscribeModel(resolvedUserId)
-                        ?.isSubscribed ??
-                    profile?.isFollowing ??
-                    false;
-                final followStatus =
-                    _subscribeController.getFollowStatus(resolvedUserId);
-                final isPrivate = profile?.isPrivate ?? false;
-                final liveIsFollowing = followStatus == 'following';
-                final canSeeContent =
-                    !isPrivate ||
-                    liveIsFollowing ||
-                    isDirectOwnProfile;
-                final grid = UserProfileGrid(
-                  controller: _profileController,
-                  selectedTab: _selectedTab,
-                  isPrivate: isPrivate,
-                  canSeeContent: canSeeContent,
-                );
+          : ValueListenableBuilder<int>(
+              valueListenable: _selectedTabNotifier,
+              builder: (context, selectedTab, _) {
+                return AnimatedBuilder(
+                  animation: Listenable.merge([
+                    _profileController.contentListenable,
+                    _subscribeController,
+                  ]),
+                  builder: (context, _) {
+                    final profile = _profileController.user;
+                    final resolvedUserId = (profile?.id.isNotEmpty ?? false)
+                        ? profile!.id
+                        : widget.profileUserId;
+                    final resolvedUsername =
+                        (profile?.username.isNotEmpty ?? false)
+                        ? profile!.username
+                        : _normalizedUsername;
+                    final initialIsSubscribed =
+                        _subscribeController
+                            .getUserSubscribeModel(resolvedUserId)
+                            ?.isSubscribed ??
+                        profile?.isFollowing ??
+                        false;
+                    final followStatus =
+                        _subscribeController.getFollowStatus(resolvedUserId);
+                    final isPrivate = profile?.isPrivate ?? false;
+                    final liveIsFollowing = followStatus == 'following';
+                    final canSeeContent =
+                        !isPrivate ||
+                        liveIsFollowing ||
+                        isDirectOwnProfile;
+                    final grid = UserProfileGrid(
+                      controller: _profileController,
+                      selectedTab: selectedTab,
+                      isPrivate: isPrivate,
+                      canSeeContent: canSeeContent,
+                    );
 
-                return CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 10),
-                          UserProfileHeader(
-                            displayName:
-                                (profile?.fullName.isNotEmpty ?? false)
-                                ? profile!.fullName
-                                : widget.userName,
-                            username: resolvedUsername,
-                            profileUserId: resolvedUserId,
-                            bio: profile?.bio ?? '',
-                            profileImageUrl:
-                                (profile?.profileImage.isNotEmpty ?? false)
-                                ? profile!.profileImage
-                                : widget.profileImageUrl,
-                            hasActiveStory:
-                                profile?.hasActiveStory ??
-                                widget.initialHasActiveStory,
-                            hasUnseenStory: profile?.hasUnseenStory ?? false,
-                            hasCloseFriendsStory:
-                                profile?.hasCloseFriendsStory ?? false,
-                            showSubscribeButton: showSubscribeButton,
-                            reserveSubscribeSpace: _isResolvingIdentity,
-                            subscribeController: _subscribeController,
-                            initialIsSubscribed: initialIsSubscribed,
-                            followStatus: followStatus,
-                            action: profile?.action,
-                            isPrivate: isPrivate,
-                            showMessageButton: !isDirectOwnProfile,
-                            onMessageTap: () => _openMessage(
-                              userId: resolvedUserId,
-                              username: resolvedUsername,
-                              profileImage:
-                                  (profile?.profileImage.isNotEmpty ?? false)
-                                  ? profile!.profileImage
-                                  : widget.profileImageUrl,
+                    return GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onHorizontalDragStart: (_) {
+                        _dragDistance = 0.0;
+                      },
+                      onHorizontalDragUpdate: (details) {
+                        _dragDistance += details.delta.dx;
+                      },
+                      onHorizontalDragEnd: (details) {
+                        final velocity = details.primaryVelocity ?? 0.0;
+                        if (velocity < -200 || _dragDistance < -60) {
+                          _handleSwipeLeft();
+                        } else if (velocity > 200 || _dragDistance > 60) {
+                          _handleSwipeRight();
+                        }
+                        _dragDistance = 0.0;
+                      },
+                      onHorizontalDragCancel: () {
+                        _dragDistance = 0.0;
+                      },
+                      child: CustomScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 2),
+                                UserProfileHeader(
+                                  displayName:
+                                      (profile?.fullName.isNotEmpty ?? false)
+                                      ? profile!.fullName
+                                      : widget.userName,
+                                  username: resolvedUsername,
+                                  profileUserId: resolvedUserId,
+                                  bio: profile?.bio ?? '',
+                                  profileImageUrl:
+                                      (profile?.profileImage.isNotEmpty ?? false)
+                                      ? profile!.profileImage
+                                      : widget.profileImageUrl,
+                                  hasActiveStory:
+                                      profile?.hasActiveStory ??
+                                      widget.initialHasActiveStory,
+                                  hasUnseenStory:
+                                      profile?.hasUnseenStory ?? false,
+                                  hasCloseFriendsStory:
+                                      profile?.hasCloseFriendsStory ?? false,
+                                  showSubscribeButton: showSubscribeButton,
+                                  reserveSubscribeSpace: _isResolvingIdentity,
+                                  subscribeController: _subscribeController,
+                                  initialIsSubscribed: initialIsSubscribed,
+                                  followStatus: followStatus,
+                                  action: profile?.action,
+                                  isPrivate: isPrivate,
+                                  showMessageButton: !isDirectOwnProfile,
+                                  onMessageTap: () => _openMessage(
+                                    userId: resolvedUserId,
+                                    username: resolvedUsername,
+                                    profileImage:
+                                        (profile?.profileImage.isNotEmpty ??
+                                                false)
+                                            ? profile!.profileImage
+                                            : widget.profileImageUrl,
+                                  ),
+                                  onFollowRequestHandled: () =>
+                                      _profileController.fetchUser(
+                                        reason: 'follow_request_responded',
+                                        forceRefresh: true,
+                                      ),
+                                ),
+                                SizedBox(height: context.rh(16)),
+                                ValueListenableBuilder(
+                                  valueListenable:
+                                      _profileController.statsNotifier,
+                                  builder: (context, stats, child) {
+                                    return UserStatsRow(
+                                      stats: stats,
+                                      onSubscribersTap: () => _openConnections(
+                                        userId: resolvedUserId,
+                                        initialTab: 0,
+                                      ),
+                                      onSubscribedTap: () => _openConnections(
+                                        userId: resolvedUserId,
+                                        initialTab: 1,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: context.rh(14)),
+                                ValueListenableBuilder(
+                                  valueListenable:
+                                      _profileController.highlightList,
+                                  builder: (context, highlights, child) {
+                                    return UserHighlightsList(
+                                      highlights: highlights,
+                                      isOwnProfile: false,
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: context.rh(7)),
+                                UserFilterTabs(
+                                  selectedIndex: selectedTab,
+                                  onTabSelected: _selectTab,
+                                ),
+                              ],
                             ),
-                            onFollowRequestHandled: () =>
-                                _profileController.fetchUser(
-                                  reason: 'follow_request_responded',
-                                  forceRefresh: true,
-                                ),
                           ),
-                          SizedBox(height: context.rh(22)),
-                          ValueListenableBuilder(
-                            valueListenable: _profileController.statsNotifier,
-                            builder: (context, stats, child) {
-                              return UserStatsRow(
-                                stats: stats,
-                                onSubscribersTap: () => _openConnections(
-                                  userId: resolvedUserId,
-                                  initialTab: 0,
-                                ),
-                                onSubscribedTap: () => _openConnections(
-                                  userId: resolvedUserId,
-                                  initialTab: 1,
-                                ),
-                              );
-                            },
-                          ),
-                          SizedBox(height: context.rh(20)),
-                          ValueListenableBuilder(
-                            valueListenable: _profileController.highlightList,
-                            builder: (context, highlights, child) {
-                              return UserHighlightsList(
-                                highlights: highlights,
-                                isOwnProfile: false,
-                              );
-                            },
-                          ),
-                          SizedBox(height: context.rh(20)),
-                          UserFilterTabs(
-                            selectedIndex: _selectedTab,
-                            onTabSelected: (index) {
-                              setState(() {
-                                _selectedTab = index;
-                              });
-                              if (_scrollController.hasClients) {
-                                _scrollController.jumpTo(0);
-                              }
-                            },
+                          ...grid.buildSlivers(context),
+                          if (!canSeeContent)
+                            const SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: _PrivateAccountCard(),
+                            ),
+                          SliverToBoxAdapter(
+                            child: SizedBox(height: context.rh(100)),
                           ),
                         ],
                       ),
-                    ),
-                    ...grid.buildSlivers(context),
-                    if (!canSeeContent)
-                      const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _PrivateAccountCard(),
-                      ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(height: context.rh(100)),
-                    ),
-                  ],
+                    );
+                  },
                 );
               },
             ),

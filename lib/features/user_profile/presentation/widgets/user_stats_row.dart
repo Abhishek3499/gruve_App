@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile/domain/entities/profile_stats_model.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 
@@ -17,22 +16,29 @@ class UserStatsRow extends StatelessWidget {
 
   Widget buildStat(String number, String label, [VoidCallback? onTap]) {
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             number,
             style: const TextStyle(
               color: AppColors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontSize: 16.6,
+              fontWeight: FontWeight.w600, // SemiBold
+              height: 1.15,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(color: AppColors.white70, fontSize: 14),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12.0,
+              fontWeight: FontWeight.w400, // Regular
+              height: 1.15,
+            ),
           ),
         ],
       ),
@@ -55,41 +61,54 @@ class UserStatsRow extends StatelessWidget {
 
   Widget buildDivider() {
     return Container(
-      height: 40,
-      width: 1.2,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.1),
-            Colors.white.withValues(alpha: 0.6),
-            Colors.white.withValues(alpha: 0.1),
-          ],
-        ),
-      ),
+      height: 24,
+      width: 1.0,
+      color: Colors.white.withValues(alpha: 0.2),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: context.rw(40)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          buildStat(
-            stats.subscribersCount.toString(),
-            "Subscribers",
-            onSubscribersTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B0B2E).withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF9333EA).withValues(alpha: 0.35),
+            width: 1.0,
           ),
-          buildDivider(),
-          buildStat(
-            stats.likesCount.toString(),
-            "Subscribed",
-            onSubscribedTap,
-          ),
-          buildDivider(),
-          buildStat(stats.videosCount.toString(), "Posts"),
-        ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: buildStat(
+                stats.subscribersCount.toString(),
+                "Subscribers",
+                onSubscribersTap,
+              ),
+            ),
+            buildDivider(),
+            Expanded(
+              child: buildStat(
+                stats.likesCount.toString(),
+                "Subscribed",
+                onSubscribedTap,
+              ),
+            ),
+            buildDivider(),
+            Expanded(
+              child: buildStat(
+                stats.videosCount.toString(),
+                "Posts",
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

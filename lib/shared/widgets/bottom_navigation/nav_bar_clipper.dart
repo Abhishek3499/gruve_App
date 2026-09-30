@@ -25,8 +25,8 @@ class NavBarPainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     double center = size.width / 2;
-    double bumpHeight = 6;
-    double bumpWidth = 25;
+    double bumpHeight = 7;
+    double bumpWidth = 32;
     double radius = 14; // ✅ smooth corners
 
     final path = Path();

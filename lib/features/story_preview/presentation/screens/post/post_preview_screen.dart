@@ -299,7 +299,7 @@ class _PostPreviewScreenState extends ConsumerState<PostPreviewScreen> {
       final finalPath = await _captureFlattenedImage();
       await ref
           .read(draftsNotifierProvider.notifier)
-          .saveDraft(mediaPath: finalPath, mediaMimeType: widget.mediaMimeType);
+          .saveDraft(mediaPath: finalPath);
 
       if (!mounted) return;
       Navigator.of(context).pop(); // dismiss loading dialog

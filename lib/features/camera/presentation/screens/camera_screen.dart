@@ -39,7 +39,6 @@ class _CameraScreenState extends State<CameraScreen> {
     ModeService().clearStickers();
     ModeService().setShootDuration(0);
     ModeService().setRecordingSpeed(1.0);
-    ModeService().addListener(_onStickersChanged);
 
     // Set portrait orientation
     SystemChrome.setPreferredOrientations([
@@ -48,12 +47,6 @@ class _CameraScreenState extends State<CameraScreen> {
     ]);
 
     unawaited(_initializeCamera());
-  }
-
-  void _onStickersChanged() {
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   Future<void> _initializeCamera() async {
@@ -225,8 +218,9 @@ class _CameraScreenState extends State<CameraScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: kVideoSpeedOptions
                         .map(
-                          (speed) =>
-                              Expanded(child: _buildSpeedOption(context, speed)),
+                          (speed) => Expanded(
+                            child: _buildSpeedOption(context, speed),
+                          ),
                         )
                         .toList(),
                   ),
@@ -287,61 +281,64 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Widget _buildSelectedMusicBadge() {
-    return const SizedBox.shrink();
+  Widget _buildCountdownOverlay() {
+    return Positioned.fill(
+      child: ListenableBuilder(
+        listenable: ModeService(),
+        builder: (context, _) => ModeService().isCountdownRunning
+            ? _buildCountdownContent()
+            : const SizedBox.shrink(),
+      ),
+    );
   }
 
-  Widget _buildCountdownOverlay() {
-    if (!ModeService().isCountdownRunning) return const SizedBox.shrink();
-
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.7),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  return ScaleTransition(scale: animation, child: child);
-                },
-                child: Text(
-                  '${ModeService().countdownValue}',
-                  key: ValueKey(ModeService().countdownValue),
-                  style: const TextStyle(
-                    color: AppColors.accentPurple,
-                    fontSize: 140,
-                    fontWeight: FontWeight.w900,
-                  ),
+  Widget _buildCountdownContent() {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.7),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Text(
+                '${ModeService().countdownValue}',
+                key: ValueKey(ModeService().countdownValue),
+                style: const TextStyle(
+                  color: AppColors.accentPurple,
+                  fontSize: 140,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: () {
-                  ModeService().cancelCountdown();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 14,
-                  ),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () {
+                ModeService().cancelCountdown();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: const Text(
-                  'Cancel Timer',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
                 ),
               ),
-            ],
-          ),
+              child: const Text(
+                'Cancel Timer',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -360,44 +357,50 @@ class _CameraScreenState extends State<CameraScreen> {
                 _selectedStickerId = null;
               });
             },
-            child: const CameraPreviewWidget(),
+            child: const RepaintBoundary(child: CameraPreviewWidget()),
           ),
 
-          ...ModeService().stickers.map((sticker) {
-            return StickerOverlay(
-              key: ValueKey(sticker.id),
-              sticker: sticker,
-              isSelected: _selectedStickerId == sticker.id,
-              onTap: () {
-                setState(() {
-                  _selectedStickerId = sticker.id;
-                });
-              },
-              onDelete: () {
-                ModeService().removeSticker(sticker.id);
-                if (_selectedStickerId == sticker.id) {
-                  setState(() {
-                    _selectedStickerId = null;
-                  });
-                }
-              },
-              onUpdate: (position, scale, rotation) {
-                ModeService().updateSticker(
-                  sticker.id,
-                  position,
-                  scale,
-                  rotation,
-                );
-              },
-            );
-          }),
+          // Only sticker changes rebuild this subtree, not the whole screen.
+          Positioned.fill(
+            child: ListenableBuilder(
+              listenable: ModeService(),
+              builder: (context, _) => Stack(
+                children: ModeService().stickers.map((sticker) {
+                  return StickerOverlay(
+                    key: ValueKey(sticker.id),
+                    sticker: sticker,
+                    isSelected: _selectedStickerId == sticker.id,
+                    onTap: () {
+                      setState(() {
+                        _selectedStickerId = sticker.id;
+                      });
+                    },
+                    onDelete: () {
+                      ModeService().removeSticker(sticker.id);
+                      if (_selectedStickerId == sticker.id) {
+                        setState(() {
+                          _selectedStickerId = null;
+                        });
+                      }
+                    },
+                    onUpdate: (position, scale, rotation) {
+                      ModeService().updateSticker(
+                        sticker.id,
+                        position,
+                        scale,
+                        rotation,
+                      );
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
 
           Positioned(top: 50, left: 16, right: 16, child: TopBar()),
 
-          _buildSelectedMusicBadge(),
-
           Positioned(
-            left: 02,
+            left: 2,
             top: 200,
             child: SideToolbar(
               onMusicTap: _pickMusic,
@@ -426,14 +429,14 @@ class _CameraScreenState extends State<CameraScreen> {
             child: Center(child: _CameraZoomSelector()),
           ),
 
-          Positioned(
+          const Positioned(
             bottom: 70,
             left: 0,
             right: 0,
             child: HorizontalFilterSelector(),
           ),
 
-          Positioned(
+          const Positioned(
             bottom: 30,
             left: 0,
             right: 0,
@@ -447,7 +450,6 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void dispose() {
     CameraLogger.log('CameraScreen disposing');
-    ModeService().removeListener(_onStickersChanged);
     _cameraService.dispose();
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();

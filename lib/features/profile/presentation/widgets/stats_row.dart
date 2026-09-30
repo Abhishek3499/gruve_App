@@ -7,6 +7,7 @@ class StatsRow extends StatelessWidget {
   final int videosCount;
   final VoidCallback? onSubscribersTap;
   final VoidCallback? onSubscribedTap;
+  final EdgeInsetsGeometry? padding;
 
   const StatsRow({
     super.key,
@@ -15,6 +16,7 @@ class StatsRow extends StatelessWidget {
     this.videosCount = 0,
     this.onSubscribersTap,
     this.onSubscribedTap,
+    this.padding,
   });
 
   String _formatCount(int count) {
@@ -28,25 +30,29 @@ class StatsRow extends StatelessWidget {
 
   Widget buildStat(String number, String label, [VoidCallback? onTap]) {
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             number,
             style: const TextStyle(
               color: AppColors.white,
-              fontSize: 13.5,
-              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
+              fontWeight: FontWeight.w700,
+              height: 1.15,
             ),
           ),
-          const SizedBox(height: 1.5),
+          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w500,
+              fontSize: 12.0,
+              fontWeight: FontWeight.w400,
+              height: 1.15,
             ),
           ),
         ],
@@ -68,38 +74,34 @@ class StatsRow extends StatelessWidget {
     );
   }
 
-  Widget buildDivider() {
-    return Container(
-      height: 18,
-      width: 1.0,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.1),
-            Colors.white.withValues(alpha: 0.5),
-            Colors.white.withValues(alpha: 0.1),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: padding ?? EdgeInsets.zero,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          buildStat(
-            _formatCount(subscribersCount),
-            "Subscribers",
-            onSubscribersTap,
+          Expanded(
+            child: buildStat(
+              _formatCount(videosCount),
+              "posts",
+            ),
           ),
-          buildDivider(),
-          buildStat(_formatCount(likesCount), "Subscribed", onSubscribedTap),
-          buildDivider(),
-          buildStat(_formatCount(videosCount), "Posts"),
+          Expanded(
+            child: buildStat(
+              _formatCount(subscribersCount),
+              "subscribers",
+              onSubscribersTap,
+            ),
+          ),
+          Expanded(
+            child: buildStat(
+              _formatCount(likesCount),
+              "subscribed",
+              onSubscribedTap,
+            ),
+          ),
         ],
       ),
     );

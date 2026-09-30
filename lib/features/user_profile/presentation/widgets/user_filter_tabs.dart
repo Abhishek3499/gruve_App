@@ -61,7 +61,7 @@ class UserFilterTabs extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w500,
-            fontSize: 15,
+            fontSize: 13.8,
           ),
         ),
       ),

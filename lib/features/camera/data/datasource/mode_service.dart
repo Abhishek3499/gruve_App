@@ -100,13 +100,16 @@ class ModeService extends ChangeNotifier {
   int _countdownValue = 3;
   int get countdownValue => _countdownValue;
 
+  Timer? _countdownTimer;
+
   void startCountdown(VoidCallback onFinished) {
     if (_isCountdownRunning) return;
     _isCountdownRunning = true;
     _countdownValue = _shootDuration > 0 ? _shootDuration : 3;
     notifyListeners();
 
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_isCountdownRunning) {
         timer.cancel();
         return;
@@ -124,6 +127,9 @@ class ModeService extends ChangeNotifier {
   }
 
   void cancelCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    if (!_isCountdownRunning) return;
     _isCountdownRunning = false;
     notifyListeners();
   }

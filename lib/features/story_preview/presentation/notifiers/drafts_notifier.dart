@@ -73,27 +73,15 @@ class DraftsNotifier extends Notifier<DraftsState> {
   Future<void> saveDraft({
     String? caption,
     String? mediaPath,
-    String? mediaMimeType,
     String? locationName,
-    bool audienceEveryone = true,
-    bool audienceCloseFriends = false,
-    bool scheduleReel = false,
-    bool uploadHighQuality = false,
-    bool hideLikeCount = false,
-    bool hideShareCount = false,
+    List<String>? taggedUserIds,
   }) async {
     try {
       final responseMap = await _postService.saveDraft(
         caption: caption,
         mediaPath: mediaPath,
-        mediaMimeType: mediaMimeType,
         locationName: locationName,
-        audienceEveryone: audienceEveryone,
-        audienceCloseFriends: audienceCloseFriends,
-        scheduleReel: scheduleReel,
-        uploadHighQuality: uploadHighQuality,
-        hideLikeCount: hideLikeCount,
-        hideShareCount: hideShareCount,
+        taggedUserIds: taggedUserIds,
       );
 
       final dynamic rawData = responseMap['data'] ?? responseMap;
@@ -120,14 +108,8 @@ class DraftsNotifier extends Notifier<DraftsState> {
     required String draftId,
     String? caption,
     String? mediaPath,
-    String? mediaMimeType,
     String? locationName,
-    bool? audienceEveryone,
-    bool? audienceCloseFriends,
-    bool? scheduleReel,
-    bool? uploadHighQuality,
-    bool? hideLikeCount,
-    bool? hideShareCount,
+    List<String>? taggedUserIds,
     bool clearMedia = false,
   }) async {
     AppLogger.d(
@@ -138,14 +120,8 @@ class DraftsNotifier extends Notifier<DraftsState> {
         draftId: draftId,
         caption: caption,
         mediaPath: mediaPath,
-        mediaMimeType: mediaMimeType,
         locationName: locationName,
-        audienceEveryone: audienceEveryone,
-        audienceCloseFriends: audienceCloseFriends,
-        scheduleReel: scheduleReel,
-        uploadHighQuality: uploadHighQuality,
-        hideLikeCount: hideLikeCount,
-        hideShareCount: hideShareCount,
+        taggedUserIds: taggedUserIds,
         clearMedia: clearMedia,
       );
 

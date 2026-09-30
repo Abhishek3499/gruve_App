@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 
 /// Personal information card with editable profile fields
@@ -150,14 +151,50 @@ class PersonalInfoCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+        if (isBio)
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) {
+              final length = value.text.length;
+              final isAtLimit = length >= 150;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (!fieldReadOnly)
+                    Text(
+                      "$length/150",
+                      style: TextStyle(
+                        color: isAtLimit
+                            ? const Color(0xFFFF3B30)
+                            : const Color(0xFFBA68C8),
+                        fontSize: 11,
+                        fontWeight: isAtLimit
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                ],
+              );
+            },
+          )
+        else
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -167,6 +204,9 @@ class PersonalInfoCard extends StatelessWidget {
           readOnly: fieldReadOnly, // ✅ Read-only mode
           maxLines: isBio ? 3 : 1,
           maxLength: isBio ? 150 : null,
+          inputFormatters: isBio
+              ? [LengthLimitingTextInputFormatter(150)]
+              : null,
           textInputAction: isBio ? TextInputAction.done : TextInputAction.next,
           onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           style: const TextStyle(

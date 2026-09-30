@@ -15,10 +15,11 @@ import 'package:gruve_app/features/camera/presentation/controller/camera_handler
 import 'package:gruve_app/features/profile/data/datasource/edit_profile_service.dart';
 import 'package:gruve_app/features/profile/data/dto/edit_profile_request.dart';
 import 'package:gruve_app/features/connections/presentation/screens/connections_screen.dart';
+import 'package:gruve_app/features/account/domain/entities/profile_model.dart';
+import 'package:gruve_app/features/profile/presentation/widgets/edit_profile_button.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/filter_tabs.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_avatar_preview.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/profile_header.dart';
-import 'package:gruve_app/features/profile/presentation/widgets/stats_row.dart';
 import 'package:gruve_app/features/profile/presentation/widgets/story_list.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
@@ -32,7 +33,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  int selectedTab = 0;
+  final ValueNotifier<int> _selectedTabNotifier = ValueNotifier<int>(0);
 
   final ScrollController _scrollController = ScrollController();
   final PaginationScrollTrigger _paginationTrigger = PaginationScrollTrigger(
@@ -101,6 +102,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ProfileCountRefreshBridge.onRefreshRequested = null;
     _scrollController.removeListener(_onProfileScroll);
     _scrollController.dispose();
+    _selectedTabNotifier.dispose();
     ref.read(profileNotifierProvider.notifier).cancelActiveRequests();
     super.dispose();
   }
@@ -109,15 +111,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!_scrollController.hasClients) return;
 
     final notifier = ref.read(profileNotifierProvider.notifier);
+    final currentTab = _selectedTabNotifier.value;
     if (!_paginationTrigger.shouldLoadMore(
       _scrollController,
-      isLoading: notifier.controller.isLoadingTab(selectedTab),
-      hasMore: notifier.canLoadMoreForTab(selectedTab),
+      isLoading: notifier.controller.isLoadingTab(currentTab),
+      hasMore: notifier.canLoadMoreForTab(currentTab),
     )) {
       return;
     }
 
-    notifier.requestLoadMoreThrottled(selectedTab);
+    notifier.requestLoadMoreThrottled(currentTab);
   }
 
   String _displayUsername(String? raw) {
@@ -147,7 +150,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: AppColors.deepPlum,
+      backgroundColor: const Color(0xFF42174C),
       body: Builder(
         builder: (context) {
           if (errorMessage != null) {
@@ -256,6 +259,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  double _dragDistance = 0.0;
+
+  void _selectTab(int index) {
+    if (index == _selectedTabNotifier.value || index < 0 || index > 2) return;
+    _selectedTabNotifier.value = index;
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+    ref.read(profileNotifierProvider.notifier).ensureTabLoaded(index);
+  }
+
+  void _handleSwipeLeft() {
+    if (_selectedTabNotifier.value < 2) {
+      _selectTab(_selectedTabNotifier.value + 1);
+    }
+  }
+
+  void _handleSwipeRight() {
+    if (_selectedTabNotifier.value > 0) {
+      _selectTab(_selectedTabNotifier.value - 1);
+    }
+  }
+
   Widget _buildMainContentForOwnProfile({
     required bool hasActiveStory,
     required bool hasCloseFriendsStory,
@@ -270,7 +296,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.deepPlum, Color(0xFF212235)],
+          colors: [Color(0xFF42174C), Color(0xFF9544A7)],
         ),
       ),
       child: SafeArea(
@@ -278,89 +304,129 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: RefreshIndicator(
           onRefresh: _handleRefresh,
           color: Colors.white,
-          backgroundColor: AppColors.deepPlum,
-          child: AnimatedBuilder(
-            animation: controller.contentListenable,
-            builder: (context, _) {
-              final grid = ProfileGrid(
-                selectedTab: selectedTab,
-                controller: controller,
-              );
-              final user = controller.user;
+          backgroundColor: const Color(0xFF42174C),
+          child: ValueListenableBuilder<int>(
+            valueListenable: _selectedTabNotifier,
+            builder: (context, selectedTab, _) {
+              return AnimatedBuilder(
+                animation: controller.contentListenable,
+                builder: (context, _) {
+                  final grid = ProfileGrid(
+                    selectedTab: selectedTab,
+                    controller: controller,
+                  );
+                  final user = controller.user;
 
-              return CustomScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ProfileHeader(
-                          fullName: (user?.fullName ?? '').trim(),
-                          username: () {
-                            final username = _displayUsername(user?.username);
-                            return username.isEmpty ? '@username' : username;
-                          }(),
-                          bio: user?.bio ?? '',
-                          profileImage: user?.profileImage ?? '',
-                          hasActiveStory: hasActiveStory,
-                          hasCloseFriendsStory: hasCloseFriendsStory,
-                          onAvatarCameraTap: _handleCameraTap,
-                          onAvatarLongPress: () =>
-                              _handleAvatarLongPress(user?.profileImage ?? ''),
-                          onShareProfileTap: () => _handleShareProfile(
-                            username: user?.username ?? '',
-                            fullName: user?.fullName ?? '',
+                  return GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragStart: (_) {
+                      _dragDistance = 0.0;
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      _dragDistance += details.delta.dx;
+                    },
+                    onHorizontalDragEnd: (details) {
+                      final velocity = details.primaryVelocity ?? 0.0;
+                      if (velocity < -200 || _dragDistance < -60) {
+                        _handleSwipeLeft();
+                      } else if (velocity > 200 || _dragDistance > 60) {
+                        _handleSwipeRight();
+                      }
+                      _dragDistance = 0.0;
+                    },
+                    onHorizontalDragCancel: () {
+                      _dragDistance = 0.0;
+                    },
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ProfileHeader(
+                                fullName: (user?.fullName ?? '').trim(),
+                                username: () {
+                                  final username = _displayUsername(user?.username);
+                                  return username.isEmpty ? '@username' : username;
+                                }(),
+                                bio: user?.bio ?? '',
+                                profileImage: user?.profileImage ?? '',
+                                hasActiveStory: hasActiveStory,
+                                hasCloseFriendsStory: hasCloseFriendsStory,
+                                subscribersCount: controller.stats.subscribersCount,
+                                likesCount: controller.stats.likesCount,
+                                videosCount: controller.stats.videosCount,
+                                onSubscribersTap: () => _openConnections(
+                                  userId: user?.id ?? '',
+                                  initialTab: 0,
+                                ),
+                                onSubscribedTap: () => _openConnections(
+                                  userId: user?.id ?? '',
+                                  initialTab: 1,
+                                ),
+                                onAvatarCameraTap: _handleCameraTap,
+                                onAvatarLongPress: () =>
+                                    _handleAvatarLongPress(user?.profileImage ?? ''),
+                              ),
+                              SizedBox(height: context.rh(12)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: EditProfileButton(
+                                        profile: ProfileModel(
+                                          username: user?.username ?? '',
+                                          bio: user?.bio ?? '',
+                                          email: "",
+                                          profileImagePath: user?.profileImage ?? '',
+                                        ),
+                                        onProfileUpdated: (response) {
+                                          notifier.applyUpdatedProfile(response);
+                                          final newImageUrl =
+                                              response.data.profilePicture;
+                                          final newUsername = response.data.username;
+                                          ref
+                                              .read(
+                                                currentUserNotifierProvider.notifier,
+                                              )
+                                              .updateProfileData(
+                                                username: newUsername,
+                                                imageUrl: newImageUrl,
+                                              );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: ShareProfileButton(
+                                        onTap: () => _handleShareProfile(
+                                          username: user?.username ?? '',
+                                          fullName: user?.fullName ?? '',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: context.rh(13)),
+                              const StoryList(),
+                              SizedBox(height: context.rh(7)),
+                              FilterTabs(
+                                selectedIndex: selectedTab,
+                                onTabSelected: _selectTab,
+                              ),
+                            ],
                           ),
-                          onProfileUpdated: (response) {
-                            notifier.applyUpdatedProfile(response);
-                            final newImageUrl = response.data.profilePicture;
-                            final newUsername = response.data.username;
-                            ref
-                                .read(currentUserNotifierProvider.notifier)
-                                .updateProfileData(
-                                  username: newUsername,
-                                  imageUrl: newImageUrl,
-                                );
-                          },
                         ),
-                        SizedBox(height: context.rh(4)),
-                        StatsRow(
-                          subscribersCount: controller.stats.subscribersCount,
-                          likesCount: controller.stats.likesCount,
-                          videosCount: controller.stats.videosCount,
-                          onSubscribersTap: () => _openConnections(
-                            userId: user?.id ?? '',
-                            initialTab: 0,
-                          ),
-                          onSubscribedTap: () => _openConnections(
-                            userId: user?.id ?? '',
-                            initialTab: 1,
-                          ),
-                        ),
-                        SizedBox(height: context.rh(4)),
-                        const StoryList(),
-                        SizedBox(height: context.rh(4)),
-                        FilterTabs(
-                          selectedIndex: selectedTab,
-                          onTabSelected: (index) {
-                            setState(() {
-                              selectedTab = index;
-                            });
-                            if (_scrollController.hasClients) {
-                              _scrollController.jumpTo(0);
-                            }
-                            notifier.ensureTabLoaded(index);
-                          },
-                        ),
-                        SizedBox(height: context.rh(4)),
+                        ...grid.buildSlivers(context),
+                        SliverToBoxAdapter(child: SizedBox(height: context.rh(65))),
                       ],
                     ),
-                  ),
-                  ...grid.buildSlivers(context),
-                  SliverToBoxAdapter(child: SizedBox(height: context.rh(65))),
-                ],
+                  );
+                },
               );
             },
           ),

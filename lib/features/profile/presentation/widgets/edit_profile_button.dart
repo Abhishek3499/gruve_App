@@ -37,28 +37,28 @@ class EditProfileButton extends StatelessWidget {
             onProfileUpdated?.call(result);
           }
         },
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(16),
         child: Ink(
-          height: 26,
+          height: 32.5,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFE024C3), Color(0xFF8B5CF6)],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.edit_outlined, color: Colors.white, size: 11.5),
-              SizedBox(width: 4),
+              Icon(Icons.edit_outlined, color: Colors.white, size: 14.0),
+              SizedBox(width: 5),
               Text(
                 "Edit Profile",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
               ),
@@ -82,28 +82,24 @@ class ShareProfileButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(16),
         child: Ink(
-          height: 26,
+          height: 32.5,
           decoration: BoxDecoration(
-            color: const Color(0xFF2D1150).withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: const Color(0xFFBA68C8).withValues(alpha: 0.85),
-              width: 1.0,
-            ),
+            color: const Color(0xFF1B0B2E).withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.share_outlined, color: Colors.white, size: 11.5),
-              SizedBox(width: 4),
+              Icon(Icons.share_outlined, color: Colors.white, size: 14.0),
+              SizedBox(width: 5),
               Text(
                 "Share Profile",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
               ),

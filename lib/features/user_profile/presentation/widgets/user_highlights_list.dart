@@ -34,10 +34,10 @@ class UserHighlightsList extends ConsumerWidget {
     }
 
     return SizedBox(
-      height: context.rh(102),
+      height: context.rh(86),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.only(left: context.rw(30)),
+        padding: EdgeInsets.only(left: context.rw(16), right: context.rw(8)),
         itemCount: highlights.length,
         itemBuilder: (context, index) {
           return _buildHighlightItem(context, ref, highlights[index]);
@@ -54,7 +54,7 @@ class UserHighlightsList extends ConsumerWidget {
     final cover = highlight.coverPreviewUrl;
 
     return Padding(
-      padding: EdgeInsets.only(right: context.rw(18)),
+      padding: EdgeInsets.only(right: context.rw(14)),
       child: GestureDetector(
         onTap: () {
           _log('[UserHighlightsList] Highlight tapped: ${highlight.title}');
@@ -79,23 +79,27 @@ class UserHighlightsList extends ConsumerWidget {
                 child: cover != null
                     ? MediaUrlThumbnail(
                         url: cover,
-                        width: context.rw(60),
-                        height: context.rh(60),
+                        width: context.rw(50),
+                        height: context.rh(50),
                         fallback: _placeholderIcon(),
                         placeholder: _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),
             ),
-            SizedBox(height: context.rh(6)),
+            SizedBox(height: context.rh(4)),
             SizedBox(
-              width: context.rw(72),
+              width: context.rw(58),
               child: Text(
                 highlight.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: context.rf(12)),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: context.rf(11.5),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -106,8 +110,8 @@ class UserHighlightsList extends ConsumerWidget {
 
   Widget _placeholderIcon() {
     return Container(
-      width: 60,
-      height: 60,
+      width: 50,
+      height: 50,
       color: const Color(0xFF212235),
       child: const Icon(Icons.image_outlined, color: Colors.white70),
     );
@@ -122,8 +126,8 @@ class _HighlightCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: context.rw(64),
-      height: context.rh(64),
+      width: context.rw(58),
+      height: context.rh(58),
       padding: EdgeInsets.all(context.rw(2)),
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
