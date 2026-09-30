@@ -108,7 +108,7 @@ class UserProfileHeader extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 2),
 
         /// Avatar + User Info Row
         Padding(
@@ -118,13 +118,16 @@ class UserProfileHeader extends ConsumerWidget {
             children: [
               StoryAvatarIndicator(
                 profileImage: profileImageUrl ?? '',
+                radius: 36,
+                ringWidth: 2.0,
+                ringGap: 2.0,
                 hasActiveStory: hasActiveStory,
                 hasUnseenStory: effectiveUnseen,
                 hasCloseFriendsStory: hasCloseFriendsStory,
                 showCameraIcon: false,
                 onTap: () => _openStoryView(context, ref),
               ),
-              SizedBox(width: context.rw(18)),
+              SizedBox(width: context.rw(16)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,18 +137,20 @@ class UserProfileHeader extends ConsumerWidget {
                       displayName.isNotEmpty ? displayName : "User",
                       style: TextStyle(
                         color: AppColors.white,
-                        fontSize: context.rf(20),
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
+                        fontSize: context.rf(18.4),
+                        fontWeight: FontWeight.w600, // SemiBold
+                        height: 1.2,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       username.startsWith('@') ? username : '@$username',
                       style: TextStyle(
                         color: const Color(0xFFBA68C8),
-                        fontSize: context.rf(15),
-                        fontWeight: FontWeight.w600,
+                        fontSize: context.rf(13.4),
+                        fontWeight: FontWeight.w500, // Medium
+                        height: 1.15,
                       ),
                     ),
                     if (bio.trim().isNotEmpty) ...[
@@ -154,11 +159,11 @@ class UserProfileHeader extends ConsumerWidget {
                         bio.trim(),
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: context.rf(13),
-                          fontWeight: FontWeight.normal,
+                          fontSize: context.rf(12.4),
+                          fontWeight: FontWeight.w400, // Regular
                           height: 1.25,
                         ),
-                        maxLines: 3,
+                        maxLines: 2, // Bio max lines: 2 lines
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

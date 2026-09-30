@@ -419,8 +419,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       // 🚀 OPTIMIZATION: Pre-warm camera again right before opening
       unawaited(CameraControllerService.prewarmCamera());
 
+      // The feed video keeps decoding under the camera route, competing with
+      // the preview/encoder for GPU and making zoom lag. Pause it meanwhile.
+      _pauseVideo('Camera opened');
+
       try {
         final result = await CameraHandler.openCamera(context);
+        if (mounted && !_isDisposed && _currentIndex.value == 0) {
+          _resumeVideo('Camera closed');
+        }
         if (!mounted || _isDisposed) return;
         if (result == 'start_processing') {
           // For camera flow, assume video (most common case)

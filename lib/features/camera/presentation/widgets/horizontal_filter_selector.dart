@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,17 +37,19 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
   double _lastDragY = 0.0;
   DateTime? _recordingStartedAt;
 
-  // Drag-to-zoom sends a native setZoomLevel() call per frame. Awaiting each
-  // one inline let overlapping drag frames queue up concurrent platform-channel
-  // calls, flooding it while the encoder was also busy recording and causing
-  // visible lag. Serialize calls and only ever send the latest pending target.
-  bool _zoomUpdateInFlight = false;
-  double? _pendingZoomTarget;
-
   // Some devices throw if stopVideoRecording() is called too soon after
   // startVideoRecording() returns, since the native recorder hasn't fully
   // spun up yet. Enforce a small floor before allowing a stop.
   static const _minRecordingDuration = Duration(milliseconds: 600);
+
+  // A quick release can call stop while the native recorder is still starting,
+  // which made stop fail ("Failed to save recording") and orphaned the clip.
+  // Stop waits for the pending start, and only one stop may run at a time
+  // (long-press end/cancel and taps could otherwise both trigger it).
+  Future<void>? _startFuture;
+  bool _isStopping = false;
+  final ValueNotifier<int> _tick = ValueNotifier(0);
+  bool _recordingFromHold = false;
 
   @override
   void initState() {
@@ -91,10 +94,11 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
     _zoomSub = _cameraService.zoomStream.listen((zoom) {
       if (!mounted) return;
-      setState(() {
-        _currentZoom = zoom;
-        _targetZoom = zoom;
-      });
+      _currentZoom = zoom;
+      _targetZoom = zoom;
+      // Zoom is only shown while recording; avoid rebuilding the filter
+      // carousel on every pinch-zoom frame otherwise.
+      if (_isRecordingVideo) _tick.value++;
     });
   }
 
@@ -106,6 +110,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     _zoomSub?.cancel();
     _recordingTimer?.cancel();
     ModeService().cancelCountdown();
+    _tick.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -141,10 +146,19 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
 
     if (_isRecordingVideo || _cameraService.isCapturing) return;
 
+    final isGruve = ModeService().selectedMode == CameraMode.groove;
+
     if (ModeService().shootDuration > 0) {
       ModeService().startCountdown(() {
         _startTimedRecording();
       });
+      return;
+    }
+
+    // Gruve mode is video only: tap starts recording, tap again stops it.
+    if (isGruve) {
+      CameraLogger.logUserAction('Gruve video recording started from tap');
+      await _beginVideoRecording();
       return;
     }
 
@@ -167,7 +181,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       CameraLogger.log('Failed to capture image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Failed to capture image'),
             backgroundColor: Colors.red,
           ),
@@ -191,13 +205,16 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     _targetZoom = _cameraService.displayZoom;
     _currentZoom = _cameraService.displayZoom;
 
-    await _cameraService.startVideoRecording();
+    _startFuture = _cameraService.startVideoRecording();
+    await _startFuture;
 
     if (!_cameraService.isRecordingVideo) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not start recording'),
+          SnackBar(
+            content: Text(
+              'Could not start recording: ${_cameraService.lastRecordingError ?? 'unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -213,7 +230,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
         timer.cancel();
         return;
       }
-      setState(() => _recordingSeconds++);
+      _recordingSeconds++;
+      _tick.value++;
 
       if (_recordingSeconds >= ModeService().shootDuration) {
         timer.cancel();
@@ -235,13 +253,16 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     _targetZoom = _cameraService.displayZoom;
     _currentZoom = _cameraService.displayZoom;
 
-    await _cameraService.startVideoRecording();
+    _startFuture = _cameraService.startVideoRecording();
+    await _startFuture;
 
     if (!_cameraService.isRecordingVideo) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not start recording'),
+          SnackBar(
+            content: Text(
+              'Could not start recording: ${_cameraService.lastRecordingError ?? 'unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -254,7 +275,8 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() => _recordingSeconds++);
+      _recordingSeconds++;
+      _tick.value++;
     });
   }
 
@@ -262,7 +284,14 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     if (_isRecordingVideo || _cameraService.isCapturing) return;
 
     CameraLogger.logUserAction('Video recording started from capture button');
+    _recordingFromHold = true;
     await _beginVideoRecording(dragStartY: details.globalPosition.dy);
+  }
+
+  void _stopIfHoldRecording() {
+    if (!_recordingFromHold) return;
+    _recordingFromHold = false;
+    _stopVideoRecording();
   }
 
   Future<void> _onLongPressMoveUpdate(
@@ -277,37 +306,37 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
     final deltaY = _lastDragY - currentY; // Swipe up = zoom in
     _lastDragY = currentY;
 
-    // Adjust sensitivity. 0.005 is a good baseline sensitivity.
-    const zoomSensitivity = 0.005;
+    // Exponential: each pixel scales zoom by a fixed factor, so sliding up
+    // is fast at any zoom level (~250px of slide goes 1x -> ~7x).
+    const zoomSensitivity = 0.008;
 
-    _targetZoom = (_targetZoom + deltaY * zoomSensitivity).clamp(
+    _targetZoom = (_targetZoom * exp(deltaY * zoomSensitivity)).clamp(
       _minZoom,
       _maxZoom,
     );
 
     if ((_targetZoom - _currentZoom).abs() < 0.01) return;
 
-    // Update the on-screen zoom label immediately so the drag feels responsive,
-    // independent of how long the native call below takes to complete.
+    // Update the label immediately; the service coalesces native zoom calls.
     _currentZoom = _targetZoom;
-    if (mounted) setState(() {});
-
-    _pendingZoomTarget = _targetZoom;
-    if (_zoomUpdateInFlight) return;
-
-    _zoomUpdateInFlight = true;
-    try {
-      while (_pendingZoomTarget != null) {
-        final zoom = _pendingZoomTarget!;
-        _pendingZoomTarget = null;
-        await _cameraService.setZoomLevel(zoom);
-      }
-    } finally {
-      _zoomUpdateInFlight = false;
-    }
+    _tick.value++;
+    _cameraService.setZoomLevel(_targetZoom);
   }
 
   Future<void> _stopVideoRecording() async {
+    if (_isStopping) return;
+    _isStopping = true;
+    _recordingFromHold = false;
+    try {
+      await _stopVideoRecordingInternal();
+    } finally {
+      _isStopping = false;
+    }
+  }
+
+  Future<void> _stopVideoRecordingInternal() async {
+    // Let a still-starting recorder finish before trying to stop it.
+    await _startFuture;
     if (!_cameraService.isRecordingVideo) return;
 
     CameraLogger.logUserAction('Video recording stopped from capture button');
@@ -340,8 +369,10 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       if (video == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to save recording'),
+            SnackBar(
+              content: Text(
+                'Failed to save recording: ${_cameraService.lastRecordingError ?? 'unknown error'}',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -352,10 +383,7 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       if (!mounted) return;
 
       final speed = ModeService().recordingSpeed;
-      final mediaPath = await VideoSpeedProcessor.applySpeed(
-        video.path,
-        speed,
-      );
+      final mediaPath = await VideoSpeedProcessor.applySpeed(video.path, speed);
       ModeService().setRecordingSpeed(1.0);
 
       if (!mounted) return;
@@ -374,8 +402,10 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
       CameraLogger.log('Failed to stop video recording: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to save recording'),
+          SnackBar(
+            content: Text(
+              'Failed to save recording: ${_cameraService.lastRecordingError ?? 'unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -407,69 +437,73 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
             left: -8,
             right: -8,
             height: 100, // Give it enough height to be tappable
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              itemCount: FilterModel.availableFilters.length,
-              itemBuilder: (context, index) {
-                final filter = FilterModel.availableFilters[index];
-                final isSelected = index == _selectedIndex;
+            child: RepaintBoundary(
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                itemCount: FilterModel.availableFilters.length,
+                itemBuilder: (context, index) {
+                  final filter = FilterModel.availableFilters[index];
+                  final isSelected = index == _selectedIndex;
 
-                return GestureDetector(
-                  onTap: () => _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                  ),
-                  child: Transform.scale(
-                    scale: isSelected ? 1.2 : 1.0,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 55,
-                            height: 55,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
+                  return GestureDetector(
+                    onTap: () => _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    ),
+                    child: Transform.scale(
+                      scale: isSelected ? 1.2 : 1.0,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 55,
+                              height: 55,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.white.withAlpha(150),
+                                  width: isSelected ? 4 : 2,
+                                ),
+                                color: isSelected
+                                    ? _getFilterColor(
+                                        filter.type,
+                                      ).withAlpha(100)
+                                    : Colors.transparent,
+                              ),
+                              child: Icon(
+                                filter.icon,
                                 color: isSelected
                                     ? Colors.white
-                                    : Colors.white.withAlpha(150),
-                                width: isSelected ? 4 : 2,
+                                    : Colors.white.withAlpha(200),
+                                size: 24,
                               ),
-                              color: isSelected
-                                  ? _getFilterColor(filter.type).withAlpha(100)
-                                  : Colors.transparent,
                             ),
-                            child: Icon(
-                              filter.icon,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.white.withAlpha(200),
-                              size: 24,
+                            const SizedBox(height: 4),
+                            Text(
+                              filter.name.toUpperCase(),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withAlpha(200),
+                                fontSize: 10,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            filter.name.toUpperCase(),
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.white.withAlpha(200),
-                              fontSize: 10,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
 
@@ -480,10 +514,11 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
               onTap: _onCaptureTap,
               onLongPressStart: _startVideoRecording,
               onLongPressMoveUpdate: _onLongPressMoveUpdate,
-              onLongPressEnd: (_) => _stopVideoRecording(),
-              onLongPressCancel: () {
-                _stopVideoRecording();
-              },
+              // Only stop for holds that started the recording. A plain tap
+              // also fires long-press cancel, which used to kill a recording
+              // that the tap had just started (Gruve tap-to-record).
+              onLongPressEnd: (_) => _stopIfHoldRecording(),
+              onLongPressCancel: _stopIfHoldRecording,
               child: Container(
                 width: 75,
                 height: 75,
@@ -510,59 +545,70 @@ class _HorizontalFilterSelectorState extends State<HorizontalFilterSelector> {
                       ),
                     ),
                     if (_isRecordingVideo)
+                      // Static ring: an indeterminate spinner repaints every
+                      // frame and competes with the encoder/zoom while recording.
                       const SizedBox(
                         width: 70,
                         height: 70,
-                        child: CircularProgressIndicator(
-                          color: Colors.red,
-                          strokeWidth: 3,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.fromBorderSide(
+                              BorderSide(color: Colors.red, width: 3),
+                            ),
+                          ),
                         ),
                       ),
                     if (_isRecordingVideo)
                       Positioned(
                         top: -62,
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                _formatRecordingDuration(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            if (_currentZoom > _minZoom + 0.1) ...[
-                              const SizedBox(height: 4),
+                        // Timer/zoom label rebuild alone via _tick, so the
+                        // filter carousel isn't rebuilt every zoom frame.
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _tick,
+                          builder: (context, _, _) => Column(
+                            children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
+                                  horizontal: 10,
+                                  vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '${_currentZoom.toStringAsFixed(1)}x',
+                                  _formatRecordingDuration(),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
+                              if (_currentZoom > _minZoom + 0.1) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${_currentZoom.toStringAsFixed(1)}x',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
                   ],

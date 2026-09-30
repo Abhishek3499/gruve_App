@@ -99,8 +99,8 @@ class SignupValidator {
     return validateUsernameRealTime(username);
   }
 
-  static String? validateBioRealTime(String bio) {
-    if (bio.trim().isEmpty) return "Bio is required";
+  static String? validateBioRealTime(String? bio) {
+    if (bio == null || bio.trim().isEmpty) return null;
     if (bio.trim().length > 150) return "Bio must be 150 characters or less";
     return null;
   }

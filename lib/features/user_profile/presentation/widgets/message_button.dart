@@ -25,7 +25,7 @@ class MessageButton extends StatelessWidget {
             children: [
               Icon(
                 Icons.chat_bubble_outline,
-                size: context.rw(19),
+                size: context.rw(17.5),
                 color: Colors.white,
               ),
               SizedBox(width: context.rw(7)),
@@ -33,7 +33,7 @@ class MessageButton extends StatelessWidget {
                 'Message',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: context.rf(14),
+                  fontSize: context.rf(12.9),
                   fontWeight: FontWeight.w600,
                 ),
               ),

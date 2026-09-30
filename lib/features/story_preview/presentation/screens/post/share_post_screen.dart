@@ -311,15 +311,8 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
       mediaPath: mediaPath,
       mediaMimeType: widget.mediaMimeType,
       locationName: locationName,
-      audienceEveryone: isEveryone,
-      audienceCloseFriends: isCloseFriends,
-      scheduleReel: scheduleReel,
-      uploadHighQuality: uploadHighQuality,
-      hideLikeCount: hideLikeCount,
-      hideShareCount: hideShareCount,
       taggedUserIds: taggedUserIds,
       draftId: widget.draftId,
-      isMuted: widget.isMuted,
     );
   }
 
@@ -358,6 +351,7 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
     );
 
     final draftsNotifier = ref.read(draftsNotifierProvider.notifier);
+    final taggedUserIds = taggedUsers.map((u) => u.id).toList();
 
     try {
       if (widget.draftId != null) {
@@ -368,14 +362,8 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
           draftId: widget.draftId!,
           caption: caption,
           mediaPath: mediaPath,
-          mediaMimeType: widget.mediaMimeType,
           locationName: locationName ?? "",
-          audienceEveryone: isEveryone,
-          audienceCloseFriends: isCloseFriends,
-          scheduleReel: scheduleReel,
-          uploadHighQuality: uploadHighQuality,
-          hideLikeCount: hideLikeCount,
-          hideShareCount: hideShareCount,
+          taggedUserIds: taggedUserIds,
         );
       } else {
         AppLogger.d(
@@ -384,14 +372,8 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
         await draftsNotifier.saveDraft(
           caption: caption,
           mediaPath: mediaPath,
-          mediaMimeType: widget.mediaMimeType,
           locationName: locationName,
-          audienceEveryone: isEveryone,
-          audienceCloseFriends: isCloseFriends,
-          scheduleReel: scheduleReel,
-          uploadHighQuality: uploadHighQuality,
-          hideLikeCount: hideLikeCount,
-          hideShareCount: hideShareCount,
+          taggedUserIds: taggedUserIds,
         );
       }
 

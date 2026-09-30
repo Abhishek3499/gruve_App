@@ -23,7 +23,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
 
   bool _isInitialized = false;
   String? _errorMessage;
-  double _currentZoom = 1.0;
+  final ValueNotifier<double> _zoomNotifier = ValueNotifier(1.0);
   double _baseZoom = 1.0;
   FilterModel _selectedFilter = FilterController().selectedFilter;
 
@@ -37,7 +37,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _isInitialized = _cameraService.isInitialized;
-    _currentZoom = _cameraService.displayZoom;
+    _zoomNotifier.value = _cameraService.displayZoom;
     _selectedFilter = _filterController.selectedFilter;
     _filterController.addListener(_onFilterChanged);
     _initializeListeners();
@@ -64,7 +64,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
 
     setState(() {
       _isInitialized = isReady;
-      _currentZoom = _cameraService.displayZoom;
+      _zoomNotifier.value = _cameraService.displayZoom;
       if (isReady) {
         _errorMessage = null;
       }
@@ -91,7 +91,6 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
           '[PERF] Camera initialized in ${initTime.inMilliseconds}ms',
           name: 'CameraPreview',
         );
-        _currentZoom = _cameraService.displayZoom;
         _syncCameraState();
         return;
       }
@@ -116,7 +115,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
 
     _zoomSub = _cameraService.zoomStream.listen((zoom) {
       if (!mounted) return;
-      setState(() => _currentZoom = zoom);
+      _zoomNotifier.value = zoom;
     });
   }
 
@@ -124,7 +123,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
     _baseZoom = _cameraService.currentZoom;
   }
 
-  Future<void> _handleScaleUpdate(ScaleUpdateDetails details) async {
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
     final controller = _cameraService.controller;
     if (controller == null || !controller.value.isInitialized) return;
 
@@ -134,7 +133,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
     );
 
     if ((nextZoom - _cameraService.currentZoom).abs() > 0.01) {
-      await _cameraService.setZoomLevel(nextZoom);
+      _cameraService.setZoomLevel(nextZoom);
     }
   }
 
@@ -174,33 +173,46 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
       },
       child: Stack(
         children: [
-          SizedBox.expand(child: _buildFilteredCameraPreview(controller)),
-          if ((_currentZoom - 1.0).abs() > 0.1)
-            Positioned(
-              top: 104,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_currentZoom.toStringAsFixed(1)}x',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+          // Scales instantly while the (slow) native zoom catches up.
+          ValueListenableBuilder<double>(
+            valueListenable: _cameraService.visualZoomScale,
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: SizedBox.expand(
+              child: _buildFilteredCameraPreview(controller),
+            ),
+          ),
+          Positioned(
+            top: 104,
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder<double>(
+              valueListenable: _zoomNotifier,
+              builder: (context, zoom, _) {
+                if ((zoom - 1.0).abs() <= 0.1) return const SizedBox.shrink();
+                return Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${zoom.toStringAsFixed(1)}x',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
+          ),
         ],
       ),
     );
@@ -266,6 +278,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget>
     _initSub?.cancel();
     _errorSub?.cancel();
     _zoomSub?.cancel();
+    _zoomNotifier.dispose();
     CameraLogger.logVerbose('CameraPreviewWidget disposed');
     super.dispose();
   }

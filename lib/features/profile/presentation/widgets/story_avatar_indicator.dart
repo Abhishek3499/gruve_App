@@ -19,10 +19,15 @@ class StoryAvatarIndicator extends StatelessWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onCameraTap;
   final bool showCameraIcon;
+  final IconData? badgeIcon;
   final bool enableNavigation;
   final bool hasActiveStory;
   final bool hasUnseenStory;
   final bool hasCloseFriendsStory;
+  final double badgeSize;
+  final double badgeIconSize;
+  final double badgeBottom;
+  final double badgeRight;
   final double ringWidth;
   final double ringGap;
   final Color innerBackgroundColor;
@@ -30,17 +35,22 @@ class StoryAvatarIndicator extends StatelessWidget {
   const StoryAvatarIndicator({
     super.key,
     required this.profileImage,
-    this.radius = 26,
+    this.radius = 36,
     this.onTap,
     this.onLongPress,
     this.onCameraTap,
     this.showCameraIcon = false,
+    this.badgeIcon,
     this.enableNavigation = true,
     this.hasActiveStory = false,
     this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
-    this.ringWidth = 1.8,
-    this.ringGap = 1.4,
+    this.badgeSize = 24.3,
+    this.badgeIconSize = 14.8,
+    this.badgeBottom = 5.0,
+    this.badgeRight = 1.0,
+    this.ringWidth = 2.0,
+    this.ringGap = 2.0,
     this.innerBackgroundColor = const Color(0xFF130722),
   });
 
@@ -68,25 +78,20 @@ class StoryAvatarIndicator extends StatelessWidget {
       return avatarInteractive;
     }
 
-    final badgeSize = radius <= 27
-        ? 18.5
-        : (radius <= 32 ? 21.0 : (radius <= 40 ? 26.0 : 32.0));
-    final badgeIconSize = radius <= 27
-        ? 11.5
-        : (radius <= 32 ? 13.0 : (radius <= 40 ? 16.0 : 18.0));
+    final outerDimension = (radius * 2) + (ringWidth * 2) + (ringGap * 2);
 
-    // Avatar with camera badge at bottom-right
+    // Avatar with edit/camera badge at bottom-right
     return SizedBox(
-      width: (radius * 2) + (ringWidth * 2) + (ringGap * 2) + 4,
-      height: (radius * 2) + (ringWidth * 2) + (ringGap * 2) + 4,
+      width: outerDimension,
+      height: outerDimension,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
           avatarInteractive,
           Positioned(
-            bottom: 0,
-            right: 0,
+            bottom: badgeBottom,
+            right: badgeRight,
             child: GestureDetector(
               onTap: onCameraTap ?? onTap,
               behavior: HitTestBehavior.opaque,
@@ -96,25 +101,25 @@ class StoryAvatarIndicator extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF8B2FC9), Color(0xFF6B1D9E)],
+                    colors: [Color(0xFFBA3FE8), Color(0xFF7000FF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   border: Border.all(
-                    color: const Color(0xFFD946EF),
-                    width: 1.2,
+                    color: Colors.white,
+                    width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF8B2FC9).withValues(alpha: 0.6),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.add,
+                    badgeIcon ?? Icons.add,
                     color: Colors.white,
                     size: badgeIconSize,
                   ),

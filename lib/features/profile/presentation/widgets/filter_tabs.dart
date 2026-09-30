@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/shared/widgets/reels_icon.dart';
 
 class FilterTabs extends StatelessWidget {
   final int selectedIndex;
@@ -11,45 +11,76 @@ class FilterTabs extends StatelessWidget {
     required this.onTabSelected,
   });
 
-  Widget buildTab(String text, int index) {
+  Widget _buildTab({
+    IconData? icon,
+    Widget? customIcon,
+    required int index,
+  }) {
     final isSelected = selectedIndex == index;
 
     return GestureDetector(
       onTap: () => onTabSelected(index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isSelected
-                ? [const Color(0xFF7D63D1), const Color(0xFF212235)]
-                : [
-                    const Color(0xFF7D63D1).withValues(alpha: 0.3),
-                    const Color(0xFF212235).withValues(alpha: 0.3),
-                  ],
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          customIcon ??
+              Icon(
+                icon!,
+                size: 22,
+                color: isSelected ? Colors.white : Colors.white54,
+              ),
+          const SizedBox(height: 4),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 3,
+            width: isSelected ? 36 : 0,
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: [Color(0xFFE024C3), Color(0xFF8B5CF6)],
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        buildTab("All", 0),
-        buildTab("Trending", 1),
-        buildTab("Likes", 2),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        height: 36,
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildTab(
+                customIcon: ReelsIcon(
+                  size: 21,
+                  color: selectedIndex == 0 ? Colors.white : Colors.white54,
+                ),
+                index: 0,
+              ),
+            ),
+            Expanded(
+              child: _buildTab(
+                icon: Icons.grid_view_rounded,
+                index: 1,
+              ),
+            ),
+            Expanded(
+              child: _buildTab(
+                icon: Icons.portrait_rounded,
+                index: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

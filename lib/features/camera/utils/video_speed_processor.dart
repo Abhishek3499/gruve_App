@@ -12,10 +12,9 @@ class VideoSpeedProcessor {
     if (speed == 1.0) return inputPath;
 
     try {
-      final outputPath = await VideoEditorBuilder(videoPath: inputPath)
-          .speed(speed: speed)
-          .export()
-          .timeout(_timeout);
+      final outputPath = await VideoEditorBuilder(
+        videoPath: inputPath,
+      ).speed(speed: speed).export().timeout(_timeout);
       return outputPath ?? inputPath;
     } catch (e) {
       CameraLogger.log('Failed to apply ${speed}x speed: $e');

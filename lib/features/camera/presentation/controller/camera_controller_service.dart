@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gruve_app/features/camera/utils/camera_logger.dart';
@@ -207,6 +209,8 @@ class CameraControllerService {
         _minZoom = zoomLevels[0];
         _maxZoom = zoomLevels[1];
         _currentZoom = _minZoom;
+        _appliedZoom = _minZoom;
+        visualZoomScale.value = 1.0;
         _displayZoom = _isUltraWideActive ? 0.5 : _currentZoom;
         _zoomStreamController.add(_displayZoom);
       } catch (e) {
@@ -215,15 +219,104 @@ class CameraControllerService {
     }());
   }
 
+  /// Sets the zoom target. The actual zoom eases toward it every frame
+  /// (in log space, so it feels even across the range, like the iPhone
+  /// camera) instead of jumping between the coarse steps a pinch/drag gives.
   Future<void> setZoomLevel(double zoomLevel) async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
 
-    final nextZoom = zoomLevel.clamp(_minZoom, _maxZoom);
-    _currentZoom = nextZoom;
-    _displayZoom = _isUltraWideActive ? 0.5 : nextZoom;
-    await _controller!.setZoomLevel(nextZoom);
-    _zoomStreamController.add(_displayZoom);
+    _targetZoom = zoomLevel.clamp(_minZoom, _maxZoom);
+    _zoomTimer ??= Timer.periodic(
+      const Duration(milliseconds: 16),
+      (_) => _stepZoom(),
+    );
   }
+
+  double _targetZoom = 1.0;
+  double _lastNativeZoom = 1.0;
+
+  // The native zoom call is slow on some devices (hundreds of ms while the
+  // encoder runs). The preview scales by currentZoom / appliedZoom right away
+  // so zooming looks instant; the factor returns to 1 as native catches up.
+  double _appliedZoom = 1.0;
+  final ValueNotifier<double> visualZoomScale = ValueNotifier(1.0);
+
+  void _updateVisualScale() {
+    final target = (_currentZoom / _appliedZoom).clamp(0.6, 4.0);
+    final current = visualZoomScale.value;
+    // While zooming, ease toward the target so native apply steps don't pop.
+    final scale = _zoomTimer != null
+        ? current + (target - current) * 0.5
+        : target;
+    if ((current - scale).abs() > 0.001) {
+      visualZoomScale.value = scale;
+    }
+  }
+
+  Timer? _zoomTimer;
+
+  void _stopZoomTimer() {
+    _zoomTimer?.cancel();
+    _zoomTimer = null;
+  }
+
+  void _stepZoom() {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      _stopZoomTimer();
+      return;
+    }
+
+    final from = _currentZoom.clamp(0.01, double.infinity);
+    final to = _targetZoom.clamp(0.01, double.infinity);
+    final next = (to - from).abs() < 0.005
+        ? _targetZoom
+        : exp(log(from) + (log(to) - log(from)) * 0.3);
+
+    _currentZoom = next;
+    _displayZoom = _isUltraWideActive ? 0.5 : next;
+    _zoomStreamController.add(_displayZoom);
+    _updateVisualScale();
+    // Each native zoom rebuilds the camera capture request; skip changes too
+    // small to see, but always send the final value.
+    if (next == _targetZoom || (next - _lastNativeZoom).abs() > 0.02) {
+      _lastNativeZoom = next;
+      _sendNativeZoom(next);
+    }
+
+    if (next == _targetZoom) _stopZoomTimer();
+  }
+
+  // Keep only one native call in flight and always send the latest value.
+  Future<void> _sendNativeZoom(double zoom) async {
+    _pendingNativeZoom = zoom;
+    if (_zoomCallInFlight) return;
+    _zoomCallInFlight = true;
+    try {
+      while (_pendingNativeZoom != null) {
+        final next = _pendingNativeZoom!;
+        _pendingNativeZoom = null;
+        final controller = _controller;
+        if (controller == null || !controller.value.isInitialized) return;
+        await controller.setZoomLevel(next);
+        // The native call returns a little before the new zoom shows up in
+        // preview frames; delay so the scale doesn't drop before the picture
+        // actually changes (that mismatch looked like stutter).
+        Timer(const Duration(milliseconds: 90), () {
+          _appliedZoom = next;
+          _updateVisualScale();
+        });
+      }
+    } catch (e) {
+      CameraLogger.log('setZoomLevel failed: $e');
+    } finally {
+      _zoomCallInFlight = false;
+    }
+  }
+
+  bool _zoomCallInFlight = false;
+  double? _pendingNativeZoom;
 
   Future<void> setScale(double scale) async {
     if (!_isInitialized) return;
@@ -252,6 +345,7 @@ class CameraControllerService {
       return;
     }
 
+    _stopZoomTimer();
     try {
       await _controller?.dispose();
       _isInitialized = false;
@@ -268,6 +362,9 @@ class CameraControllerService {
       // Set zoom asynchronously to avoid blocking the transition
       unawaited(_controller!.setZoomLevel(_minZoom));
       _currentZoom = _minZoom;
+      _appliedZoom = _minZoom;
+      visualZoomScale.value = 1.0;
+      _targetZoom = _minZoom;
 
       _isInitialized = true;
       _initializationStreamController.add(true);
@@ -340,6 +437,7 @@ class CameraControllerService {
   Future<void> startVideoRecording() async {
     if (!_isInitialized || _isCapturing || _isRecordingVideo) return;
 
+    lastRecordingError = null;
     try {
       _isRecordingVideo = true;
       _videoRecordingStreamController.add(true);
@@ -349,11 +447,14 @@ class CameraControllerService {
     } catch (e) {
       _isRecordingVideo = false;
       _videoRecordingStreamController.add(false);
-      _errorStreamController.add(
-        'Failed to start video recording: ${e.toString()}',
-      );
+      // Not sent to errorStream: that replaces the whole preview with text.
+      lastRecordingError = e.toString();
+      CameraLogger.log('Failed to start video recording: $e');
     }
   }
+
+  /// Message of the last failed start/stop, shown by the UI in a snackbar.
+  String? lastRecordingError;
 
   Future<XFile?> stopVideoRecording() async {
     if (!_isRecordingVideo) return null;
@@ -373,9 +474,7 @@ class CameraControllerService {
       return video;
     } catch (e) {
       CameraLogger.log('Failed to stop video recording: $e');
-      _errorStreamController.add(
-        'Failed to stop video recording: ${e.toString()}',
-      );
+      lastRecordingError = e.toString();
       return null;
     } finally {
       _isRecordingVideo = false;

@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 class ProfileGridStyle {
   ProfileGridStyle._();
 
-  static const double tileRadius = 26;
-  static const double spacing = 10;
+  static const double tileRadius = 0;
+  static const double spacing = 1.5;
 
-  static final BorderRadius borderRadius = BorderRadius.circular(tileRadius);
+  static const BorderRadius borderRadius = BorderRadius.zero;
 
   static const gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: 3,
@@ -16,7 +16,7 @@ class ProfileGridStyle {
     childAspectRatio: 3 / 4,
   );
 
-  static const gridPadding = EdgeInsets.fromLTRB(12, 12, 12, 0);
+  static const gridPadding = EdgeInsets.symmetric(horizontal: 4);
 
   /// Instagram-style count formatting: exact number (with thousand
   /// separators) below 10K, then abbreviated with one decimal (dropped
@@ -43,7 +43,7 @@ class ProfileGridStyle {
   }
 }
 
-/// Rounded profile-grid cell wrapper (thumbnail, overlays, badges).
+/// Straight rectangular profile-grid cell wrapper (thumbnail, overlays, badges).
 class ProfileGridTile extends StatelessWidget {
   final Widget child;
 
@@ -51,6 +51,6 @@ class ProfileGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(borderRadius: ProfileGridStyle.borderRadius, child: child);
+    return ClipRect(child: child);
   }
 }

@@ -85,12 +85,15 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
   }) async {
     state = state.copyWith(isUpdating: true, clearError: true);
 
+    final trimmedBio = bio?.trim();
+    final cleanBio = (trimmedBio != null && trimmedBio.isNotEmpty) ? trimmedBio : null;
+
     try {
       final result = await _service.updateProfile(
         request: EditProfileRequest(
-          fullname: fullname,
-          username: username,
-          bio: bio,
+          fullname: fullname.trim(),
+          username: username.trim(),
+          bio: cleanBio,
           profilePicture: profilePicture,
         ),
       );
@@ -115,9 +118,8 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     final usernameError = SignupValidator.validateUsernameRealTime(username);
     if (usernameError != null) return usernameError;
 
-    if (bio != null) {
-      final bioError = SignupValidator.validateBioRealTime(bio);
-      if (bioError != null) return bioError;
+    if (bio != null && bio.trim().length > 150) {
+      return "Bio must be 150 characters or less.";
     }
 
     return null;

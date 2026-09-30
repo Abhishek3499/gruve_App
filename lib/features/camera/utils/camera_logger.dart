@@ -28,7 +28,8 @@ class CameraLogger {
   static void logCameraFlipSuccess() => _log('flip_success');
 
   /// Log camera flip failure
-  static void logCameraFlipFailure(String error) => _logError('flip_failed', error);
+  static void logCameraFlipFailure(String error) =>
+      _logError('flip_failed', error);
 
   /// Log capture action start
   static void logCaptureStart() => _log('capture_start');
@@ -38,24 +39,28 @@ class CameraLogger {
       _log('capture_success', data: {'imagePath': imagePath});
 
   /// Log capture failure
-  static void logCaptureFailure(String error) => _logError('capture_failed', error);
+  static void logCaptureFailure(String error) =>
+      _logError('capture_failed', error);
 
   /// Log flash toggle action
   static void logFlashToggle(String flashMode) =>
       _log('flash_toggle', data: {'mode': flashMode});
 
   /// Log general camera actions
-  static void log(String message) => AppLogger.debug(_tag, 'log', message: message);
+  static void log(String message) =>
+      AppLogger.debug(_tag, 'log', message: message);
 
   /// Log camera controller state changes
   static void logStateChange(String state) =>
       _log('state_change', data: {'state': state});
 
   /// Log widget lifecycle events
-  static void logLifecycle(String event) => AppLogger.debug(_tag, 'lifecycle', message: event);
+  static void logLifecycle(String event) =>
+      AppLogger.debug(_tag, 'lifecycle', message: event);
 
   /// Log user interactions
-  static void logUserAction(String action) => AppLogger.debug(_tag, 'user_action', message: action);
+  static void logUserAction(String action) =>
+      AppLogger.debug(_tag, 'user_action', message: action);
 
   /// Log performance metrics
   static void logPerformance(String operation, Duration duration) {
@@ -80,8 +85,10 @@ class CameraLogger {
   }
 
   /// Log warning messages
-  static void logWarning(String message) => AppLogger.warning(_tag, 'log', message: message);
+  static void logWarning(String message) =>
+      AppLogger.warning(_tag, 'log', message: message);
 
   /// Log verbose debugging information
-  static void logVerbose(String message) => AppLogger.debug(_tag, 'verbose', message: message);
+  static void logVerbose(String message) =>
+      AppLogger.debug(_tag, 'verbose', message: message);
 }

@@ -8,7 +8,6 @@ import 'package:gruve_app/features/highlights/presentation/screens/highlight_vie
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/core/constants/app_colors.dart';
 
 class StoryList extends ConsumerWidget {
   const StoryList({super.key});
@@ -34,10 +33,10 @@ class StoryList extends ConsumerWidget {
 
     // Show normal content
     return SizedBox(
-      height: 68,
+      height: 86,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 18),
+        padding: const EdgeInsets.only(left: 16, right: 8),
         itemCount: highlights.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
@@ -53,7 +52,7 @@ class StoryList extends ConsumerWidget {
   Widget _buildAddStory(BuildContext context, WidgetRef ref, {Key? key}) {
     return Padding(
       key: key,
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: 14),
       child: GestureDetector(
         onTap: () async {
           _log('[StoryList] Add Story tapped');
@@ -73,21 +72,37 @@ class StoryList extends ConsumerWidget {
             PostShareFlowBridge.notifyShareStartProcessing(true);
           }
         },
-        child: const Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _HighlightCircle(
-              child: Icon(Icons.add, color: Colors.white, size: 18),
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF1B0B2E).withValues(alpha: 0.6),
+                border: Border.all(
+                  color: const Color(0xFFBA68C8).withValues(alpha: 0.8),
+                  width: 1.5,
+                ),
+              ),
+              child: const Center(
+                child: Icon(Icons.add, color: Colors.white, size: 19.4),
+              ),
             ),
-            SizedBox(height: 3),
-            SizedBox(
-              width: 52,
+            const SizedBox(height: 4),
+            const SizedBox(
+              width: 58,
               child: Text(
-                'new',
+                'New',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 10.0),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -104,7 +119,7 @@ class StoryList extends ConsumerWidget {
     final cover = highlight.coverPreviewUrl;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: 14),
       child: GestureDetector(
         onTap: () {
           _log('[StoryList] Highlight item tapped: ${highlight.title}');
@@ -133,23 +148,27 @@ class StoryList extends ConsumerWidget {
                 child: cover != null
                     ? MediaUrlThumbnail(
                         url: cover,
-                        width: 38,
-                        height: 38,
+                        width: 50,
+                        height: 50,
                         fallback: _placeholderIcon(),
                         placeholder: _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             SizedBox(
-              width: 52,
+              width: 58,
               child: Text(
                 highlight.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 10.0),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -160,34 +179,34 @@ class StoryList extends ConsumerWidget {
 
   Widget _placeholderIcon() {
     return Container(
-      width: 38,
-      height: 38,
+      width: 50,
+      height: 50,
       color: const Color(0xFF212235),
-      child: const Icon(Icons.image_outlined, color: Colors.white70, size: 17),
+      child: const Icon(Icons.image_outlined, color: Colors.white70, size: 20),
     );
   }
 
   Widget _buildErrorState(BuildContext context, WidgetRef ref) {
     return SizedBox(
-      height: 68,
+      height: 86,
       child: Row(
         children: [
-          const SizedBox(width: 18),
+          const SizedBox(width: 16),
           // Add Story button (always visible)
           _buildAddStory(context, ref, key: const Key('add_story_error')),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           // Error indicator
           Container(
-            width: 42,
-            height: 42,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.red.withValues(alpha: 0.2),
               border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
             ),
-            child: const Icon(Icons.error_outline, color: Colors.red, size: 18),
+            child: const Icon(Icons.error_outline, color: Colors.red, size: 22),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           // Retry button
           GestureDetector(
             onTap: () {
@@ -197,14 +216,14 @@ class StoryList extends ConsumerWidget {
                   .refreshProfileData(reason: 'story_list_retry');
             },
             child: Container(
-              width: 42,
-              height: 42,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.blue.withValues(alpha: 0.2),
                 border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
               ),
-              child: const Icon(Icons.refresh, color: Colors.blue, size: 18),
+              child: const Icon(Icons.refresh, color: Colors.blue, size: 22),
             ),
           ),
         ],
@@ -221,13 +240,13 @@ class _HighlightCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
-      padding: const EdgeInsets.all(2),
+      width: 58,
+      height: 58,
+      padding: const EdgeInsets.all(2.0),
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: [AppColors.vibrantMagenta, Color(0xFF6BA9F6)],
+          colors: [Color(0xFFE024C3), Color(0xFF6BA9F6)],
         ),
       ),
       child: Container(

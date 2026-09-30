@@ -114,26 +114,6 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     );
   }
 
-  void _showSubscriptionSnackBar(bool isSubscribed) {
-    _log('🍞 show snackbar state=$isSubscribed userId=${widget.userId}');
-    if (!context.mounted) {
-      return;
-    }
-
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          isSubscribed
-              ? 'Subscribed to ${widget.username}'
-              : 'Unsubscribed from ${widget.username}',
-        ),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 
   Future<void> _performToggle(BuildContext context, bool currentStatus) async {
     if (_isProcessing) return;
@@ -212,7 +192,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               label,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: context.rf(14),
+                fontSize: context.rf(12.9),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -245,7 +225,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                     'Accept',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: context.rf(14),
+                      fontSize: context.rf(12.9),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -273,7 +253,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                     'Reject',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: context.rf(14),
+                      fontSize: context.rf(12.9),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -304,8 +284,8 @@ class _SubscribeButtonState extends State<SubscribeButton> {
             child: Text(
               'Requested',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: context.rf(14),
+                color: Colors.white,
+                fontSize: context.rf(12.9),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -334,7 +314,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               'Subscribed',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: context.rf(14),
+                fontSize: context.rf(12.9),
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/features/profile/presentation/controller/profile_controller.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
-import 'package:gruve_app/features/profile/presentation/screens/real_draft_screen.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/profile_post_detail_screen.dart';
 
 /// 🚀 PRODUCTION OPTIMIZATION: Instagram-style image caching
@@ -63,10 +61,6 @@ class ProfileGrid extends StatelessWidget {
       return _withPagingFooterSlivers(_buildPostsSlivers(posts, context));
     }
 
-    if (selectedTab == 0) {
-      return _withPagingFooterSlivers(_buildDraftsSlivers(posts, context));
-    }
-
     final filteredPosts = posts;
     if (filteredPosts.isEmpty) {
       return [SliverToBoxAdapter(child: _buildEmptyPostsState())];
@@ -94,57 +88,6 @@ class ProfileGrid extends StatelessWidget {
         ),
       ),
     ];
-  }
-
-  List<Widget> _buildDraftsSlivers(List<Post> posts, BuildContext context) {
-    return [
-      SliverPadding(
-        padding: gridPadding,
-        sliver: SliverGrid(
-          gridDelegate: gridDelegate,
-          delegate: SliverChildBuilderDelegate((context, index) {
-            if (index == 0) {
-              return RepaintBoundary(child: _buildDraftsTile(context));
-            }
-            final post = posts[index - 1];
-            return RepaintBoundary(
-              child: _buildPostItem(post, context, posts, index - 1),
-            );
-          }, childCount: posts.length + 1),
-        ),
-      ),
-    ];
-  }
-
-  Widget _buildDraftsTile(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ReelsDraftsScreen()),
-        );
-      },
-      child: ProfileGridTile(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(AppAssets.frame1, fit: BoxFit.cover),
-            Container(
-              color: Colors.black.withValues(alpha: 0.45),
-              alignment: Alignment.center,
-              child: const Text(
-                'Drafts',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildEmptyLikedState() {
