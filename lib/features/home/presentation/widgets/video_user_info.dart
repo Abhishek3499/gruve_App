@@ -385,22 +385,22 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26),
+              borderRadius: BorderRadius.circular(16),
               color: Colors.white.withValues(alpha: 0.10),
               border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.person, color: Colors.white, size: 18),
-                const SizedBox(width: 5),
+                const Icon(Icons.person, color: Colors.white, size: 12),
+                const SizedBox(width: 3),
                 Text(
                   '${widget.taggedUsers.length} tagged',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
+                    fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -452,7 +452,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
     }
 
     if (_isResolvingIdentity) {
-      return const SizedBox(width: 96, height: 32);
+      return const SizedBox(width: 76, height: 25);
     }
 
     if (!(_identityResolution?.shouldShowSubscribeButton ?? false)) {
@@ -468,7 +468,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
     }
 
     return SizedBox(
-      height: 32,
+      height: 25,
       child: SubscribeButton(
         userId: widget.userId,
         username: widget.username,
@@ -517,7 +517,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
                     onTap: () => _openAvatar(context),
                     avatar: OptimizedAvatar(
                       imageUrl: widget.profilePicture,
-                      radius: 17.5,
+                      radius: 14.5,
                       name: widget.username,
                       fallback: Image.asset(AppAssets.user, fit: BoxFit.cover),
                     ),
@@ -534,7 +534,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                       shadows: [
                         Shadow(
@@ -554,20 +554,20 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
                     return const SizedBox.shrink();
                   }
                   return Padding(
-                    padding: const EdgeInsets.only(left: 15),
+                    padding: const EdgeInsets.only(left: 10),
                     child: _buildSubscribeButton(),
                   );
                 },
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 3),
           if (widget.caption.isNotEmpty) ...[
             LayoutBuilder(
               builder: (context, constraints) {
                 const captionTextStyle = TextStyle(
                   color: Colors.white,
-                  fontSize: 14,
+                  fontSize: 11.2,
                   shadows: [
                     Shadow(
                       blurRadius: 4.0,
@@ -612,7 +612,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
                         const TextSpan(
                           text: linkText,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 10.5,
                             shadows: [
                               Shadow(
                                 blurRadius: 4.0,
@@ -691,9 +691,9 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
               },
             ),
           ],
-          const SizedBox(height: 6),
+          const SizedBox(height: 3),
           SizedBox(
-            height: 24,
+            height: 18,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -706,11 +706,11 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
                         child: Image.asset(
                           AppAssets.musicicon,
                           color: Colors.white,
-                          height: 15,
-                          width: 15,
+                          height: 11.5,
+                          width: 11.5,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: GestureDetector(
                           onTap: () => _navigateToMusicScreen(context),
@@ -718,7 +718,7 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
                             widget.musicTitle,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 10,
                               shadows: [
                                 Shadow(
                                   blurRadius: 4.0,

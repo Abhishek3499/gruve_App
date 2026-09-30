@@ -30,7 +30,7 @@ class StoryAvatarIndicator extends StatelessWidget {
   const StoryAvatarIndicator({
     super.key,
     required this.profileImage,
-    this.radius = 48,
+    this.radius = 28,
     this.onTap,
     this.onLongPress,
     this.onCameraTap,
@@ -39,8 +39,8 @@ class StoryAvatarIndicator extends StatelessWidget {
     this.hasActiveStory = false,
     this.hasUnseenStory = false,
     this.hasCloseFriendsStory = false,
-    this.ringWidth = 2.8,
-    this.ringGap = 2.4,
+    this.ringWidth = 2.0,
+    this.ringGap = 1.6,
     this.innerBackgroundColor = const Color(0xFF130722),
   });
 
@@ -68,24 +68,31 @@ class StoryAvatarIndicator extends StatelessWidget {
       return avatarInteractive;
     }
 
+    final badgeSize = radius <= 26
+        ? 17.0
+        : (radius <= 32 ? 20.0 : (radius <= 40 ? 25.0 : 32.0));
+    final badgeIconSize = radius <= 26
+        ? 10.5
+        : (radius <= 32 ? 12.0 : (radius <= 40 ? 15.0 : 18.0));
+
     // Avatar with camera badge at bottom-right
     return SizedBox(
-      width: (radius * 2) + (ringWidth * 2) + (ringGap * 2) + 6,
-      height: (radius * 2) + (ringWidth * 2) + (ringGap * 2) + 6,
+      width: (radius * 2) + (ringWidth * 2) + (ringGap * 2) + 4,
+      height: (radius * 2) + (ringWidth * 2) + (ringGap * 2) + 4,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
           avatarInteractive,
           Positioned(
-            bottom: 2,
-            right: 2,
+            bottom: 0,
+            right: 0,
             child: GestureDetector(
               onTap: onCameraTap ?? onTap,
               behavior: HitTestBehavior.opaque,
               child: Container(
-                width: 32,
-                height: 32,
+                width: badgeSize,
+                height: badgeSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -95,18 +102,22 @@ class StoryAvatarIndicator extends StatelessWidget {
                   ),
                   border: Border.all(
                     color: const Color(0xFFD946EF),
-                    width: 1.8,
+                    width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF8B2FC9).withValues(alpha: 0.6),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.white, size: 18),
+                child: Center(
+                  child: Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: badgeIconSize,
+                  ),
                 ),
               ),
             ),
@@ -120,10 +131,10 @@ class StoryAvatarIndicator extends StatelessWidget {
     final avatarDiameter = radius * 2;
     final ImageProvider imageProvider = profileImage.isNotEmpty
         ? (profileImage.startsWith('http')
-            ? NetworkImage(profileImage) as ImageProvider
-            : (profileImage.startsWith('assets')
-                ? AssetImage(profileImage)
-                : AssetImage(AppAssets.profile)))
+              ? NetworkImage(profileImage) as ImageProvider
+              : (profileImage.startsWith('assets')
+                    ? AssetImage(profileImage)
+                    : AssetImage(AppAssets.profile)))
         : const AssetImage(AppAssets.profile);
 
     final avatarCore = Container(
@@ -191,10 +202,11 @@ class StoryAvatarIndicator extends StatelessWidget {
         gradient: ringGradient,
         boxShadow: [
           BoxShadow(
-            color: (hasCloseFriendsStory
-                    ? const Color(0xFF2ECC40)
-                    : const Color(0xFFD500F9))
-                .withValues(alpha: 0.25),
+            color:
+                (hasCloseFriendsStory
+                        ? const Color(0xFF2ECC40)
+                        : const Color(0xFFD500F9))
+                    .withValues(alpha: 0.25),
             blurRadius: 10,
             spreadRadius: 1,
           ),

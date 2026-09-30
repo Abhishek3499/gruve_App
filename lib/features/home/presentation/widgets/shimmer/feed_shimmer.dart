@@ -56,8 +56,8 @@ class FeedShimmer extends StatelessWidget {
             // ── Bottom-left: user info + caption ─────────────────────────
             Positioned(
               left: 16,
-              right: 90,
-              bottom: 24 + bottomInset,
+              right: 62,
+              bottom: bottomInset - 16,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -95,8 +95,8 @@ class FeedShimmer extends StatelessWidget {
 
             // ── Bottom-right: action bar ──────────────────────────────────
             Positioned(
-              right: 16,
-              bottom: 50 + bottomInset,
+              right: 4,
+              bottom: 8 + bottomInset,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: const [

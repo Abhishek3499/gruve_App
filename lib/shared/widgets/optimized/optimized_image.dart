@@ -15,7 +15,6 @@ class _OptimizedImage extends StatelessWidget {
   final Widget? errorWidget;
 
   const _OptimizedImage({
-    super.key,
     required this.imageUrl,
     this.width,
     this.height,
@@ -163,10 +162,12 @@ class OptimizedAvatar extends StatelessWidget {
     );
   }
 
+  static final RegExp _whitespaceRegex = RegExp(r'\s+');
+
   String _getInitials(String value) {
     final parts = value
         .trim()
-        .split(RegExp(r'\s+'))
+        .split(_whitespaceRegex)
         .where((part) => part.isNotEmpty)
         .toList();
     if (parts.isEmpty) return '?';

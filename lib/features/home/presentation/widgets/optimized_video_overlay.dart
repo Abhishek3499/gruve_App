@@ -19,6 +19,7 @@ class OptimizedVideoOverlay extends ConsumerStatefulWidget {
   final VideoFeedController controller;
   final VoidCallback onOwnProfileTap;
   final int currentIndex;
+  final VoidCallback? onComment;
 
   const OptimizedVideoOverlay({
     super.key,
@@ -27,6 +28,7 @@ class OptimizedVideoOverlay extends ConsumerStatefulWidget {
     required this.controller,
     required this.onOwnProfileTap,
     required this.currentIndex,
+    this.onComment,
   });
 
   @override
@@ -111,8 +113,8 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
         ),
         Positioned(
           left: 0,
-          right: 80,
-          bottom: 24 + bottomInset,
+          right: 62,
+          bottom: bottomInset - 16 + (MediaQuery.sizeOf(context).height * 0.02),
           child: VideoUserInfo(
             username: post.username,
             caption: post.caption,
@@ -130,8 +132,8 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
           ),
         ),
         Positioned(
-          right: 16,
-          bottom: 50 + bottomInset,
+          right: 4,
+          bottom: 8 + bottomInset,
           child: Consumer(
             key: ValueKey(post.id),
             builder: (context, ref, _) {
@@ -160,19 +162,23 @@ class _OptimizedVideoOverlayState extends ConsumerState<OptimizedVideoOverlay> {
                   ref.read(postLikeNotifierProvider.notifier).toggleLike(post);
                 },
                 onComment: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => CommentSheet(
-                      postId: post.id,
-                      onCommentAdded: () {
-                        setState(() {
-                          post.commentsCount++;
-                        });
-                      },
-                    ),
-                  );
+                  if (widget.onComment != null) {
+                    widget.onComment!();
+                  } else {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => CommentSheet(
+                        postId: post.id,
+                        onCommentAdded: () {
+                          setState(() {
+                            post.commentsCount++;
+                          });
+                        },
+                      ),
+                    );
+                  }
                 },
                 onShare: () {
                   showModalBottomSheet(

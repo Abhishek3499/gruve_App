@@ -41,21 +41,21 @@ class ProfileHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         /// Top menu icon (Right aligned)
-        Row(
-          children: [
-            const SizedBox(width: 20),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white, size: 28),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 12, top: 0, bottom: 0),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: const Icon(Icons.menu, color: Colors.white, size: 18),
               onPressed: () {
                 AppLogger.d("[ProfileHeader] Menu button tapped");
                 ProfileMenuDrawer.show(context, profileImage: profileImage);
               },
             ),
-            const SizedBox(width: 8),
-          ],
+          ),
         ),
-        const SizedBox(height: 10),
 
         /// Avatar + User Info Row
         Padding(
@@ -66,6 +66,7 @@ class ProfileHeader extends StatelessWidget {
               /// Avatar with Neon Glow and Camera Badge
               StoryAvatarIndicator(
                 profileImage: profileImage,
+                radius: 23,
                 hasActiveStory: hasActiveStory,
                 // Seen/unseen doesn't apply to your own story — always show
                 // the vivid ring (never the faded "seen" style) while active.
@@ -92,7 +93,7 @@ class ProfileHeader extends StatelessWidget {
                   }
                 },
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 12),
 
               /// User Info: Name, Username, Bio (NO blue tick)
               Expanded(
@@ -104,29 +105,29 @@ class ProfileHeader extends StatelessWidget {
                       fullName.isNotEmpty ? fullName : "No Name",
                       style: const TextStyle(
                         color: AppColors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       username.isNotEmpty ? username : "@username",
                       style: const TextStyle(
                         color: Color(0xFFBA68C8),
-                        fontSize: 15,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (bio.trim().isNotEmpty) ...[
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 2),
                       Text(
                         bio.trim(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 13,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.normal,
-                          height: 1.25,
+                          height: 1.18,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -138,7 +139,7 @@ class ProfileHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 6),
 
         /// Action Buttons: Edit Profile & Share Profile
         Padding(
@@ -156,7 +157,7 @@ class ProfileHeader extends StatelessWidget {
                   onProfileUpdated: onProfileUpdated,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: ShareProfileButton(
                   onTap: () {

@@ -81,13 +81,9 @@ class VideoTopBar extends StatelessWidget {
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              Container(
+                              SizedBox(
                                 width: 42,
                                 height: 42,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
                                 child: Center(
                                   child: SizedBox(
                                     height: 25,

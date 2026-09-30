@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,11 +14,14 @@ import 'package:gruve_app/main.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
+import 'package:gruve_app/features/story_preview/presentation/notifiers/post_like_notifier.dart';
 import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/presentation/widgets/optimized_video_overlay.dart';
+import 'package:gruve_app/features/home/presentation/widgets/double_tap_heart_overlay.dart';
 import 'package:gruve_app/features/user_profile/presentation/notifiers/block_notifier.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_top_bar.dart';
 import 'package:gruve_app/features/home/presentation/widgets/shimmer/feed_shimmer.dart';
+import 'package:gruve_app/features/comments/presentation/widgets/comment_sheet.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 
@@ -48,6 +52,7 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
   int _lastPaginationTriggerItemCount = 0;
   String? _lastSurfacedLoadError;
   late final VoidCallback _loadErrorListener;
+  double _horizontalDragDistance = 0.0;
 
   @override
   void initState() {
@@ -362,87 +367,134 @@ class _VideoFeedState extends ConsumerState<VideoFeed> with RouteAware {
       _controller.feedStructureRevision,
     ]);
 
-    return Stack(
-      children: [
-        ListenableBuilder(
-          listenable: feedPresentationListenable,
-          builder: (context, _) {
-            final showInitialLoader = _controller.isInitialFeedLoading;
-            final showEmptyState =
-                !_controller.isInitialFeedLoading &&
-                _controller.mediaUrls.isEmpty &&
-                !_controller.isRefreshing;
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) {
+        if (_controller.isCommentsOpen) return;
+        _horizontalDragDistance = 0.0;
+      },
+      onHorizontalDragUpdate: (details) {
+        if (_controller.isCommentsOpen) return;
+        _horizontalDragDistance += details.primaryDelta ?? 0.0;
+      },
+      onHorizontalDragCancel: () {
+        _horizontalDragDistance = 0.0;
+      },
+      onHorizontalDragEnd: (details) {
+        if (_controller.isCommentsOpen) return;
+        final velocity = details.primaryVelocity ?? 0.0;
+        const minDistance = 50.0;
+        const minVelocity = 250.0;
 
-            if (showInitialLoader) return _buildInitialLoader();
-            if (showEmptyState) return _buildEmptyState();
-            return const SizedBox.shrink();
-          },
-        ),
-        ListenableBuilder(
-          listenable: feedPresentationListenable,
-          builder: (context, pageViewHost) {
-            if (_controller.isInitialFeedLoading ||
-                _controller.mediaUrls.isEmpty) {
+        // Swipe right (left to right) -> Subscribed
+        if (velocity > minVelocity || _horizontalDragDistance > minDistance) {
+          if (selectedContentTab != 'Subscribed') {
+            HapticFeedback.lightImpact();
+            _onTabChanged('Subscribed');
+          }
+        }
+        // Swipe left (right to left) -> For You
+        else if (velocity < -minVelocity ||
+            _horizontalDragDistance < -minDistance) {
+          if (selectedContentTab != 'For You') {
+            HapticFeedback.lightImpact();
+            _onTabChanged('For You');
+          }
+        }
+        _horizontalDragDistance = 0.0;
+      },
+      child: Stack(
+        children: [
+          ListenableBuilder(
+            listenable: feedPresentationListenable,
+            builder: (context, _) {
+              final showInitialLoader = _controller.isInitialFeedLoading;
+              final showEmptyState =
+                  !_controller.isInitialFeedLoading &&
+                  _controller.mediaUrls.isEmpty &&
+                  !_controller.isRefreshing;
+
+              if (showInitialLoader) return _buildInitialLoader();
+              if (showEmptyState) return _buildEmptyState();
               return const SizedBox.shrink();
-            }
-            return pageViewHost!;
-          },
-          child: ValueListenableBuilder<int>(
-            valueListenable: _controller.feedStructureRevision,
-            builder: (context, revision, _) {
-              return NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  _onFeedScroll(notification);
-                  return false;
-                },
-                child: RefreshIndicator(
-                  notificationPredicate: (notification) =>
-                      notification.depth == 0 &&
-                      _controller.currentIndex.value == 0,
-                  onRefresh: _refreshFeed,
-                  color: Colors.white,
-                  backgroundColor: Colors.grey[800],
-                  child: PageView.builder(
-                    key: ValueKey(_controller.currentFeed),
-                    controller: _pageController,
-                    scrollDirection: Axis.vertical,
-                    allowImplicitScrolling: true,
-                    onPageChanged: _onPageChanged,
-                    itemCount: _controller.mediaUrls.length,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: PageScrollPhysics(
-                        parent: ClampingScrollPhysics(),
-                      ),
-                    ),
-                    itemBuilder: (context, index) {
-                      final post = _controller.posts[index];
-                      final url = _controller.mediaUrls[index].trim();
-                      return FeedItemWidget(
-                        key: ValueKey(
-                          post.id.isNotEmpty ? 'feed_${post.id}' : 'feed_$url',
-                        ),
-                        index: index,
-                        controller: _controller,
-                        selectedTab: selectedContentTab,
-                        onTabChanged: _onTabChanged,
-                        onOwnProfileTap: () => widget.onTabChanged(4),
-                      );
-                    },
-                  ),
-                ),
-              );
             },
           ),
-        ),
-        ValueListenableBuilder<bool>(
-          valueListenable: _controller.isLoadingMoreListenable,
-          builder: (context, isLoadingMore, child) => _buildPagingLoader(),
-        ),
-        VideoTopBar(
-          selectedTab: selectedContentTab,
-          onTabChanged: _onTabChanged,
-        ),
-      ],
+          ListenableBuilder(
+            listenable: feedPresentationListenable,
+            builder: (context, pageViewHost) {
+              if (_controller.isInitialFeedLoading ||
+                  _controller.mediaUrls.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return pageViewHost!;
+            },
+            child: ValueListenableBuilder<int>(
+              valueListenable: _controller.feedStructureRevision,
+              builder: (context, revision, _) {
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    _onFeedScroll(notification);
+                    return false;
+                  },
+                  child: RefreshIndicator(
+                    notificationPredicate: (notification) =>
+                        !_controller.isCommentsOpen &&
+                        notification.depth == 0 &&
+                        _controller.currentIndex.value == 0,
+                    onRefresh: _refreshFeed,
+                    color: Colors.white,
+                    backgroundColor: Colors.grey[800],
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _controller.isCommentsOpenNotifier,
+                      builder: (context, isCommentsOpen, _) {
+                        return PageView.builder(
+                          key: ValueKey(_controller.currentFeed),
+                          controller: _pageController,
+                          scrollDirection: Axis.vertical,
+                          allowImplicitScrolling: true,
+                          onPageChanged: _onPageChanged,
+                          itemCount: _controller.mediaUrls.length,
+                          physics: isCommentsOpen
+                              ? const NeverScrollableScrollPhysics()
+                              : const AlwaysScrollableScrollPhysics(
+                                  parent: PageScrollPhysics(
+                                    parent: ClampingScrollPhysics(),
+                                  ),
+                                ),
+                          itemBuilder: (context, index) {
+                            final post = _controller.posts[index];
+                            final url = _controller.mediaUrls[index].trim();
+                            return FeedItemWidget(
+                              key: ValueKey(
+                                post.id.isNotEmpty
+                                    ? 'feed_${post.id}'
+                                    : 'feed_$url',
+                              ),
+                              index: index,
+                              controller: _controller,
+                              selectedTab: selectedContentTab,
+                              onTabChanged: _onTabChanged,
+                              onOwnProfileTap: () => widget.onTabChanged(4),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _controller.isLoadingMoreListenable,
+            builder: (context, isLoadingMore, child) => _buildPagingLoader(),
+          ),
+          VideoTopBar(
+            selectedTab: selectedContentTab,
+            onTabChanged: _onTabChanged,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -557,7 +609,7 @@ class _PlayPauseAnimationOverlayState extends State<PlayPauseAnimationOverlay>
   }
 }
 
-class FeedItemWidget extends StatefulWidget {
+class FeedItemWidget extends ConsumerStatefulWidget {
   final int index;
   final VideoFeedController controller;
   final String selectedTab;
@@ -574,13 +626,84 @@ class FeedItemWidget extends StatefulWidget {
   });
 
   @override
-  State<FeedItemWidget> createState() => _FeedItemWidgetState();
+  ConsumerState<FeedItemWidget> createState() => _FeedItemWidgetState();
 }
 
-class _FeedItemWidgetState extends State<FeedItemWidget> {
+class _HeartTapInfo {
+  final int id;
+  final Offset position;
+  _HeartTapInfo({required this.id, required this.position});
+}
+
+class _FeedItemWidgetState extends ConsumerState<FeedItemWidget>
+    with SingleTickerProviderStateMixin {
   bool _isPausedByUser = false;
   bool _overlayIsPlayingIcon = false;
   int _overlayTriggerCounter = 0;
+  final List<_HeartTapInfo> _activeHearts = [];
+  Offset? _lastDoubleTapPosition;
+  int _heartCounter = 0;
+
+  late final AnimationController _commentAnimationController;
+  late final Animation<double> _commentCurvedAnimation;
+  bool _isCommentsOpen = false;
+  bool _isMuted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _commentCurvedAnimation = CurvedAnimation(
+      parent: _commentAnimationController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _commentAnimationController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) {
+        widget.controller.isCommentsOpen = false;
+        if (mounted) {
+          setState(() {
+            _isCommentsOpen = false;
+          });
+        }
+      } else if (status == AnimationStatus.forward) {
+        widget.controller.isCommentsOpen = true;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _commentAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _openComments() {
+    setState(() {
+      _isCommentsOpen = true;
+    });
+    widget.controller.isCommentsOpen = true;
+    _commentAnimationController.forward();
+  }
+
+  void _closeComments() {
+    FocusScope.of(context).unfocus();
+    _commentAnimationController.reverse();
+  }
+
+  void _toggleMute() {
+    final videoController = widget.controller.controllerForMediaIndex(
+      widget.index,
+    );
+    if (videoController == null) return;
+    setState(() {
+      _isMuted = !_isMuted;
+      videoController.setVolume(_isMuted ? 0.0 : 1.0);
+    });
+  }
 
   void _onVideoTap() {
     widget.controller.togglePlayPause();
@@ -592,6 +715,24 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
       _isPausedByUser = !isPlaying;
       _overlayIsPlayingIcon = isPlaying;
       _overlayTriggerCounter++;
+    });
+  }
+
+  void _onDoubleTapDown(TapDownDetails details) {
+    _lastDoubleTapPosition = details.localPosition;
+  }
+
+  void _onDoubleTap(Post post) {
+    final likeState = ref.read(postLikeNotifierProvider);
+    if (!likeState.isLiked(post)) {
+      ref.read(postLikeNotifierProvider.notifier).toggleLike(post);
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+    final position = _lastDoubleTapPosition ?? const Offset(200, 350);
+    final tapId = ++_heartCounter;
+    setState(() {
+      _activeHearts.add(_HeartTapInfo(id: tapId, position: position));
     });
   }
 
@@ -629,82 +770,260 @@ class _FeedItemWidgetState extends State<FeedItemWidget> {
     );
 
     return RepaintBoundary(
-      child: GestureDetector(
-        onTap: effectiveVideo ? _onVideoTap : null,
-        child: Stack(
-          children: [
-            Container(
-              color: Colors.black,
-              child: FeedMediaContent(
-                index: widget.index,
-                controller: widget.controller,
-                url: url,
-                posterUrl: post.feedPosterUrl,
-                isVideo: effectiveVideo,
-                isValidNetworkUrl: isValidNetworkUrl,
-                postId: post.id,
-                authorUserId: post.userId,
-              ),
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: widget.controller.currentIndex,
-              // Toggle visibility only — keep OptimizedVideoOverlay/VideoUserInfo
-              // mounted across swipes instead of switching between SizedBox.shrink()
-              // and Stack (different widget types at the same slot force Flutter to
-              // destroy and recreate the whole overlay subtree, including its async
-              // profile-identity resolution and gesture recognizers, on every swipe).
-              builder: (context, currentIdx, overlayStack) {
-                return Offstage(
-                  offstage: currentIdx != widget.index,
-                  child: overlayStack,
-                );
-              },
-              child: Stack(
-                children: [
-                  OptimizedVideoOverlay(
-                    selectedTab: widget.selectedTab,
-                    onTabChanged: widget.onTabChanged,
-                    controller: widget.controller,
-                    onOwnProfileTap: widget.onOwnProfileTap,
-                    currentIndex: widget.index,
+      child: PopScope(
+        canPop: !_isCommentsOpen && _commentAnimationController.value == 0.0,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && (_isCommentsOpen || _commentAnimationController.value > 0.0)) {
+            _closeComments();
+          }
+        },
+        child: AnimatedBuilder(
+          animation: _commentCurvedAnimation,
+          builder: (context, _) {
+            final t = _commentCurvedAnimation.value;
+            final isAnimatingOrOpen = t > 0.0 || _isCommentsOpen;
+            final screenSize = MediaQuery.sizeOf(context);
+            final topPadding = MediaQuery.paddingOf(context).top;
+            final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+            final keyboardProgress = (keyboardInset / 280.0).clamp(0.0, 1.0);
+
+            // Target top video card layout in comments mode (9:16 portrait aspect ratio matching screenshot)
+            // When keyboard opens, dynamically compact the video card height so comments remain completely visible and scrollable
+            final normalTargetHeight = screenSize.height * 0.38;
+            final keyboardTargetHeight = (screenSize.height * 0.16).clamp(100.0, 130.0);
+            final targetHeight = lerpDouble(normalTargetHeight, keyboardTargetHeight, keyboardProgress)!;
+
+            final normalTargetTop = topPadding + 6.0;
+            final keyboardTargetTop = topPadding + 2.0;
+            final targetTop = lerpDouble(normalTargetTop, keyboardTargetTop, keyboardProgress)!;
+
+            final targetWidth = targetHeight * (9.0 / 16.0);
+            final targetHoriz = ((screenSize.width - targetWidth) / 2).clamp(0.0, screenSize.width / 2);
+            final targetRadius = lerpDouble(26.0, 18.0, keyboardProgress)!;
+
+            final currentTop = lerpDouble(0.0, targetTop, t)!;
+            final currentHoriz = lerpDouble(0.0, targetHoriz, t)!;
+            final currentHeight = lerpDouble(screenSize.height, targetHeight, t)!;
+            final currentRadius = lerpDouble(0.0, targetRadius, t)!;
+
+            return Stack(
+              children: [
+                // Solid black background behind entire feed item
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black,
                   ),
-                  if (effectiveVideo && _overlayTriggerCounter > 0)
-                    PlayPauseAnimationOverlay(
-                      key: ValueKey(_overlayTriggerCounter),
-                      isPlaying: _overlayIsPlayingIcon,
-                    ),
-                  if (_isPausedByUser &&
-                      effectiveVideo &&
-                      videoController != null)
-                    ValueListenableBuilder<VideoPlayerValue>(
-                      valueListenable: videoController,
-                      builder: (context, value, child) {
-                        if (!value.isInitialized || value.isPlaying) {
-                          return const SizedBox.shrink();
-                        }
-                        return IgnorePointer(
-                          child: Center(
+                ),
+
+                // Video Container that smoothly morphs size, position, and corner radius
+                Positioned(
+                  top: currentTop,
+                  left: currentHoriz,
+                  right: currentHoriz,
+                  height: currentHeight,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(currentRadius),
+                    child: Stack(
+                      children: [
+                        // Media content
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: effectiveVideo ? _onVideoTap : null,
+                            onDoubleTapDown: isAnimatingOrOpen ? null : _onDoubleTapDown,
+                            onDoubleTap: isAnimatingOrOpen ? null : () => _onDoubleTap(post),
                             child: Container(
-                              width: 70,
-                              height: 70,
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.5),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.pause_rounded,
-                                color: Colors.white,
-                                size: 45,
+                              color: Colors.black,
+                              child: FeedMediaContent(
+                                index: widget.index,
+                                controller: widget.controller,
+                                url: url,
+                                posterUrl: post.feedPosterUrl,
+                                isVideo: effectiveVideo,
+                                isValidNetworkUrl: isValidNetworkUrl,
+                                postId: post.id,
+                                authorUserId: post.userId,
                               ),
                             ),
                           ),
-                        );
-                      },
+                        ),
+
+                        // Normal Overlays (User info + action buttons)
+                        if (t < 0.99)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              ignoring: isAnimatingOrOpen,
+                              child: Opacity(
+                                opacity: (1.0 - (t * 1.5)).clamp(0.0, 1.0),
+                              child: ValueListenableBuilder<int>(
+                                valueListenable: widget.controller.currentIndex,
+                                builder: (context, currentIdx, overlayStack) {
+                                  return Offstage(
+                                    offstage: currentIdx != widget.index,
+                                    child: overlayStack,
+                                  );
+                                },
+                                child: Stack(
+                                  children: [
+                                    OptimizedVideoOverlay(
+                                      selectedTab: widget.selectedTab,
+                                      onTabChanged: widget.onTabChanged,
+                                      controller: widget.controller,
+                                      onOwnProfileTap: widget.onOwnProfileTap,
+                                      currentIndex: widget.index,
+                                      onComment: _openComments,
+                                    ),
+                                    if (effectiveVideo && _overlayTriggerCounter > 0)
+                                      PlayPauseAnimationOverlay(
+                                        key: ValueKey(_overlayTriggerCounter),
+                                        isPlaying: _overlayIsPlayingIcon,
+                                      ),
+                                    ..._activeHearts.map((heart) {
+                                      return DoubleTapHeartOverlay(
+                                        key: ValueKey('heart_${heart.id}'),
+                                        position: heart.position,
+                                        onAnimationComplete: () {
+                                          if (mounted) {
+                                            setState(() {
+                                              _activeHearts.removeWhere(
+                                                (h) => h.id == heart.id,
+                                              );
+                                            });
+                                          }
+                                        },
+                                      );
+                                    }),
+                                    if (_isPausedByUser &&
+                                        effectiveVideo &&
+                                        videoController != null)
+                                      ValueListenableBuilder<VideoPlayerValue>(
+                                        valueListenable: videoController,
+                                        builder: (context, value, child) {
+                                          if (!value.isInitialized ||
+                                              value.isPlaying) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          return IgnorePointer(
+                                            child: Center(
+                                              child: Container(
+                                                width: 70,
+                                                height: 70,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.5),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.pause_rounded,
+                                                  color: Colors.white,
+                                                  size: 45,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Volume / Mute indicator button in bottom right of scaled video
+                        if (isAnimatingOrOpen && t > 0.3 && effectiveVideo)
+                          Positioned(
+                            right: 12,
+                            bottom: 12,
+                            child: Opacity(
+                              opacity: ((t - 0.3) / 0.7).clamp(0.0, 1.0),
+                              child: GestureDetector(
+                                onTap: _toggleMute,
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.65),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _isMuted
+                                        ? Icons.volume_off_rounded
+                                        : Icons.volume_up_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-            ),
-          ],
+                  ),
+                ),
+
+                // Top backdrop click-outside area to close comment sheet
+                if (isAnimatingOrOpen)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: currentTop + currentHeight + 8,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: _closeComments,
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+
+                // Comment Sheet sliding in from bottom up to docked position
+                if (isAnimatingOrOpen)
+                  Positioned(
+                    top: currentTop + currentHeight + 8,
+                    left: 0,
+                    right: 0,
+                    bottom: keyboardInset,
+                    child: RepaintBoundary(
+                      child: Transform.translate(
+                        offset: Offset(
+                          0,
+                          (1.0 - t) * (screenSize.height * 0.65),
+                        ),
+                        child: GestureDetector(
+                          onVerticalDragUpdate: (details) {
+                            if (details.primaryDelta! > 0) {
+                              _commentAnimationController.value -=
+                                  details.primaryDelta! /
+                                  (screenSize.height * 0.65);
+                            }
+                          },
+                          onVerticalDragEnd: (details) {
+                            if (_commentAnimationController.value < 0.75 ||
+                                (details.primaryVelocity ?? 0) > 300) {
+                              _closeComments();
+                            } else {
+                              _commentAnimationController.forward();
+                            }
+                          },
+                          child: CommentSheet(
+                            key: ValueKey('comment_sheet_${post.id}'),
+                            postId: post.id,
+                            isEmbedded: true,
+                            onClose: _closeComments,
+                            onCommentAdded: () {
+                              if (mounted) {
+                                setState(() {
+                                  post.commentsCount++;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

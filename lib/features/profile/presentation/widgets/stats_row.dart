@@ -28,7 +28,7 @@ class StatsRow extends StatelessWidget {
 
   Widget buildStat(String number, String label, [VoidCallback? onTap]) {
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -36,14 +36,18 @@ class StatsRow extends StatelessWidget {
             number,
             style: const TextStyle(
               color: AppColors.white,
-              fontSize: 20,
+              fontSize: 13.5,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 1.5),
           Text(
             label,
-            style: const TextStyle(color: AppColors.white, fontSize: 14),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -53,10 +57,10 @@ class StatsRow extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         splashColor: Colors.white12,
         highlightColor: Colors.white10,
         child: content,
@@ -66,13 +70,13 @@ class StatsRow extends StatelessWidget {
 
   Widget buildDivider() {
     return Container(
-      height: 40,
-      width: 1.2,
+      height: 18,
+      width: 1.0,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             Colors.white.withValues(alpha: 0.1),
-            Colors.white.withValues(alpha: 0.6),
+            Colors.white.withValues(alpha: 0.5),
             Colors.white.withValues(alpha: 0.1),
           ],
         ),
@@ -83,7 +87,7 @@ class StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

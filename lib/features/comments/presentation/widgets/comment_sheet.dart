@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
+import 'package:gruve_app/core/auth/current_user_notifier.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/core/services/profile_identity_service.dart';
@@ -11,18 +14,27 @@ import 'package:gruve_app/features/comments/presentation/widgets/comment_tile.da
 import 'package:gruve_app/features/comments/presentation/widgets/shimmer/comment_shimmer.dart';
 import 'package:gruve_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:gruve_app/features/user_profile/presentation/screens/user_profile_screen.dart';
+import 'package:gruve_app/shared/widgets/optimized/optimized_image.dart';
 
-class CommentSheet extends StatefulWidget {
+class CommentSheet extends ConsumerStatefulWidget {
   final String postId;
   final VoidCallback? onCommentAdded;
+  final bool isEmbedded;
+  final VoidCallback? onClose;
 
-  const CommentSheet({super.key, required this.postId, this.onCommentAdded});
+  const CommentSheet({
+    super.key,
+    required this.postId,
+    this.onCommentAdded,
+    this.isEmbedded = false,
+    this.onClose,
+  });
 
   @override
-  State<CommentSheet> createState() => _CommentSheetState();
+  ConsumerState<CommentSheet> createState() => _CommentSheetState();
 }
 
-class _CommentSheetState extends State<CommentSheet> {
+class _CommentSheetState extends ConsumerState<CommentSheet> {
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _commentFocusNode = FocusNode();
@@ -41,7 +53,16 @@ class _CommentSheetState extends State<CommentSheet> {
   @override
   void initState() {
     super.initState();
+    _commentFocusNode.addListener(_onFocusChange);
     _fetchComments();
+  }
+
+  void _onFocusChange() {
+    if (_commentFocusNode.hasFocus && _replyingTo == null) {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted && _replyingTo == null) _scrollToBottom();
+      });
+    }
   }
 
   Future<void> _fetchComments() async {
@@ -74,7 +95,7 @@ class _CommentSheetState extends State<CommentSheet> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -108,7 +129,7 @@ class _CommentSheetState extends State<CommentSheet> {
         offset: _commentController.text.length,
       );
     });
-    FocusScope.of(context).requestFocus(_commentFocusNode);
+    _commentFocusNode.requestFocus();
   }
 
   void _cancelReply() {
@@ -304,40 +325,91 @@ class _CommentSheetState extends State<CommentSheet> {
 
   @override
   void dispose() {
+    _commentFocusNode.removeListener(_onFocusChange);
     _commentController.dispose();
     _scrollController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
   }
 
+  static const List<String> _quickEmojis = [
+    '❤️',
+    '🙌',
+    '🔥',
+    '👏',
+    '😢',
+    '😍',
+    '😮',
+    '😂',
+  ];
+
+  void _insertEmoji(String emoji) {
+    HapticFeedback.lightImpact();
+    final text = _commentController.text;
+    final selection = _commentController.selection;
+    if (selection.isValid && selection.start >= 0) {
+      final newText = text.replaceRange(selection.start, selection.end, emoji);
+      _commentController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: selection.start + emoji.length),
+      );
+    } else {
+      _commentController.text = '$text$emoji';
+      _commentController.selection = TextSelection.collapsed(
+        offset: _commentController.text.length,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserNotifierProvider);
+    final userAvatarUrl = currentUser.profileImageUrl;
+    final username = (currentUser.username != null && currentUser.username!.isNotEmpty)
+        ? currentUser.username!
+        : 'You';
+
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomPadding = keyboardInset > 0
+        ? 8.0
+        : (bottomInset > 0 ? bottomInset + 12.0 : 16.0);
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.70,
+      height: widget.isEmbedded ? null : MediaQuery.of(context).size.height * 0.70,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [AppColors.softPurple, AppColors.sheetDark],
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
       ),
       child: Column(
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white54,
-              borderRadius: BorderRadius.circular(2),
+          // Drag handle
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onClose,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white54,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
             ),
           ),
 
           Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 12.0,
+              horizontal: 18.0,
+              vertical: 6.0,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -371,19 +443,25 @@ class _CommentSheetState extends State<CommentSheet> {
                 ? const Center(
                     child: Text(
                       "No comments yet. Be the first!",
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   )
                 : ListView.builder(
                     controller: _scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: 16,
+                      vertical: 8,
                     ),
                     itemCount: _comments.length,
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
                       return CommentTile(
+                        key: ValueKey(comment.id),
                         comment: comment,
                         rootId: comment.id,
                         isExpanded: _expandedReplies.contains(comment.id),
@@ -407,13 +485,19 @@ class _CommentSheetState extends State<CommentSheet> {
 
           if (_replyingTo != null)
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       'Replying to @${_replyingTo!.user.username}',
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   InkWell(
@@ -428,67 +512,112 @@ class _CommentSheetState extends State<CommentSheet> {
               ),
             ),
 
+          // Quick Emoji Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: _quickEmojis.map((emoji) {
+                return GestureDetector(
+                  onTap: () => _insertEmoji(emoji),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Bottom Input Row
           Container(
             margin: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              bottom:
-                  MediaQuery.of(context).viewInsets.bottom +
-                  MediaQuery.paddingOf(context).bottom +
-                  16,
-              top: 8,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(50, 57, 6, 79),
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(
-                color: const Color.fromARGB(80, 240, 58, 250),
-                width: 2,
-              ),
+              left: 12,
+              right: 12,
+              bottom: bottomPadding,
+              top: 4,
             ),
             child: Row(
               children: [
+                OptimizedAvatar(
+                  imageUrl: userAvatarUrl,
+                  name: username,
+                  radius: 18,
+                  fallback: Image.asset(AppAssets.user, fit: BoxFit.cover),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    focusNode: _commentFocusNode,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    minLines: 1,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      hintText: 'Add a comment...',
-                      hintStyle: TextStyle(color: Colors.white70, fontSize: 14),
-                      border: InputBorder.none,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(50, 57, 6, 79),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: const Color.fromARGB(80, 240, 58, 250),
+                        width: 1.5,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: TextField(
+                      controller: _commentController,
+                      focusNode: _commentFocusNode,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _submitComment(),
+                      minLines: 1,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        hintText: 'What do you think of this?',
+                        hintStyle: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: InkWell(
-                    onTap: _isSending ? null : _submitComment,
-                    borderRadius: BorderRadius.circular(22),
-                    child: Center(
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.loaderDark,
-                              ),
-                            )
-                          : Image.asset(
-                              AppAssets.sendbutton,
-                              height: 32,
-                              width: 32,
-                            ),
-                    ),
-                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _commentController,
+                  builder: (context, val, _) {
+                    final hasText = val.text.trim().isNotEmpty;
+                    return SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: InkWell(
+                        onTap: (_isSending || !hasText) ? null : _submitComment,
+                        borderRadius: BorderRadius.circular(19),
+                        child: Center(
+                          child: _isSending
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.loaderDark,
+                                  ),
+                                )
+                              : Image.asset(
+                                  AppAssets.sendbutton,
+                                  height: 30,
+                                  width: 30,
+                                ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

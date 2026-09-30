@@ -96,6 +96,9 @@ class VideoFeedController {
   final ValueNotifier<int> _videoControllersRevision = ValueNotifier(0);
   final ValueNotifier<bool> _isLoadingMoreNotifier = ValueNotifier(false);
   final ValueNotifier<String?> _loadErrorNotifier = ValueNotifier(null);
+  final ValueNotifier<bool> isCommentsOpenNotifier = ValueNotifier(false);
+  bool get isCommentsOpen => isCommentsOpenNotifier.value;
+  set isCommentsOpen(bool value) => isCommentsOpenNotifier.value = value;
   String _currentFeed = 'for_you';
   String get currentFeed => _currentFeed;
 

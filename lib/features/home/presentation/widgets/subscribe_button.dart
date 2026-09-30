@@ -71,15 +71,15 @@ class _SubscribeButtonState extends State<SubscribeButton> {
         );
 
         return SizedBox(
-          height: 32,
+          height: 25,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.white),
               backgroundColor: isSubscribed ? Colors.white : Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
             ),
             onPressed: _isProcessing
                 ? null
@@ -131,7 +131,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               isSubscribed ? 'Subscribed' : 'Subscribe',
               style: TextStyle(
                 color: isSubscribed ? Colors.black : Colors.white,
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -17,7 +17,7 @@ class FilterTabs extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTabSelected(index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isSelected
@@ -27,13 +27,13 @@ class FilterTabs extends StatelessWidget {
                     const Color(0xFF212235).withValues(alpha: 0.3),
                   ],
           ),
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
           text,
           style: TextStyle(
             color: AppColors.white,
-            fontSize: 15,
+            fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

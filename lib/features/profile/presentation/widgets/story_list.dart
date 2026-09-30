@@ -34,10 +34,10 @@ class StoryList extends ConsumerWidget {
 
     // Show normal content
     return SizedBox(
-      height: 102,
+      height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 30),
+        padding: const EdgeInsets.only(left: 18),
         itemCount: highlights.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
@@ -53,7 +53,7 @@ class StoryList extends ConsumerWidget {
   Widget _buildAddStory(BuildContext context, WidgetRef ref, {Key? key}) {
     return Padding(
       key: key,
-      padding: const EdgeInsets.only(right: 18),
+      padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
         onTap: () async {
           _log('[StoryList] Add Story tapped');
@@ -77,17 +77,17 @@ class StoryList extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _HighlightCircle(
-              child: Icon(Icons.add, color: Colors.white, size: 28),
+              child: Icon(Icons.add, color: Colors.white, size: 16),
             ),
-            SizedBox(height: 6),
+            SizedBox(height: 2),
             SizedBox(
-              width: 72,
+              width: 46,
               child: Text(
                 'new',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 12),
+                style: TextStyle(color: Colors.white, fontSize: 9.0),
               ),
             ),
           ],
@@ -104,7 +104,7 @@ class StoryList extends ConsumerWidget {
     final cover = highlight.coverPreviewUrl;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 18),
+      padding: const EdgeInsets.only(right: 10),
       child: GestureDetector(
         onTap: () {
           _log('[StoryList] Highlight item tapped: ${highlight.title}');
@@ -133,23 +133,23 @@ class StoryList extends ConsumerWidget {
                 child: cover != null
                     ? MediaUrlThumbnail(
                         url: cover,
-                        width: 60,
-                        height: 60,
+                        width: 34,
+                        height: 34,
                         fallback: _placeholderIcon(),
                         placeholder: _placeholderIcon(),
                       )
                     : _placeholderIcon(),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 2),
             SizedBox(
-              width: 72,
+              width: 46,
               child: Text(
                 highlight.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: Colors.white, fontSize: 9.0),
               ),
             ),
           ],
@@ -160,34 +160,34 @@ class StoryList extends ConsumerWidget {
 
   Widget _placeholderIcon() {
     return Container(
-      width: 60,
-      height: 60,
+      width: 34,
+      height: 34,
       color: const Color(0xFF212235),
-      child: const Icon(Icons.image_outlined, color: Colors.white70),
+      child: const Icon(Icons.image_outlined, color: Colors.white70, size: 15),
     );
   }
 
   Widget _buildErrorState(BuildContext context, WidgetRef ref) {
     return SizedBox(
-      height: 102,
+      height: 60,
       child: Row(
         children: [
-          const SizedBox(width: 30),
+          const SizedBox(width: 18),
           // Add Story button (always visible)
           _buildAddStory(context, ref, key: const Key('add_story_error')),
-          const SizedBox(width: 18),
+          const SizedBox(width: 10),
           // Error indicator
           Container(
-            width: 64,
-            height: 64,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.red.withValues(alpha: 0.2),
               border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
             ),
-            child: const Icon(Icons.error_outline, color: Colors.red, size: 24),
+            child: const Icon(Icons.error_outline, color: Colors.red, size: 16),
           ),
-          const SizedBox(width: 18),
+          const SizedBox(width: 10),
           // Retry button
           GestureDetector(
             onTap: () {
@@ -197,14 +197,14 @@ class StoryList extends ConsumerWidget {
                   .refreshProfileData(reason: 'story_list_retry');
             },
             child: Container(
-              width: 64,
-              height: 64,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.blue.withValues(alpha: 0.2),
                 border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
               ),
-              child: const Icon(Icons.refresh, color: Colors.blue, size: 24),
+              child: const Icon(Icons.refresh, color: Colors.blue, size: 16),
             ),
           ),
         ],
@@ -221,9 +221,9 @@ class _HighlightCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 64,
-      height: 64,
-      padding: const EdgeInsets.all(2),
+      width: 38,
+      height: 38,
+      padding: const EdgeInsets.all(1.5),
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(

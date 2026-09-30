@@ -28,56 +28,55 @@ class RightActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 42,
-      height: 230,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0x80990099),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 40),
+      width: 48,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 38),
 
-            /// ❤️ LIKE
-            _ActionIcon(
-              iconPath: isLiked
-                  ? AppAssets
-                        .likeicon // ❤️ liked
-                  : AppAssets.like2, // 🤍 default
-              count: _formatCount(likeCount),
-              onTap: onLike,
-              size: 20,
-            ),
+          const SizedBox(height: 12),
 
-            const SizedBox(height: 8),
+          /// ❤️ LIKE
+          _ActionIcon(
+            iconPath: isLiked
+                ? AppAssets.likeicon // ❤️ liked
+                : AppAssets.like2, // 🤍 default white outline
+            count: _formatCount(likeCount),
+            onTap: onLike,
+            size: 26,
+            color: isLiked ? null : Colors.white,
+          ),
 
-            _ActionIcon(
-              iconPath: AppAssets.commenticon,
-              count: _formatCount(commentCount),
-              onTap: onComment,
-              size: 20,
-            ),
+          const SizedBox(height: 12),
 
-            const SizedBox(height: 8),
+          _ActionIcon(
+            iconPath: AppAssets.commenticon,
+            count: _formatCount(commentCount),
+            onTap: onComment,
+            size: 22,
+            color: Colors.white,
+          ),
 
-            _ActionIcon(
-              iconPath: AppAssets.share,
-              count: _formatCount(shareCount),
-              onTap: onShare,
-              size: 20,
-            ),
+          const SizedBox(height: 12),
 
-            const SizedBox(height: 8),
+          _ActionIcon(
+            iconPath: AppAssets.share,
+            count: _formatCount(shareCount),
+            onTap: onShare,
+            size: 22,
+            color: Colors.white,
+          ),
 
-            _ActionIcon(
-              iconPath: AppAssets.doticon,
-              onTap: onOptions,
-              size: 20,
-            ),
-          ],
-        ),
+          const SizedBox(height: 12),
+
+          _ActionIcon(
+            icon: Icons.more_horiz,
+            onTap: onOptions,
+            size: 22,
+            color: Colors.white,
+          ),
+        ],
       ),
     );
   }
@@ -93,17 +92,21 @@ class RightActionBar extends StatelessWidget {
 }
 
 class _ActionIcon extends StatefulWidget {
-  final String iconPath;
+  final String? iconPath;
+  final IconData? icon;
   final String? count;
   final VoidCallback? onTap;
   final double size;
+  final Color? color;
 
   const _ActionIcon({
-    required this.iconPath,
+    this.iconPath,
+    this.icon,
     this.count,
     this.onTap,
     this.size = 20,
-  });
+    this.color,
+  }) : assert(iconPath != null || icon != null);
 
   @override
   State<_ActionIcon> createState() => _ActionIconState();
@@ -151,11 +154,26 @@ class _ActionIconState extends State<_ActionIcon>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              widget.iconPath,
-              height: widget.size,
-              width: widget.size,
-            ),
+            if (widget.icon != null)
+              Icon(
+                widget.icon,
+                size: widget.size,
+                color: widget.color ?? Colors.white,
+                shadows: const [
+                  Shadow(
+                    blurRadius: 4.0,
+                    color: Colors.black54,
+                    offset: Offset(0.0, 1.0),
+                  ),
+                ],
+              )
+            else if (widget.iconPath != null)
+              Image.asset(
+                widget.iconPath!,
+                height: widget.size,
+                width: widget.size,
+                color: widget.color,
+              ),
 
             if (widget.count != null) ...[
               const SizedBox(height: 1),
@@ -164,7 +182,14 @@ class _ActionIconState extends State<_ActionIcon>
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 4.0,
+                      color: Colors.black54,
+                      offset: Offset(0.0, 1.0),
+                    ),
+                  ],
                 ),
               ),
             ],

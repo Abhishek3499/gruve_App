@@ -296,7 +296,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 10),
                         ProfileHeader(
                           fullName: (user?.fullName ?? '').trim(),
                           username: () {
@@ -326,7 +325,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 );
                           },
                         ),
-                        SizedBox(height: context.rh(22)),
+                        SizedBox(height: context.rh(4)),
                         StatsRow(
                           subscribersCount: controller.stats.subscribersCount,
                           likesCount: controller.stats.likesCount,
@@ -340,9 +339,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             initialTab: 1,
                           ),
                         ),
-                        SizedBox(height: context.rh(25)),
+                        SizedBox(height: context.rh(4)),
                         const StoryList(),
-                        SizedBox(height: context.rh(08)),
+                        SizedBox(height: context.rh(4)),
                         FilterTabs(
                           selectedIndex: selectedTab,
                           onTabSelected: (index) {
@@ -355,7 +354,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             notifier.ensureTabLoaded(index);
                           },
                         ),
-                        SizedBox(height: context.rh(10)),
+                        SizedBox(height: context.rh(4)),
                       ],
                     ),
                   ),
