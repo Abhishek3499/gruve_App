@@ -24,8 +24,14 @@ class AppAssets {
   static const search = 'assets/button/search.png';
   static const back = 'assets/button/back_button.png';
   static const editpro = 'assets/button/edit_icon_in_edit_profile.png';
+
+  // bottom navigation bar (outline icon set)
+  static const navHome = 'assets/button/nav_home.png';
+  static const navMessage = 'assets/button/nav_message.png';
+  static const navSearch = 'assets/button/nav_search.png';
+  static const navProfile = 'assets/button/nav_profile.png';
   //
-  static const gifticon = 'assets/home/gift_icon.gif';
+  static const gifticon = 'assets/home/gift_icon.png';
   static const likeicon = 'assets/home/like_icon.png';
   static const commenticon = 'assets/home/comment_icon.png';
   static const doticon = 'assets/home/3_dot_icon.png';

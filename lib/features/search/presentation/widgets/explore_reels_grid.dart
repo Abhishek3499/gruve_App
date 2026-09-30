@@ -12,6 +12,17 @@ import 'package:gruve_app/features/search/domain/entities/explore_reel_model.dar
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 
+/// Tighter grid metrics than the shared profile grid — the explore/search
+/// reels feed reads better as a dense, near-seamless tiled wall.
+const double _exploreGridSpacing = 3;
+const double _exploreTileRadius = 8;
+const _exploreGridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: 3,
+  crossAxisSpacing: _exploreGridSpacing,
+  mainAxisSpacing: _exploreGridSpacing,
+  childAspectRatio: 3 / 4,
+);
+
 class ExploreReelsGrid extends StatefulWidget {
   final ExploreReelsController controller;
 
@@ -121,7 +132,7 @@ class _ExploreReelsGridState extends State<ExploreReelsGrid> {
           SliverPadding(
             padding: ProfileGridStyle.gridPadding,
             sliver: SliverGrid(
-              gridDelegate: ProfileGridStyle.gridDelegate,
+              gridDelegate: _exploreGridDelegate,
               delegate: SliverChildBuilderDelegate((context, index) {
                 final reel = controller.reels[index];
                 return RepaintBoundary(
@@ -309,7 +320,8 @@ class _ExploreReelTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: ProfileGridTile(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_exploreTileRadius),
         child: Stack(
           fit: StackFit.expand,
           children: [

@@ -30,6 +30,12 @@ class _CustomBottomNavigationBarState
   // reports a zero bottom inset (e.g. mid rotation, or a manufacturer quirk).
   static const double _minBottomGap = 2;
 
+  bool _profilePressed = false;
+
+  void _setProfilePressed(bool value) {
+    if (_profilePressed != value) setState(() => _profilePressed = value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final double bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -71,20 +77,20 @@ class _CustomBottomNavigationBarState
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           NavItem(
-                            imagePath: AppAssets.homelogo,
+                            imagePath: AppAssets.navHome,
                             index: 0,
                             selectedIndex: widget.selectedIndex,
                             onTap: () => widget.onItemSelected(0),
                           ),
                           NavItem(
-                            imagePath: AppAssets.search,
+                            imagePath: AppAssets.navSearch,
                             index: 1,
                             selectedIndex: widget.selectedIndex,
                             onTap: () => widget.onItemSelected(1),
                           ),
                           const SizedBox(width: 38),
                           NavItem(
-                            imagePath: AppAssets.notification,
+                            imagePath: AppAssets.navMessage,
                             index: 3,
                             selectedIndex: widget.selectedIndex,
                             onTap: () => widget.onItemSelected(3),
@@ -113,20 +119,21 @@ class _CustomBottomNavigationBarState
   }
 
   Widget _buildProfileNavItem(BuildContext context) {
-    final (profileImageUrl, username) = ref.watch(
-      currentUserNotifierProvider.select(
-        (s) => (s.profileImageUrl, s.username),
-      ),
+    final profileImageUrl = ref.watch(
+      currentUserNotifierProvider.select((s) => s.profileImageUrl),
     );
     final isActive = widget.selectedIndex == 4;
-    final initials = _getInitials(username);
 
     return GestureDetector(
       onTap: () => widget.onItemSelected(4),
+      onTapDown: (_) => _setProfilePressed(true),
+      onTapUp: (_) => _setProfilePressed(false),
+      onTapCancel: () => _setProfilePressed(false),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        scale: _profilePressed ? 0.82 : 1.0,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -158,9 +165,9 @@ class _CustomBottomNavigationBarState
                           placeholder: (context, url) =>
                               _buildShimmerPlaceholder(),
                           errorWidget: (context, url, error) =>
-                              _buildInitialsPlaceholder(initials, isActive),
+                              _buildDefaultProfileIcon(),
                         )
-                      : _buildInitialsPlaceholder(initials, isActive),
+                      : _buildDefaultProfileIcon(),
                 ),
               ),
             ),
@@ -207,14 +214,9 @@ class _CustomBottomNavigationBarState
     );
   }
 
-  String _getInitials(String? name) {
-    if (name == null || name.trim().isEmpty) return 'U';
-    final cleanName = name.trim().replaceAll(RegExp(r'^@'), '');
-    if (cleanName.isEmpty) return 'U';
-    return cleanName[0].toUpperCase();
-  }
-
-  Widget _buildInitialsPlaceholder(String initials, bool isActive) {
+  /// Shown in place of the avatar when the user has no profile picture set
+  /// (or it fails to load).
+  Widget _buildDefaultProfileIcon() {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -226,16 +228,8 @@ class _CustomBottomNavigationBarState
           end: Alignment.bottomRight,
         ),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        initials,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: isActive ? 12 : 11,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Raleway',
-        ),
-      ),
+      padding: const EdgeInsets.all(4),
+      child: Image.asset(AppAssets.navProfile, color: Colors.white),
     );
   }
 

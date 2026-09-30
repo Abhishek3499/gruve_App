@@ -27,26 +27,26 @@ class SideToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 60,
-      padding: const EdgeInsets.symmetric(vertical: 35),
+      width: 52,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(40),
+        borderRadius: BorderRadius.circular(32),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildMusicButton(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
           _buildTimerButton(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
           _buildFlashButton(),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
           _buildSpeedButton(),
-          // const SizedBox(height: 28),
+          // const SizedBox(height: 18),
           // _buildEffectsButton(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
           _buildemojiButton(),
         ],
       ),
@@ -80,7 +80,7 @@ class SideToolbar extends StatelessWidget {
               child: Icon(
                 isFlashOn ? Icons.flash_on : Icons.flash_off,
                 color: Colors.white,
-                size: 28,
+                size: 22,
               ),
             );
           },
@@ -108,7 +108,7 @@ class SideToolbar extends StatelessWidget {
           child: Icon(
             Icons.speed,
             color: isActive ? AppColors.accentPurple : Colors.white,
-            size: 28,
+            size: 22,
           ),
         );
       },
@@ -126,7 +126,7 @@ class SideToolbar extends StatelessWidget {
           _showComingSoon('Music');
         }
       },
-      child: const Icon(Icons.music_note, color: Colors.white, size: 28),
+      child: const Icon(Icons.music_note, color: Colors.white, size: 22),
     );
   }
 
@@ -141,7 +141,7 @@ class SideToolbar extends StatelessWidget {
           _showComingSoon('Timer');
         }
       },
-      child: const Icon(Icons.timer, color: Colors.white, size: 28),
+      child: const Icon(Icons.timer, color: Colors.white, size: 22),
     );
   }
 
@@ -177,7 +177,7 @@ class SideToolbar extends StatelessWidget {
               onEmojiSelected!(emoji);
             }
           },
-          child: Image.asset(AppAssets.emoji, width: 28, height: 28),
+          child: Image.asset(AppAssets.emoji, width: 22, height: 22),
         );
       },
     );
@@ -185,7 +185,7 @@ class SideToolbar extends StatelessWidget {
 
   /// DISABLED ICON
   Widget _buildDisabledIcon(IconData icon) {
-    return Icon(icon, color: Colors.white.withValues(alpha: 0.4), size: 28);
+    return Icon(icon, color: Colors.white.withValues(alpha: 0.4), size: 22);
   }
 
   void _showComingSoon(String feature) {

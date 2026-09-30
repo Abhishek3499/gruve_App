@@ -190,6 +190,21 @@ class CameraControllerService {
 
     await _controller!.initialize();
 
+    // The camera plugin defaults a freshly-initialized controller's flash
+    // mode to `auto`, not `off` — but the toolbar's flash icon treats any
+    // non-off mode as "on". Without this, the icon would show "on" right
+    // after opening the camera (or switching lenses) while the flash
+    // hardware itself is actually just idle in auto mode, one tap behind
+    // what the icon displays. Reset explicitly so hardware state and the
+    // icon's default "off" both start in sync. Wrapped in try/catch since
+    // some lenses (e.g. most front cameras) have no flash hardware at all.
+    try {
+      await _controller!.setFlashMode(FlashMode.off);
+    } catch (e) {
+      CameraLogger.log('Flash mode reset skipped (no flash hardware?): $e');
+    }
+    _flashModeStreamController.add(_controller!.value.flashMode);
+
     // 🚀 OPTIMIZATION: Run camera settings and zoom queries in the background
     // so the preview stream starts rendering immediately without any delay!
     unawaited(() async {

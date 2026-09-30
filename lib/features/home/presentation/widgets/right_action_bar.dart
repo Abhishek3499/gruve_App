@@ -33,7 +33,7 @@ class RightActionBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 38),
+          _ActionIcon(iconPath: AppAssets.gifticon, onTap: onGift, size: 30),
 
           const SizedBox(height: 12),
 

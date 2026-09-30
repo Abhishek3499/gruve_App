@@ -269,69 +269,65 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             bottom: false,
             child: Column(
               children: [
-                /// HEADER
+                /// HEADER — SEARCH BAR (full width, no back button)
                 Padding(
                   padding: EdgeInsets.all(context.rw(16)),
-                  child: Row(
-                    children: [
-                      BackButton(color: Colors.white, onPressed: _closeSearch),
-                      SizedBox(width: context.rw(22)),
-
-                      /// SEARCH BAR
-                      Expanded(
-                        child: CustomSearchBar(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          onChanged: _onSearchChanged,
-                          onSubmitted: _onSearchSubmitted,
-                        ),
-                      ),
-                    ],
+                  child: CustomSearchBar(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: _onSearchChanged,
+                    onSubmitted: _onSearchSubmitted,
                   ),
                 ),
 
                 /// CONTENT
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.only(bottom: context.rh(34)),
-                    children: [
+                // STATE 1: Empty search with no recent searches - show empty
+                // hint truly centered in the remaining space (a ListView
+                // child only centers within its own shrink-wrapped height,
+                // so this state is rendered outside the list).
+                if (showEmptyState)
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(context.rw(32)),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.search_outlined,
+                              color: Colors.white54,
+                              size: context.rw(48),
+                            ),
+                            SizedBox(height: context.rh(16)),
+                            Text(
+                              'No recent searches',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: context.rf(16),
+                              ),
+                            ),
+                            SizedBox(height: context.rh(8)),
+                            Text(
+                              'Start typing to see suggestions',
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: context.rf(14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.only(bottom: context.rh(34)),
+                      children: [
                       // CHANGED: Single if-else if chain - only ONE state shows at a time
 
-                      // STATE 1: Empty search with no recent searches - show empty hint
-                      if (showEmptyState) ...[
-                        Padding(
-                          padding: EdgeInsets.all(context.rw(32)),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.search_outlined,
-                                  color: Colors.white54,
-                                  size: context.rw(48),
-                                ),
-                                SizedBox(height: context.rh(16)),
-                                Text(
-                                  'No recent searches',
-                                  style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: context.rf(16),
-                                  ),
-                                ),
-                                SizedBox(height: context.rh(8)),
-                                Text(
-                                  'Start typing to see suggestions',
-                                  style: TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: context.rf(14),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ]
                       // STATE 2: Empty search with recent searches - show recent searches only
-                      else if (isEmptySearch && hasRecentSearches) ...[
+                      if (isEmptySearch && hasRecentSearches) ...[
                         Padding(
                           padding: EdgeInsets.fromLTRB(
                             context.rw(16),

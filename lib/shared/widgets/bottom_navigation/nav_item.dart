@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class NavItem extends StatelessWidget {
+class NavItem extends StatefulWidget {
   final IconData? icon;
   final String? imagePath;
   final int index;
@@ -17,15 +17,32 @@ class NavItem extends StatelessWidget {
   }) : assert(icon != null || imagePath != null);
 
   @override
+  State<NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<NavItem> {
+  bool _isPressed = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed != value) setState(() => _isPressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool isActive = selectedIndex == index;
+    final bool isActive = widget.selectedIndex == widget.index;
+    final icon = widget.icon;
+    final imagePath = widget.imagePath;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        scale: _isPressed ? 0.82 : 1.0,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

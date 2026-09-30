@@ -28,9 +28,21 @@ class _StickerOverlayState extends State<StickerOverlay> {
   late double _baseScale;
   late double _baseRotation;
 
-  TextStyle _getTextStyle(StickerData sticker) {
-    TextStyle style = const TextStyle(
-      fontSize: 32,
+  // While a drag/pinch is in progress, the live position/scale/rotation are
+  // tracked here and drive `build()` directly via a local setState — this
+  // keeps every touch-move frame scoped to just this one sticker's subtree
+  // instead of round-tripping through ModeService.notifyListeners(), which
+  // triggers a full CameraScreen rebuild (camera preview, toolbar, etc.) on
+  // every frame and was the source of the choppy movement/zoom. The
+  // committed value is only pushed up to ModeService once, when the
+  // gesture ends.
+  Offset? _dragPosition;
+  double? _dragScale;
+  double? _dragRotation;
+
+  TextStyle _getTextStyle(StickerData sticker, double scale) {
+    TextStyle style = TextStyle(
+      fontSize: 32 * scale,
       fontWeight: FontWeight.bold,
     );
 
@@ -68,8 +80,8 @@ class _StickerOverlayState extends State<StickerOverlay> {
     return style.copyWith(color: sticker.textColor);
   }
 
-  Widget _buildTextContent(StickerData sticker) {
-    final textStyle = _getTextStyle(sticker);
+  Widget _buildTextContent(StickerData sticker, double scale) {
+    final textStyle = _getTextStyle(sticker, scale);
 
     if (sticker.isText) {
       return Container(
@@ -88,14 +100,17 @@ class _StickerOverlayState extends State<StickerOverlay> {
       );
     }
 
-    // Default emoji / original fallback
+    // Default emoji / original fallback — font size scales directly with
+    // sticker.scale (rather than a paint-only Transform) so the widget's
+    // actual layout size, and therefore its pinch-gesture hit area, grows
+    // and shrinks along with what the user visually sees.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Text(
         sticker.text,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 32,
+          fontSize: 32 * scale,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -186,22 +201,40 @@ class _StickerOverlayState extends State<StickerOverlay> {
   @override
   Widget build(BuildContext context) {
     final sticker = widget.sticker;
+    final position = _dragPosition ?? sticker.position;
+    final scale = _dragScale ?? sticker.scale;
+    final rotation = _dragRotation ?? sticker.rotation;
 
     return Positioned(
-      left: sticker.position.dx,
-      top: sticker.position.dy,
+      left: position.dx,
+      top: position.dy,
       child: GestureDetector(
         onScaleStart: (details) {
           _baseScale = sticker.scale;
           _baseRotation = sticker.rotation;
+          setState(() {
+            _dragPosition = sticker.position;
+            _dragScale = sticker.scale;
+            _dragRotation = sticker.rotation;
+          });
           widget.onTap();
         },
         onScaleUpdate: (details) {
-          final updatedPos = sticker.position + details.focalPointDelta;
-          final updatedScale = (_baseScale * details.scale).clamp(0.5, 6.0);
-          final updatedRotation = _baseRotation + details.rotation;
-
-          widget.onUpdate(updatedPos, updatedScale, updatedRotation);
+          setState(() {
+            _dragPosition =
+                (_dragPosition ?? sticker.position) + details.focalPointDelta;
+            _dragScale = (_baseScale * details.scale).clamp(0.5, 6.0);
+            _dragRotation = _baseRotation + details.rotation;
+          });
+        },
+        onScaleEnd: (details) {
+          if (_dragPosition == null) return;
+          widget.onUpdate(_dragPosition!, _dragScale!, _dragRotation!);
+          setState(() {
+            _dragPosition = null;
+            _dragScale = null;
+            _dragRotation = null;
+          });
         },
         onTap: () {
           if (widget.isSelected) {
@@ -217,12 +250,27 @@ class _StickerOverlayState extends State<StickerOverlay> {
               padding: const EdgeInsets.only(top: 16, right: 16),
               child: Transform(
                 alignment: Alignment.center,
-                transform: Matrix4.diagonal3Values(
-                  sticker.scale,
-                  sticker.scale,
-                  1.0,
-                )..rotateZ(sticker.rotation),
+                // Text/emoji stickers bake `scale` into their font size
+                // above so their real layout size (and hit area) tracks
+                // what's on screen; only music stickers (fixed-size badge,
+                // no scalable font) still rely on a paint-only Transform
+                // scale here.
+                transform: sticker.isMusic
+                    ? (Matrix4.diagonal3Values(scale, scale, 1.0)
+                        ..rotateZ(rotation))
+                    : Matrix4.rotationZ(rotation),
                 child: Container(
+                  // Floors the hit-testable box so a shrunk emoji never
+                  // becomes too small to grab — without this, pinching
+                  // inward on a small sticker would miss its (now equally
+                  // small) gesture region and hit the camera preview
+                  // behind it instead, zooming the camera rather than the
+                  // sticker. The glyph itself still renders at its true
+                  // (possibly smaller) size, top-left within this box.
+                  constraints: const BoxConstraints(
+                    minWidth: 56,
+                    minHeight: 56,
+                  ),
                   decoration: BoxDecoration(
                     border: widget.isSelected
                         ? Border.all(color: AppColors.accentPurple, width: 1.5)
@@ -231,7 +279,7 @@ class _StickerOverlayState extends State<StickerOverlay> {
                   ),
                   child: sticker.isMusic
                       ? _buildMusicSticker(sticker)
-                      : _buildTextContent(sticker),
+                      : _buildTextContent(sticker, scale),
                 ),
               ),
             ),
