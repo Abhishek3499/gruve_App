@@ -5,7 +5,6 @@ import 'package:gruve_app/features/message/presentation/screens/message_screen.d
 import 'package:gruve_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:gruve_app/features/search/presentation/screens/search_screen.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/video_service.dart';
-import 'package:gruve_app/features/story_preview/presentation/widgets/post/processing_dialog.dart';
 import 'package:gruve_app/features/camera/presentation/controller/camera_controller_service.dart';
 import 'package:gruve_app/shared/widgets/bottom_navigation/custom_bottom_navigation_bar.dart';
 import 'package:flutter/foundation.dart';
@@ -14,6 +13,7 @@ import 'package:gruve_app/core/media/video_playback_guard.dart';
 import 'package:gruve_app/features/home/presentation/controllers/video_feed_controller.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 import 'package:gruve_app/features/home/presentation/widgets/video_feed.dart';
+import 'package:gruve_app/features/home/presentation/widgets/floating_upload_progress_bubble.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/core/auth/current_user_notifier.dart';
 import 'package:gruve_app/features/auth/presentation/screens/sign_in_screen.dart';
@@ -54,10 +54,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   int _rebuildCount = 0;
 
   bool _cameraFlowInProgress = false;
-  bool _videoProcessingDismissScheduled = false;
-
-  /// True once the share processing [showGeneralDialog] route is on the stack.
-  bool _shareProcessingOverlayVisible = false;
 
   ProviderSubscription<ProfileModel?>? _profileUserSubscription;
 
@@ -115,10 +111,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (!mounted || _isDisposed) return;
       _currentVideoService?.dispose();
       _currentVideoService = null;
-      if (_shareProcessingOverlayVisible) {
-        _shareProcessingOverlayVisible = false;
-        Navigator.of(context).pop();
-      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -304,57 +296,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _startVideoProcessing(bool isVideo) {
-    _videoProcessingDismissScheduled = false;
-    _shareProcessingOverlayVisible = false;
     _currentVideoService = VideoService();
     PostShareFlowBridge.setVideoService(_currentVideoService!);
-
-    final nav = Navigator.of(context);
-
-    final dialogFuture = showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.transparent,
-      barrierLabel: "Processing",
-      pageBuilder: (dialogRouteContext, anim1, anim2) {
-        return StreamBuilder<double>(
-          stream: _currentVideoService!.getProcessingProgress(),
-          initialData: 0.0,
-          builder: (context, snapshot) {
-            final progress = snapshot.data ?? 0.0;
-            if (progress >= 100 && !_videoProcessingDismissScheduled) {
-              _videoProcessingDismissScheduled = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                if (nav.canPop()) nav.pop();
-              });
-            }
-            return ProcessingDialog(
-              progress: progress,
-              isVideo: isVideo,
-              onCancel: () {
-                _currentVideoService?.dispose();
-                _currentVideoService = null;
-                Navigator.of(dialogRouteContext).pop();
-              },
-            );
-          },
-        );
-      },
-      transitionDuration: const Duration(milliseconds: 300),
-      transitionBuilder: (context, anim1, anim2, child) =>
-          FadeTransition(opacity: anim1, child: child),
-    );
-
-    dialogFuture.whenComplete(() {
-      if (!mounted || _isDisposed) return;
-      _shareProcessingOverlayVisible = false;
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isDisposed) return;
-      _shareProcessingOverlayVisible = true;
-    });
+    if (!PostShareFlowBridge.uploadProgress.value.isVisible) {
+      PostShareFlowBridge.startUploadProgress(isVideo: isVideo);
+    }
   }
 
   void _onItemTapped(int index) async {
@@ -596,14 +542,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               extendBody: true,
               resizeToAvoidBottomInset: false,
               backgroundColor: Colors.black,
-              body: IndexedStack(
-                index: currentIndex,
-                children: List.generate(_screens.length, (index) {
-                  if (!_visitedTabs.contains(index)) {
-                    return const SizedBox.shrink();
-                  }
-                  return _screens[index] ??= _createScreen(index);
-                }),
+              body: Stack(
+                children: [
+                  IndexedStack(
+                    index: currentIndex,
+                    children: List.generate(_screens.length, (index) {
+                      if (!_visitedTabs.contains(index)) {
+                        return const SizedBox.shrink();
+                      }
+                      return _screens[index] ??= _createScreen(index);
+                    }),
+                  ),
+                  const FloatingUploadProgressBubble(),
+                ],
               ),
               bottomNavigationBar: CustomBottomNavigationBar(
                 selectedIndex: currentIndex,

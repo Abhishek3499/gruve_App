@@ -348,14 +348,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ProfileHeader(
                                 fullName: (user?.fullName ?? '').trim(),
                                 username: () {
-                                  final username = _displayUsername(user?.username);
-                                  return username.isEmpty ? '@username' : username;
+                                  final username = _displayUsername(
+                                    user?.username,
+                                  );
+                                  return username.isEmpty
+                                      ? '@username'
+                                      : username;
                                 }(),
                                 bio: user?.bio ?? '',
                                 profileImage: user?.profileImage ?? '',
                                 hasActiveStory: hasActiveStory,
                                 hasCloseFriendsStory: hasCloseFriendsStory,
-                                subscribersCount: controller.stats.subscribersCount,
+                                subscribersCount:
+                                    controller.stats.subscribersCount,
                                 likesCount: controller.stats.likesCount,
                                 videosCount: controller.stats.videosCount,
                                 onSubscribersTap: () => _openConnections(
@@ -367,12 +372,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   initialTab: 1,
                                 ),
                                 onAvatarCameraTap: _handleCameraTap,
-                                onAvatarLongPress: () =>
-                                    _handleAvatarLongPress(user?.profileImage ?? ''),
+                                onAvatarLongPress: () => _handleAvatarLongPress(
+                                  user?.profileImage ?? '',
+                                ),
                               ),
                               SizedBox(height: context.rh(12)),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: Row(
                                   children: [
                                     Expanded(
@@ -381,16 +389,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           username: user?.username ?? '',
                                           bio: user?.bio ?? '',
                                           email: "",
-                                          profileImagePath: user?.profileImage ?? '',
+                                          profileImagePath:
+                                              user?.profileImage ?? '',
                                         ),
                                         onProfileUpdated: (response) {
-                                          notifier.applyUpdatedProfile(response);
+                                          notifier.applyUpdatedProfile(
+                                            response,
+                                          );
                                           final newImageUrl =
                                               response.data.profilePicture;
-                                          final newUsername = response.data.username;
+                                          final newUsername =
+                                              response.data.username;
                                           ref
                                               .read(
-                                                currentUserNotifierProvider.notifier,
+                                                currentUserNotifierProvider
+                                                    .notifier,
                                               )
                                               .updateProfileData(
                                                 username: newUsername,
@@ -422,7 +435,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                         ),
                         ...grid.buildSlivers(context),
-                        SliverToBoxAdapter(child: SizedBox(height: context.rh(65))),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: context.rh(65)),
+                        ),
                       ],
                     ),
                   );

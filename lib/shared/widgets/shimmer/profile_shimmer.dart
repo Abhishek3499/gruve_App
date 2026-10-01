@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
 
@@ -161,9 +162,7 @@ class ProfileShimmer extends StatelessWidget {
                 padding: ProfileGridStyle.gridPadding,
                 sliver: _ProfileGridShimmerSliver(itemCount: 9),
               ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 65),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 65)),
             ],
           ),
         ),
@@ -307,9 +306,7 @@ class UserProfileShimmer extends StatelessWidget {
                 padding: ProfileGridStyle.gridPadding,
                 sliver: _ProfileGridShimmerSliver(itemCount: 9),
               ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
         ),
@@ -397,10 +394,7 @@ class _StatColumnShimmer extends StatelessWidget {
   final double numberWidth;
   final double labelWidth;
 
-  const _StatColumnShimmer({
-    this.numberWidth = 26,
-    required this.labelWidth,
-  });
+  const _StatColumnShimmer({this.numberWidth = 26, required this.labelWidth});
 
   @override
   Widget build(BuildContext context) {
@@ -477,16 +471,13 @@ class _ProfileGridShimmerSliver extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverGrid(
       gridDelegate: ProfileGridStyle.gridDelegate,
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return const ShimmerBox(
-            height: double.infinity,
-            width: double.infinity,
-            borderRadius: ProfileGridStyle.tileRadius,
-          );
-        },
-        childCount: itemCount,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return const ShimmerBox(
+          height: double.infinity,
+          width: double.infinity,
+          borderRadius: ProfileGridStyle.tileRadius,
+        );
+      }, childCount: itemCount),
     );
   }
 }
