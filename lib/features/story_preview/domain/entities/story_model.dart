@@ -6,6 +6,14 @@ class StoryItem {
   final String mediaUrl;
   final String mediaMimeType;
   final String mediaKind;
+
+  /// Poster image shown while the media loads. Null/empty when the backend
+  /// has none.
+  final String? thumbnail;
+
+  /// Adaptive stream, only meant to be played once processing is `ready`.
+  final String? hlsUrl;
+  final String mediaProcessingStatus;
   final String? caption;
   final DateTime createdAt;
   final DateTime expiresAt;
@@ -21,6 +29,9 @@ class StoryItem {
     required this.mediaUrl,
     required this.mediaMimeType,
     required this.mediaKind,
+    this.thumbnail,
+    this.hlsUrl,
+    this.mediaProcessingStatus = '',
     this.caption,
     required this.createdAt,
     required this.expiresAt,
@@ -31,6 +42,20 @@ class StoryItem {
     this.visibility = 'public',
   });
 
+  /// URL to play: the HLS stream once processing is `ready`, otherwise the
+  /// original [mediaUrl].
+  String get playbackUrl {
+    final hls = hlsUrl?.trim() ?? '';
+    if (mediaProcessingStatus.trim().toLowerCase() == 'ready' &&
+        hls.isNotEmpty) {
+      return hls;
+    }
+    return mediaUrl;
+  }
+
+  /// True when [playbackUrl] is the HLS stream (so [mediaUrl] is a fallback).
+  bool get playsHls => playbackUrl != mediaUrl;
+
   /// Instagram-style close friends story — true when [visibility] is 'close_friends'.
   bool get isCloseFriends => visibility == 'close_friends';
 
@@ -40,6 +65,9 @@ class StoryItem {
       mediaUrl: json['media_url']?.toString() ?? '',
       mediaMimeType: json['media_mime_type']?.toString() ?? '',
       mediaKind: json['media_kind']?.toString() ?? '',
+      thumbnail: json['thumbnail']?.toString(),
+      hlsUrl: json['hls_url']?.toString(),
+      mediaProcessingStatus: json['media_processing_status']?.toString() ?? '',
       caption: json['caption']?.toString(),
       createdAt: DateTime.parse(
         json['created_at'] ?? DateTime.now().toIso8601String(),

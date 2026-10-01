@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/auth/current_user_notifier.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/media/grid_video_preview_manager.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/core/media/video_playback_guard.dart';
 import 'package:gruve_app/core/pagination/pagination_scroll_trigger.dart';
@@ -52,6 +53,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    GridVideoPreviewManager.instance.pauseAll();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -86,7 +88,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _openStory(ExploreStory story, {bool isOwn = false}) async {
     if (_isOpeningStory) return;
     _isOpeningStory = true;
-    // Free the feed's hardware video decoders before the story player starts.
+    GridVideoPreviewManager.instance.pauseAll();
     VideoPlaybackGuard.pauseHomeFeed?.call();
     await VideoFrameCache.disposeUnreferenced();
     if (!mounted) {

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:gruve_app/core/constants/app_colors.dart';
+import 'package:gruve_app/core/media/grid_video_preview_manager.dart';
 import 'package:gruve_app/shared/widgets/shimmer/app_shimmer.dart';
 import 'package:gruve_app/core/media/video_frame_cache.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
@@ -561,6 +563,116 @@ class _VideoFrameThumbnailState extends State<_VideoFrameThumbnail> {
 
 Widget _defaultPlaceholder() {
   return AppShimmer(child: Container(color: AppColors.skeletonPlaceholder));
+}
+
+/// Wraps [PostGridThumbnail] with auto-play video preview via [GridVideoPreviewManager].
+/// Shows thumbnail image at rest; plays muted HLS when ≥50% visible.
+class AutoPlayGridThumbnail extends StatefulWidget {
+  final Post post;
+
+  const AutoPlayGridThumbnail({super.key, required this.post});
+
+  @override
+  State<AutoPlayGridThumbnail> createState() => _AutoPlayGridThumbnailState();
+}
+
+class _AutoPlayGridThumbnailState extends State<AutoPlayGridThumbnail> {
+  final _manager = GridVideoPreviewManager.instance;
+
+  String get _id => 'profile-${widget.post.id}';
+  String get _videoUrl => widget.post.media.trim();
+  bool get _isVideo => widget.post.isVideo && _videoUrl.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isVideo) _manager.activeIds.addListener(_onActiveChanged);
+  }
+
+  @override
+  void dispose() {
+    if (_isVideo) {
+      _manager.activeIds.removeListener(_onActiveChanged);
+      _manager.onDispose(_id);
+    }
+    super.dispose();
+  }
+
+  void _onActiveChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _isActive => _manager.activeIds.value.contains(_id);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isVideo) return PostGridThumbnail(post: widget.post);
+
+    return VisibilityDetector(
+      key: Key(_id),
+      onVisibilityChanged: (info) {
+        _manager.onVisibilityChanged(_id, _videoUrl, info.visibleFraction);
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PostGridThumbnail(post: widget.post),
+          if (_isActive) _VideoPreviewOverlay(id: _id, manager: _manager),
+        ],
+      ),
+    );
+  }
+}
+
+class _VideoPreviewOverlay extends StatefulWidget {
+  final String id;
+  final GridVideoPreviewManager manager;
+
+  const _VideoPreviewOverlay({required this.id, required this.manager});
+
+  @override
+  State<_VideoPreviewOverlay> createState() => _VideoPreviewOverlayState();
+}
+
+class _VideoPreviewOverlayState extends State<_VideoPreviewOverlay> {
+  VideoPlayerController? _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = widget.manager.controllerFor(widget.id);
+    _ctrl?.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    _ctrl?.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = widget.manager.controllerFor(widget.id);
+    if (ctrl == null || !ctrl.value.isInitialized) return const SizedBox.shrink();
+    return AnimatedOpacity(
+      opacity: ctrl.value.isPlaying ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: ctrl.value.size.width,
+            height: ctrl.value.size.height,
+            child: VideoPlayer(ctrl),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ThumbnailFallback extends StatelessWidget {

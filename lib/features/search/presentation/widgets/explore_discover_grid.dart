@@ -1,18 +1,15 @@
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
-import 'package:gruve_app/core/utils/app_logger.dart';
+import 'package:gruve_app/core/media/grid_video_preview_manager.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/profile_post_detail_screen.dart';
-import 'package:gruve_app/features/search/data/datasource/explore_reels_service.dart';
-import 'package:gruve_app/features/search/data/datasource/reel_poster_service.dart';
 import 'package:gruve_app/features/search/domain/entities/explore_reel_model.dart';
 import 'package:gruve_app/features/search/presentation/controller/explore_reels_controller.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
+import 'package:video_player/video_player.dart';
 
 /// Two-column Discover cards as a sliver, so the screen scrolls as one list.
 class ExploreDiscoverSliver extends StatelessWidget {
@@ -43,7 +40,6 @@ class ExploreDiscoverSliver extends StatelessWidget {
           return RepaintBoundary(
             child: _DiscoverCard(
               reel: reel,
-              service: controller.service,
               post: controller.displayPost(reel),
               onTap: () => openExploreReel(context, controller, reel),
             ),
@@ -136,13 +132,11 @@ String _dayLabel(DateTime? createdAt) {
 
 class _DiscoverCard extends StatelessWidget {
   final ExploreReel reel;
-  final ExploreReelsService service;
   final Post post;
   final VoidCallback onTap;
 
   const _DiscoverCard({
     required this.reel,
-    required this.service,
     required this.post,
     required this.onTap,
   });
@@ -164,7 +158,6 @@ class _DiscoverCard extends StatelessWidget {
               key: ValueKey('discover-reel-${reel.id}'),
               reel: reel,
               post: post,
-              service: service,
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -233,20 +226,16 @@ class _DiscoverCard extends StatelessWidget {
   }
 }
 
-/// Shows the API's image `thumbnail` when there is one. Otherwise it resolves
-/// the reel's video lazily (only for cards that are built, i.e. on screen) and
-/// grabs a single poster frame — never a live player, which would hold a
-/// hardware decoder the story/reel players need.
+/// Shows thumbnail image. When ≥50% visible, auto-plays a muted HLS preview.
+/// Reverts to thumbnail when scrolled away. Max 2 cards play at once.
 class _DiscoverThumbnail extends StatefulWidget {
   final ExploreReel reel;
   final Post post;
-  final ExploreReelsService service;
 
   const _DiscoverThumbnail({
     super.key,
     required this.reel,
     required this.post,
-    required this.service,
   });
 
   @override
@@ -254,130 +243,119 @@ class _DiscoverThumbnail extends StatefulWidget {
 }
 
 class _DiscoverThumbnailState extends State<_DiscoverThumbnail> {
-  String _imageUrl = '';
-  Uint8List? _posterBytes;
-  bool _failed = false;
-  String _reason = '';
+  final _manager = GridVideoPreviewManager.instance;
+  String get _id => 'discover-${widget.reel.id}';
+  String get _videoUrl => widget.reel.playbackUrl;
+  String get _thumbUrl => widget.reel.thumbnailImageUrl;
 
   @override
   void initState() {
     super.initState();
-    _imageUrl = _imageFrom(widget.post, widget.reel);
-    if (_imageUrl.isEmpty) _loadPoster();
+    _manager.activeIds.addListener(_onActiveChanged);
   }
 
   @override
-  void didUpdateWidget(_DiscoverThumbnail old) {
-    super.didUpdateWidget(old);
-    if (old.reel.id != widget.reel.id) {
-      _imageUrl = _imageFrom(widget.post, widget.reel);
-      _posterBytes = null;
-      _failed = false;
-      _reason = '';
-      if (_imageUrl.isEmpty) _loadPoster();
-    }
+  void dispose() {
+    _manager.activeIds.removeListener(_onActiveChanged);
+    _manager.onDispose(_id);
+    super.dispose();
   }
 
-  static String _imageFrom(Post post, ExploreReel reel) {
-    // post.thumbnailUrl is set from reel.thumbnailImageUrl — a real .jpg
-    for (final candidate in [post.thumbnailUrl, reel.thumbnailImageUrl]) {
-      final url = candidate.trim();
-      if (url.startsWith('http') && !Post.mediaUrlLooksLikeVideo(url)) return url;
-    }
-    return '';
+  void _onActiveChanged() {
+    if (mounted) setState(() {});
   }
 
-  static String _videoFrom(ExploreReel reel) {
-    final url = reel.playbackUrl.trim();
-    if (url.startsWith('http')) return url;
-    return '';
+  bool get _isActive => _manager.activeIds.value.contains(_id);
+
+  @override
+  Widget build(BuildContext context) {
+    final thumbUrl = _thumbUrl;
+    final videoUrl = _videoUrl;
+
+    return VisibilityDetector(
+      key: Key(_id),
+      onVisibilityChanged: (info) {
+        if (videoUrl.isEmpty) return;
+        _manager.onVisibilityChanged(_id, videoUrl, info.visibleFraction);
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Thumbnail always underneath
+          if (thumbUrl.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: thumbUrl,
+              fit: BoxFit.cover,
+              memCacheWidth: 480,
+              fadeInDuration: const Duration(milliseconds: 150),
+              placeholder: (_, _) => Shimmer.fromColors(
+                baseColor: Colors.white10,
+                highlightColor: Colors.white24,
+                child: const ColoredBox(color: Colors.white10),
+              ),
+              errorWidget: (_, _, _) => const _ThumbnailPlaceholder(),
+            )
+          else
+            Shimmer.fromColors(
+              baseColor: Colors.white10,
+              highlightColor: Colors.white24,
+              child: const ColoredBox(color: Colors.white10),
+            ),
+          // Video preview on top when active
+          if (_isActive) _VideoPreviewLayer(id: _id, manager: _manager),
+        ],
+      ),
+    );
+  }
+}
+
+class _VideoPreviewLayer extends StatefulWidget {
+  final String id;
+  final GridVideoPreviewManager manager;
+
+  const _VideoPreviewLayer({required this.id, required this.manager});
+
+  @override
+  State<_VideoPreviewLayer> createState() => _VideoPreviewLayerState();
+}
+
+class _VideoPreviewLayerState extends State<_VideoPreviewLayer> {
+  VideoPlayerController? _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = widget.manager.controllerFor(widget.id);
+    _ctrl?.addListener(_onCtrlUpdate);
   }
 
-  Future<void> _loadPoster() async {
-    final posters = ReelPosterService.instance;
-    try {
-      var videoUrl = _videoFrom(widget.reel);
-      if (videoUrl.isEmpty) {
-        final resolved = await posters.limit(
-          () => widget.service.resolveReelPost(widget.reel),
-        );
-        if (!mounted) return;
-        if (resolved == null) _reason = 'resolve: no post';
-        if (resolved != null) {
-          final image = _imageFrom(resolved, widget.reel);
-          if (image.isNotEmpty) {
-            setState(() => _imageUrl = image);
-            return;
-          }
-          videoUrl = _videoFrom(widget.reel);
-        }
-      }
+  @override
+  void dispose() {
+    _ctrl?.removeListener(_onCtrlUpdate);
+    super.dispose();
+  }
 
-      if (videoUrl.isEmpty) {
-        AppLogger.d(
-          '[DiscoverThumb] reel ${widget.reel.id}: no video url ($_reason)',
-        );
-        if (mounted) {
-          setState(() {
-            _failed = true;
-            if (_reason.isEmpty) _reason = 'no video url';
-          });
-        }
-        return;
-      }
-
-      final bytes = await posters.poster(videoUrl);
-      if (!mounted) return;
-      setState(() {
-        _posterBytes = bytes;
-        _failed = bytes == null;
-        if (bytes == null) _reason = posters.lastError ?? 'frame grab failed';
-      });
-    } catch (e) {
-      AppLogger.d('[DiscoverThumb] reel ${widget.reel.id} failed: $e');
-      if (mounted) {
-        setState(() {
-          _failed = true;
-          _reason = e.toString();
-        });
-      }
-    }
+  void _onCtrlUpdate() {
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_imageUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: _imageUrl,
-        fit: BoxFit.cover,
-        memCacheWidth: 480,
-        fadeInDuration: const Duration(milliseconds: 150),
-        placeholder: (_, _) => Shimmer.fromColors(
-          baseColor: Colors.white10,
-          highlightColor: Colors.white24,
-          child: const ColoredBox(color: Colors.white10),
+    final ctrl = widget.manager.controllerFor(widget.id);
+    if (ctrl == null || !ctrl.value.isInitialized) return const SizedBox.shrink();
+    return AnimatedOpacity(
+      opacity: ctrl.value.isPlaying ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: ctrl.value.size.width,
+            height: ctrl.value.size.height,
+            child: VideoPlayer(ctrl),
+          ),
         ),
-        errorWidget: (_, _, _) => const _ThumbnailPlaceholder(),
-      );
-    }
-
-    final bytes = _posterBytes;
-    if (bytes != null) {
-      return Image.memory(
-        bytes,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-        cacheWidth: 480,
-      );
-    }
-
-    if (_failed) return _ThumbnailPlaceholder(reason: kDebugMode ? _reason : null);
-
-    // Still loading — show shimmer
-    return Shimmer.fromColors(
-      baseColor: Colors.white10,
-      highlightColor: Colors.white24,
-      child: const ColoredBox(color: Colors.white10),
+      ),
     );
   }
 }

@@ -8,11 +8,10 @@ import 'package:gruve_app/features/home/data/models/subscribe_model.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
 import 'package:gruve_app/features/connections/presentation/screens/connections_screen.dart';
 import 'package:gruve_app/features/message/utils/conversation_utils.dart';
-import 'package:gruve_app/features/user_profile/presentation/widgets/user_filter_tabs.dart';
+import 'package:gruve_app/features/profile/presentation/widgets/filter_tabs.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_highlights_list.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_profile_grid.dart';
 import 'package:gruve_app/features/user_profile/presentation/widgets/user_profile_header.dart';
-import 'package:gruve_app/features/user_profile/presentation/widgets/user_stats_row.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
@@ -343,56 +342,58 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 2),
-                                UserProfileHeader(
-                                  displayName:
-                                      (profile?.fullName.isNotEmpty ?? false)
-                                      ? profile!.fullName
-                                      : widget.userName,
-                                  username: resolvedUsername,
-                                  profileUserId: resolvedUserId,
-                                  bio: profile?.bio ?? '',
-                                  profileImageUrl:
-                                      (profile?.profileImage.isNotEmpty ??
-                                          false)
-                                      ? profile!.profileImage
-                                      : widget.profileImageUrl,
-                                  hasActiveStory:
-                                      profile?.hasActiveStory ??
-                                      widget.initialHasActiveStory,
-                                  hasUnseenStory:
-                                      profile?.hasUnseenStory ?? false,
-                                  hasCloseFriendsStory:
-                                      profile?.hasCloseFriendsStory ?? false,
-                                  showSubscribeButton: showSubscribeButton,
-                                  reserveSubscribeSpace: _isResolvingIdentity,
-                                  subscribeController: _subscribeController,
-                                  initialIsSubscribed: initialIsSubscribed,
-                                  followStatus: followStatus,
-                                  action: profile?.action,
-                                  isPrivate: isPrivate,
-                                  showMessageButton: !isDirectOwnProfile,
-                                  onMessageTap: () => _openMessage(
-                                    userId: resolvedUserId,
-                                    username: resolvedUsername,
-                                    profileImage:
-                                        (profile?.profileImage.isNotEmpty ??
-                                            false)
-                                        ? profile!.profileImage
-                                        : widget.profileImageUrl,
-                                  ),
-                                  onFollowRequestHandled: () =>
-                                      _profileController.fetchUser(
-                                        reason: 'follow_request_responded',
-                                        forceRefresh: true,
-                                      ),
-                                ),
-                                SizedBox(height: context.rh(16)),
                                 ValueListenableBuilder(
                                   valueListenable:
                                       _profileController.statsNotifier,
                                   builder: (context, stats, child) {
-                                    return UserStatsRow(
-                                      stats: stats,
+                                    return UserProfileHeader(
+                                      displayName:
+                                          (profile?.fullName.isNotEmpty ??
+                                              false)
+                                          ? profile!.fullName
+                                          : widget.userName,
+                                      username: resolvedUsername,
+                                      profileUserId: resolvedUserId,
+                                      bio: profile?.bio ?? '',
+                                      profileImageUrl:
+                                          (profile?.profileImage.isNotEmpty ??
+                                              false)
+                                          ? profile!.profileImage
+                                          : widget.profileImageUrl,
+                                      hasActiveStory:
+                                          profile?.hasActiveStory ??
+                                          widget.initialHasActiveStory,
+                                      hasUnseenStory:
+                                          profile?.hasUnseenStory ?? false,
+                                      hasCloseFriendsStory:
+                                          profile?.hasCloseFriendsStory ??
+                                          false,
+                                      showSubscribeButton: showSubscribeButton,
+                                      reserveSubscribeSpace:
+                                          _isResolvingIdentity,
+                                      subscribeController: _subscribeController,
+                                      initialIsSubscribed: initialIsSubscribed,
+                                      followStatus: followStatus,
+                                      action: profile?.action,
+                                      isPrivate: isPrivate,
+                                      showMessageButton: !isDirectOwnProfile,
+                                      onMessageTap: () => _openMessage(
+                                        userId: resolvedUserId,
+                                        username: resolvedUsername,
+                                        profileImage:
+                                            (profile?.profileImage.isNotEmpty ??
+                                                false)
+                                            ? profile!.profileImage
+                                            : widget.profileImageUrl,
+                                      ),
+                                      onFollowRequestHandled: () =>
+                                          _profileController.fetchUser(
+                                            reason: 'follow_request_responded',
+                                            forceRefresh: true,
+                                          ),
+                                      subscribersCount: stats.subscribersCount,
+                                      likesCount: stats.likesCount,
+                                      videosCount: stats.videosCount,
                                       onSubscribersTap: () => _openConnections(
                                         userId: resolvedUserId,
                                         initialTab: 0,
@@ -404,7 +405,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                     );
                                   },
                                 ),
-                                SizedBox(height: context.rh(14)),
+                                SizedBox(height: context.rh(13)),
                                 ValueListenableBuilder(
                                   valueListenable:
                                       _profileController.highlightList,
@@ -416,7 +417,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                   },
                                 ),
                                 SizedBox(height: context.rh(7)),
-                                UserFilterTabs(
+                                FilterTabs(
                                   selectedIndex: selectedTab,
                                   onTabSelected: _selectTab,
                                 ),

@@ -205,7 +205,7 @@ class ProfileHeader extends StatelessWidget {
   }
 }
 
-/// Compact Gen-Z friendly bio view with 2-line limit and inline expandable "... more" / "less" action.
+/// Bio view: shows first 40 chars then inline "... more" / "less" toggle.
 class ProfileBioView extends StatefulWidget {
   final String bio;
   final String fullName;
@@ -218,85 +218,59 @@ class ProfileBioView extends StatefulWidget {
 
 class _ProfileBioViewState extends State<ProfileBioView> {
   bool _isExpanded = false;
+  static const int _previewLength = 40;
 
   @override
   Widget build(BuildContext context) {
     final cleanBio = widget.bio.trim();
     if (cleanBio.isEmpty) return const SizedBox.shrink();
 
-    const textStyle = TextStyle(
+    const baseStyle = TextStyle(
       color: Colors.white,
       fontSize: 14.0,
-      height: 20.0 / 14.0, // ~20sp line height
+      height: 20.0 / 14.0,
       fontWeight: FontWeight.w400,
       letterSpacing: 0.1,
     );
+    const moreStyle = TextStyle(
+      color: Color(0xFFFF3AFF),
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+    );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final textSpan = TextSpan(text: cleanBio, style: textStyle);
-        final textPainter = TextPainter(
-          text: textSpan,
-          maxLines: 2,
-          textDirection: Directionality.of(context),
-        )..layout(maxWidth: constraints.maxWidth);
+    final needsTruncation = cleanBio.length > _previewLength;
 
-        final bool isOverflowing = textPainter.didExceedMaxLines;
+    if (!needsTruncation) {
+      return Text(cleanBio, style: baseStyle);
+    }
 
-        if (!isOverflowing) {
-          return Text(cleanBio, style: textStyle, maxLines: 2);
-        }
-
-        return AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          alignment: Alignment.topLeft,
-          curve: Curves.easeInOut,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    if (_isExpanded) {
+      return GestureDetector(
+        onTap: () => setState(() => _isExpanded = false),
+        child: RichText(
+          text: TextSpan(
+            style: baseStyle,
             children: [
-              Text(
-                cleanBio,
-                style: textStyle,
-                maxLines: _isExpanded ? null : 2,
-                overflow: _isExpanded
-                    ? TextOverflow.visible
-                    : TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isExpanded ? "less" : "... more",
-                      style: const TextStyle(
-                        color: Color(0xFFFF3AFF),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      _isExpanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      size: 16,
-                      color: const Color(0xFFFF3AFF),
-                    ),
-                  ],
-                ),
-              ),
+              TextSpan(text: cleanBio),
+              const TextSpan(text: '  '),
+              TextSpan(text: 'less', style: moreStyle),
             ],
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => setState(() => _isExpanded = true),
+      child: RichText(
+        text: TextSpan(
+          style: baseStyle,
+          children: [
+            TextSpan(text: cleanBio.substring(0, _previewLength)),
+            TextSpan(text: '... more', style: moreStyle),
+          ],
+        ),
+      ),
     );
   }
 }

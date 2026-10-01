@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gruve_app/core/media/grid_video_preview_manager.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
@@ -173,12 +174,15 @@ class ProfileGrid extends StatelessWidget {
     int index,
   ) {
     return GestureDetector(
-      onTap: () => _openPost(context, post, allPosts, index),
+      onTap: () {
+        GridVideoPreviewManager.instance.pauseAll();
+        _openPost(context, post, allPosts, index);
+      },
       child: ProfileGridTile(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            PostGridThumbnail(post: post),
+            AutoPlayGridThumbnail(post: post),
             if (post.viewsCount > 0)
               Positioned(
                 left: 0,

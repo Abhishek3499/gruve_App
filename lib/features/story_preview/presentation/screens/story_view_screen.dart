@@ -197,15 +197,52 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
     }
   }
 
+  bool _useMp4Fallback = false;
+
+  /// Path to play for [index]: HLS when the story is processed and ready,
+  /// else the original media URL (also used as the fallback if HLS fails).
+  String _playbackPath(int index) {
+    final items = widget.storyItems;
+    if (items != null && index < items.length) {
+      final item = items[index];
+      return _useMp4Fallback ? item.mediaUrl : item.playbackUrl;
+    }
+    return widget.mediaPaths[index];
+  }
+
+  bool _isVideoPath(String path, int index) {
+    final items = widget.storyItems;
+    if (items != null &&
+        index < items.length &&
+        items[index].mediaKind == 'video') {
+      return true;
+    }
+    final lower = path.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.avi') ||
+        lower.contains('.m3u8');
+  }
+
+  String? _thumbnailFor(int index) {
+    final items = widget.storyItems;
+    if (items == null || index >= items.length) return null;
+    final thumb = items[index].thumbnail?.trim() ?? '';
+    return thumb.isEmpty ? null : thumb;
+  }
+
   Future<void> _initializeMedia({bool isRetry = false}) async {
     if (_isDisposed) return;
 
-    if (!isRetry) _videoRetries = 0;
+    if (!isRetry) {
+      _videoRetries = 0;
+      _useMp4Fallback = false;
+    }
     _handlingVideoError = false;
     _videoController?.dispose();
     _videoController = null;
 
-    final rawPath = widget.mediaPaths[currentIndex];
+    final rawPath = _playbackPath(currentIndex);
     final isLocal = File(rawPath).existsSync();
 
     String resolvedPath = rawPath;
@@ -225,10 +262,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
     }
 
     _mediaFailed = false;
-    _isVideo =
-        resolvedPath.toLowerCase().endsWith('.mp4') ||
-        resolvedPath.toLowerCase().endsWith('.mov') ||
-        resolvedPath.toLowerCase().endsWith('.avi');
+    _isVideo = _isVideoPath(resolvedPath, currentIndex);
 
     if (!_isVideo) {
       setState(() {
@@ -303,6 +337,19 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
   Future<void> _handleVideoFailure() async {
     if (_handlingVideoError || _isDisposed) return;
     _handlingVideoError = true;
+
+    // HLS failed — fall back to the original media URL before retrying.
+    final items = widget.storyItems;
+    if (!_useMp4Fallback &&
+        items != null &&
+        currentIndex < items.length &&
+        items[currentIndex].playsHls) {
+      AppLogger.d('[StoryViewScreen] HLS failed, falling back to media_url');
+      _useMp4Fallback = true;
+      _videoRetries = 0;
+      if (!_isDisposed) await _initializeMedia(isRetry: true);
+      return;
+    }
 
     if (_videoRetries < 2) {
       _videoRetries++;
@@ -424,7 +471,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
   }
 
   Widget _buildMedia() {
-    final rawPath = widget.mediaPaths[currentIndex];
+    final rawPath = _playbackPath(currentIndex);
     final isLocal = File(rawPath).existsSync();
 
     String resolvedPath = rawPath;
@@ -443,11 +490,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       }
     }
 
-    final lowerPath = resolvedPath.toLowerCase();
-    final looksLikeVideo =
-        lowerPath.endsWith('.mp4') ||
-        lowerPath.endsWith('.mov') ||
-        lowerPath.endsWith('.avi');
+    final looksLikeVideo = _isVideoPath(resolvedPath, currentIndex);
 
     if (_mediaFailed) {
       return Center(
@@ -481,7 +524,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       // broken-image icon while the player is still initializing).
       final controller = _videoController;
       if (controller == null || !controller.value.isInitialized) {
-        return const _StoryMediaLoader();
+        return _StoryMediaLoader(thumbnailUrl: _thumbnailFor(currentIndex));
       }
 
       return FittedBox(
@@ -629,19 +672,34 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
 }
 
 class _StoryMediaLoader extends StatelessWidget {
-  const _StoryMediaLoader();
+  /// Poster shown behind the spinner while the media loads.
+  final String? thumbnailUrl;
+
+  const _StoryMediaLoader({this.thumbnailUrl});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        width: context.rw(28),
-        height: context.rh(28),
-        child: const CircularProgressIndicator(
-          color: AppColors.loaderDark,
-          strokeWidth: 2.4,
+    final thumb = thumbnailUrl;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (thumb != null)
+          Image.network(
+            thumb,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        Center(
+          child: SizedBox(
+            width: context.rw(28),
+            height: context.rh(28),
+            child: const CircularProgressIndicator(
+              color: AppColors.loaderDark,
+              strokeWidth: 2.4,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
