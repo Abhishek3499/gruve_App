@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:gruve_app/shared/widgets/mention_icon.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/shared/widgets/profile_grid_style.dart';
 import 'package:gruve_app/shared/widgets/shimmer/profile_shimmer.dart';
@@ -46,6 +47,10 @@ class ProfileGrid extends StatelessWidget {
 
   /// Sliver-based grid for use inside [CustomScrollView].
   List<Widget> buildSlivers(BuildContext context) {
+    if (selectedTab == 2) {
+      return [SliverToBoxAdapter(child: _buildEmptyMentionsState())];
+    }
+
     final posts = _postsForTab();
     final tabIsLoading = controller.isLoadingTab(selectedTab);
     final totalPostsCount = controller.statsNotifier.value.videosCount;
@@ -117,6 +122,41 @@ class ProfileGrid extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             'Posts you like will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyMentionsState() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          MentionIcon(size: 34),
+          SizedBox(height: 12),
+          Text(
+            'No mentions yet',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Posts you are mentioned in will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70, fontSize: 14),
           ),

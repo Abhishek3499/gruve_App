@@ -113,6 +113,7 @@ class PostService {
     String? mediaPath,
     String? locationName,
     List<String>? taggedUserIds,
+    ProgressCallback? onSendProgress,
   }) async {
     File? tempDownloadedFile;
     try {
@@ -182,6 +183,7 @@ class PostService {
       final res = await _dio.post(
         ApiConstants.createPost,
         data: formData,
+        onSendProgress: onSendProgress,
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
           sendTimeout: const Duration(minutes: 10),

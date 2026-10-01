@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gruve_app/shared/widgets/mention_icon.dart';
 import 'package:gruve_app/shared/widgets/reels_icon.dart';
 
 class FilterTabs extends StatelessWidget {
@@ -63,7 +64,15 @@ class FilterTabs extends StatelessWidget {
               ),
             ),
             Expanded(child: _buildTab(icon: Icons.grid_view_rounded, index: 1)),
-            Expanded(child: _buildTab(icon: Icons.portrait_rounded, index: 2)),
+            Expanded(
+              child: _buildTab(
+                customIcon: MentionIcon(
+                  size: 22,
+                  color: selectedIndex == 2 ? Colors.white : Colors.white54,
+                ),
+                index: 2,
+              ),
+            ),
           ],
         ),
       ),
