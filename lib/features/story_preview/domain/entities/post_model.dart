@@ -23,6 +23,8 @@ class Post {
   final String caption;
   final String media;
   final String thumbnailUrl;
+  final String hlsUrl;
+  final String mediaProcessingStatus;
   final String userId;
   final String mediaType;
 
@@ -46,6 +48,8 @@ class Post {
     required this.caption,
     required this.media,
     this.thumbnailUrl = '',
+    this.hlsUrl = '',
+    this.mediaProcessingStatus = '',
     required this.userId,
     required this.likesCount,
     required this.commentsCount,
@@ -76,6 +80,23 @@ class Post {
     return '';
   }
 
+  /// True once the backend finished transcoding (HLS + processed MP4 exist).
+  bool get isMediaProcessingReady =>
+      mediaProcessingStatus.toLowerCase().trim() == 'ready';
+
+  /// Backend could not process the video — never attempt playback.
+  bool get isMediaProcessingFailed =>
+      mediaProcessingStatus.toLowerCase().trim() == 'failed';
+
+  /// HLS manifest to try first. Trusted when processing is `ready`, or when the
+  /// payload carries no status at all (e.g. profile lists) but has an HLS URL.
+  String get hlsPlaybackUrl {
+    final status = mediaProcessingStatus.trim();
+    if (!isVideo || !(status.isEmpty || isMediaProcessingReady)) return '';
+    final url = hlsUrl.trim();
+    return _isSupportedNetworkUrl(url) ? url : '';
+  }
+
   /// Whether this post can appear in the home feed (has a loadable network URL).
   bool get isFeedEligible {
     return feedMediaUrl.isNotEmpty;
@@ -83,6 +104,13 @@ class Post {
 
   /// Best URL for rendering/playing in the home feed (media → poster for images).
   String get feedMediaUrl {
+    final hls = hlsPlaybackUrl;
+    if (hls.isNotEmpty) return hls;
+    return mp4FeedMediaUrl;
+  }
+
+  /// Feed URL ignoring HLS — the fallback when HLS playback is unsupported/fails.
+  String get mp4FeedMediaUrl {
     for (final url in [media.trim(), playbackMediaUrl.trim()]) {
       if (_isSupportedNetworkUrl(url)) return url;
     }
@@ -228,6 +256,11 @@ class Post {
           "",
       media: mediaUrl,
       thumbnailUrl: _extractThumbnailUrl(json),
+      hlsUrl: _normalizeUrl(json['hls_url'] ?? json['hlsUrl'] ?? ''),
+      mediaProcessingStatus:
+          (json['media_processing_status'] ?? json['mediaProcessingStatus'])
+              ?.toString() ??
+          '',
       mediaType: mediaType == 'video' || mediaUrlLooksLikeVideo(mediaUrl)
           ? 'video'
           : mediaType,
@@ -610,6 +643,10 @@ class Post {
       caption: caption.isNotEmpty ? caption : (other?.caption ?? ''),
       media: resolvedMedia,
       thumbnailUrl: mergedThumb,
+      hlsUrl: hlsUrl.isNotEmpty ? hlsUrl : (other?.hlsUrl ?? ''),
+      mediaProcessingStatus: other?.mediaProcessingStatus.isNotEmpty == true
+          ? other!.mediaProcessingStatus
+          : mediaProcessingStatus,
       userId: pick(userId, other?.userId),
       likesCount: pickCount(likesCount, other?.likesCount),
       commentsCount: pickCount(commentsCount, other?.commentsCount),
@@ -647,6 +684,8 @@ class Post {
       'caption': caption,
       'media': media,
       'thumbnail_url': thumbnailUrl,
+      'hls_url': hlsUrl,
+      'media_processing_status': mediaProcessingStatus,
       'userId': userId,
       'mediaType': mediaType,
       'likes_count': likesCount,
@@ -669,6 +708,8 @@ class Post {
     String? caption,
     String? media,
     String? thumbnailUrl,
+    String? hlsUrl,
+    String? mediaProcessingStatus,
     String? userId,
     int? likesCount,
     int? commentsCount,
@@ -689,6 +730,9 @@ class Post {
       caption: caption ?? this.caption,
       media: media ?? this.media,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      hlsUrl: hlsUrl ?? this.hlsUrl,
+      mediaProcessingStatus:
+          mediaProcessingStatus ?? this.mediaProcessingStatus,
       userId: userId ?? this.userId,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount ?? this.commentsCount,

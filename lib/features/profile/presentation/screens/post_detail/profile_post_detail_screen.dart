@@ -186,7 +186,15 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
       if (controller != null) VideoFrameCache.release(mediaUrl);
       return;
     }
-    if (controller == null) return;
+    if (controller == null) {
+      // HLS failed/unsupported → drop it for this post and retry with the MP4.
+      if (mediaUrl == post.hlsPlaybackUrl && post.media.trim().isNotEmpty) {
+        AppLogger.d('HLS failed for ${post.id}, falling back to MP4');
+        _posts[index] = post.copyWith(hlsUrl: '');
+        unawaited(_initializeVideo(index));
+      }
+      return;
+    }
 
     _acquiredUrls.add(mediaUrl);
 
@@ -705,6 +713,8 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
 
   String _mediaUrlFor(Post post) {
     if (post.isVideo) {
+      final hls = post.hlsPlaybackUrl;
+      if (hls.isNotEmpty) return hls;
       final video = post.media.trim();
       if (video.isNotEmpty) return video;
       return widget.fallbackMediaUrl?.trim() ?? '';

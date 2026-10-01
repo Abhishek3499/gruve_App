@@ -258,9 +258,14 @@ class _HighlightViewerScreenState extends ConsumerState<HighlightViewerScreen>
             margin: EdgeInsets.symmetric(horizontal: context.rw(28)),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF321344), Color(0xFF161626)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFF9F7FA),
+                  Color(0xFFDDBEEB),
+                  Color(0xFFF39BC4),
+                  Color(0xFFE69AC8),
+                ],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
@@ -476,21 +481,35 @@ class _HighlightViewerScreenState extends ConsumerState<HighlightViewerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Main content
-          if (isLoading)
-            _buildLoadingState()
-          else if (errorMessage != null)
-            _buildErrorState()
-          else if (highlight == null || highlight!.stories.isEmpty)
-            _buildEmptyState()
-          else
-            _buildStoryViewer(),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF9F7FA),
+              Color(0xFFDDBEEB),
+              Color(0xFFF39BC4),
+              Color(0xFFE69AC8),
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Main content
+            if (isLoading)
+              _buildLoadingState()
+            else if (errorMessage != null)
+              _buildErrorState()
+            else if (highlight == null || highlight!.stories.isEmpty)
+              _buildEmptyState()
+            else
+              _buildStoryViewer(),
 
-          _buildTopOverlay(),
-        ],
+            _buildTopOverlay(),
+          ],
+        ),
       ),
     );
   }

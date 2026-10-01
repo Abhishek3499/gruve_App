@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
-import 'package:video_compress/video_compress.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:video_player/video_player.dart';
 
 enum LocalMediaKind { image, video, unknown }
@@ -152,11 +152,11 @@ class LocalMediaUtils {
     int quality = 60,
   }) async {
     try {
-      final file = await VideoCompress.getFileThumbnail(
-        path,
+      return await VideoThumbnail.thumbnailFile(
+        video: path,
+        imageFormat: ImageFormat.JPEG,
         quality: quality,
       );
-      return file.path;
     } catch (e) {
       AppLogger.d('[LocalMediaUtils] Thumbnail generation failed: $e');
       return null;

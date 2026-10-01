@@ -12,10 +12,8 @@ import 'package:gruve_app/features/story_preview/data/datasource/post_payload_pa
 import 'package:gruve_app/features/story_preview/data/dto/paginated_response_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_draft_model.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
-import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
-import 'package:video_compress/video_compress.dart';
 
 class PostService {
   late final Dio _dio;
@@ -90,8 +88,6 @@ class PostService {
     required File file,
     required String mediaPath,
     String? mimeType,
-    bool isMuted = false,
-    void Function(File compressedVideo)? onCompressedVideo,
   }) async {
     final isVideo = await LocalMediaUtils.isVideoForUpload(
       mediaPath,
@@ -108,53 +104,8 @@ class PostService {
       data: {'mediaType': isVideo ? 'video' : 'image', 'fileName': fileName},
     );
 
-    File uploadFile = file;
-    if (!isVideo) {
-      try {
-        uploadFile = await ImageFilterProcessor.compressImageForUpload(
-          file,
-          maxFileSizeKB: 400,
-        );
-      } catch (e) {
-        AppLogger.warning(
-          'PostService',
-          'image_compression_failed',
-          data: {'error': e.toString()},
-        );
-      }
-    } else {
-      try {
-        final mediaInfo = await VideoCompress.compressVideo(
-          file.path,
-          quality: VideoQuality.DefaultQuality,
-          deleteOrigin: false,
-          includeAudio: !isMuted,
-        );
-        if (mediaInfo != null && mediaInfo.path != null) {
-          final compressedFile = File(mediaInfo.path!);
-          if (compressedFile.existsSync()) {
-            uploadFile = compressedFile;
-            onCompressedVideo?.call(compressedFile);
-            AppLogger.debug(
-              'PostService',
-              'video_compressed',
-              data: {
-                'originalBytes': file.lengthSync(),
-                'compressedBytes': compressedFile.lengthSync(),
-              },
-            );
-          }
-        }
-      } catch (e) {
-        AppLogger.warning(
-          'PostService',
-          'video_compression_failed',
-          data: {'error': e.toString()},
-        );
-      }
-    }
-
-    return (isVideo: isVideo, uploadFile: uploadFile, fileName: fileName);
+    // Compression (images + videos) is handled by the backend.
+    return (isVideo: isVideo, uploadFile: file, fileName: fileName);
   }
 
   Future<CreatePostResponse> createPost({
@@ -164,12 +115,7 @@ class PostService {
     List<String>? taggedUserIds,
   }) async {
     File? tempDownloadedFile;
-    File? tempCompressedVideo;
-    bool isVideo = false;
     try {
-      isVideo = mediaPath != null && mediaPath.isNotEmpty
-          ? await LocalMediaUtils.isVideoForUpload(mediaPath)
-          : false;
       final token = await TokenStorage.getAccessToken();
 
       final formData = FormData();
@@ -210,7 +156,6 @@ class PostService {
           final prepared = await _prepareUploadFile(
             file: file,
             mediaPath: mediaPath,
-            onCompressedVideo: (compressed) => tempCompressedVideo = compressed,
           );
           formData.files.add(
             MapEntry(
@@ -270,29 +215,6 @@ class PostService {
             data: {'error': e.toString()},
           );
         }
-      }
-      final compressedTemp = tempCompressedVideo;
-      if (compressedTemp != null && compressedTemp.existsSync()) {
-        try {
-          await compressedTemp.delete();
-        } catch (e) {
-          AppLogger.warning(
-            'PostService',
-            'compressed_file_delete_failed',
-            data: {'error': e.toString()},
-          );
-        }
-      }
-      try {
-        if (isVideo) {
-          await VideoCompress.deleteAllCache();
-        }
-      } catch (e) {
-        AppLogger.warning(
-          'PostService',
-          'video_cache_clear_failed',
-          data: {'error': e.toString()},
-        );
       }
     }
   }

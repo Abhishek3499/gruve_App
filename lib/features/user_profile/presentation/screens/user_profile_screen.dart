@@ -276,13 +276,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       color: Colors.white,
       backgroundColor: AppColors.deepPlum,
       child: showProfileShimmer
-          ? CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                const SliverToBoxAdapter(child: UserProfileShimmer()),
-              ],
-            )
+          ? const UserProfileShimmer()
           : ValueListenableBuilder<int>(
               valueListenable: _selectedTabNotifier,
               builder: (context, selectedTab, _) {

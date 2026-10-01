@@ -8,7 +8,6 @@ import 'package:gruve_app/core/cache/cache_invalidation_service.dart';
 import 'package:gruve_app/features/story_preview/data/dto/create_story_response.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/story_model.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
-import 'package:gruve_app/features/camera/utils/image_filter_processor.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 
@@ -20,7 +19,6 @@ class StoryService {
   }
 
   /// Builds a fresh [FormData] every call — never reuse an instance.
-  /// Skips image compression for videos to avoid decode errors.
   Future<FormData> _buildFormData({
     required String caption,
     required File file,
@@ -41,16 +39,8 @@ class StoryService {
       '[StoryService] mediaType: ${isVideo ? "VIDEO" : "IMAGE"} | file: $fileName',
     );
 
-    File uploadFile = file;
-    if (!isVideo) {
-      AppLogger.d('[StoryService] Compressing image...');
-      uploadFile = await ImageFilterProcessor.compressImageForUpload(
-        file,
-        maxFileSizeKB: 400,
-      );
-    } else {
-      AppLogger.d('[StoryService] Skipping compression for video');
-    }
+    // Compression is handled by the backend.
+    final File uploadFile = file;
 
     final fileSizeKB = await uploadFile.length() ~/ 1024;
     AppLogger.d('[StoryService] Upload file size: ${fileSizeKB}KB');

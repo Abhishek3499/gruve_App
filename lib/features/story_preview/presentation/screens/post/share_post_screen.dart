@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
+import 'package:gruve_app/features/location/presentation/widgets/location_search_sheet.dart';
 import 'package:gruve_app/features/message/domain/entities/message_model.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/audience/audience_screen.dart';
 import 'package:gruve_app/features/story_preview/presentation/screens/post/more_option_screen.dart';
@@ -14,7 +15,6 @@ import 'package:video_player/video_player.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/local_media_utils.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
-import 'package:gruve_app/core/constants/app_colors.dart';
 
 class SharePostScreen extends ConsumerStatefulWidget {
   final String mediaPath;
@@ -164,105 +164,13 @@ class _SharePostScreenState extends ConsumerState<SharePostScreen> {
     }
   }
 
-  void _showLocationDialog() {
-    final locationController = TextEditingController(text: locationName);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surfaceDark,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            left: context.rw(20),
-            right: context.rw(20),
-            top: context.rh(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Add Location",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: context.rf(18),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (locationName != null && locationName!.isNotEmpty)
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          locationName = null;
-                        });
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        "Clear",
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                ],
-              ),
-              SizedBox(height: context.rh(16)),
-              TextField(
-                controller: locationController,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: "Enter location name...",
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.lavenderPurple,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: context.rh(20)),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    locationName = locationController.text.trim().isEmpty
-                        ? null
-                        : locationController.text.trim();
-                  });
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 120, 2, 99),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: context.rh(14)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-                child: const Text(
-                  "Save Location",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _showLocationDialog() async {
+    final result = await showLocationSearchSheet(
+      context,
+      currentLocation: locationName,
     );
+    if (!mounted || result == null) return;
+    setState(() => locationName = result.isEmpty ? null : result);
   }
 
   void _handleShare() async {

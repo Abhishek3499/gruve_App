@@ -1608,6 +1608,35 @@ class VideoFeedController {
 
       if (_initTokensByUrl[resolvedUrl] != initToken) return;
 
+      // HLS failed/unsupported → drop it for this post and play the MP4.
+      final hasHlsFallback =
+          mediaIndex < _posts.length &&
+          _posts[mediaIndex].id == post.id &&
+          resolvedUrl == _posts[mediaIndex].hlsPlaybackUrl &&
+          _posts[mediaIndex].mp4FeedMediaUrl.isNotEmpty;
+      if (hasHlsFallback && !_disposed && generation == _feedLoadGeneration) {
+        _initTokensByUrl.remove(resolvedUrl);
+        final fallbackPost = _posts[mediaIndex].copyWith(hlsUrl: '');
+        final fallbackUrl = fallbackPost.feedMediaUrl;
+        AppLogger.d(
+          '⚠️ [VideoFeed] HLS failed at $mediaIndex id=${post.id}, '
+          'falling back to MP4: $e',
+        );
+        _posts[mediaIndex] = fallbackPost;
+        if (mediaIndex < _mediaUrls.length) {
+          _mediaUrls[mediaIndex] = fallbackUrl;
+        }
+        _notifyFeedItemChanged(
+          _itemRevisionKey(fallbackPost, mediaUrl: fallbackUrl),
+        );
+        return _initializeVideoAt(
+          mediaIndex,
+          generation,
+          centerIndex: centerIndex,
+          epoch: epoch,
+        );
+      }
+
       final canRetry =
           isCurrentVideo &&
           attempt < maxInitRetries &&

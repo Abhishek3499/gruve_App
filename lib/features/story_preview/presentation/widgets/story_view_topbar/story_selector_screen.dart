@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_create_notifier.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/shared/widgets/app_cached_image.dart';
+import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 
 class CreateHighlightSheet extends ConsumerStatefulWidget {
@@ -38,10 +38,10 @@ class _CreateHighlightSheetState extends ConsumerState<CreateHighlightSheet> {
 
   Widget _buildImage(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return AppCachedImage(
-        imageUrl: path,
+      return MediaUrlThumbnail(
+        url: path,
         fit: BoxFit.cover,
-        errorWidget: const Center(
+        fallback: const Center(
           child: Icon(Icons.broken_image, color: Colors.grey),
         ),
       );
@@ -60,256 +60,276 @@ class _CreateHighlightSheetState extends ConsumerState<CreateHighlightSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'New Highlight',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: Colors.black,
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF9F7FA),
+            Color(0xFFDDBEEB),
+            Color(0xFFF39BC4),
+            Color(0xFFE69AC8),
+          ],
         ),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 40),
-
-          // Image with small preview size
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: SizedBox(
-                height: 170,
-                width: 110,
-                child: _buildImage(widget.storyImageUrl),
-              ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'New Highlight',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.black,
             ),
           ),
+        ),
+        body: Column(
+          children: [
+            const SizedBox(height: 40),
 
-          const SizedBox(height: 20),
-
-          // Input
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: TextField(
-              controller: _nameController,
-
-              maxLines: 1,
-              style: const TextStyle(
-                color: Colors.black, // typed text color
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Enter Highlights',
-                hintStyle: const TextStyle(
-                  color: Color.fromARGB(255, 59, 59, 59),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-
-                prefixIcon: const Icon(
-                  Icons.edit_note_rounded,
-                  color: Colors.grey,
-                ),
-
-                // IMPORTANT
-                isDense: true,
-
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.blue, width: 1.3),
-                ),
-
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
+            // Image with small preview size
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SizedBox(
+                  height: 170,
+                  width: 110,
+                  child: _buildImage(widget.storyImageUrl),
                 ),
               ),
             ),
-          ),
 
-          const Spacer(),
+            const SizedBox(height: 20),
 
-          // Button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      FocusScope.of(context).unfocus();
-                      AppLogger.d("➕ New highlight submit → API CALL START");
+            // Input
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: TextField(
+                controller: _nameController,
 
-                      // ✅ Validate title
-                      if (_nameController.text.trim().isEmpty) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter a highlight name'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                        return;
-                      }
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Colors.black, // typed text color
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter Highlights',
+                  hintStyle: const TextStyle(
+                    color: Color.fromARGB(255, 59, 59, 59),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
 
-                      // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
-                      final storyId = widget.storyId;
+                  prefixIcon: const Icon(
+                    Icons.edit_note_rounded,
+                    color: Colors.grey,
+                  ),
 
-                      AppLogger.d("🧪 [DEBUG] FIXED Story ID: $storyId");
-                      AppLogger.d(
-                        "🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}",
-                      );
+                  // IMPORTANT
+                  isDense: true,
 
-                      // ❌ prevent null / empty
-                      if (storyId.isEmpty) {
-                        AppLogger.d("❌ ERROR: Story ID is empty");
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Story ID not found. Please try again.',
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                        return;
-                      }
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
 
-                      // ❌ prevent wrong format
-                      if (storyId.endsWith('.jpg') ||
-                          storyId.endsWith('.png') ||
-                          storyId.endsWith('.mp4')) {
-                        AppLogger.d(
-                          "❌ ERROR: Wrong storyId (image file detected)",
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Invalid story ID format.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                        return;
-                      }
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
 
-                      setState(() {
-                        _isLoading = true;
-                      });
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                      color: Colors.blue,
+                      width: 1.3,
+                    ),
+                  ),
 
-                      try {
-                        // 🚀 API CALL
-                        await ref
-                            .read(highlightCreateNotifierProvider.notifier)
-                            .addStoryToHighlight(
-                              highlightId: null,
-                              storyId: storyId,
-                              title: _nameController.text.trim(),
-                            );
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
 
-                        final createState = ref.read(
-                          highlightCreateNotifierProvider,
-                        );
+            const Spacer(),
 
-                        // ✅ Success handling
-                        if (createState.isSuccess) {
-                          AppLogger.d("✅ Highlight created successfully");
+            // Button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        FocusScope.of(context).unfocus();
+                        AppLogger.d("➕ New highlight submit → API CALL START");
 
-                          if (!mounted) return;
-
+                        // ✅ Validate title
+                        if (_nameController.text.trim().isEmpty) {
                           if (context.mounted) {
-                            final navigator = Navigator.of(context);
-                            final messenger = ScaffoldMessenger.of(context);
-
-                            // Pop everything back to the main/home screen smoothly
-                            navigator.popUntil((route) => route.isFirst);
-
-                            // Switch to Profile Tab
-                            PostShareFlowBridge.onRequestShowProfileTab?.call();
-
-                            messenger.showSnackBar(
+                            ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text(
-                                  'Highlight created successfully.',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                backgroundColor: Color(0xFF9544A7),
+                                content: Text('Please enter a highlight name'),
+                                backgroundColor: Colors.red,
                               ),
                             );
                           }
-                        } else {
-                          AppLogger.d("❌ Highlight creation failed");
+                          return;
+                        }
+
+                        // ✅ USE DIRECTLY PASSED STORY ID (IMPORTANT FIX)
+                        final storyId = widget.storyId;
+
+                        AppLogger.d("🧪 [DEBUG] FIXED Story ID: $storyId");
+                        AppLogger.d(
+                          "🧪 [DEBUG] Story Image URL: ${widget.storyImageUrl}",
+                        );
+
+                        // ❌ prevent null / empty
+                        if (storyId.isEmpty) {
+                          AppLogger.d("❌ ERROR: Story ID is empty");
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Failed to create highlight. Please try again.',
+                                  'Story ID not found. Please try again.',
                                 ),
                                 backgroundColor: Colors.red,
                               ),
                             );
                           }
+                          return;
                         }
-                      } catch (e) {
-                        AppLogger.d(
-                          "❌ Exception during highlight creation: $e",
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: $e'),
-                              backgroundColor: Colors.red,
-                            ),
+
+                        // ❌ prevent wrong format
+                        if (storyId.endsWith('.jpg') ||
+                            storyId.endsWith('.png') ||
+                            storyId.endsWith('.mp4')) {
+                          AppLogger.d(
+                            "❌ ERROR: Wrong storyId (image file detected)",
                           );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Invalid story ID format.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                          return;
                         }
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            _isLoading = false;
-                          });
+
+                        setState(() {
+                          _isLoading = true;
+                        });
+
+                        try {
+                          // 🚀 API CALL
+                          await ref
+                              .read(highlightCreateNotifierProvider.notifier)
+                              .addStoryToHighlight(
+                                highlightId: null,
+                                storyId: storyId,
+                                title: _nameController.text.trim(),
+                              );
+
+                          final createState = ref.read(
+                            highlightCreateNotifierProvider,
+                          );
+
+                          // ✅ Success handling
+                          if (createState.isSuccess) {
+                            AppLogger.d("✅ Highlight created successfully");
+
+                            if (!mounted) return;
+
+                            if (context.mounted) {
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+
+                              // Pop everything back to the main/home screen smoothly
+                              navigator.popUntil((route) => route.isFirst);
+
+                              // Switch to Profile Tab
+                              PostShareFlowBridge.onRequestShowProfileTab
+                                  ?.call();
+
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Highlight created successfully.',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  backgroundColor: Color(0xFF9544A7),
+                                ),
+                              );
+                            }
+                          } else {
+                            AppLogger.d("❌ Highlight creation failed");
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Failed to create highlight. Please try again.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          AppLogger.d(
+                            "❌ Exception during highlight creation: $e",
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                          }
                         }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
+                      },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : const Text("Add"),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text("Add"),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
