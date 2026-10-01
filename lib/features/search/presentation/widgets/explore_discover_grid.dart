@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:gruve_app/core/constants/app_assets.dart';
+import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/core/utils/responsive_extensions.dart';
 import 'package:gruve_app/features/profile/presentation/screens/post_detail/profile_post_detail_screen.dart';
 import 'package:gruve_app/features/search/data/datasource/explore_reels_service.dart';
