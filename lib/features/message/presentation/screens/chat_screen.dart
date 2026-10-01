@@ -93,7 +93,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   // Typing indicator
   bool _otherUserTyping = false;
-  Timer? _otherTypingTimer;   // auto-clear peer typing indicator
+  Timer? _otherTypingTimer; // auto-clear peer typing indicator
   Timer? _selfTypingThrottle; // throttle outgoing typing.start
   bool _isSelfTyping = false;
 
@@ -206,7 +206,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _handleTypingEvent(Map<String, dynamic> data, String? event) {
     final incomingConversationId = _extractConversationId(data);
     if (incomingConversationId.isNotEmpty &&
-        incomingConversationId != _conversationId) return;
+        incomingConversationId != _conversationId)
+      return;
 
     final senderId = data['user_id']?.toString() ?? '';
     if (senderId == _currentUserId) return;
@@ -267,7 +268,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
             // Optimistic update
             final optimistic = [
-              ...message.reactions.where((r) => r.userId != (_currentUserId ?? '')),
+              ...message.reactions.where(
+                (r) => r.userId != (_currentUserId ?? ''),
+              ),
               MessageReaction(userId: _currentUserId ?? '', emoji: emoji),
             ];
             _messageController.replaceMessage(
@@ -1780,7 +1783,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBody(List<MessageModel> sortedMessages, {bool isTyping = false}) {
+  Widget _buildMessageBody(
+    List<MessageModel> sortedMessages, {
+    bool isTyping = false,
+  }) {
     if (_messageController.isInitialLoading && sortedMessages.isEmpty) {
       return const ChatBubbleShimmer(itemCount: 8);
     }
@@ -1804,7 +1810,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       cacheExtent: 1000,
       addAutomaticKeepAlives: true,
       addRepaintBoundaries: true,
-      itemCount: sortedMessages.length +
+      itemCount:
+          sortedMessages.length +
           (_messageController.isLoadingMore ? 1 : 0) +
           typingSlot,
       itemBuilder: (context, index) {
@@ -1812,10 +1819,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (isTyping && index == 0) {
           return Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 4, top: 4),
-            child: TypingBubble(
-              avatarUrl: _userAvatar,
-              name: _userName,
-            ),
+            child: TypingBubble(avatarUrl: _userAvatar, name: _userName),
           );
         }
 

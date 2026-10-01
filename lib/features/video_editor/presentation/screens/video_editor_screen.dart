@@ -143,9 +143,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   }
 
   Future<void> _loadThumbnail() async {
-    final path = await LocalMediaUtils.generateVideoThumbnail(
-      widget.mediaPath,
-    );
+    final path = await LocalMediaUtils.generateVideoThumbnail(widget.mediaPath);
     if (path != null && mounted) {
       setState(() => _thumbnailPath = path);
     }

@@ -24,7 +24,8 @@ class FollowRequestModel {
       username: json['username']?.toString() ?? '',
       fullName: json['full_name']?.toString() ?? '',
       profilePicture: json['profile_picture']?.toString(),
-      requestedAt: DateTime.tryParse(json['requested_at'] ?? '') ?? DateTime.now(),
+      requestedAt:
+          DateTime.tryParse(json['requested_at'] ?? '') ?? DateTime.now(),
     );
   }
 }
@@ -41,7 +42,10 @@ class FollowRequestService {
     );
   }
 
-  Future<List<FollowRequestModel>> fetchRequests({int page = 1, int limit = 20}) async {
+  Future<List<FollowRequestModel>> fetchRequests({
+    int page = 1,
+    int limit = 20,
+  }) async {
     final response = await _dio.get(
       ApiConstants.followRequests,
       queryParameters: {'page': page, 'limit': limit},

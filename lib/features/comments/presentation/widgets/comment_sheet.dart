@@ -351,7 +351,9 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
       final newText = text.replaceRange(selection.start, selection.end, emoji);
       _commentController.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: selection.start + emoji.length),
+        selection: TextSelection.collapsed(
+          offset: selection.start + emoji.length,
+        ),
       );
     } else {
       _commentController.text = '$text$emoji';
@@ -365,7 +367,8 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
   Widget build(BuildContext context) {
     final currentUser = ref.watch(currentUserNotifierProvider);
     final userAvatarUrl = currentUser.profileImageUrl;
-    final username = (currentUser.username != null && currentUser.username!.isNotEmpty)
+    final username =
+        (currentUser.username != null && currentUser.username!.isNotEmpty)
         ? currentUser.username!
         : 'You';
 
@@ -376,7 +379,9 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
         : (bottomInset > 0 ? bottomInset + 12.0 : 16.0);
 
     return Container(
-      height: widget.isEmbedded ? null : MediaQuery.of(context).size.height * 0.70,
+      height: widget.isEmbedded
+          ? null
+          : MediaQuery.of(context).size.height * 0.70,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -525,10 +530,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                       horizontal: 4,
                       vertical: 2,
                     ),
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 20),
-                    ),
+                    child: Text(emoji, style: const TextStyle(fontSize: 20)),
                   ),
                 );
               }).toList(),
@@ -566,10 +568,7 @@ class _CommentSheetState extends ConsumerState<CommentSheet> {
                     child: TextField(
                       controller: _commentController,
                       focusNode: _commentFocusNode,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
                       keyboardType: TextInputType.multiline,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _submitComment(),

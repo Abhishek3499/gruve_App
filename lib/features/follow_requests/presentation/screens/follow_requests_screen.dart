@@ -49,7 +49,9 @@ class _FollowRequestsScreenState extends State<FollowRequestsScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong. Please try again.')),
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -102,7 +104,9 @@ class _FollowRequestsScreenState extends State<FollowRequestsScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
     if (_error != null) {
       return Center(
@@ -111,7 +115,10 @@ class _FollowRequestsScreenState extends State<FollowRequestsScreen> {
           children: [
             Text(_error!, style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 12),
-            TextButton(onPressed: _load, child: const Text('Retry', style: TextStyle(color: Colors.white))),
+            TextButton(
+              onPressed: _load,
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+            ),
           ],
         ),
       );
@@ -165,11 +172,13 @@ class _RequestTile extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: Colors.white12,
-            backgroundImage: (request.profilePicture != null &&
+            backgroundImage:
+                (request.profilePicture != null &&
                     request.profilePicture!.isNotEmpty)
                 ? NetworkImage(request.profilePicture!)
                 : null,
-            child: (request.profilePicture == null ||
+            child:
+                (request.profilePicture == null ||
                     request.profilePicture!.isEmpty)
                 ? Text(
                     request.username.isNotEmpty
@@ -186,7 +195,9 @@ class _RequestTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  request.fullName.isNotEmpty ? request.fullName : request.username,
+                  request.fullName.isNotEmpty
+                      ? request.fullName
+                      : request.username,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -205,7 +216,10 @@ class _RequestTile extends StatelessWidget {
             const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           else ...[
             _ActionButton(

@@ -159,10 +159,14 @@ class ProfileModel {
       'subscribed',
     ], fallback: false);
 
-    final isPrivate = flat['account_type'] == 'private' ||
-        SafeParsingHelpers.safeBool(flat, const ['is_private'], fallback: false);
+    final isPrivate =
+        flat['account_type'] == 'private' ||
+        SafeParsingHelpers.safeBool(flat, const [
+          'is_private',
+        ], fallback: false);
 
-    final followStatus = flat['follow_status']?.toString() ??
+    final followStatus =
+        flat['follow_status']?.toString() ??
         (isFollowing ? 'following' : 'none');
 
     final action = flat['action']?.toString();

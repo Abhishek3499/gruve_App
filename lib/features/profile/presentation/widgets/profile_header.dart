@@ -65,11 +65,7 @@ class ProfileHeader extends StatelessWidget {
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: const Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                icon: const Icon(Icons.add, color: Colors.white, size: 28),
                 onPressed: () {
                   if (onAddTap != null) {
                     onAddTap!();
@@ -108,10 +104,7 @@ class ProfileHeader extends StatelessWidget {
                 icon: const Icon(Icons.menu, color: Colors.white, size: 24),
                 onPressed: () {
                   AppLogger.d("[ProfileHeader] Menu button tapped");
-                  ProfileMenuDrawer.show(
-                    context,
-                    profileImage: profileImage,
-                  );
+                  ProfileMenuDrawer.show(context, profileImage: profileImage);
                 },
               ),
             ],
@@ -204,10 +197,7 @@ class ProfileHeader extends StatelessWidget {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ProfileBioView(
-              bio: bio,
-              fullName: fullName,
-            ),
+            child: ProfileBioView(bio: bio, fullName: fullName),
           ),
         ],
       ],
@@ -220,11 +210,7 @@ class ProfileBioView extends StatefulWidget {
   final String bio;
   final String fullName;
 
-  const ProfileBioView({
-    super.key,
-    required this.bio,
-    this.fullName = '',
-  });
+  const ProfileBioView({super.key, required this.bio, this.fullName = ''});
 
   @override
   State<ProfileBioView> createState() => _ProfileBioViewState();
@@ -258,11 +244,7 @@ class _ProfileBioViewState extends State<ProfileBioView> {
         final bool isOverflowing = textPainter.didExceedMaxLines;
 
         if (!isOverflowing) {
-          return Text(
-            cleanBio,
-            style: textStyle,
-            maxLines: 2,
-          );
+          return Text(cleanBio, style: textStyle, maxLines: 2);
         }
 
         return AnimatedSize(
@@ -277,8 +259,9 @@ class _ProfileBioViewState extends State<ProfileBioView> {
                 cleanBio,
                 style: textStyle,
                 maxLines: _isExpanded ? null : 2,
-                overflow:
-                    _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                overflow: _isExpanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               GestureDetector(

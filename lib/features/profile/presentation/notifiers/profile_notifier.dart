@@ -387,9 +387,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
       profileImage: (updated.profilePicture ?? '').trim().isEmpty
           ? currentUser.profileImage
           : updated.profilePicture!,
-      bio: (updated.bio ?? '').trim().isEmpty
-          ? currentUser.bio
-          : updated.bio!,
+      bio: (updated.bio ?? '').trim().isEmpty ? currentUser.bio : updated.bio!,
       isFollowing: currentUser.isFollowing,
       hasActiveStory: currentUser.hasActiveStory,
       hasCloseFriendsStory: currentUser.hasCloseFriendsStory,

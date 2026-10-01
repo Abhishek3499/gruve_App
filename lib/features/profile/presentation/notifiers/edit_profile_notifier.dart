@@ -86,7 +86,9 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
     state = state.copyWith(isUpdating: true, clearError: true);
 
     final trimmedBio = bio?.trim();
-    final cleanBio = (trimmedBio != null && trimmedBio.isNotEmpty) ? trimmedBio : null;
+    final cleanBio = (trimmedBio != null && trimmedBio.isNotEmpty)
+        ? trimmedBio
+        : null;
 
     try {
       final result = await _service.updateProfile(

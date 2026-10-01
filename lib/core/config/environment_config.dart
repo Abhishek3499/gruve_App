@@ -45,6 +45,10 @@ class EnvironmentConfig {
     return _googleWebClientId;
   }
 
+  /// Geoapify API key for location search
+  static String get geoapifyApiKey =>
+      dotenv.env['GEOAPIFY_API_KEY']?.trim() ?? '';
+
   /// App Timeout defaults (in seconds)
   static const int apiTimeout = 30;
   static const int wsTimeout = 15;

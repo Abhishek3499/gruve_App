@@ -9,6 +9,18 @@ class AppColors {
   static const Color profileGradientTop = Color(0xFF7D63D1);
   static const Color profileGradientBottom = Color(0xFF212235);
 
+  // Soft Pastel Gradient (profile & highlight screens)
+  static const Color pastelTop = Color(0xFFF9F7FA);
+  static const Color pastelLavender = Color(0xFFDDBEEB);
+  static const Color pastelPink = Color(0xFFF39BC4);
+  static const Color pastelBottom = Color(0xFFE69AC8);
+  static const List<Color> pastelGradient = [
+    pastelTop,
+    pastelLavender,
+    pastelPink,
+    pastelBottom,
+  ];
+
   // Section Colors
   static const Color todaySection = Color(0xFF33123B);
   static const Color newSection = Color(0xFF833FB0);

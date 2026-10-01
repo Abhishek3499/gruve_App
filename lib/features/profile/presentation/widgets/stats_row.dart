@@ -79,29 +79,18 @@ class StatsRow extends StatelessWidget {
     return Padding(
       padding: padding ?? EdgeInsets.zero,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: buildStat(
-              _formatCount(videosCount),
-              "posts",
-            ),
+          buildStat(_formatCount(videosCount), "posts"),
+          const SizedBox(width: 24),
+          buildStat(
+            _formatCount(subscribersCount),
+            "subscribers",
+            onSubscribersTap,
           ),
-          Expanded(
-            child: buildStat(
-              _formatCount(subscribersCount),
-              "subscribers",
-              onSubscribersTap,
-            ),
-          ),
-          Expanded(
-            child: buildStat(
-              _formatCount(likesCount),
-              "subscribed",
-              onSubscribedTap,
-            ),
-          ),
+          const SizedBox(width: 24),
+          buildStat(_formatCount(likesCount), "subscribed", onSubscribedTap),
         ],
       ),
     );

@@ -10,7 +10,7 @@ import 'package:gruve_app/features/story_preview/presentation/notifiers/story_st
 import 'package:gruve_app/features/story_preview/presentation/controller/story_playback_controller.dart';
 import 'package:gruve_app/features/story_preview/presentation/widgets/story_view_topbar/story_selector_screen.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/shared/widgets/app_cached_image.dart';
+import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/home/presentation/controllers/post_share_flow_bridge.dart';
 
 void _log(String message) {
@@ -195,7 +195,11 @@ class _HighlightSheetContentState extends ConsumerState<HighlightSheetContent> {
       children: [
         Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: AppColors.pastelGradient,
+            ),
             borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: Column(
@@ -392,9 +396,9 @@ class _HighlightSheetContentState extends ConsumerState<HighlightSheetContent> {
                     height: 180,
                     width: 130,
                     color: Colors.grey[300],
-                    child: highlight.coverMediaUrl.isNotEmpty
-                        ? AppCachedImage(
-                            imageUrl: highlight.coverMediaUrl,
+                    child: (highlight.coverPreviewUrl ?? '').isNotEmpty
+                        ? MediaUrlThumbnail(
+                            url: highlight.coverPreviewUrl!,
                             fit: BoxFit.cover,
                           )
                         : const Icon(Icons.collections),

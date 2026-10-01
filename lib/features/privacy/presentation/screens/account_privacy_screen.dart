@@ -57,7 +57,9 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
       if (mounted) {
         setState(() => _isPrivate = !value);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update account type. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to update account type. Please try again.'),
+          ),
         );
       }
     } finally {

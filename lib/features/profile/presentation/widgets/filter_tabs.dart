@@ -11,11 +11,7 @@ class FilterTabs extends StatelessWidget {
     required this.onTabSelected,
   });
 
-  Widget _buildTab({
-    IconData? icon,
-    Widget? customIcon,
-    required int index,
-  }) {
+  Widget _buildTab({IconData? icon, Widget? customIcon, required int index}) {
     final isSelected = selectedIndex == index;
 
     return GestureDetector(
@@ -66,18 +62,8 @@ class FilterTabs extends StatelessWidget {
                 index: 0,
               ),
             ),
-            Expanded(
-              child: _buildTab(
-                icon: Icons.grid_view_rounded,
-                index: 1,
-              ),
-            ),
-            Expanded(
-              child: _buildTab(
-                icon: Icons.portrait_rounded,
-                index: 2,
-              ),
-            ),
+            Expanded(child: _buildTab(icon: Icons.grid_view_rounded, index: 1)),
+            Expanded(child: _buildTab(icon: Icons.portrait_rounded, index: 2)),
           ],
         ),
       ),

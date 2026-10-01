@@ -25,15 +25,11 @@ enum MessageStatus {
   }
 }
 
-
 class MessageReaction {
   final String userId;
   final String emoji;
 
-  const MessageReaction({
-    required this.userId,
-    required this.emoji,
-  });
+  const MessageReaction({required this.userId, required this.emoji});
 
   factory MessageReaction.fromJson(Map<String, dynamic> json) {
     return MessageReaction(
@@ -43,19 +39,9 @@ class MessageReaction {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'user_id': userId,
-      'emoji': emoji,
-    };
+    return {'user_id': userId, 'emoji': emoji};
   }
 }
-
-
-
-
-
-
-
 
 class MessageModel {
   final String id;
@@ -179,15 +165,15 @@ class MessageModel {
     final resolvedMediaKind = _resolveMediaKind(safeJson);
     final replyPreview = _parseReplyPreview(safeJson);
     final reactions = (safeJson['reactions'] is List)
-    ? (safeJson['reactions'] as List)
-        .whereType<Map>()
-        .map(
-          (reaction) => MessageReaction.fromJson(
-            Map<String, dynamic>.from(reaction),
-          ),
-        )
-        .toList()
-    : <MessageReaction>[];
+        ? (safeJson['reactions'] as List)
+              .whereType<Map>()
+              .map(
+                (reaction) => MessageReaction.fromJson(
+                  Map<String, dynamic>.from(reaction),
+                ),
+              )
+              .toList()
+        : <MessageReaction>[];
 
     return MessageModel(
       id: _resolveMessageId(safeJson),
@@ -315,7 +301,7 @@ class MessageModel {
       sharedPostPreviewUrl: sharedPostPreviewUrl ?? this.sharedPostPreviewUrl,
       sharedPost: sharedPost ?? this.sharedPost,
       isEdited: isEdited ?? this.isEdited,
-       reactions: reactions ?? this.reactions,
+      reactions: reactions ?? this.reactions,
     );
   }
 

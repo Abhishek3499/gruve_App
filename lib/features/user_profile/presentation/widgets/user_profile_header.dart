@@ -80,7 +80,9 @@ class UserProfileHeader extends ConsumerWidget {
       avatar: profileImageUrl ?? '',
       isOwnProfile: false,
       onStoriesViewed: () {
-        ref.read(storySeenNotifierProvider.notifier).markUserSeen(profileUserId);
+        ref
+            .read(storySeenNotifierProvider.notifier)
+            .markUserSeen(profileUserId);
       },
     );
   }
@@ -195,15 +197,11 @@ class UserProfileHeader extends ConsumerWidget {
                 ),
                 SizedBox(width: context.rw(10)),
               ] else if (reserveSubscribeSpace) ...[
-                Expanded(
-                  child: SizedBox(height: context.rh(44)),
-                ),
+                Expanded(child: SizedBox(height: context.rh(44))),
                 SizedBox(width: context.rw(10)),
               ],
               if (showMessageButton && onMessageTap != null) ...[
-                Expanded(
-                  child: MessageButton(onTap: onMessageTap!),
-                ),
+                Expanded(child: MessageButton(onTap: onMessageTap!)),
                 SizedBox(width: context.rw(10)),
               ],
               GiftButton(

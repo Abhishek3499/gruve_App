@@ -773,7 +773,8 @@ class _FeedItemWidgetState extends ConsumerState<FeedItemWidget>
       child: PopScope(
         canPop: !_isCommentsOpen && _commentAnimationController.value == 0.0,
         onPopInvokedWithResult: (didPop, _) {
-          if (!didPop && (_isCommentsOpen || _commentAnimationController.value > 0.0)) {
+          if (!didPop &&
+              (_isCommentsOpen || _commentAnimationController.value > 0.0)) {
             _closeComments();
           }
         },
@@ -790,30 +791,44 @@ class _FeedItemWidgetState extends ConsumerState<FeedItemWidget>
             // Target top video card layout in comments mode (9:16 portrait aspect ratio matching screenshot)
             // When keyboard opens, dynamically compact the video card height so comments remain completely visible and scrollable
             final normalTargetHeight = screenSize.height * 0.38;
-            final keyboardTargetHeight = (screenSize.height * 0.16).clamp(100.0, 130.0);
-            final targetHeight = lerpDouble(normalTargetHeight, keyboardTargetHeight, keyboardProgress)!;
+            final keyboardTargetHeight = (screenSize.height * 0.16).clamp(
+              100.0,
+              130.0,
+            );
+            final targetHeight = lerpDouble(
+              normalTargetHeight,
+              keyboardTargetHeight,
+              keyboardProgress,
+            )!;
 
             final normalTargetTop = topPadding + 6.0;
             final keyboardTargetTop = topPadding + 2.0;
-            final targetTop = lerpDouble(normalTargetTop, keyboardTargetTop, keyboardProgress)!;
+            final targetTop = lerpDouble(
+              normalTargetTop,
+              keyboardTargetTop,
+              keyboardProgress,
+            )!;
 
             final targetWidth = targetHeight * (9.0 / 16.0);
-            final targetHoriz = ((screenSize.width - targetWidth) / 2).clamp(0.0, screenSize.width / 2);
+            final targetHoriz = ((screenSize.width - targetWidth) / 2).clamp(
+              0.0,
+              screenSize.width / 2,
+            );
             final targetRadius = lerpDouble(26.0, 18.0, keyboardProgress)!;
 
             final currentTop = lerpDouble(0.0, targetTop, t)!;
             final currentHoriz = lerpDouble(0.0, targetHoriz, t)!;
-            final currentHeight = lerpDouble(screenSize.height, targetHeight, t)!;
+            final currentHeight = lerpDouble(
+              screenSize.height,
+              targetHeight,
+              t,
+            )!;
             final currentRadius = lerpDouble(0.0, targetRadius, t)!;
 
             return Stack(
               children: [
                 // Solid black background behind entire feed item
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black,
-                  ),
-                ),
+                Positioned.fill(child: Container(color: Colors.black)),
 
                 // Video Container that smoothly morphs size, position, and corner radius
                 Positioned(
@@ -829,8 +844,12 @@ class _FeedItemWidgetState extends ConsumerState<FeedItemWidget>
                         Positioned.fill(
                           child: GestureDetector(
                             onTap: effectiveVideo ? _onVideoTap : null,
-                            onDoubleTapDown: isAnimatingOrOpen ? null : _onDoubleTapDown,
-                            onDoubleTap: isAnimatingOrOpen ? null : () => _onDoubleTap(post),
+                            onDoubleTapDown: isAnimatingOrOpen
+                                ? null
+                                : _onDoubleTapDown,
+                            onDoubleTap: isAnimatingOrOpen
+                                ? null
+                                : () => _onDoubleTap(post),
                             child: Container(
                               color: Colors.black,
                               child: FeedMediaContent(
@@ -854,80 +873,84 @@ class _FeedItemWidgetState extends ConsumerState<FeedItemWidget>
                               ignoring: isAnimatingOrOpen,
                               child: Opacity(
                                 opacity: (1.0 - (t * 1.5)).clamp(0.0, 1.0),
-                              child: ValueListenableBuilder<int>(
-                                valueListenable: widget.controller.currentIndex,
-                                builder: (context, currentIdx, overlayStack) {
-                                  return Offstage(
-                                    offstage: currentIdx != widget.index,
-                                    child: overlayStack,
-                                  );
-                                },
-                                child: Stack(
-                                  children: [
-                                    OptimizedVideoOverlay(
-                                      selectedTab: widget.selectedTab,
-                                      onTabChanged: widget.onTabChanged,
-                                      controller: widget.controller,
-                                      onOwnProfileTap: widget.onOwnProfileTap,
-                                      currentIndex: widget.index,
-                                      onComment: _openComments,
-                                    ),
-                                    if (effectiveVideo && _overlayTriggerCounter > 0)
-                                      PlayPauseAnimationOverlay(
-                                        key: ValueKey(_overlayTriggerCounter),
-                                        isPlaying: _overlayIsPlayingIcon,
+                                child: ValueListenableBuilder<int>(
+                                  valueListenable:
+                                      widget.controller.currentIndex,
+                                  builder: (context, currentIdx, overlayStack) {
+                                    return Offstage(
+                                      offstage: currentIdx != widget.index,
+                                      child: overlayStack,
+                                    );
+                                  },
+                                  child: Stack(
+                                    children: [
+                                      OptimizedVideoOverlay(
+                                        selectedTab: widget.selectedTab,
+                                        onTabChanged: widget.onTabChanged,
+                                        controller: widget.controller,
+                                        onOwnProfileTap: widget.onOwnProfileTap,
+                                        currentIndex: widget.index,
+                                        onComment: _openComments,
                                       ),
-                                    ..._activeHearts.map((heart) {
-                                      return DoubleTapHeartOverlay(
-                                        key: ValueKey('heart_${heart.id}'),
-                                        position: heart.position,
-                                        onAnimationComplete: () {
-                                          if (mounted) {
-                                            setState(() {
-                                              _activeHearts.removeWhere(
-                                                (h) => h.id == heart.id,
-                                              );
-                                            });
-                                          }
-                                        },
-                                      );
-                                    }),
-                                    if (_isPausedByUser &&
-                                        effectiveVideo &&
-                                        videoController != null)
-                                      ValueListenableBuilder<VideoPlayerValue>(
-                                        valueListenable: videoController,
-                                        builder: (context, value, child) {
-                                          if (!value.isInitialized ||
-                                              value.isPlaying) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          return IgnorePointer(
-                                            child: Center(
-                                              child: Container(
-                                                width: 70,
-                                                height: 70,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.5),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons.pause_rounded,
-                                                  color: Colors.white,
-                                                  size: 45,
+                                      if (effectiveVideo &&
+                                          _overlayTriggerCounter > 0)
+                                        PlayPauseAnimationOverlay(
+                                          key: ValueKey(_overlayTriggerCounter),
+                                          isPlaying: _overlayIsPlayingIcon,
+                                        ),
+                                      ..._activeHearts.map((heart) {
+                                        return DoubleTapHeartOverlay(
+                                          key: ValueKey('heart_${heart.id}'),
+                                          position: heart.position,
+                                          onAnimationComplete: () {
+                                            if (mounted) {
+                                              setState(() {
+                                                _activeHearts.removeWhere(
+                                                  (h) => h.id == heart.id,
+                                                );
+                                              });
+                                            }
+                                          },
+                                        );
+                                      }),
+                                      if (_isPausedByUser &&
+                                          effectiveVideo &&
+                                          videoController != null)
+                                        ValueListenableBuilder<
+                                          VideoPlayerValue
+                                        >(
+                                          valueListenable: videoController,
+                                          builder: (context, value, child) {
+                                            if (!value.isInitialized ||
+                                                value.isPlaying) {
+                                              return const SizedBox.shrink();
+                                            }
+                                            return IgnorePointer(
+                                              child: Center(
+                                                child: Container(
+                                                  width: 70,
+                                                  height: 70,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withValues(alpha: 0.5),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.pause_rounded,
+                                                    color: Colors.white,
+                                                    size: 45,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                  ],
+                                            );
+                                          },
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
 
                         // Volume / Mute indicator button in bottom right of scaled video
                         if (isAnimatingOrOpen && t > 0.3 && effectiveVideo)

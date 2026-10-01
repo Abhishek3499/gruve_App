@@ -106,7 +106,7 @@ class _CustomBottomNavigationBarState
 
             // CENTER BUTTON (51 dp)
             Positioned(
-              top: 6,
+              top: 11.5,
               child: CenterNavButton(
                 isSelected: widget.selectedIndex == 2,
                 onTap: () => widget.onItemSelected(2),

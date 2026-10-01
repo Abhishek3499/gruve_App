@@ -67,10 +67,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       appBar: AppBar(
         backgroundColor: AppColors.deepPlum,
         elevation: 0,
-        title: const Text(
-          'Connections',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Connections', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
