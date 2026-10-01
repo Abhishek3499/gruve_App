@@ -137,8 +137,10 @@ class StoryUtils {
 
     return Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => StoryViewScreen(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (context, _, __) => StoryViewScreen(
           userId: userId,
           mediaPaths: mediaPaths,
           displayName: displayName,
@@ -150,6 +152,8 @@ class StoryUtils {
           isOwnProfile: isOwnProfile,
           onStoryViewed: _recordStoryView,
         ),
+        transitionsBuilder: (context, animation, _, child) =>
+            FadeTransition(opacity: animation, child: child),
       ),
     );
   }

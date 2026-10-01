@@ -70,12 +70,16 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
 
   Future<void> _bootstrapPlayback() async {
     await _ensureMediaResolved(_currentIndex);
-
     if (!mounted) return;
-    _initializeVideo(_currentIndex);
+
+    await _initializeVideo(_currentIndex);
+    if (!mounted) return;
+    await _activateVideoAt(_currentIndex);
+
+    // Preload the next video silently.
     if (_currentIndex + 1 < _posts.length) {
       unawaited(_ensureMediaResolved(_currentIndex + 1));
-      _initializeVideo(_currentIndex + 1);
+      unawaited(_preloadVideo(_currentIndex + 1));
     }
   }
 
@@ -175,11 +179,10 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
 
     final post = _posts[index];
     final mediaUrl = _mediaUrlFor(post);
-    if (!post.isVideo ||
-        mediaUrl.isEmpty ||
-        _videoControllers.containsKey(index)) {
-      return;
-    }
+    if (!post.isVideo || mediaUrl.isEmpty) return;
+
+    // Controller already exists — nothing to set up.
+    if (_videoControllers.containsKey(index)) return;
 
     final controller = await VideoFrameCache.acquire(mediaUrl);
     if (!mounted) {
@@ -189,24 +192,14 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     if (controller == null) return;
 
     _acquiredUrls.add(mediaUrl);
-
-    if (index != _currentIndex) {
-      try {
-        if (controller.value.isPlaying) {
-          await controller.pause();
-        }
-        await controller.setVolume(0);
-      } catch (e) {
-        AppLogger.d('Video preload pause error: $e');
-      }
-    }
+    // Always start silent/paused; caller decides when to activate.
+    try {
+      if (controller.value.isPlaying) await controller.pause();
+      await controller.setVolume(0);
+    } catch (_) {}
 
     if (!mounted) return;
     setState(() => _videoControllers[index] = controller);
-
-    if (index == _currentIndex) {
-      await _activateVideoAt(index);
-    }
   }
 
   Future<void> _activateVideoAt(int index) async {
@@ -221,6 +214,15 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     if (controller == null || !controller.value.isInitialized) return;
 
     try {
+      await controller.setLooping(true);
+      // Cached players can be parked at the end of a previous playthrough;
+      // play() on a finished player is a no-op, so rewind first.
+      final value = controller.value;
+      final duration = value.duration;
+      if (duration > Duration.zero &&
+          value.position >= duration - const Duration(milliseconds: 250)) {
+        await controller.seekTo(Duration.zero);
+      }
       await controller.setVolume(1.0);
       if (!controller.value.isPlaying) {
         await controller.play();
@@ -232,20 +234,66 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
     if (mounted) setState(() {});
   }
 
-  void _onPageChanged(int index) {
-    setState(() => _currentIndex = index);
+  void _onPageChanged(int newIndex) {
+    final oldIndex = _currentIndex;
+    setState(() => _currentIndex = newIndex);
+
+    // Immediately pause the video that scrolled off.
+    final oldController = _videoControllers[oldIndex];
+    if (oldController != null) {
+      unawaited(() async {
+        try {
+          if (oldController.value.isPlaying) await oldController.pause();
+          await oldController.setVolume(0);
+        } catch (_) {}
+      }());
+    }
 
     unawaited(() async {
-      await _ensureMediaResolved(index);
-      if (!mounted || _currentIndex != index) return;
-      _initializeVideo(index);
-      if (index + 1 < _posts.length) {
-        unawaited(_ensureMediaResolved(index + 1));
-        _initializeVideo(index + 1);
+      await _ensureMediaResolved(newIndex);
+      if (!mounted || _currentIndex != newIndex) return;
+
+      // Initialize if needed, then always activate — covers both the
+      // "first visit" and "returning to a preloaded" controller cases.
+      await _initializeVideo(newIndex);
+      if (!mounted || _currentIndex != newIndex) return;
+      await _activateVideoAt(newIndex);
+
+      // Preload neighbours without activating them.
+      if (newIndex + 1 < _posts.length) {
+        unawaited(_ensureMediaResolved(newIndex + 1));
+        unawaited(_preloadVideo(newIndex + 1));
       }
-      if (index - 1 >= 0) _initializeVideo(index - 1);
-      await _activateVideoAt(index);
+      if (newIndex - 1 >= 0) unawaited(_preloadVideo(newIndex - 1));
     }());
+  }
+
+  /// Initializes a controller for [index] without ever playing it.
+  /// Used for neighbour preloading so [_initializeVideo] activation logic
+  /// is not accidentally triggered for off-screen indices.
+  Future<void> _preloadVideo(int index) async {
+    if (index < 0 || index >= _posts.length) return;
+    if (_videoControllers.containsKey(index)) return;
+
+    final post = _posts[index];
+    final mediaUrl = _mediaUrlFor(post);
+    if (!post.isVideo || mediaUrl.isEmpty) return;
+
+    final controller = await VideoFrameCache.acquire(mediaUrl);
+    if (!mounted) {
+      if (controller != null) VideoFrameCache.release(mediaUrl);
+      return;
+    }
+    if (controller == null) return;
+
+    _acquiredUrls.add(mediaUrl);
+    try {
+      if (controller.value.isPlaying) await controller.pause();
+      await controller.setVolume(0);
+    } catch (_) {}
+
+    if (!mounted) return;
+    setState(() => _videoControllers[index] = controller);
   }
 
   void _showCommentSheet(Post post) {
@@ -423,6 +471,17 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
   void dispose() {
     _pageController.dispose();
     unawaited(VideoPlaybackGuard.stopAll());
+    // Leave shared cached players paused at the first frame, ready for the
+    // next viewer (or a thumbnail) instead of parked mid-video / at the end.
+    for (final controller in _videoControllers.values) {
+      if (controller == null) continue;
+      unawaited(() async {
+        try {
+          await controller.pause();
+          await controller.seekTo(Duration.zero);
+        } catch (_) {}
+      }());
+    }
     for (final url in _acquiredUrls) {
       VideoFrameCache.release(url);
     }
@@ -682,19 +741,22 @@ class _ProfilePostDetailScreenState extends State<ProfilePostDetailScreen> {
         ),
         if (isVideo && videoController != null)
           Center(
-            child: AnimatedOpacity(
-              opacity: videoController.value.isPlaying ? 0 : 1,
-              duration: const Duration(milliseconds: 300),
-              child: Container(
-                padding: EdgeInsets.all(context.rw(16)),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: context.rw(48),
+            child: ValueListenableBuilder<VideoPlayerValue>(
+              valueListenable: videoController,
+              builder: (context, value, _) => AnimatedOpacity(
+                opacity: value.isPlaying ? 0 : 1,
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  padding: EdgeInsets.all(context.rw(16)),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: context.rw(48),
+                  ),
                 ),
               ),
             ),

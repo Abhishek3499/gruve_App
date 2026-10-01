@@ -172,6 +172,23 @@ class VideoFrameCache {
     }
   }
 
+  /// Disposes cached controllers nothing is currently displaying (refs == 0),
+  /// freeing their hardware decoders — e.g. before a full-screen player needs
+  /// one. Controllers backing visible thumbnails are left alone.
+  static Future<void> disposeUnreferenced() async {
+    final keys = _cache.entries
+        .where((e) => e.value.refs <= 0)
+        .map((e) => e.key)
+        .toList();
+    for (final key in keys) {
+      final entry = _cache.remove(key);
+      _lru.remove(key);
+      try {
+        await entry?.controller.dispose();
+      } catch (_) {}
+    }
+  }
+
   /// Disposes all cached video controllers (e.g. on low memory or logout)
   static Future<void> disposeAll() async {
     for (final entry in _cache.values) {

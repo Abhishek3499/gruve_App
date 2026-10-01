@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:gruve_app/core/constants/app_colors.dart';
@@ -55,6 +56,8 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
   int currentIndex = 0;
   VideoPlayerController? _videoController;
   bool _isVideo = false;
+  bool _mediaFailed = false;
+  String? _mediaError;
   bool _isDisposed = false;
   AnimationStatusListener? _animationListener;
   bool _isImageLoading = false;
@@ -194,9 +197,11 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
     }
   }
 
-  Future<void> _initializeMedia() async {
+  Future<void> _initializeMedia({bool isRetry = false}) async {
     if (_isDisposed) return;
 
+    if (!isRetry) _videoRetries = 0;
+    _handlingVideoError = false;
     _videoController?.dispose();
     _videoController = null;
 
@@ -219,6 +224,7 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       }
     }
 
+    _mediaFailed = false;
     _isVideo =
         resolvedPath.toLowerCase().endsWith('.mp4') ||
         resolvedPath.toLowerCase().endsWith('.mov') ||
@@ -239,13 +245,21 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
         );
       }
 
-      await _videoController!.initialize();
+      try {
+        await _videoController!.initialize();
+      } catch (e) {
+        AppLogger.d('[StoryViewScreen] video init failed: $e');
+        _mediaError = e.toString();
+        await _handleVideoFailure();
+        return;
+      }
 
       if (_isDisposed) {
         _videoController?.dispose();
         return;
       }
 
+      _videoController!.addListener(_onVideoValueChanged);
       _videoController!.play();
       _videoController!.setLooping(true);
       _animationController.duration = _videoController!.value.duration;
@@ -264,6 +278,46 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
     if (mounted && !_isDisposed) {
       setState(() {});
     }
+  }
+
+  int _videoRetries = 0;
+  bool _handlingVideoError = false;
+
+  /// Playback errors (e.g. a hardware decoder that is briefly unavailable)
+  /// surface on the controller value after a successful initialize().
+  void _onVideoValueChanged() {
+    final controller = _videoController;
+    if (controller == null || _isDisposed || _handlingVideoError) return;
+    if (controller.value.hasError) {
+      AppLogger.d(
+        '[StoryViewScreen] video playback error: '
+        '${controller.value.errorDescription}',
+      );
+      _mediaError = controller.value.errorDescription;
+      _handleVideoFailure();
+    }
+  }
+
+  /// Retries twice with a fresh controller, then gives up gracefully so the
+  /// viewer never hangs on a story that can't play.
+  Future<void> _handleVideoFailure() async {
+    if (_handlingVideoError || _isDisposed) return;
+    _handlingVideoError = true;
+
+    if (_videoRetries < 2) {
+      _videoRetries++;
+      await Future<void>.delayed(Duration(milliseconds: 500 * _videoRetries));
+      if (!_isDisposed) await _initializeMedia(isRetry: true);
+      return;
+    }
+
+    _videoController?.dispose();
+    _videoController = null;
+    _mediaFailed = true;
+    _animationController.duration = const Duration(seconds: 3);
+    _animationController.reset();
+    _animationController.forward();
+    if (mounted && !_isDisposed) setState(() {});
   }
 
   void nextStory() {
@@ -389,8 +443,44 @@ class _StoryViewScreenState extends ConsumerState<StoryViewScreen>
       }
     }
 
-    if (_isVideo && _videoController != null) {
-      if (!_videoController!.value.isInitialized) {
+    final lowerPath = resolvedPath.toLowerCase();
+    final looksLikeVideo =
+        lowerPath.endsWith('.mp4') ||
+        lowerPath.endsWith('.mov') ||
+        lowerPath.endsWith('.avi');
+
+    if (_mediaFailed) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Couldn't play this story",
+                style: TextStyle(color: Colors.white70),
+              ),
+              if (kDebugMode && _mediaError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _mediaError!.length > 400
+                      ? _mediaError!.substring(0, 400)
+                      : _mediaError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (looksLikeVideo) {
+      // Never fall through to Image.network for a video URL (it renders a
+      // broken-image icon while the player is still initializing).
+      final controller = _videoController;
+      if (controller == null || !controller.value.isInitialized) {
         return const _StoryMediaLoader();
       }
 

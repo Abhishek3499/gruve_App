@@ -77,7 +77,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         if (next == null) return;
         ref
             .read(currentUserNotifierProvider.notifier)
-            .updateProfileData(username: next.username, imageUrl: next.profileImage);
+            .updateProfileData(
+              username: next.username,
+              imageUrl: next.profileImage,
+            );
       },
     );
 
@@ -213,7 +216,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           onInitialFeedReady: _handleInitialFeedReady,
         );
       case 1:
-        return const SearchScreen();
+        return SearchScreen(
+          onProfileTap: () => _onItemTapped(4),
+          onAddStory: () => _onItemTapped(2),
+        );
       case 3:
         return const MessageScreen();
       case 4:

@@ -1,3 +1,4 @@
+import 'package:gruve_app/features/search/presentation/notifiers/explore_stories_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gruve_app/core/auth/auth_state_manager.dart';
@@ -102,6 +103,7 @@ class LogoutNotifier extends Notifier<LogoutUiState> {
         ref.read(messageNotifierProvider.notifier).reset();
         ref.read(postLikeNotifierProvider.notifier).reset();
         ref.read(storySeenNotifierProvider.notifier).reset();
+        ref.read(exploreStoriesNotifierProvider.notifier).reset();
         ref.read(savePostNotifierProvider.notifier).reset();
         ref.read(draftsNotifierProvider.notifier).reset();
         ref.read(highlightFlowNotifierProvider.notifier).reset();

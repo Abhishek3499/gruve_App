@@ -5,13 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:gruve_app/core/constants/api_constants.dart';
 import 'package:gruve_app/core/network/app_dio.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
-import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
 import 'package:gruve_app/features/auth/data/services/token_storage.dart';
 import 'package:gruve_app/features/search/domain/entities/explore_reel_model.dart';
 import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart';
 import 'package:gruve_app/features/story_preview/data/datasource/post_service.dart';
 
-/// Explore grid thumbnails come from [GET explore/reels/].
+/// Discover cards come from [GET explore/discover/].
 /// Full playback media is hydrated via [posts/get-post/?post_id=] when missing.
 class ExploreReelsService {
   ExploreReelsService({Dio? dio, PostService? postService})
@@ -80,35 +79,16 @@ class ExploreReelsService {
     }
   }
 
+  /// Remembers preview posts for reels that already carry playable media.
+  /// Deliberately does no video work: warming video frames (or resolving every
+  /// reel up front) ties up hardware decoders needed by the story/reel
+  /// players. Full media is resolved on tap via [resolveReelForViewer].
   void prefetchReels(List<ExploreReel> reels, {int? maxItems}) {
     final slice = maxItems == null ? reels : reels.take(maxItems);
-    final batch = <ExploreReel>[];
-
     for (final reel in slice) {
-      batch.add(reel);
       if (reel.hasPlayableMedia) {
         _cacheIfBetter(reel.id, reel.toPreviewPost());
       }
-    }
-
-    if (batch.isEmpty) return;
-    unawaited(_prefetchReelsBatch(batch));
-  }
-
-  Future<void> _prefetchReelsBatch(List<ExploreReel> reels) async {
-    try {
-      final unresolved = reels
-          .where((reel) => !reel.hasPlayableMedia && reel.id.isNotEmpty)
-          .toList();
-      if (unresolved.isNotEmpty) {
-        await Future.wait(unresolved.map(resolveReelPost), eagerError: false);
-      }
-
-      final posts = reels.map((reel) => displayPostFor(reel)).toList();
-      await PostGridThumbnail.warmupPostsAwait(posts, max: posts.length);
-      _notifyHydrated();
-    } catch (e) {
-      AppLogger.d('⚠️ [ExploreReelsService] batch prefetch failed: $e');
     }
   }
 
@@ -123,7 +103,7 @@ class ExploreReelsService {
     final safeSort = sort == 'latest' ? 'latest' : 'trending';
 
     final response = await _dio.get(
-      ApiConstants.exploreReels,
+      ApiConstants.exploreDiscover,
       queryParameters: {'page': page, 'limit': safeLimit, 'sort': safeSort},
       options: Options(
         headers: {'Authorization': 'Bearer $token'},

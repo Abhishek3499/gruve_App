@@ -58,7 +58,8 @@ class ApiConstants {
       'highlights/$highlightId/stories/';
 
   // ---- Explore ----
-  static const String exploreReels = 'explore/reels/';
+  static const String exploreStories = 'explore/stories/';
+  static const String exploreDiscover = 'explore/discover/';
 
   // ---- Notifications ----
   static const String notifications = 'notifications/';

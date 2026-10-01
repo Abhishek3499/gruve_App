@@ -4,13 +4,18 @@ import 'package:gruve_app/features/story_preview/domain/entities/post_model.dart
 class ExploreReelUser {
   final String id;
   final String username;
+  final String fullName;
   final String profilePicture;
 
   const ExploreReelUser({
     required this.id,
     required this.username,
+    this.fullName = '',
     this.profilePicture = '',
   });
+
+  /// Name shown on cards — falls back to the username when no full name.
+  String get displayName => fullName.trim().isNotEmpty ? fullName : username;
 
   factory ExploreReelUser.fromJson(Map<String, dynamic> json) {
     return ExploreReelUser(
@@ -20,6 +25,7 @@ class ExploreReelUser {
           json['user_name']?.toString() ??
           json['name']?.toString() ??
           '',
+      fullName: json['full_name']?.toString().trim() ?? '',
       profilePicture: Post.normalizeMediaUrl(
         _pickString(json, const [
           'profile_picture',
@@ -56,6 +62,8 @@ class ExploreReel {
   final String id;
   final String thumbnail;
   final String mediaUrl;
+  final String hlsUrl;
+  final String processingStatus;
   final int views;
   final int likes;
   final int shares;
@@ -66,6 +74,8 @@ class ExploreReel {
     required this.id,
     required this.thumbnail,
     this.mediaUrl = '',
+    this.hlsUrl = '',
+    this.processingStatus = '',
     required this.views,
     required this.likes,
     required this.shares,
@@ -73,36 +83,27 @@ class ExploreReel {
     required this.user,
   });
 
-  bool get hasPlayableMedia {
-    final media = _resolvedMediaUrl();
-    return media.isNotEmpty;
+  bool get hasPlayableMedia => playbackUrl.isNotEmpty;
+
+  /// HLS when processing is ready, otherwise the direct mp4.
+  String get playbackUrl {
+    final hls = hlsUrl.trim();
+    final mp4 = mediaUrl.trim();
+    if (processingStatus.trim().toLowerCase() == 'ready' && hls.isNotEmpty) {
+      return hls;
+    }
+    return mp4;
   }
 
-  /// Best network URL for grid thumbnails and playback.
-  String get displayMediaUrl => _resolvedMediaUrl();
+  /// Kept for compatibility — same as playbackUrl.
+  String get displayMediaUrl => playbackUrl;
 
-  String _resolvedMediaUrl() {
-    final media = mediaUrl.trim();
-    if (media.isNotEmpty &&
-        (media.startsWith('http://') || media.startsWith('https://'))) {
-      return media;
-    }
-
+  /// Thumbnail is always a separate image URL from the API now.
+  String get thumbnailImageUrl {
     final thumb = thumbnail.trim();
-    if (thumb.isNotEmpty &&
-        Post.mediaUrlLooksLikeVideo(thumb) &&
-        (thumb.startsWith('http://') || thumb.startsWith('https://'))) {
-      return thumb;
-    }
-    return '';
-  }
-
-  String _resolvedThumbnailUrl() {
-    final thumb = thumbnail.trim();
-    if (thumb.isEmpty || Post.mediaUrlLooksLikeVideo(thumb)) return '';
-    if (thumb.startsWith('http://') || thumb.startsWith('https://')) {
-      return thumb;
-    }
+    if (thumb.isEmpty) return '';
+    if (Post.mediaUrlLooksLikeVideo(thumb)) return '';
+    if (thumb.startsWith('http://') || thumb.startsWith('https://')) return thumb;
     return '';
   }
 
@@ -117,14 +118,10 @@ class ExploreReel {
     );
     AppLogger.d('raw.thumbnail     = ${_orEmpty(thumbnail)}', tag: tag);
     AppLogger.d('raw.mediaUrl      = ${_orEmpty(mediaUrl)}', tag: tag);
-    AppLogger.d(
-      'resolved.media    = ${_orEmpty(_resolvedMediaUrl())}',
-      tag: tag,
-    );
-    AppLogger.d(
-      'resolved.thumb    = ${_orEmpty(_resolvedThumbnailUrl())}',
-      tag: tag,
-    );
+    AppLogger.d('raw.hlsUrl        = ${_orEmpty(hlsUrl)}', tag: tag);
+    AppLogger.d('raw.status        = $processingStatus', tag: tag);
+    AppLogger.d('resolved.playback = ${_orEmpty(playbackUrl)}', tag: tag);
+    AppLogger.d('resolved.thumb    = ${_orEmpty(thumbnailImageUrl)}', tag: tag);
     AppLogger.d('preview.media     = ${_orEmpty(preview.media)}', tag: tag);
     AppLogger.d(
       'preview.thumbUrl  = ${_orEmpty(preview.thumbnailUrl)}',
@@ -194,22 +191,17 @@ class ExploreReel {
       createdAt = DateTime.tryParse(createdRaw);
     }
 
-    var thumbnail = Post.normalizeMediaUrl(_extractThumbnail(json));
-    var mediaUrl = Post.normalizeMediaUrl(_extractMediaUrl(json));
-
-    if (mediaUrl.isEmpty && Post.mediaUrlLooksLikeVideo(thumbnail)) {
-      mediaUrl = thumbnail;
-    } else if (thumbnail.isEmpty) {
-      thumbnail = postHint?.thumbnailUrl ?? '';
-    }
-    if (mediaUrl.isEmpty && postHint != null) {
-      mediaUrl = postHint.media;
-    }
+    final thumbnail = Post.normalizeMediaUrl(_extractThumbnail(json));
+    final mediaUrl = Post.normalizeMediaUrl(_extractMediaUrl(json));
+    final hlsUrl = Post.normalizeMediaUrl(json['hls_url']?.toString() ?? '');
+    final processingStatus = json['media_processing_status']?.toString() ?? '';
 
     return ExploreReel(
       id: cleanId,
       thumbnail: thumbnail,
       mediaUrl: mediaUrl,
+      hlsUrl: hlsUrl,
+      processingStatus: processingStatus,
       views: _parseInt(json['views']),
       likes: _parseInt(json['likes']),
       shares: _parseInt(json['shares']),
@@ -311,18 +303,16 @@ class ExploreReel {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  /// Lightweight [Post] for grid thumbnails and playback when media is known.
+  /// Lightweight [Post] for grid thumbnails and playback.
   Post toPreviewPost() {
-    final media = _resolvedMediaUrl();
-    final imageThumb = _resolvedThumbnailUrl();
-    final isVideoMedia = media.isNotEmpty && Post.mediaUrlLooksLikeVideo(media);
+    final pb = playbackUrl;
+    final imageThumb = thumbnailImageUrl;
+    final isVideoMedia = pb.isNotEmpty;
 
     return Post(
       id: id,
       caption: '',
-      media: isVideoMedia
-          ? media
-          : (imageThumb.isNotEmpty ? imageThumb : media),
+      media: pb.isNotEmpty ? pb : imageThumb,
       thumbnailUrl: imageThumb,
       userId: user.id,
       likesCount: likes,
