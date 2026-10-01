@@ -163,17 +163,26 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             ? null
             : () => ref
                   .read(notificationNotifierProvider.notifier)
-                  .respondToFollowRequest(actorUserId: actorId, action: 'accept'),
+                  .respondToFollowRequest(
+                    actorUserId: actorId,
+                    action: 'accept',
+                  ),
         onReject: actorId.isEmpty
             ? null
             : () => ref
                   .read(notificationNotifierProvider.notifier)
-                  .respondToFollowRequest(actorUserId: actorId, action: 'reject'),
+                  .respondToFollowRequest(
+                    actorUserId: actorId,
+                    action: 'reject',
+                  ),
         onFollowBack: actorId.isEmpty
             ? null
             : () => ref
                   .read(notificationNotifierProvider.notifier)
-                  .respondFollowBack(notificationId: n.id, actorUserId: actorId),
+                  .respondFollowBack(
+                    notificationId: n.id,
+                    actorUserId: actorId,
+                  ),
       );
     } else {
       return NotificationTile(

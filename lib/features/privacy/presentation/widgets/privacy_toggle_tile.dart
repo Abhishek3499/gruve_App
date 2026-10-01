@@ -19,9 +19,7 @@ class PrivacyToggleTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         /// TITLE
-        Expanded(
-          child: Text(title, style: PrivacyConstants.titleStyle),
-        ),
+        Expanded(child: Text(title, style: PrivacyConstants.titleStyle)),
 
         const SizedBox(width: 10),
 

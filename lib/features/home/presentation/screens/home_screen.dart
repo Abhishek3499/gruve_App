@@ -77,7 +77,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         if (next == null) return;
         ref
             .read(currentUserNotifierProvider.notifier)
-            .updateProfileData(username: next.username, imageUrl: next.profileImage);
+            .updateProfileData(
+              username: next.username,
+              imageUrl: next.profileImage,
+            );
       },
     );
 

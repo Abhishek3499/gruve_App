@@ -179,7 +179,9 @@ class _VideoUserInfoState extends ConsumerState<VideoUserInfo> {
       avatar: widget.profilePicture ?? '',
       onStoriesViewed: () {
         if (mounted) {
-          ref.read(storySeenNotifierProvider.notifier).markUserSeen(widget.userId);
+          ref
+              .read(storySeenNotifierProvider.notifier)
+              .markUserSeen(widget.userId);
         }
       },
     );

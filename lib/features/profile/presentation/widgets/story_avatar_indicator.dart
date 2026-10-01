@@ -105,10 +105,7 @@ class StoryAvatarIndicator extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: Colors.white, width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF8B2FC9).withValues(alpha: 0.6),

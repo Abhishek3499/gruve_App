@@ -300,14 +300,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             ?.isSubscribed ??
                         profile?.isFollowing ??
                         false;
-                    final followStatus =
-                        _subscribeController.getFollowStatus(resolvedUserId);
+                    final followStatus = _subscribeController.getFollowStatus(
+                      resolvedUserId,
+                    );
                     final isPrivate = profile?.isPrivate ?? false;
                     final liveIsFollowing = followStatus == 'following';
                     final canSeeContent =
-                        !isPrivate ||
-                        liveIsFollowing ||
-                        isDirectOwnProfile;
+                        !isPrivate || liveIsFollowing || isDirectOwnProfile;
                     final grid = UserProfileGrid(
                       controller: _profileController,
                       selectedTab: selectedTab,
@@ -353,7 +352,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                   profileUserId: resolvedUserId,
                                   bio: profile?.bio ?? '',
                                   profileImageUrl:
-                                      (profile?.profileImage.isNotEmpty ?? false)
+                                      (profile?.profileImage.isNotEmpty ??
+                                          false)
                                       ? profile!.profileImage
                                       : widget.profileImageUrl,
                                   hasActiveStory:
@@ -376,9 +376,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                     username: resolvedUsername,
                                     profileImage:
                                         (profile?.profileImage.isNotEmpty ??
-                                                false)
-                                            ? profile!.profileImage
-                                            : widget.profileImageUrl,
+                                            false)
+                                        ? profile!.profileImage
+                                        : widget.profileImageUrl,
                                   ),
                                   onFollowRequestHandled: () =>
                                       _profileController.fetchUser(

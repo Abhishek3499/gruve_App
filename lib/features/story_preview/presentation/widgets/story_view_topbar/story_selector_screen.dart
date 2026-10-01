@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gruve_app/core/constants/app_colors.dart';
 import 'package:gruve_app/features/highlights/presentation/notifiers/highlight_create_notifier.dart';
 import 'package:gruve_app/core/utils/app_logger.dart';
 import 'package:gruve_app/shared/widgets/post_grid_thumbnail.dart';
@@ -65,12 +66,7 @@ class _CreateHighlightSheetState extends ConsumerState<CreateHighlightSheet> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFF9F7FA),
-            Color(0xFFDDBEEB),
-            Color(0xFFF39BC4),
-            Color(0xFFE69AC8),
-          ],
+          colors: AppColors.pastelGradient,
         ),
       ),
       child: Scaffold(

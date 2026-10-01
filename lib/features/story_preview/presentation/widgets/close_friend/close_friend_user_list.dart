@@ -88,9 +88,7 @@ class CloseFriendUserList extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(
-              child: CircularProgressIndicator(
-                color: AppColors.vibrantMagenta,
-              ),
+              child: CircularProgressIndicator(color: AppColors.vibrantMagenta),
             ),
           ),
       ],

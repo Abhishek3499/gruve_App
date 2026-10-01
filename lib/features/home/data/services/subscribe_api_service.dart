@@ -16,7 +16,9 @@ class SubscribeApiService {
     AppLogger.debug(_tag, 'client_initialized');
   }
 
-  Future<({bool isFollowing, String followStatus})> toggleSubscription(String userId) async {
+  Future<({bool isFollowing, String followStatus})> toggleSubscription(
+    String userId,
+  ) async {
     try {
       final token = await TokenStorage.getAccessToken();
 
@@ -34,7 +36,11 @@ class SubscribeApiService {
       AppLogger.debug(
         _tag,
         'subscription_parsed',
-        data: {'endpoint': _toggleEndpoint, 'isFollowing': isFollowing, 'followStatus': followStatus},
+        data: {
+          'endpoint': _toggleEndpoint,
+          'isFollowing': isFollowing,
+          'followStatus': followStatus,
+        },
       );
       return (isFollowing: isFollowing, followStatus: followStatus);
     } on DioException catch (e) {

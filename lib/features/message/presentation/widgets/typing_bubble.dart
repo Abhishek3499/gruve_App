@@ -75,8 +75,8 @@ class _TypingBubbleState extends State<TypingBubble>
                     final scale = offset < 1.0
                         ? 0.6 + 0.4 * offset
                         : offset < 2.0
-                            ? 1.0 - 0.4 * (offset - 1.0)
-                            : 0.6;
+                        ? 1.0 - 0.4 * (offset - 1.0)
+                        : 0.6;
                     return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 2),
                       width: 5 * scale,

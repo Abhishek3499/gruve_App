@@ -395,8 +395,7 @@ class MessageController extends ChangeNotifier {
     if (action == 'removed' && reactorUserId.isNotEmpty) {
       // Backend bug: server returns the reaction still in the list on removal.
       // Manually remove this user's reaction from current local state.
-      reactions = _messages[index]
-          .reactions
+      reactions = _messages[index].reactions
           .where((r) => r.userId != reactorUserId)
           .toList();
     } else {

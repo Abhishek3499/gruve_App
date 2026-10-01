@@ -98,8 +98,11 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     }
 
     final resolvedState = existing?.isSubscribed ?? isSubscribed;
-    final resolvedFollowStatus = existing?.followStatus ??
-        (widget.followStatus.isNotEmpty ? widget.followStatus : (resolvedState ? 'following' : 'none'));
+    final resolvedFollowStatus =
+        existing?.followStatus ??
+        (widget.followStatus.isNotEmpty
+            ? widget.followStatus
+            : (resolvedState ? 'following' : 'none'));
     _log(
       '🧠 resolved seed state userId=${widget.userId} resolved=$resolvedState followStatus=$resolvedFollowStatus',
     );
@@ -113,7 +116,6 @@ class _SubscribeButtonState extends State<SubscribeButton> {
       ),
     );
   }
-
 
   Future<void> _performToggle(BuildContext context, bool currentStatus) async {
     if (_isProcessing) return;
@@ -170,7 +172,10 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     }
   }
 
-  Widget _buildSubscribeWidget(BuildContext context, {String label = 'Subscribe'}) {
+  Widget _buildSubscribeWidget(
+    BuildContext context, {
+    String label = 'Subscribe',
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -356,7 +361,10 @@ class _SubscribeButtonState extends State<SubscribeButton> {
               return FadeTransition(
                 opacity: animation,
                 child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                  scale: Tween<double>(
+                    begin: 0.95,
+                    end: 1.0,
+                  ).animate(animation),
                   child: child,
                 ),
               );
@@ -364,13 +372,13 @@ class _SubscribeButtonState extends State<SubscribeButton> {
             child: liveFollowStatus == 'following'
                 ? _buildSubscribedWidget(context)
                 : liveFollowStatus == 'requested'
-                    ? _buildRequestedWidget(context)
-                    : _buildSubscribeWidget(
-                        context,
-                        label: widget.action == 'follow_back'
-                            ? 'Subscribe back'
-                            : 'Subscribe',
-                      ),
+                ? _buildRequestedWidget(context)
+                : _buildSubscribeWidget(
+                    context,
+                    label: widget.action == 'follow_back'
+                        ? 'Subscribe back'
+                        : 'Subscribe',
+                  ),
           ),
         );
       },

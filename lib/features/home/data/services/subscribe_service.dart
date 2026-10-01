@@ -22,7 +22,9 @@ class SubscribeService {
     }
   }
 
-  Future<({bool isFollowing, String followStatus})> toggleSubscription(String userId) async {
+  Future<({bool isFollowing, String followStatus})> toggleSubscription(
+    String userId,
+  ) async {
     final result = await _apiService.toggleSubscription(userId);
     setSubscriptionStatus(userId, result.isFollowing);
     return result;

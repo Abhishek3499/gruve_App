@@ -34,10 +34,7 @@ class UploadProgressBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
       ),

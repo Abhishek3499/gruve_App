@@ -732,9 +732,7 @@ class ProfileController {
       // zero *new* unique posts (stale cache, backend offset drift, etc.)
       // must not be treated as "no more pages" — that would permanently
       // stop pagination even though the server still has more to give.
-      final nextPage = isRefresh
-          ? (hasNext ? 2 : 1)
-          : updatedState.page + 1;
+      final nextPage = isRefresh ? (hasNext ? 2 : 1) : updatedState.page + 1;
 
       final finalState = updatedState.copyWith(
         posts: newPosts,

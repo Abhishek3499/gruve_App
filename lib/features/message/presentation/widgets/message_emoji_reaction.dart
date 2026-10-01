@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class MessageEmojiReaction extends StatelessWidget {
   final ValueChanged<String> onEmojiSelected;
 
-  const MessageEmojiReaction({
-    super.key,
-    required this.onEmojiSelected,
-  });
+  const MessageEmojiReaction({super.key, required this.onEmojiSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -84,9 +81,7 @@ class MessageEmojiReaction extends StatelessWidget {
       height: 320,
       decoration: const BoxDecoration(
         color: Color(0xFF0D0D1A),
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -117,12 +112,8 @@ class MessageEmojiReaction extends StatelessWidget {
 
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 8,
                 childAspectRatio: 1,
               ),
@@ -135,12 +126,7 @@ class MessageEmojiReaction extends StatelessWidget {
                     onEmojiSelected(emoji);
                   },
                   child: Center(
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(
-                        fontSize: 28,
-                      ),
-                    ),
+                    child: Text(emoji, style: const TextStyle(fontSize: 28)),
                   ),
                 );
               },

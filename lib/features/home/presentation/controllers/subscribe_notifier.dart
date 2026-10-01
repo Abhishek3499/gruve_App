@@ -140,8 +140,7 @@ class SubscribeNotifier extends ChangeNotifier {
 
         // Revert to last known server state
         final latestServerState =
-            _serverStates[userId] ??
-            _subscribeService.isUserSubscribed(userId);
+            _serverStates[userId] ?? _subscribeService.isUserSubscribed(userId);
         _applyLocalState(userId, latestServerState);
 
         scaffoldMessengerKey.currentState?.showSnackBar(
@@ -165,7 +164,11 @@ class SubscribeNotifier extends ChangeNotifier {
     final currentStatus = isUserSubscribed(userId);
     // Optimistic: flip the bool, keep followStatus as-is until server confirms
     final optimisticStatus = !currentStatus;
-    _applyLocalState(userId, optimisticStatus, followStatus: getFollowStatus(userId));
+    _applyLocalState(
+      userId,
+      optimisticStatus,
+      followStatus: getFollowStatus(userId),
+    );
     unawaited(_syncWithServer(userId));
     return optimisticStatus;
   }

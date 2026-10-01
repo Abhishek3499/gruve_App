@@ -274,9 +274,7 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(20),
-          border: borderColor != null
-              ? Border.all(color: borderColor!)
-              : null,
+          border: borderColor != null ? Border.all(color: borderColor!) : null,
         ),
         child: Text(
           label,

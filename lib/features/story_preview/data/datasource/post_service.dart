@@ -889,7 +889,10 @@ class PostService {
 
       if (res.statusCode == 200 && res.data != null) {
         final responseData = res.data['data'] ?? res.data;
-        resolved = PostPayloadParser.tryParsePostResponse(responseData, cleanPostId);
+        resolved = PostPayloadParser.tryParsePostResponse(
+          responseData,
+          cleanPostId,
+        );
       }
     } catch (e) {
       AppLogger.warning(

@@ -101,12 +101,7 @@ class UserStatsRow extends StatelessWidget {
               ),
             ),
             buildDivider(),
-            Expanded(
-              child: buildStat(
-                stats.videosCount.toString(),
-                "Posts",
-              ),
-            ),
+            Expanded(child: buildStat(stats.videosCount.toString(), "Posts")),
           ],
         ),
       ),

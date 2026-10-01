@@ -260,12 +260,7 @@ class _HighlightViewerScreenState extends ConsumerState<HighlightViewerScreen>
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFF9F7FA),
-                  Color(0xFFDDBEEB),
-                  Color(0xFFF39BC4),
-                  Color(0xFFE69AC8),
-                ],
+                colors: AppColors.pastelGradient,
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
@@ -487,12 +482,7 @@ class _HighlightViewerScreenState extends ConsumerState<HighlightViewerScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF9F7FA),
-              Color(0xFFDDBEEB),
-              Color(0xFFF39BC4),
-              Color(0xFFE69AC8),
-            ],
+            colors: AppColors.pastelGradient,
           ),
         ),
         child: Stack(

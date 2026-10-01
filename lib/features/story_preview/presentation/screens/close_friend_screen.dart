@@ -15,10 +15,7 @@ import 'package:gruve_app/features/story_preview/presentation/widgets/hide_story
 class CloseFriendScreen extends StatefulWidget {
   final Set<String> initialSelectedUserIds;
 
-  const CloseFriendScreen({
-    super.key,
-    this.initialSelectedUserIds = const {},
-  });
+  const CloseFriendScreen({super.key, this.initialSelectedUserIds = const {}});
 
   @override
   State<CloseFriendScreen> createState() => _CloseFriendScreenState();

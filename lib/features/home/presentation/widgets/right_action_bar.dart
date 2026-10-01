@@ -40,7 +40,8 @@ class RightActionBar extends StatelessWidget {
           /// ❤️ LIKE
           _ActionIcon(
             iconPath: isLiked
-                ? AppAssets.likeicon // ❤️ liked
+                ? AppAssets
+                      .likeicon // ❤️ liked
                 : AppAssets.like2, // 🤍 default white outline
             count: _formatCount(likeCount),
             onTap: onLike,

@@ -347,9 +347,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     required String actorUserId,
   }) async {
     try {
-      final result = await _subscribeApiService.toggleSubscription(
-        actorUserId,
-      );
+      final result = await _subscribeApiService.toggleSubscription(actorUserId);
       final index = state.notifications.indexWhere(
         (n) => n.id == notificationId,
       );

@@ -22,7 +22,10 @@ Future<void> showProfileAvatarPreview(
       );
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutBack);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutBack,
+      );
       return FadeTransition(
         opacity: animation,
         child: ScaleTransition(
@@ -69,7 +72,10 @@ class _ProfileAvatarPreview extends StatelessWidget {
                     height: size,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      image: DecorationImage(image: _imageProvider, fit: BoxFit.cover),
+                      image: DecorationImage(
+                        image: _imageProvider,
+                        fit: BoxFit.cover,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.5),

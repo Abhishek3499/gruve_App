@@ -119,12 +119,17 @@ class UserProfile {
             0,
         postsCount:
             stats['posts_count'] as int? ?? stats['videos_count'] as int? ?? 0,
-        isPrivate: user['account_type'] == 'private' || (user['is_private'] as bool? ?? false),
-        isFollowing: (user['follow_status'] ?? '') == 'following' || (user['is_subscribed'] as bool? ?? false),
-        followStatus: user['follow_status']?.toString() ?? (user['is_subscribed'] == true ? 'following' : 'none'),
+        isPrivate:
+            user['account_type'] == 'private' ||
+            (user['is_private'] as bool? ?? false),
+        isFollowing:
+            (user['follow_status'] ?? '') == 'following' ||
+            (user['is_subscribed'] as bool? ?? false),
+        followStatus:
+            user['follow_status']?.toString() ??
+            (user['is_subscribed'] == true ? 'following' : 'none'),
         hasActiveStory: json['has_active_story'] as bool? ?? false,
-        hasCloseFriendsStory:
-            json['has_close_friends_story'] as bool? ?? false,
+        hasCloseFriendsStory: json['has_close_friends_story'] as bool? ?? false,
         highlights: json['highlights'] as List<dynamic>? ?? [],
         allPosts: allResults,
         likedPosts: likedResults,

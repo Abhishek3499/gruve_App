@@ -673,8 +673,7 @@ class _StoryPreviewScreenState extends ConsumerState<StoryPreviewScreen> {
                           Expanded(
                             child: GestureDetector(
                               onTap:
-                                  (_isYourStorySharing ||
-                                      _isCloseFriendSharing)
+                                  (_isYourStorySharing || _isCloseFriendSharing)
                                   ? null
                                   : _shareToYourStory,
                               child: Container(

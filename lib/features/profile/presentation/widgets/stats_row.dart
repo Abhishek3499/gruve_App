@@ -82,10 +82,7 @@ class StatsRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          buildStat(
-            _formatCount(videosCount),
-            "posts",
-          ),
+          buildStat(_formatCount(videosCount), "posts"),
           const SizedBox(width: 24),
           buildStat(
             _formatCount(subscribersCount),
@@ -93,11 +90,7 @@ class StatsRow extends StatelessWidget {
             onSubscribersTap,
           ),
           const SizedBox(width: 24),
-          buildStat(
-            _formatCount(likesCount),
-            "subscribed",
-            onSubscribedTap,
-          ),
+          buildStat(_formatCount(likesCount), "subscribed", onSubscribedTap),
         ],
       ),
     );
